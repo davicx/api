@@ -1,12 +1,13 @@
 const express = require('express')
 const morgan = require('morgan')
 const mysql = require('mysql')
+const port = process.env.port || 3003;
 const app = express()
 
 app.use(morgan('short'))
 app.use(express.json());
 
-app.listen(3003, () => {
+app.listen(port, () => {
   console.log("Server is up and listening on 3003...")
 })
 
