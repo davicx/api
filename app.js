@@ -25,7 +25,7 @@ app.get("/users", (req, res) => {
     const user2 = {firstName: "Frodo", lastName: "B"}
     const user3 = {firstName: "Bilbo", lastName: "B"}
     const user4 = {firstName: "Sam", lastName: "G"}
-    res.json([user1, user2, user3, user4])
+    res.json([user1, user2, user3])
 })
 
 
