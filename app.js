@@ -1,9 +1,9 @@
 const express = require('express')
-const port = process.env.port || 3003;
+const PORT = process.env.PORT || 3003;
 const app = express()
 
-app.listen(port, () => {
-  console.log("Server is up and listening on 3003...")
+app.listen(PORT, () => {
+  console.log("Server is up and listening on " + PORT)
 })
 
 app.get("/", (req, res) => {
@@ -24,7 +24,8 @@ app.get("/users", (req, res) => {
     const user1 = {firstName: "David", lastName: "V"}
     const user2 = {firstName: "Frodo", lastName: "B"}
     const user3 = {firstName: "Bilbo", lastName: "B"}
-    res.json([user1, user2, user3])
+    const user4 = {firstName: "Sam", lastName: "G"}
+    res.json([user1, user2, user3, user4])
 })
 
 

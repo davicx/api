@@ -1,9 +1,22 @@
 {
-  "name": "Elastic-Beanstalk-Sample-App",
-  "version": "0.0.1",
-  "private": true,
-  "dependencies": {},
+  "name": "hello",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davicx/hello.git"
+  },
+  "author": "davey",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/davicx/hello/issues"
+  },
+  "homepage": "https://github.com/davicx/hello#readme",
+  "dependencies": {
+    "express": "^4.17.1"
   }
 }
