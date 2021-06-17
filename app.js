@@ -32,10 +32,10 @@ app.get("/users", (req, res) => {
 //ROUTE 2: Simple Users Response
 app.get("/database", (req, res) => {
     const connection = mysql.createConnection({
-        host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
-        user: 'admin',
+        host: 'oniddb.cws.oregonstate.edu',
+        user: 'vasquezd-db',
         password: 'gCtLRbXMWWS2SwNg',
-        database: 'shareshare'
+        database: 'vasquezd-db'
       })
 
       const userId = req.params.id
@@ -61,7 +61,11 @@ app.get("/database", (req, res) => {
 
     /*
 
-	var connection = mysql.createConnection({
+        host: 'oniddb.cws.oregonstate.edu',
+        user: 'vasquezd-db',
+        password: 'gCtLRbXMWWS2SwNg',
+        database: 'vasquezd-db'
+        
         host: 'localhost',
         user: 'root',
         password: '',
