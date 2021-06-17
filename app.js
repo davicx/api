@@ -43,13 +43,12 @@ app.get("/database", (req, res) => {
 	connection.connect(function(err) {
 	  if (err) {
 		console.error('Database connection failed: ' + err.stack);
-        output = err.stack;
+        output =  "Failed";
 		return;
-	  } else {
-          output = "yay!!";
-      }
+	  } 
 
 	  console.log('Connected to database.');
+      output = "Connected to database";
 	});
 
 	connection.end();
