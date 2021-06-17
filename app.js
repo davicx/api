@@ -32,10 +32,10 @@ app.get("/users", (req, res) => {
 //ROUTE 2: Simple Users Response
 app.get("/database", (req, res) => {
     const connection = mysql.createConnection({
-        host: 'oniddb.cws.oregonstate.edu',
-        user: 'vasquezd-db',
+        host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
+        user: 'admin',
         password: 'gCtLRbXMWWS2SwNg',
-        database: 'vasquezd-db'
+        database: 'shareshare'
       })
 
       const queryString = "SELECT * FROM posts LIMIT 5;";
