@@ -30,6 +30,7 @@ app.get("/users", (req, res) => {
 })
 
 //ROUTE 2: Simple Users Response
+/*
 app.get("/database", (req, res) => {
     const connection = mysql.createConnection({
         host: 'oniddb.cws.oregonstate.edu',
@@ -57,7 +58,7 @@ app.get("/database", (req, res) => {
 
 })
 
-
+*/
 
     /*
 
