@@ -30,7 +30,6 @@ app.get("/users", (req, res) => {
 })
 
 //ROUTE 2: Simple Users Response
-/*
 app.get("/database", (req, res) => {
     const connection = mysql.createConnection({
         host: 'oniddb.cws.oregonstate.edu',
@@ -39,10 +38,7 @@ app.get("/database", (req, res) => {
         database: 'vasquezd-db'
       })
 
-      const userId = req.params.id
-      console.log(userId);
       const queryString = "SELECT * FROM posts LIMIT 5;";
-  
   
       connection.query(queryString, (err, rows, fields) => {
           if (err) {
@@ -58,7 +54,7 @@ app.get("/database", (req, res) => {
 
 })
 
-*/
+
 
     /*
 
