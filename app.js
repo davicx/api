@@ -1,7 +1,7 @@
 const express = require('express')
 const PORT = process.env.PORT || 3003;
 const app = express()
-var mysql = require('mysql');
+const mysql = require('mysql');
 
 app.listen(PORT, () => {
   console.log("Server is up and listening on " + PORT)
@@ -31,12 +31,47 @@ app.get("/users", (req, res) => {
 
 //ROUTE 2: Simple Users Response
 app.get("/database", (req, res) => {
-
-	var connection = mysql.createConnection({
+    const connection = mysql.createConnection({
         host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
         user: 'admin',
         password: 'gCtLRbXMWWS2SwNg',
         database: 'shareshare'
+      })
+
+      const userId = req.params.id
+      console.log(userId);
+      const queryString = "SELECT * FROM posts LIMIT 5;";
+  
+  
+      connection.query(queryString, (err, rows, fields) => {
+          if (err) {
+            console.log("Failed to query for users: " + err)
+            res.sendStatus(500)
+            return
+            // throw err
+          }
+      
+          console.log("I think we fetched users successfully");
+          res.json(rows);
+      })
+
+})
+
+
+
+    /*
+
+	var connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: '',
+        database: 'shareshare'
+        
+        host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
+        user: 'admin',
+        password: 'gCtLRbXMWWS2SwNg',
+        database: 'shareshare'
+        
 	});
 
     const output = "";
@@ -53,7 +88,4 @@ app.get("/database", (req, res) => {
 
 	connection.end();
     res.send({database: output})
-})
-
-
-
+    */
