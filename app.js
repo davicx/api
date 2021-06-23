@@ -60,7 +60,7 @@ app.get("/posts", (req, res) => {
 
   //Create Query 
   const connection = getConnection();
-  const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts LIMIT 5";
+  const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts";
 
   connection.query(queryString, (err, rows) => {
       if (err) {
@@ -80,12 +80,7 @@ app.get("/posts", (req, res) => {
 
 //TYPE 5: Simple POST request 
 app.post('/post', function(req, response) {
-	response.send(req.body);
-	const outcome = {"post_outcome": req.body};
-    response.write(JSON.stringify(outcome));
-    response.end()
 
-/*
   //console.log(req.body.postFrom + " " + req.body.postTo + " " + req.body.postCaption);
   const postType = req.body.postType
   const postStatus = req.body.postStatus
@@ -115,7 +110,7 @@ app.post('/post', function(req, response) {
     response.write(JSON.stringify(outcome));
     response.end();
   })
-  */
+ 
 })
 
 //Functions: Get Connection
