@@ -55,38 +55,39 @@ app.get("/database", (req, res) => {
 })
 
 
+//ROUTE 4: Simple Post Response from Database
+app.get("/posts", (req, res) => {
 
-    /*
+  //Create Query 
+  const connection = getConnection();
+  const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts LIMIT 5";
 
-        host: 'oniddb.cws.oregonstate.edu',
-        user: 'vasquezd-db',
-        password: 'gCtLRbXMWWS2SwNg',
-        database: 'vasquezd-db'
-        
-        host: 'localhost',
-        user: 'root',
-        password: '',
-        database: 'shareshare'
-        
-        host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
-        user: 'admin',
-        password: 'gCtLRbXMWWS2SwNg',
-        database: 'shareshare'
-        
-	});
+  connection.query(queryString, (err, rows) => {
+      if (err) {
+          console.log("Failed to Select Posts" + err)
+          res.sendStatus(500)
+          return
+      }
+      //TEMP
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      //TEMP
+      res.json(rows);
 
-    const output = "";
-	connection.connect(function(err) {
-	  if (err) {
-		console.error('Database connection failed: ' + err.stack);
-        output =  "Failed";
-		return;
-	  } 
+  })
 
-	  console.log('Connected to database.');
-      output = "Connected to database";
-	});
+})
 
-	connection.end();
-    res.send({database: output})
-    */
+
+//Functions: Get Connection
+function getConnection() {
+  return mysql.createConnection({
+    host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
+    user: 'admin',
+    password: 'gCtLRbXMWWS2SwNg',
+    database: 'shareshare'
+    //host: 'localhost',
+    //user: 'root',
+    //password: '',
+    //database: 'shareshare'
+  })
+}
