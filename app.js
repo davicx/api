@@ -81,7 +81,9 @@ app.get("/posts", (req, res) => {
 //TYPE 5: Simple POST request 
 app.post('/post', function(req, response) {
 	response.send(req.body);
-	response.end();
+	const outcome = {"post_outcome": req.body};
+    response.write(JSON.stringify(outcome));
+    response.end()
 
 /*
   //console.log(req.body.postFrom + " " + req.body.postTo + " " + req.body.postCaption);
