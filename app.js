@@ -82,7 +82,7 @@ app.post('/post', function(req, response) {
 	console.log("Hiya");
 	//console.log(req.body);
 	let output = {hello: 'hello'}
-  response.send();
+  response.send(output);
 
 })
 
