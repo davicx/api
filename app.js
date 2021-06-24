@@ -2,6 +2,7 @@ const express = require('express')
 const PORT = process.env.PORT || 3003;
 const app = express()
 const mysql = require('mysql');
+app.use(express.json());
 
 app.listen(PORT, () => {
   console.log("Server is up and listening on " + PORT)
