@@ -79,10 +79,10 @@ app.get("/posts", (req, res) => {
 
 
 app.post('/post', function(request, response) {
-	console.log("Hiya");
-	//console.log(req.body);
+	console.log("________________Hiya_______________");
+	console.log(request.body);
 	let output = {hello: 'hello'}
-  response.send(request);
+  response.send(request.body);
 
 })
 
