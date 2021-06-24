@@ -82,8 +82,11 @@ app.get("/posts", (req, res) => {
 app.post('/post', function(req, response) {
 	console.log("________________Hiya_______________");
 	console.log(req.body);
-	let output = {hello: 'hello'}
-    response.send(req.body);
+	let body = req.body
+	//let output = {hello: 'hello'}
+	let output = {hello: body}
+    //response.send(req.body);
+    response.send(output);
 	console.log("________________Hiya_______________");
 })
 
