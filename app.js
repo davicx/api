@@ -78,12 +78,12 @@ app.get("/posts", (req, res) => {
 })
 
 
-app.post('/post', function(request, response) {
+app.post('/post', function(req, response) {
 	console.log("________________Hiya_______________");
-	console.log(request.body);
+	console.log(req.body);
 	let output = {hello: 'hello'}
-  response.send(request.body);
-
+    response.send(req.body);
+	console.log("________________Hiya_______________");
 })
 
 //Functions: Get Connection
