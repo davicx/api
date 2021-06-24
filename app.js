@@ -78,10 +78,10 @@ app.get("/posts", (req, res) => {
 })
 
 
-app.post('/post', function(req, response) {
+app.post('/post', function(request, response) {
 	console.log("Hiya");
 	//console.log(req.body);
-	let output = {hello: 'hello'}
+	let output = {hello: request}
   response.send(output);
 
 })
