@@ -1,28 +1,23 @@
 {
-  "name": "kite",
+  "name": "hello",
   "version": "1.0.0",
-  "description": "My first App, yay!",
+  "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "mocha"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davicx/kite.git"
+    "url": "git+https://github.com/davicx/hello.git"
   },
   "author": "davey",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/davicx/kite/issues"
+    "url": "https://github.com/davicx/hello/issues"
   },
-  "homepage": "https://github.com/davicx/kite#readme",
+  "homepage": "https://github.com/davicx/hello#readme",
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.17.1",
     "mysql": "^2.18.1"
-  },
-  "devDependencies": {
-    "morgan": "^1.10.0",
-    "nodemon": "^2.0.7"
   }
 }
