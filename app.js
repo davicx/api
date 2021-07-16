@@ -16,6 +16,8 @@ app.get("/", (req, res) => {
     res.end()
 })
 
+
+/*
 //ROUTE 1: Simple GET Request 
 app.get('/user/:username', (req, res) => {
     console.log("Fetching user with id: " + req.params.username);  
@@ -105,3 +107,4 @@ function getConnection() {
     //database: 'shareshare'
   })
 }
+*/
