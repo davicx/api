@@ -6,9 +6,10 @@ const postRouter = express.Router();
 //const notifications = require('./../../functions/notifications');
 
 
-/*
 //ROUTE 1: Post Text
 postRouter.post('/post', function(req, res) {
+
+/*
     //STEP 1: Insert into posts table
     const postFrom = req.body.postFrom 
     const postTo = req.body.postTo 
@@ -27,8 +28,8 @@ postRouter.post('/post', function(req, res) {
             res.send("LAST: It worked " + results.insertId);
         } 
     }) 
+	*/
 })
-*/
 
 //ROUTE 2: Get all Posts 
 postRouter.get("/posts", (req, res) => {
