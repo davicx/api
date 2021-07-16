@@ -39,7 +39,7 @@ postRouter.get("/posts", (req, res) => {
 	
     //const connection = getConnection();
     const connection = db.getConnection(); 
-    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 10";
+    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 2";
 
     connection.query(queryString, (err, rows) => {
         if (err) {
