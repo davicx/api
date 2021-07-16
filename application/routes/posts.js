@@ -33,13 +33,6 @@ postRouter.post('/post', function(req, res) {
 //ROUTE 2: Get all Posts 
 postRouter.get("/posts", (req, res) => {
 	
-/*    
-	const user1 = {firstName: "David", lastName: "V"}
-    const user2 = {firstName: "Frodo", lastName: "B"}
-    const user3 = {firstName: "Bilbo", lastName: "B"}
-    const user4 = {firstName: "Sam", lastName: "G"}
-    res.json([user1, user2, user3])
-	*/
     //const connection = getConnection();
     const connection = db.getConnection(); 
     const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 10";
