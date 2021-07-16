@@ -1,6 +1,6 @@
 const express = require('express')
 const postRouter = express.Router();
-//const db = require('./../../functions/conn');
+const db = require('./../../functions/conn');
 //const Post = require('./../../functions/classes/Post');
 //const User = require('./../../functions/classes/User');
 //const notifications = require('./../../functions/notifications');
@@ -9,7 +9,6 @@ const postRouter = express.Router();
 //ROUTE 1: Post Text
 postRouter.post('/post', function(req, res) {
 
-/*
     //STEP 1: Insert into posts table
     const postFrom = req.body.postFrom 
     const postTo = req.body.postTo 
@@ -28,17 +27,19 @@ postRouter.post('/post', function(req, res) {
             res.send("LAST: It worked " + results.insertId);
         } 
     }) 
-	*/
+	
 })
 
 //ROUTE 2: Get all Posts 
 postRouter.get("/posts", (req, res) => {
-	    const user1 = {firstName: "David", lastName: "V"}
+	
+/*    
+	const user1 = {firstName: "David", lastName: "V"}
     const user2 = {firstName: "Frodo", lastName: "B"}
     const user3 = {firstName: "Bilbo", lastName: "B"}
     const user4 = {firstName: "Sam", lastName: "G"}
     res.json([user1, user2, user3])
-	/*
+	*/
     //const connection = getConnection();
     const connection = db.getConnection(); 
     const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 10";
@@ -63,7 +64,7 @@ postRouter.get("/posts", (req, res) => {
         res.json({posts: posts});
 
     })  
-	*/
+
 })
 
 module.exports = postRouter;
