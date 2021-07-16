@@ -54,7 +54,7 @@ postRouter.get("/posts", (req, res) => {
         });
 
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.json(posts[0]);
+        res.json(posts);
 
     })  
 
