@@ -24,7 +24,11 @@ postRouter.post('/post', function(req, res) {
             return
         } else {
             console.log("You created a new Post with ID " + results.insertId);
-            res.send("LAST: It worked " + results.insertId);
+			const outcome = {
+				status: "it worked!",
+				postID: results.insertId
+			}
+            res.send(outcome);
         } 
     }) 
 	
