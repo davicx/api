@@ -2,11 +2,11 @@ const express = require('express')
 const PORT = process.env.PORT || 3003;
 const app = express()
 const morgan = require('morgan')
-const posts = require('./application/routes/posts.js');
+//const posts = require('./application/routes/posts.js');
 
 app.use(morgan('short'));
 app.use(express.json());
-app.use(posts);
+//app.use(posts);
 
 //Home Route
 app.listen(PORT, () => {
