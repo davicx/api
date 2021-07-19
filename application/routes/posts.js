@@ -24,11 +24,7 @@ postRouter.post('/post', function(req, res) {
             return
         } else {
             console.log("You created a new Post with ID " + results.insertId);
-			const outcome = {
-				status: "it worked!",
-				postID: results.insertId
-			}
-            res.send(outcome);
+            res.send("LAST: It worked " + results.insertId);
         } 
     }) 
 	
@@ -39,7 +35,7 @@ postRouter.get("/posts", (req, res) => {
 	
     //const connection = getConnection();
     const connection = db.getConnection(); 
-    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 20";
+    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 10";
 
     connection.query(queryString, (err, rows) => {
         if (err) {
@@ -58,10 +54,18 @@ postRouter.get("/posts", (req, res) => {
         });
 
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.json(posts);
+        res.json({posts: posts});
 
     })  
+})
 
+
+//ROUTE 2: Get all Posts 
+postRouter.get("/temp", (req, res) => {
+	
+    console.log("hiya!");
+    res.send("hiya!");
+    res.end()
 })
 
 module.exports = postRouter;
