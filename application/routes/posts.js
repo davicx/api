@@ -1,12 +1,46 @@
 const express = require('express')
 const postRouter = express.Router();
 const db = require('./../../functions/conn');
+const postFunctions = require('./../../functions/posts')
+
 //const Post = require('./../../functions/classes/Post');
 //const User = require('./../../functions/classes/User');
 //const notifications = require('./../../functions/notifications');
 
 
 //ROUTE 1: Post Text
+//ROUTE 1: Post Text
+postRouter.post('/post', function(req, res) {
+    postFunctions.postText(req, res);
+
+    //STEP 1: Insert into posts table
+    //const postFrom = req.body.postFrom 
+    //const postTo = req.body.postTo 
+    //const postCaption = req.body.postCaption 
+    //const connection = db.getConnection(); 
+    //console.log("POST DATA: " + postFrom + " " + postTo + " " + postCaption);
+    //Post.postText(req, res)
+    //
+
+    //Works
+    /*
+    const queryString = "INSERT INTO posts (post_from, post_to, post_caption) VALUES (?, ?, ?)"
+    
+    connection.query(queryString, [postFrom, postTo, postCaption], (err, results, fields) => {
+        if (err) {
+            console.log("Failed to insert new Post: " + err)
+            res.sendStatus(500)
+            return
+        } else {
+            console.log("You created a new Post with ID " + results.insertId);
+            res.send("LAST: It worked " + results.insertId);
+        } 
+    }) 
+    */
+	
+})
+
+/*
 postRouter.post('/post', function(req, res) {
 
     //STEP 1: Insert into posts table
@@ -29,6 +63,7 @@ postRouter.post('/post', function(req, res) {
     }) 
 	
 })
+*/
 
 //ROUTE 2: Get all Posts 
 postRouter.get("/posts", (req, res) => {
@@ -57,15 +92,7 @@ postRouter.get("/posts", (req, res) => {
         res.json({posts: posts});
 
     })  
-})
 
-
-//ROUTE 2: Get all Posts 
-postRouter.get("/temp", (req, res) => {
-	
-    console.log("hiya!");
-    res.send("hiya!");
-    res.end()
 })
 
 module.exports = postRouter;

@@ -1,4 +1,4 @@
-const mysql = require('mysql')
+//const mysql = require('mysql')
 
 class Post {
     constructor(postID) {
@@ -40,13 +40,18 @@ class Post {
     }
 
     //Method A2: Get User Info 
-    static postText(caption)  {
-        console.log("You made a post! " + caption);
+    static postText(req, res)  {
+        const postFrom = req.body.postFrom 
+        const postTo = req.body.postTo 
+        const postCaption = req.body.postCaption 
+        //console.log("You made a post! " + caption);
+        console.log("POST DATA!: " + postFrom + " " + postTo + " " + postCaption);
         
         return 777;
     }
 }
 
+/*
 const pool = mysql.createPool({
     connectionLimit: 10,
     host: 'localhost',
@@ -59,7 +64,7 @@ const pool = mysql.createPool({
 function getConnection() {
     return pool;
 }
-
+*/
 module.exports = Post;
 
 
