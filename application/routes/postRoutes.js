@@ -2,17 +2,220 @@ const express = require('express')
 const postRouter = express.Router();
 const db = require('./../../functions/conn');
 const postFunctions = require('./../../functions/posts')
+const cors = require('cors');
+postRouter.use(cors())
 
+
+//POST ROUTES
+//Route A1: Post Text
+postRouter.post('/post/text', function(req, res) {
+    postFunctions.postText(req, res);
+})
+
+//Route A2: Post Photo
+postRouter.post('/post/photo', function(req, res) {
+    postFunctions.postPhoto(req, res);
+})
+
+//Route A3: Post Video
+postRouter.post('/post/video', function(req, res) {
+    postFunctions.postVideo(req, res);
+})
+
+
+
+//GET ROUTES
+//Route B1: Get Posts to a Group
+//Route B2: Get Posts to a User
+//Route B3: Get Single Post by ID 
+//Route B4: Get all Posts 
+
+
+//Route B1: Get Posts to a Group
+postRouter.get("/posts/group/:group_id", (req, res) => {
+    postFunctions.getGroupPosts(req, res);
+})
+
+//Route B2: Get Posts to a User
+postRouter.get("/posts/user/:user_name", (req, res) => {
+    postFunctions.getUserPosts(req, res);
+})
+
+//Route B3: Get Single Post by ID 
+postRouter.get("/posts/:post_id", (req, res) => {
+	postFunctions.getSinglePost(req, res);
+})
+
+//Route 4: Get all Posts 
+postRouter.get("/posts", (req, res) => {
+	postFunctions.getAllPosts(req, res);
+})
+
+
+
+module.exports = postRouter;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//APPENDIX
+
+/*
+postRouter.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+  });
+
+
+postRouter.post("/learning", (req, res) => {
+    console.log("hiya!");
+    myReponse = {
+      firstName: req.body.firstName,
+      lastName: req.body.lastName
+    }
+    res.json({ response: myReponse });
+}) 
+
+
+*/
+
+
+    /*
+    //WORKS
+    const connection = db.getConnection(); 
+	const queryString = "SELECT user_namea FROM group_users WHERE group_id = ? AND active_member = '1'";
+    var groupUsersSet = new Set();
+    const groupID = 77;
+    	
+    var groupUsersResponse = {
+        outcome: 1,
+        groupUsers: [],
+        errors: [],
+    }
+
+    connection.query(queryString,[groupID], (err, rows) => {
+        if (!err) {
+            console.log("No error")
+            rows.map((row) => {
+                groupUsersSet.add(row.user_name) 
+            });
+            groupUsersResponse.groupUsers = Array.from(groupUsersSet);;
+
+        } else {
+            //console.log("Failed to Select Users from this Group " + err)
+            groupUsersResponse.outcome = 0;
+            groupUsersResponse.errors.push("Failed to Select Users from this Group " + err);
+        }	
+        res.json(groupUsersResponse);
+    })  
+    */
+
+
+
+
+
+//CLEAN 
 //const Post = require('./../../functions/classes/Post');
 //const User = require('./../../functions/classes/User');
 //const notifications = require('./../../functions/notifications');
 
 
 //ROUTE 1: Post Text
-//ROUTE 1: Post Text
-postRouter.post('/post', function(req, res) {
+/*
+postRouter.post('/post/oldtext', function(req, res) {
     postFunctions.postText(req, res);
 
+
+
+    //WORKS
+    const connection = db.getConnection(); 
+	const queryString = "SELECT user_namea FROM group_users WHERE group_id = ? AND active_member = '1'";
+    var groupUsersSet = new Set();
+    const groupID = 77;
+    	
+    var groupUsersResponse = {
+        outcome: 1,
+        groupUsers: [],
+        errors: [],
+    }
+
+    connection.query(queryString,[groupID], (err, rows) => {
+        if (!err) {
+            console.log("No error")
+            rows.map((row) => {
+                groupUsersSet.add(row.user_name) 
+            });
+            groupUsersResponse.groupUsers = Array.from(groupUsersSet);;
+
+        } else {
+            //console.log("Failed to Select Users from this Group " + err)
+            groupUsersResponse.outcome = 0;
+            groupUsersResponse.errors.push("Failed to Select Users from this Group " + err);
+        }	
+        res.json(groupUsersResponse);
+    })  
+    
+})
+*/
+
+//ROUTE 1: Post Learing
+
+/*
+postRouter.post('/post/learning', function(req, res) {
+    //postFunctions.postLearning(req, res);
+    const groupID = 77;
+    const connection = db.getConnection(); 
+    const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+
+    //Make Query
+    connection.query(queryString,[groupID], (err, rows) => {
+
+        if (!err) {
+            console.log("No error")
+            rows.map((row) => {
+                console.log("HIYA " + row.user_name); 
+            });
+            
+
+        } else {
+            console.log("error");
+        }	
+
+    })  
+    res.json("HI");
+})
+
+*/
+
+
+
+
+
+
+
+
+/*
+//WORKS
     //STEP 1: Insert into posts table
     //const postFrom = req.body.postFrom 
     //const postTo = req.body.postTo 
@@ -23,7 +226,7 @@ postRouter.post('/post', function(req, res) {
     //
 
     //Works
-    /*
+    
     const queryString = "INSERT INTO posts (post_from, post_to, post_caption) VALUES (?, ?, ?)"
     
     connection.query(queryString, [postFrom, postTo, postCaption], (err, results, fields) => {
@@ -36,10 +239,9 @@ postRouter.post('/post', function(req, res) {
             res.send("LAST: It worked " + results.insertId);
         } 
     }) 
-    */
-	
-})
 
+	
+*/
 /*
 postRouter.post('/post', function(req, res) {
 
@@ -64,43 +266,6 @@ postRouter.post('/post', function(req, res) {
 	
 })
 */
-
-//ROUTE 2: Get all Posts 
-postRouter.get("/posts", (req, res) => {
-	
-    //const connection = getConnection();
-    const connection = db.getConnection(); 
-    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts ORDER BY post_id DESC LIMIT 10";
-
-    connection.query(queryString, (err, rows) => {
-        if (err) {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-        }
-
-        const posts = rows.map((row) => {
-            return {
-                postID: row.post_id,
-                postFrom: row.post_from,
-                postTo: row.post_to,
-                postCaption: row.post_caption
-            }
-        });
-
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.json({posts: posts});
-
-    })  
-
-})
-
-module.exports = postRouter;
-
-
-
-
-
 
 
 
@@ -378,6 +543,8 @@ router.get('/groupusers/:group_id', function(req, res) {
             return
         }
         //TEMP
+        var cors = require('cors')
+        postRouter.use(cors())
         res.setHeader('Access-Control-Allow-Origin', '*');
         //TEMP
         res.json(rows);

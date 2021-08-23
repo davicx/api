@@ -1,4 +1,4 @@
-//const mysql = require('mysql')
+const db = require('./../conn');
 
 class Post {
     constructor(postID) {
@@ -11,9 +11,8 @@ class Post {
     //METHODS A: POST RELATED
     //Method A1: Get Post Info 
     getPostInfo() {
-        //console.log("Post " + this.postID + " " + postFrom + " " + postTo);
         console.log("Post " + this.postID);
-        //const queryString = "SELECT post_from, post_to, post_caption FROM posts WHERE post_id = ?";
+
         const queryString = "SELECT post_from, post_to, post_caption FROM posts";
 
         getConnection().query(queryString, [this.postID], (err, rows, fields) => {
@@ -39,17 +38,157 @@ class Post {
     
     }
 
-    //Method A2: Get User Info 
-    static postText(req, res)  {
+    //Method A2: Make a Post
+    static async createPostText(req)  {
+        const connection = db.getConnection(); 
+        const masterSite = req.body.masterSite 
+        const postType = req.body.postType 
         const postFrom = req.body.postFrom 
         const postTo = req.body.postTo 
         const postCaption = req.body.postCaption 
-        //console.log("You made a post! " + caption);
-        console.log("POST DATA!: " + postFrom + " " + postTo + " " + postCaption);
+        console.log("new post from " + postFrom + " to " + postTo);
+            
+        var postOutcome = {
+            outcome: 0,
+            postID: 0,
+            errors: []
+        }
+
+        //INSERT POST
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "INSERT INTO posts (master_site, post_type, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?)"
+    
+                connection.query(queryString, [masterSite, postType, postFrom, postTo, postCaption], (err, results, fields) => {
+                    if (!err) {
+                        console.log("You created a new Post with ID " + results.insertId);    
+                        postOutcome.outcome = 1;       
+                        postOutcome.postID = results.insertId;       
+                    } else {    
+                        postOutcome.outcome = "no worky"
+                        postOutcome.errors.push(err);
+                    } 
+                    resolve(postOutcome);
+                }) 
+                
+            } catch(err) {
+                postOutcome.outcome = "rejected";
+                console.log("REJECTED " + err);
+                reject(postOutcome);
+            } 
+        });
         
-        return 777;
     }
+
 }
+
+module.exports = Post;
+
+
+
+
+
+//APPENDIX
+/*
+
+        const masterSite = req.body.masterSite 
+        const postType = req.body.postType 
+        const postFrom = req.body.postFrom 
+        const postTo = req.body.postTo 
+        const postCaption = req.body.postCaption 
+        const queryString = "INSERT INTO posts (master_site, post_type, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?)"
+    
+        connection.query(queryString, [masterSite, postType, postFrom, postTo, postCaption], (err, results, fields) => {
+            if (!err) {
+                console.log("You created a new Post with ID " + results.insertId);
+   
+            } else {    
+                console.log("No worky");    
+                //res.sendStatus(500)
+                //return
+            } 
+        }) 
+        */
+
+
+/*
+
+
+
+    //Method A2: Make a Post
+    static async postTextOld(req)  {
+        const connection = db.getConnection(); 
+        const postFrom = req.body.postFrom 
+        const postTo = req.body.postTo 
+        const postCaption = req.body.postCaption 
+        
+        //INSERT POST
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "SELECT user_name, first_name, last_name FROM user_profile WHERE user_id = '2'";
+        
+                connection.query(queryString, (err, rows, fields) => {
+                    const users = rows.map((row) => {
+                        return {
+                            userName: row.user_name,
+                            firstName: row.first_name,
+                            lastName: row.last_name
+                        }
+                    });
+      
+                    resolve(users[0].userName);
+                })  
+        
+            } catch(err) {
+                console.log("error " + err)
+                reject("error")
+        
+            } finally {
+                console.log("finally")
+                
+            }
+        
+          });
+
+    }
+ */
+        /*
+        const connection = db.getConnection(); 
+        const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+        console.log("calling");
+    
+        return new Promise(resolve => {
+            const postResponse = {}
+            const groupUsers = new Set();
+    
+            connection.query(queryString,[groupID], (err, rows) => {
+                if (!err) {
+                    rows.map((row) => {
+                        groupUsers.add(row.user_name)  
+                    });
+                    postResponse.status = 200
+                    postResponse.data = groupUsers;
+                } else {
+                    console.log("Failed to Select Users from this Group " + err)
+                    //res.sendStatus(500)
+                    postResponse.status = 500
+                    postResponse.data = groupUsers;
+                }	
+                resolve(response);	
+        
+            })
+        });	
+        */
+        /*
+        //console.log("POST DATA!: " + postFrom + " " + postTo + " " + postCaption);
+
+        const postResponse = {
+            status: 200,
+            postStatus: "success"
+        }
+
+        return postResponse;
+        */
 
 /*
 const pool = mysql.createPool({
@@ -65,9 +204,52 @@ function getConnection() {
     return pool;
 }
 */
-module.exports = Post;
 
+/*
+static async createPostTextNOWORK(req)  {
+    const connection = db.getConnection(); 
+    const masterSite = req.body.masterSite 
+    const postType = req.body.postType 
+    const postFrom = req.body.postFrom 
+    const postTo = req.body.postTo 
+    const postCaption = req.body.postCaption 
+        
+    var postOutcome = {
+        outcome: "success",
+        postID: 1,
+        errors: []
+    }
+    //INSERT POST
+    return new Promise(async function(resolve, reject) {
 
+            const queryString = "INSERT INTO posts (master_site, post_type, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?)"
+
+            connection.query(queryString, [masterSite, postType, postFrom, postTo, postCaption], (err, results, fields) => {
+                if (!err) {
+                    console.log("You created a new Post with ID " + results.insertId);
+                    
+                } else {    
+                    console.log("No worky");   
+                    console.log(err); 
+                    postOutcome.outcome = "no worky"
+                    //res.sendStatus(500)
+                    //return
+                } 
+               
+            }) 
+    
+        if(1 == 2) {
+            resolve(postOutcome);
+        } else {
+            console.log("error " + err)
+            reject(err)
+        }
+    
+ 
+    
+      });
+}
+*/
 /*
 
             
