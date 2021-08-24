@@ -200,7 +200,7 @@ function getAllPosts(req, res) {
 		});
 
 		res.setHeader('Access-Control-Allow-Origin', '*');
-		res.json({posts: posts});
+		res.json(posts);
 
 	})  
 }
