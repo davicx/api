@@ -5,45 +5,69 @@ class User {
         this.userName = userName;
         this.firstName = "";
         this.lastName = "";
+        this.database = ""
     }
     
 
     //METHODS A: USER RELATED
     //Method A1: Get User Info 
-    getUserInfo() {
+    async getUserInfo() {
+        this.lastName = "v"
+ 
         const connection = db.getConnection(); 
-        console.log("My Name " + this.userName);
+        console.log("getUserInfo " + this.userName);
         
         const queryString = "SELECT first_name, last_name FROM user_profile WHERE user_name = ?";
 
         connection.query(queryString, [this.userName], (err, rows, fields) => {
-            if (err) {
-                console.log("Failed to Select User: " + err)
+            if (!err) {
+                this.firstName = rows[0].first_name
+                this.lastName = rows[0].last_name
+                //console.log("_________________")        
+                //.log(user.firstName + " " + user.lastName);     
+                console.log("from server " + rows[0].first_name + " " + rows[0].last_name);     
+                //console.log();     
+                //console.log("_________________")     
                 //res.sendStatus(500)
                 //return
+            } else {
+                console.log("Failed to Select User: " + err);
             }
-            /*
-            console.log(rows);
-            const user = rows.map((row) => {
-                console.log(row)
-                return {
-                    firstName: row.first_name,
-                    lastName: row.last_name
-                }
-            });
-            */
-            console.log("_________________")        
-            //.log(user.firstName + " " + user.lastName);     
-            console.log(rows[0].first_name + " " + rows[0].last_name);     
-            console.log("_________________")
-            
+          
         })
     
     }
 
+
 }
 
 module.exports = User;
+
+/*
+class User {
+    constructor(id) { ... }
+        goOnline() { ... }
+        addBadge(type) { ... }
+        get _isOnline() {  
+        return fetch(`/${this.username}/online`)
+            .then(response => response.json())  
+            .then(data => data.isOnline)  
+            .catch(error => { throw error; });  
+    } 
+}
+
+const myUser = new User ('acb33259');
+
+// Functionality
+myUser.goOnline();
+
+// Attribute
+if (await myUser.isOnline) {
+
+    // Functionality
+    myUser.addBadge('online');
+}
+*/
 
 //APPENDIX
 /*
