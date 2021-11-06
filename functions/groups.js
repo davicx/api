@@ -1,125 +1,426 @@
 const db = require('./conn');
-const Group = require('./classes/Group');
-const Notification = require('./classes/Notification')
-const Requests = require('./classes/Requests');
-//app.use(express.json());
 
 /*
 FUNCTIONS A: All Functions Related to Groups
-	1) Function A1: Create a New Group
-	2) Function A2: Invite User to a Group 
-	3) Function A3: Accept Group Invite
-
-
-FUNCTIONS B: All Functions Related to Groups
-	1) Function A1: Create a New Group
-	1) Function A2: Invite User to a Group 
+	1) Function A1: Get Group Users
+	2) Function A2: Get all Groups a User is in 
 
 */
 
-
-//Function A1: Create a New Group
-async function createGroup(req, res) {
-	var groupOutcome = { groupID: 7}
-	var groupUsersOutcome = {}
-	var notification = {}
-
-	//STEP 1: Create the Group and Add the New Users
-	try {
-		groupOutcome = await Group.createGroup(req);
-
-		if(groupOutcome.outcome == 1) {
-			groupUsersOutcome = await Group.addGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
+//Function A1: Get Group Users
+function getGroupUsers(groupID) {
+	console.log("get group users for " + groupID);
+	const connection = db.getConnection(); 
+	const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+	
+	var groupUsersSet = new Set();
+	var groupUsersResponse = {
+		outcome: 0,
+		groupUsers: [],
+		errors: [],
+	}
+	
+	//GET GROUP USERS
+	return new Promise(async function(resolve, reject) {
+		try {
+			connection.query(queryString, [groupID], (err, rows) => {
+				if (!err) {
+					rows.map((row) => {
+						groupUsersSet.add(row.user_name) 
+					}); 
+					groupUsersResponse.outcome = 1;
+					groupUsersResponse.groupUsers = Array.from(groupUsersSet);    
+				} else {
+					console.log("error getting group users")    
+					groupUsersResponse.outcome = "no worky"
+					groupUsersResponse.errors.push(err);
+				} 
+				resolve(groupUsersResponse);
+			}) 
+			
+		} catch(err) {
+			groupUsersResponse.outcome = "rejected";
+			console.log("REJECTED ");
+			reject(groupUsersResponse);
 		} 
+	});
 
-		//STEP 2: Add the Notifications and Requests
-		if(groupUsersOutcome.outcome == 1) {
-			notification = {
-				masterSite: "kite",
-				notificationFrom: req.body.currentUser,
-				notificationMessage: req.body.notificationMessage,
-				notificationTo: req.body.groupUsers,
-				notificationLink: req.body.notificationLink,
-				notificationType: req.body.notificationType,
-				groupID: groupOutcome.groupID
+}
+
+module.exports = { getGroupUsers };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//APPENDIX
+
+/*
+	//PROMISE RETURN
+	return new Promise((resolve, reject) => {
+		
+		//Make Query 
+		connection.query(queryString,[groupID], (err, rows) => {
+
+			if (!err) {
+				console.log("No error")
+				rows.map((row) => {
+					groupUsersSet.add(row.user_name) 
+				});
+				groupUsersResponse.groupUsers = Array.from(groupUsersSet);;
+
+			} else {
+				//console.log("Failed to Select Users from this Group " + err)
+				groupUsersResponse.outcome = 0;
+				groupUsersResponse.errors.push("Failed to Select Users from this Group " + err);
+			}	
+
+			//Resolve Promise
+			if(groupUsersResponse.outcome != 0) {
+				resolve(groupUsersResponse); 
+			} else {
+				reject(groupUsersResponse);
 			}
 
-			Notification.createGroupNotification(notification)
+		})  
 
-			const newRequest = {
-				requestType: "new_group",
-				requestTypeText: "invited you to join a group",
-				sentBy: req.body.currentUser,
-				sentTo: req.body.groupUsers,
-				groupID: groupOutcome.groupID
+	})  
+*/
+	
+
+
+
+
+
+/*
+function simpleGetGroupUsers(groupID) {
+	console.log("get group users for " + groupID);
+	var groupUsersResponse = {
+		outcome: 1,
+		groupUsers: ["davey"],
+		errors: [],
+	}
+
+	return new Promise((resolve, reject) => {
+		if(groupID == 77) {
+			resolve(groupUsersResponse); 
+		} else {
+			groupUsersResponse.outcome = 0;
+			reject(groupUsersResponse);
+		}
+	})  
+}
+function simpleGET() { 
+	//WORKS
+	const connection = db.getConnection(); 
+	const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+	var groupUsersSet = new Set();
+	const groupID = 77;
+		
+	var groupUsersResponse = {
+		outcome: 1,
+		groupUsers: [],
+		errors: [],
+	}
+
+	connection.query(queryString,[groupID], (err, rows) => {
+		if (!err) {
+			console.log("No error")
+			rows.map((row) => {
+				groupUsersSet.add(row.user_name) 
+			});
+			groupUsersResponse.groupUsers = Array.from(groupUsersSet);;
+
+		} else {
+			//console.log("Failed to Select Users from this Group " + err)
+			groupUsersResponse.outcome = 0;
+			groupUsersResponse.errors.push("Failed to Select Users from this Group " + err);
+		}	
+		res.json(groupUsersResponse);
+	})  
+}
+*/
+
+
+
+
+
+
+/*
+	return new Promise((resolve, reject) => {
+		const connection = db.getConnection(); 
+		const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+	
+		var groupUsersResponse = {
+			outcome: 1,
+			groupUsers: ["davey"],
+			errors: [],
+		}
+*/
+		
+  //DATABASE
+  /*
+  return new Promise(async function(resolve, reject) {
+    const connection = db.getConnection(); 
+	
+	//SUCCESS
+	try {
+		const queryString = "SELECT user_name, first_name, last_name FROM user_profile WHERE user_id = '1'";
+		
+		//catch error err!
+		connection.query(queryString, (err, rows, fields) => {
+			const users = rows.map((row) => {
+				return {
+					userName: row.user_name,
+					firstName: row.first_name,
+					lastName: row.last_name
+				}
+			});
+
+			//Get 
+			let davey = users[0].userName;
+			let allUsers = [davey];
+			let outcome = "success";
+			let final = {
+				users: allUsers,
+				outcome: outcome
 			}
+			resolve(final);	
+	
+		})  
 
-			Requests.newGroupRequest(newRequest) 
+	//FAILURE
+	} catch(err) {
+		console.log("error " + err)
+		let allUsers = [];
+		let outcome = "failure";
+		let final = {
+			users: allUsers,
+			outcome: outcome
+		}
+		reject(final);	
+	} 
+	*/
+
+		/*
+
+		//Outcome
+		if(groupUsersResponse.outcome = 1) {
+			resolve(groupUsersResponse)    
+		} else {
+			reject(err)
 		}
 
-	} catch(err) {
-		console.log(err);
-		console.log("were in the catch now!!");
-	}
+		//Try to Fetch the Data Here
+		connection.query(queryString, [userId], (err, rows, fields) => {
+			if (!err) {
+				console.log("worked!");
+		
+			} else {
+				console.log("Failed to query for users: " + err);
+			}
+
+		}) 
+		*/
 	
-	res.json({groupID: groupOutcome.groupID});
-}
-
-//Function A2: Invite User to a Group 
-function addGroupUser(req, res) {
-	console.log("Added!")
-}
-
-//Function A3: Accept Group Invite
-function acceptGroupInvite(req, res) {
-	const currentUser = req.body.currentUser;
-	const groupID = req.body.groupID;
-	const requestID = req.body.requestID;
-	Group.acceptGroupInvite(groupID, currentUser, requestID)
-	
-	res.json({currentUser: currentUser, groupID: groupID});
-}
-
-
-//Function A4: Leave a Group 
-function leaveGroup(req, res) {
-	const currentUser = req.body.currentUser;
-	const groupID = req.body.groupID;
-	Group.leaveGroup(currentUser, groupID);
-	res.json({leave: "leave"})
-}
-
-//Function B1: Get All Groups 
-function getAllGroups(req, res) {
-
-}
-
-
-//Function B2: Get Single Group by ID 
-async function getGroup(req, res) {
-	const groupID = req.params.groupID;
-	const groupOutcome = await Group.getGroupUsers(groupID);
-	Group.getGroup(groupID) 
-	console.log(" You got " +  groupID);
-	res.json({groupOutcome: groupOutcome});
-
-}
-
-
-//Function B3: Get Group Users
-async function getGroupUsers(req, res) {
-	const groupID = req.params.groupID;
-	const groupOutcome = await Group.getGroupUsers(groupID);
-	console.log(" You got " +  groupID);
-	const groupUsers = {
-		activeGroupUsers: groupOutcome.groupUsers,
-		pendingGroupUsers: groupOutcome.pendingGroupUsers,
+		/*
+			var userResponse = {
+		userOutcome: 0,
+		errors: [],
+		userData: {}
 	}
 
-	res.json({groupUsers});
+	//Create Query 
+	let userId = req.params.id;
+	const queryString = "SELECT user_name, email, first_name, last_name FROM user_profile WHERE user_id = '1'";
+	connection.query(queryString, [userId], (err, rows, fields) => {
 
+		if (!err) {
+			console.log("worked!");
+
+			//Format data
+			const users = rows.map((row) => {
+			return {
+				userName: row.user_name,
+				email: row.email,
+				firstName: row.first_name,
+				lastName: row.last_name
+				}
+			});
+
+			userResponse.userOutcome = 1;
+			userResponse.userData = users;
+
+		} else {
+			console.log("Failed to query for users: " + err);
+			userResponse.errors.push("Failed to query for users: " + err)
+			//res.sendStatus(500);
+			//res.end();
+		}
+	   res.json(userResponse)
+   
+	}) 
+		
+		*/
+		/*
+		
+	const connection = db.getConnection(); 
+	const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+
+	connection.query(queryString,[groupID], (err, rows) => {
+		if (err) {
+			console.log("Failed to Select Users from this Group " + err)
+			res.sendStatus(500)
+			return
+		}
+		const groupUsers = new Set()
+
+		rows.map((row) => {
+			groupUsers.add(row.user_name)  
+
+		});
+		//console.log(groupUsers);
+		return groupUsers;
+	})  
+		*/
+		/*
+		const groupUsers = new Set()
+		groupUsers.add("davey")  
+		groupUsers.add("sam")
+		groupUsersOutcome.outcome = 1;
+		groupUsersOutcome.groupUsers = groupUsers;
+		*/
+
+
+
+/*
+
+function getGroupUsersORIGINAL(groupID) {
+	console.log("get group users for " + groupID)
+	
+	const connection = db.getConnection(); 
+	const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+	console.log("calling");
+
+	return new Promise(resolve => {
+		const response = {}
+		const groupUsers = new Set();
+
+		connection.query(queryString,[groupID], (err, rows) => {
+			if (!err) {
+				rows.map((row) => {
+					groupUsers.add(row.user_name)  
+				});
+				response.status = 200
+				//let array = Array.from(mySet);
+				response.data = Array.from(groupUsers);
+			} else {
+				console.log("Failed to Select Users from this Group " + err)
+				//res.sendStatus(500)
+				response.status = 500
+				response.data = groupUsers;
+			}	
+			resolve(response);	
+			//console.log(groupUsers);
+		})
+	});	
+	
 }
+*/
 
-module.exports = { createGroup, addGroupUser, acceptGroupInvite, getGroup, getGroupUsers, leaveGroup };
+/*
+
+function getMatt() {
+	return new Promise(async function(resolve, reject) {
+	  const connection = db.getConnection(); 
+  
+	  try {
+		  const queryString = "SELECT user_name, first_name, last_name FROM user_profile WHERE user_id = '2'";
+  
+		  connection.query(queryString, (err, rows, fields) => {
+			  const users = rows.map((row) => {
+				  return {
+					  userName: row.user_name,
+					  firstName: row.first_name,
+					  lastName: row.last_name
+				  }
+			  });
+
+			  resolve(users[0].userName);
+		  })  
+  
+	  } catch(err) {
+		  console.log("error " + err)
+  
+	  } finally {
+		  console.log("finally")
+	  }
+  
+	});
+  }
+  */
+
+/*
+// Function A1: Get Group Users (Make Async)
+function getGroupUsers(groupID) {
+
+	const connection = db.getConnection(); 
+	const queryString = "SELECT user_name FROM group_users WHERE group_id = ? AND active_member = '1'";
+
+	connection.query(queryString,[groupID], (err, rows) => {
+		if (err) {
+			console.log("Failed to Select Users from this Group " + err)
+			res.sendStatus(500)
+			return
+		}
+		const groupUsers = new Set()
+
+		rows.map((row) => {
+			groupUsers.add(row.user_name)  
+
+		});
+		//console.log(groupUsers);
+		return groupUsers;
+	})  
+	
+	const groupUsers = new Set()
+	groupUsers.add("davey")  
+	groupUsers.add("sam")
+	
+
+	//return groupUsers;
+}
+*/
 
 
