@@ -1,7 +1,7 @@
 //function sayHi(req, res) {
-function createNotification() {
+function createNotificationTemp() {
     console.log("Davey, hiya!");
 }
 
 
-module.exports = { createNotification };
+module.exports = { createNotificationTemp };

@@ -121,5 +121,3 @@ async function getGroupUsers(req, res) {
 }
 
 module.exports = { createGroup, addGroupUser, acceptGroupInvite, getGroup, getGroupUsers, leaveGroup };
-
-
