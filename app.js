@@ -8,13 +8,12 @@ const mysql = require('mysql');
 const user = require('./application/routes/userRoutes.js');
 const group = require('./application/routes/groupRoutes.js');
 const posts = require('./application/routes/postRoutes.js');
-
-//const upload = require('./application/routes/uploadPhoto.js'); //temp
+const upload = require('./application/routes/uploadPhoto.js'); //temp
 
 app.use(user);
 app.use(group);
 app.use(posts);
-//app.use(upload); //temp
+app.use(upload); //temp
 //app.use(uploadClass); //temp
 
 app.use(function(req, res, next) {
