@@ -91,7 +91,7 @@ uploadRouter.post('/upload/photo/local/aws', uploadLocal.single('postImage'), as
 
 //Temp
 uploadRouter.get("/upload", (req, res) => {
-    res.json({working: "working", region: region})
+    res.json({theRegion: region, TheAccessKeyId: accessKeyId})
 })
 
 
