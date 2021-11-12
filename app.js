@@ -1,8 +1,7 @@
-require('dotenv').config()
+//require('dotenv').config()
 const express = require('express')
 const PORT = process.env.PORT || 3003;
 const app = express()
-
 
 const mysql = require('mysql');
 const user = require('./application/routes/userRoutes.js');
