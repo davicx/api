@@ -1,17 +1,23 @@
-require('dotenv').config()
+//require('dotenv').config()
 const express = require('express')
 const uploadRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
 const cors = require('cors');
-
 const multer  = require('multer')
 const multerS3 = require('multer-s3');
 const S3 = require('aws-sdk/clients/s3')
 const fs = require('fs') 
+/*
 const bucketName = process.env.AWS_BUCKET_NAME
 const region = process.env.AWS_BUCKET_REGION
 const accessKeyId = process.env.AWS_ACCESS_KEY
 const secretAccessKey = process.env.AWS_SECRET_KEY
+*/
+const bucketName = "kite-post-photo-upload"
+const region = "us-west-2"
+const accessKeyId = "AKIAV2ISHLMPMGU5KF4W"
+const secretAccessKey = "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"
+
 const s3 = new S3({ region, accessKeyId, secretAccessKey })
 uploadRouter.use(cors())
 
