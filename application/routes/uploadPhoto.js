@@ -91,7 +91,7 @@ uploadRouter.post('/upload/photo/local/aws', uploadLocal.single('postImage'), as
 
 //Temp
 uploadRouter.get("/upload", (req, res) => {
-    res.json({test: "test, test2: "test2", theRegion: region, theProcess: process.env.AWS_BUCKET_NAME})
+    res.json({test: "test", test2: "test2", theRegion: region, theProcess: process.env.AWS_BUCKET_NAME})
 })
 
 
