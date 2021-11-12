@@ -13,7 +13,7 @@ const upload = require('./application/routes/uploadPhoto.js'); //temp
 app.use(user);
 app.use(group);
 app.use(posts);
-app.use(upload); //temp
+//app.use(upload); //temp
 //app.use(uploadClass); //temp
 
 app.use(function(req, res, next) {
