@@ -1,11 +1,183 @@
+require('dotenv').config()
 const express = require('express')
 const uploadRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
-const { uploadFile, getFileStream } = require('../../functions/s3')
 const cors = require('cors');
+
 const multer  = require('multer')
+const multerS3 = require('multer-s3');
+const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs') 
+const bucketName = process.env.AWS_BUCKET_NAME
+const region = process.env.AWS_BUCKET_REGION
+const accessKeyId = process.env.AWS_ACCESS_KEY
+const secretAccessKey = process.env.AWS_SECRET_KEY
+const s3 = new S3({ region, accessKeyId, secretAccessKey })
 uploadRouter.use(cors())
 
+//Function A.1: Make sure file is a photo 
+var localStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'C:/wamp/www/sites/api/uploads')
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + file.originalname) 
+  }
+})
+
+var postPhotoStorage = multerS3({
+      s3: s3,
+      bucket: 'kite-post-photo-upload',
+      key: function (req, file, cb) {
+          console.log(file);
+          cb(null, Date.now() + file.originalname);
+      }
+  })
+
+var uploadLocal = multer({
+  storage: localStorage,
+  limits: { fileSize: 1024 * 1024 * 20},
+  photoFilter: photoFilter
+})
+
+var uploadPostPhoto = multer({
+  storage: postPhotoStorage,
+  limits: { fileSize: 1024 * 1024 * 20},
+  photoFilter: photoFilter
+});
+
+
+//ROUTE A.2: Upload Post Photo (AWS to S3) 
+uploadRouter.post('/upload/photo', uploadPostPhoto.single('postImage'), (req, res) => {
+  const file = req.file
+  if(file !== undefined) {
+      //postFunctions.postPhoto(req, res, file);
+      //console.log(file);
+      res.json({file: file})
+  } else {
+      res.json({postType:'please choose an image file'});
+  }  
+})
+
+
+//ROUTE A.2: Upload Post Photo (Local)
+uploadRouter.post('/upload/photo/local', uploadLocal.single('postImage'), (req, res) => {
+  const file = req.file
+  if(file !== undefined) {
+      postFunctions.postPhoto(req, res, file);
+      console.log(file);
+  } else {
+      res.json({postType:'please choose an image file'});
+  }  
+})
+
+//ROUTE A.3: Upload Post Photo (Local to S3)
+uploadRouter.post('/upload/photo/local/aws', uploadLocal.single('postImage'), async (req, res) => {
+  const file = req.file
+  if(file !== undefined) {
+      const postOutcome = await postFunctions.postPhoto(req, res, file); 
+      const result = await uploadFile(file);
+      //console.log("_____________");
+      //console.log(postOutcome);
+      //console.log("_____________");
+      //console.log(file)        
+      //console.log(result)   
+      //res.json({file: file, imagePath: `/post/image/${result.Key}`});
+      //console.log(result.Key);
+  } else {
+      res.json({postType:'please choose an image file'});
+  }
+})
+
+
+
+//FUNCTIONS
+//Function C.1: Upload to AWS 
+function uploadFile(file) {
+  const fileStream = fs.createReadStream(file.path)
+
+  const uploadParams = {
+    Bucket: bucketName,
+    Body: fileStream,
+    Key: file.filename
+  }
+
+  return s3.upload(uploadParams).promise()
+}
+
+//Function C.2: Download from AWS 
+function getFileStream(fileKey) {
+  const downloadParams = {
+    Key: fileKey,
+    Bucket: bucketName
+  }
+
+  return s3.getObject(downloadParams).createReadStream()
+}
+
+
+//Function B.1: Make sure file is a photo 
+var photoFilter = (req, file, cb) => {
+  if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+      cb(null, true);
+  } else {
+      cb(null, false);
+  } 
+}
+
+module.exports = uploadRouter;
+
+
+
+
+
+////
+//This is there thing that said to do
+/*
+var aws = require('aws-sdk')
+var express = require('express')
+var multer = require('multer')
+var multerS3 = require('multer-s3')
+
+var app = express()
+var s3 = new aws.S3({  })
+
+var upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: 'some-bucket',
+    metadata: function (req, file, cb) {
+      cb(null, {fieldName: file.fieldname});
+    },
+    key: function (req, file, cb) {
+      cb(null, Date.now().toString())
+    }
+  })
+})
+
+app.post('/upload', upload.single('photos', 3), function(req, res, next) {
+  res.send('Successfully uploaded ' + req.files.length + ' files!')
+})
+*/
+
+////
+
+//ROUTE A.2: Upload Post Photo (AWS to S3)
+/*
+var upload = multer({
+  storage: storage,
+  limits: { fileSize: 1024 * 1024 * 20},
+  fileFilter: fileFilter
+})
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 1024 * 1024 * 20},
+    fileFilter: fileFilter
+})
+*/
+
+//Storage
+/*
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
       cb(null, 'C:/wamp/www/sites/api/uploads')
@@ -15,6 +187,10 @@ const storage = multer.diskStorage({
     }
 })
 
+*/
+
+//File Filter
+/*
 const fileFilter = (req, file, cb) => {
     if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
         cb(null, true);
@@ -23,81 +199,6 @@ const fileFilter = (req, file, cb) => {
     } 
 }
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 1024 * 1024 * 20},
-    fileFilter: fileFilter
-})
-
-//UPLOAD PHOTO: Local
-uploadRouter.post('/upload/photo', upload.single('postImage'), (req, res) => {
-    const file = req.file
-    if(file !== undefined) {
-        console.log(file);
-        postFunctions.postPhoto(req, res, file);
-    } else {
-        res.json({postType:'please choose an image file'});
-    }
-})
-
-//UPLOAD PHOTO: AWS
-uploadRouter.post('/upload/photo/aws', upload.single('postImage'), async (req, res) => {
-    const file = req.file
-    if(file !== undefined) {
-        //postFunctions.postPhoto(req, res, file);
-        const result = await uploadFile(file);
-        console.log(file)        
-        console.log(result)        
-        res.json({file: file, imagePath: `/post/image/${result.Key}`});
-    } else {
-        res.json({postType:'please choose an image file'});
-    }
-})
-
-//http://localhost:3003/post/image/1635895419660hiya.jpg
-uploadRouter.get('/post/image/:key', (req, res) => {
-  console.log(req.params)
-  const key = req.params.key
-  const readStream = getFileStream(key)
-
-  readStream.pipe(res)
-})
-
-
-module.exports = uploadRouter;
-
-
-/*
-{
-  fieldname: 'postImage',
-  originalname: 'hiya.jpg',
-  encoding: '7bit',
-  mimetype: 'image/jpeg',
-  destination: 'C:/wamp/www/sites/api/uploads',
-  filename: '1635896393797hiya.jpg',
-  path: 'C:\\wamp\\www\\sites\\api\\uploads\\1635896393797hiya.jpg',
-  size: 182337
-}
-{
-  ETag: '"72653cbde20adeab37c6bcb570226a08"',
-  Location: 'https://kite-post-photo-upload.s3.us-west-2.amazonaws.com/1635896393797hiya.jpg',
-  key: '1635896393797hiya.jpg',
-  Key: '1635896393797hiya.jpg',
-  Bucket: 'kite-post-photo-upload'
-}
-
-
-*/
-
-
-
-
-
-
-
-
-
-/*
 function checkFileType(file, cb){
     const filetypes = /jpeg|jpg|png|gif/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -110,7 +211,64 @@ function checkFileType(file, cb){
     }
 }
 */
-  /*
+
+
+
+
+
+
+
+
+//ORGANIZE BELOW 
+
+//UPLOAD PHOTO: Local
+/*
+uploadRouter.post('/upload/photo', upload.single('postImage'), (req, res) => {
+    const file = req.file
+    if(file !== undefined) {
+        console.log(file);
+        postFunctions.postPhoto(req, res, file);
+    } else {
+        res.json({postType:'please choose an image file'});
+    }
+})
+*/
+
+//UPLOAD PHOTO: AWS
+/*
+uploadRouter.post('/upload/photo/aws/temp', upload.single('postImage'), async (req, res) => {
+    const file = req.file
+    if(file !== undefined) {
+        //postFunctions.postPhoto(req, res, file);
+        const result = await uploadFile(file);
+        console.log(file)        
+        console.log(result)        
+        res.json({file: file, imagePath: `/post/image/${result.Key}`});
+    } else {
+        res.json({postType:'please choose an image file'});
+    }
+})
+*/
+
+/*
+//http://localhost:3003/post/image/1635895419660hiya.jpg
+uploadRouter.get('/post/image/:key', (req, res) => {
+  console.log(req.params)
+  const key = req.params.key
+  const readStream = getFileStream(key)
+
+  readStream.pipe(res)
+})
+
+*/
+
+
+
+
+
+/*
+
+
 const storage = multer.diskStorage({
     destination: './uploadedContent',
     filename: function(_req, file, cb){
@@ -272,4 +430,25 @@ postRouter.post('/post/photo', upload.single('postImage'), (req, res) => {
 	res.json({postType:postType});
 })
 
+*/
+
+
+/*
+{
+  fieldname: 'postImage',
+  originalname: 'hiya.jpg',
+  encoding: '7bit',
+  mimetype: 'image/jpeg',
+  destination: 'C:/wamp/www/sites/api/uploads',
+  filename: '1635896393797hiya.jpg',
+  path: 'C:\\wamp\\www\\sites\\api\\uploads\\1635896393797hiya.jpg',
+  size: 182337
+}
+{
+  ETag: '"72653cbde20adeab37c6bcb570226a08"',
+  Location: 'https://kite-post-photo-upload.s3.us-west-2.amazonaws.com/1635896393797hiya.jpg',
+  key: '1635896393797hiya.jpg',
+  Key: '1635896393797hiya.jpg',
+  Bucket: 'kite-post-photo-upload'
+}
 */
