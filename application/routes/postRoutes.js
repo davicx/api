@@ -8,7 +8,8 @@ postRouter.use(cors())
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
     //postFunctions.postText(req, res);
-    res.json({request: "hiya"})
+    const postCaption = req.body.postCaption 
+    res.json({request: postCaption})
 })
 
 //Route A2: Post Photo
