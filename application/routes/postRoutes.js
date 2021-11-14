@@ -1,6 +1,5 @@
 const express = require('express')
 const postRouter = express.Router();
-//const db = require('./../../functions/conn');
 const postFunctions = require('../../functions/postFunctions')
 const cors = require('cors');
 postRouter.use(cors())
@@ -38,7 +37,7 @@ postRouter.get("/posts/:post_id", (req, res) => {
 	postFunctions.getSinglePost(req, res);
 })
 
-//Route 4: Get all Posts 
+//Route B4: Get all Posts 
 postRouter.get("/posts", (req, res) => {
 	postFunctions.getAllPosts(req, res);
 })

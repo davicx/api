@@ -9,31 +9,7 @@ class Post {
     }
     
     //METHODS A: POST RELATED
-    //Method A1: Get Post Info 
-    getPostInfo() {
-        console.log("Post " + this.postID);
-
-        const queryString = "SELECT post_from, post_to, post_caption FROM posts";
-
-        getConnection().query(queryString, [this.postID], (err, rows, fields) => {
-            if (err) {
-                console.log("Failed to Select Post: " + err)
-                res.sendStatus(500)
-                return
-            }
-
-            const posts = rows.map((row) => {
-                return {
-                    postFrom: row.post_from,
-                    postTo: row.post_to,
-                    postCaption: row.post_caption
-                }
-            });       
-            console.log(posts);          
-        }) 
-    }
-
-    //Method A2: Make a Text Post
+    //Method A1: Make a Text Post
     static async createPostText(req)  {
         const connection = db.getConnection(); 
         const masterSite = req.body.masterSite 
@@ -120,5 +96,33 @@ class Post {
 
 module.exports = Post;
 
+
+
+/*
+
+    //Method A1: Get Post Info 
+    getPostInfo() {
+        console.log("Post " + this.postID);
+
+        const queryString = "SELECT post_from, post_to, post_caption FROM posts";
+
+        getConnection().query(queryString, [this.postID], (err, rows, fields) => {
+            if (err) {
+                console.log("Failed to Select Post: " + err)
+                res.sendStatus(500)
+                return
+            }
+
+            const posts = rows.map((row) => {
+                return {
+                    postFrom: row.post_from,
+                    postTo: row.post_to,
+                    postCaption: row.post_caption
+                }
+            });       
+            console.log(posts);          
+        }) 
+    }
+    */
 
 

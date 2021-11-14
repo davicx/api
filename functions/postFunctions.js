@@ -31,7 +31,7 @@ async function postText(req, res) {
 		}
 	}
 
-	res.json({postOutcome});
+	res.json(postOutcome);
 }
 
 //Route A2: Post Photo
@@ -39,6 +39,7 @@ async function postPhoto(req, res, file) {
 	console.log("post photo")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostPhoto(req, file);
+	console.log(postOutcome);
 
 	//STEP 2: Add the Notification
 	var notification = {}
@@ -60,14 +61,7 @@ async function postPhoto(req, res, file) {
 			Notification.createGroupNotification(notification);
 		}
 	}
-
-	//return postOutcome;
-
 	res.json({postOutcome});
-	
-	//console.log("post photo! yay!")
-	//postOutcome = await Post.createPostPhoto(req, file);
-	//res.json(postOutcome);
 }
 
 //Route A3: Post Video
@@ -79,38 +73,34 @@ async function postVideo(req, res) {
 
 //GET ROUTES
 //Route B1: Get Posts to a Group
-//Route B2: Get Posts to a User
-//Route B3: Get Single Post by ID 
-//Route B4: Get all Posts 
-
-//Route B1: Get Posts to a Group
 function getGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const group_id = req.params.group_id;
-    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts WHERE group_id = ?";
+    const queryString = "SELECT * FROM posts WHERE group_id = ?";
 
     connection.query(queryString, [group_id], (err, rows) => {
         if (!err) {
 			const posts = rows.map((row) => {
 				return {
 					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
 					postFrom: row.post_from,
 					postTo: row.post_to,
-					postCaption: row.post_caption
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
 				}
 			});
 
 			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json({posts:posts});
-			
-			/*
-			post1 = {postFrom: "david", postCaption: "Hiya"}
-			post2 = {postFrom: "david", postCaption: "Hiya again!"}
-			const postsArray = []
-			postsArray.push(post1);
-			postsArray.push(post2);
-			res.json(postsArray);
-			*/
+
         } else {
             console.log("Failed to Select Posts" + err)
             res.sendStatus(500)
@@ -128,13 +118,24 @@ function getUserPosts(req, res) {
     const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts WHERE post_to = ?";
 
     connection.query(queryString, [post_to], (err, rows, fields) => {
-        if (err) {
+        if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption
+				}
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.json({posts:posts});
+
+        } else {
             console.log("Failed to Select Posts" + err)
             res.sendStatus(500)
             return
-        }
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.json(rows);
+		}
     })
 }
 
@@ -156,20 +157,40 @@ function getSinglePost(req, res) {
     })  
 }
 
-
 //Route 4: Get all Posts 
 function getAllPosts(req, res) {
    const connection = db.getConnection(); 
-   const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts LIMIT 10";
+   //const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts LIMIT 10";
+   const queryString = "SELECT * FROM posts LIMIT 5";
 
    connection.query(queryString, (err, rows, fields) => {
-	   if (err) {
-		   console.log("Failed to Select Posts" + err)
-		   res.sendStatus(500)
-		   return
-	   }
-	   res.setHeader('Access-Control-Allow-Origin', '*');
-	   res.json(rows);
+		if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
+				}
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.json({posts:posts});
+
+		} else {
+			console.log("Failed to Select Posts" + err)
+			res.sendStatus(500)
+			return
+		}
    })
 }
 
