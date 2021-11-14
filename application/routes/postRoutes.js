@@ -7,7 +7,8 @@ postRouter.use(cors())
 //POST ROUTES
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
-    postFunctions.postText(req, res);
+    //postFunctions.postText(req, res);
+    res.json({request: req})
 })
 
 //Route A2: Post Photo

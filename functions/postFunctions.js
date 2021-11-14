@@ -6,7 +6,6 @@ const Requests = require('./classes/Requests');
 
 //Route A1: Post Text
 async function postText(req, res) {
-	console.log("post text")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostText(req);
 
