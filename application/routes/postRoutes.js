@@ -2,7 +2,9 @@ const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
 const cors = require('cors');
+
 postRouter.use(cors())
+postRouter.use(express.json());
 
 //POST ROUTES
 //Route A1: Post Text
