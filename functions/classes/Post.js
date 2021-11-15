@@ -59,20 +59,29 @@ class Post {
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const postCaption = req.body.postCaption 
-        const photoName = file.filename; 
+        const fileName = file.originalname
+        const fileNameServer = file.filename
+        let fileURL = ""
+        if(file.destination) {
+            fileURL = file.destination
+        } else {
+            fileURL = file.location
+        }
+
+        let temp = ["HIYA ", fileName, fileNameServer, fileURL]     
      
         var postOutcome = {
             outcome: 0,
             postID: 0,
-            errors: []
+            errors: [temp]
         }
 
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption, photo_name) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?, ?)"
     
-                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, photoName], (err, results, fields) => {
+                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
                         postOutcome.outcome = 200;       
