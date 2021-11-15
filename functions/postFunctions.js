@@ -6,7 +6,6 @@ const Requests = require('./classes/Requests');
 
 //Route A1: Post Text
 async function postText(req, res) {
-	console.log("post text")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostText(req);
 
@@ -36,10 +35,10 @@ async function postText(req, res) {
 
 //Route A2: Post Photo
 async function postPhoto(req, res, file) {
-	//console.log("post photo")
+	console.log("post photo")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostPhoto(req, file);
-	//console.log(postOutcome);
+	console.log(postOutcome);
 
 	//STEP 2: Add the Notification
 	var notification = {}

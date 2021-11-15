@@ -2,12 +2,16 @@ const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
 const cors = require('cors');
+
 postRouter.use(cors())
+postRouter.use(express.json());
 
 //POST ROUTES
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
     postFunctions.postText(req, res);
+    //const postCaption = req.body.postCaption 
+    //res.json({request: postCaption})
 })
 
 //Route A2: Post Photo
