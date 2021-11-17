@@ -6,7 +6,10 @@
 .pnp.js
 
 # Site
+
+/ignore/hiya.jpg
 /ignore
+hiya.jpg
 
 
 # testing
