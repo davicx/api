@@ -10,7 +10,7 @@
 /functions/random
 
 # Conn
-/functions/conn.js
+conn.js
 
 # Ignore File
 hiya.jpg
