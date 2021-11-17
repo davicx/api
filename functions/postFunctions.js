@@ -67,8 +67,31 @@ async function postPhoto(req, res, file) {
 //Route A3: Post Video
 async function postVideo(req, res) {
 	console.log("post video")
-	const postType = req.body.postType;
-	res.json({postType:postType});
+	const groupID = req.body.groupID;
+	postOutcome = await Post.createPostVideo(req);
+		
+	//STEP 2: Add the Notification
+	var notification = {}
+	const groupUsersOutcome = await Group.getGroupUsers(groupID);
+	const groupUsers = groupUsersOutcome.groupUsers;
+	
+	if(postOutcome.outcome == 200) {
+		notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.postFrom,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupID
+		}
+		//console.log(notification);
+		if(groupUsers.length > 0) {
+			Notification.createGroupNotification(notification);
+		}
+	}
+
+	res.json(postOutcome);
 }
 
 //GET ROUTES

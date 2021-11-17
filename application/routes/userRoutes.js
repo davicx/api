@@ -1,7 +1,7 @@
 const express = require('express')
 const userRouter = express.Router();
 const db = require('../../functions/conn');
-const userFunctions = require('../../functions/user')
+const userFunctions = require('../../functions/userFunctions')
 const cors = require('cors');
 userRouter.use(cors())
 

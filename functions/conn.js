@@ -19,8 +19,6 @@ const pool = mysql.createPool({
     database: 'shareshare'
 })
 
-
-
 //Functions: Get Connection
 function getConnection() {
     return pool;
