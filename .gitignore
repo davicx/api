@@ -7,6 +7,10 @@
 # Site
 /doc
 /uploads
+/functions/random
+
+# Conn
+/functions/conn.js
 
 # Ignore File
 hiya.jpg
