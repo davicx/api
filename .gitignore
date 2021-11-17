@@ -3,13 +3,13 @@
 # dependencies
 /node_modules
 
-
 # Site
 /doc
 /uploads
 /functions/random
 
 # Conn
+/functions/conn.js
 conn.js
 
 # Ignore File
