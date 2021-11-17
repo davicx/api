@@ -1,6 +1,8 @@
 const mysql = require('mysql')
 
 //CONNECTION
+
+/*
 const pool = mysql.createPool({
     connectionLimit: 10,
     host: 'localhost',
@@ -8,8 +10,8 @@ const pool = mysql.createPool({
     password: '',
     database: 'shareshare'
 })
+*/
 
-/*
 const pool = mysql.createPool({
     connectionLimit: 10,
     host: 'shareshare.c3itguipg2wt.us-west-2.rds.amazonaws.com',
@@ -17,7 +19,6 @@ const pool = mysql.createPool({
     password: 'gCtLRbXMWWS2SwNg',
     database: 'shareshare'
 })
-*/
 
 //Functions: Get Connection
 function getConnection() {
