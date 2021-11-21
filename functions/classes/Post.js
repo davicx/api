@@ -68,12 +68,10 @@ class Post {
             fileURL = file.location
         }
 
-        let temp = ["HIYA ", fileName, fileNameServer, fileURL]     
-     
         var postOutcome = {
             outcome: 0,
             postID: 0,
-            errors: [temp]
+            errors: []
         }
 
         //INSERT POST
@@ -120,7 +118,6 @@ class Post {
             errors: []
         }
         
-
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {

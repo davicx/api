@@ -25,17 +25,22 @@ groupRouter.post('/group/leave/', function(req, res) {
 })
 
 //GET ROUTES
-//Route B1: Get Single Group by ID 
+//Route B1: Get All Groups a User is In
+groupRouter.get("/group/user/:userName", (req, res) => {
+    groupFunctions.getUserGroups(req, res);
+})
+
+//Route B2: Get Single Group by ID 
 groupRouter.get("/group/:groupID", (req, res) => {
     groupFunctions.getGroup(req, res);
 })
 
-//Route B2: Get Group Users 
+//Route B3: Get Group Users 
 groupRouter.get("/group/users/:groupID", (req, res) => {
     groupFunctions.getGroupUsers(req, res);
 })
 
-//Route B3: Get All Groups a User is In
+
 
 
 /*

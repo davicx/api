@@ -89,8 +89,30 @@ function leaveGroup(req, res) {
 	res.json({leave: "leave"})
 }
 
-//Function B1: Get All Groups 
-function getAllGroups(req, res) {
+//Function B1: Get All Groups User is In 
+function getUserGroups(req, res) {
+	const connection = db.getConnection(); 
+	const userName = req.params.userName;
+
+	const queryString = "SELECT group_id FROM group_users WHERE user_name = ? AND active_member = 1";
+
+    connection.query(queryString, [userName], (err, rows) => {
+        if (!err) {
+			var groupList = [];
+			rows.map((row) => {
+				groupList.push(row.group_id);
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.json({groups: groupList} );
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+
 
 }
 
@@ -120,4 +142,4 @@ async function getGroupUsers(req, res) {
 
 }
 
-module.exports = { createGroup, addGroupUser, acceptGroupInvite, getGroup, getGroupUsers, leaveGroup };
+module.exports = { createGroup, addGroupUser, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };

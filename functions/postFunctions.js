@@ -116,8 +116,8 @@ function getGroupPosts(req, res) {
 					fileNameServer: row.file_name_server,
 					fileUrl: row.file_url,
 					videoURL: row.video_url,
-					videoCode: row.video_code,
-					created: row.created
+					videoCode: row.video_code
+					//created: row.created
 				}
 			});
 
@@ -218,22 +218,4 @@ function getAllPosts(req, res) {
 }
 
 
-
 module.exports = { postText, postPhoto, postVideo, getGroupPosts, getUserPosts, getSinglePost, getAllPosts };
-
-
-
-
-
-
-//APPENDIX
-/*
-const groupID = req.params.groupID;
-const groupOutcome = await Group.getGroupUsers(groupID);
-console.log(" You got " +  groupID);
-const groupUsers = {
-	activeGroupUsers: groupOutcome.groupUsers,
-	pendingGroupUsers: groupOutcome.pendingGroupUsers,
-}
-*/
-
