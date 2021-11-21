@@ -152,7 +152,8 @@ function getUserPosts(req, res) {
 			});
 
 			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json({posts:posts});
+			//res.json({posts:posts});
+			res.json(posts);
 
         } else {
             console.log("Failed to Select Posts" + err)
