@@ -116,13 +116,14 @@ function getGroupPosts(req, res) {
 					fileNameServer: row.file_name_server,
 					fileUrl: row.file_url,
 					videoURL: row.video_url,
-					videoCode: row.video_code,
-					created: row.created
+					videoCode: row.video_code
+					//created: row.created
 				}
 			});
 
 			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json({posts:posts});
+			//res.json({posts:posts});
+			res.json(posts);
 
         } else {
             console.log("Failed to Select Posts" + err)
