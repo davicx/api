@@ -116,8 +116,8 @@ function getGroupPosts(req, res) {
 					fileNameServer: row.file_name_server,
 					fileUrl: row.file_url,
 					videoURL: row.video_url,
-					videoCode: row.video_code
-					//created: row.created
+					videoCode: row.video_code,
+					created: row.created
 				}
 			});
 
