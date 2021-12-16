@@ -9,9 +9,9 @@ groupRouter.post('/group/create/', function(req, res) {
     groupFunctions.createGroup(req, res);
 })
 
-//Route A2: Invite User to a Group 
+//Route A2: Invite Users to a Group 
 groupRouter.post('/group/invite/', function(req, res) {
-    groupFunctions.addGroupUser(req, res);
+    groupFunctions.addGroupUsers(req, res);
 })
 
 //Route A3: Join Group 

@@ -56,7 +56,7 @@ async function postPhoto(req, res, file) {
 			notificationType: req.body.notificationType,
 			groupID: groupID
 		}
-		//console.log(notification);
+ 
 		if(groupUsers.length > 0) {
 			Notification.createGroupNotification(notification);
 		}
@@ -166,6 +166,44 @@ function getUserPosts(req, res) {
 
 //Route B3: Get Single Post by ID 
 function getSinglePost(req, res) {
+	const connection = db.getConnection(); 
+    const postID = req.params.post_id;
+    const queryString = "SELECT * FROM posts WHERE post_id = ?";
+
+    connection.query(queryString, [postID], (err, rows) => {
+        if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
+				}
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.json({posts:posts});
+			console.log(typeof(posts))
+			res.json(posts);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+}
+/*
+function getSinglePost(req, res) {
     const post_id = req.params.post_id;
 	const connection = db.getConnection(); 
     const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts WHERE post_id = ?";
@@ -180,6 +218,7 @@ function getSinglePost(req, res) {
         res.json(rows);
     })  
 }
+*/
 
 //Route 4: Get all Posts 
 function getAllPosts(req, res) {

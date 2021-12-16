@@ -2,6 +2,7 @@ const db = require('./conn');
 const Group = require('./classes/Group');
 const Notification = require('./classes/Notification')
 const Requests = require('./classes/Requests');
+const Functions = require('./functions');
 //app.use(express.json());
 
 /*
@@ -16,6 +17,79 @@ FUNCTIONS B: All Functions Related to Groups
 	1) Function A2: Invite User to a Group 
 
 */
+
+
+//Function A2: Invite User to a Group 
+async function addGroupUsers(req, res) {
+	const connection = db.getConnection(); 
+	const groupID = req.body.groupID;
+	var invitedUsersRaw = req.body.invitedUsers;
+	var invitedUsersArray = Functions.convertElementsLowercase(invitedUsersRaw) 
+	var invitedUsers = Functions.removeArrayDuplicates(invitedUsersArray);
+	//Remove the current user from invitedUsers
+
+	var addGroupUsersOutcome = {
+		outcome: 200,
+		existingUsers: [],
+		addedUsers: []
+	}
+
+	//STEP 1: Check the status of the added users to see if they are already in the group
+	const userGroupStatus = await Functions.checkUserGroupStatus(invitedUsers, groupID)
+
+	//STEP 2: Add them to the Group
+	/*
+	var groupUsersToAdd = userGroupStatus.newUsers;
+	var addedGroupUsersArray = [];
+	for(let i = 0; i < groupUsersToAdd.length; i++) {
+		let invitedUser = groupUsersToAdd[i];
+		const addGroupUserStatus = await Group.addGroupUser(groupID, invitedUser);
+		if(addGroupUserStatus.userAdded == 1) {
+			addedGroupUsersArray.push(invitedUser)
+		}
+		//console.log(addGroupUserStatus);
+	} 
+	*/
+
+	//STEP 3: Send Notification and Request to all Added Users 
+	//TEMP
+	var addedGroupUsersArray = ["davey", "sam"];
+	//TEMP
+	const notification = {
+		masterSite: "kite",
+		notificationFrom: req.body.currentUser,
+		notificationMessage: req.body.notificationMessage,
+		notificationTo: addedGroupUsersArray,
+		notificationLink: req.body.notificationLink,
+		notificationType: req.body.notificationType,
+		groupID: groupID
+	}
+
+	//Everthing works but Notification is not working I don't know why try rebuilding it, request works!
+
+	//Notification.createGroupNotification(notification)
+	//newNotification.testCreateGroupNotification(notification)
+	console.log(typeof(Notification))
+	/*
+	
+	console.log(notification);
+
+	const newRequest = {
+		requestType: "group_invite",
+		requestTypeText: "invited you to join a group",
+		sentBy: req.body.currentUser,
+		sentTo: addedGroupUsersArray,
+		groupID: groupID
+	}
+
+	Requests.newGroupRequest(newRequest) 
+	console.log(newRequest);
+	addGroupUsersOutcome.addedUsers = addedGroupUsersArray;
+	addGroupUsersOutcome.existingUsers = userGroupStatus.existingUsers;
+	*/
+	res.json(addGroupUsersOutcome)
+
+}
 
 
 //Function A1: Create a New Group
@@ -65,10 +139,6 @@ async function createGroup(req, res) {
 	res.json({groupID: groupOutcome.groupID});
 }
 
-//Function A2: Invite User to a Group 
-function addGroupUser(req, res) {
-	console.log("Added!")
-}
 
 //Function A3: Accept Group Invite
 function acceptGroupInvite(req, res) {
@@ -112,8 +182,6 @@ function getUserGroups(req, res) {
             return
 		}
     })
-
-
 }
 
 
@@ -142,4 +210,215 @@ async function getGroupUsers(req, res) {
 
 }
 
-module.exports = { createGroup, addGroupUser, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };
+module.exports = { createGroup, addGroupUsers, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };
+
+
+
+//APPENDIX
+
+
+
+	//groupUsersOutcome = await Group.addGroupUsers(groupID, groupUsers, currentUser);
+/*
+			notificationFrom: req.body.postFrom,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+    "currentUser": "davey",
+    "groupID": 79,
+    "users": ["Sam", "Frodo", "Merry"],
+    "notificationMessage": "Invited you to a new Group",  
+    "notificationType": "group_invite",
+    "notificationLink": "http://localhost:3003/group/79"  
+*/
+	//Loop over and use single invite
+	//Group.addGroupUser("sam")
+	//res.json(groupUsersOutcome)
+	//res.json({hi: "hi"})
+
+
+/*
+////
+const notification = {
+	masterSite: "kite",
+	notificationFrom: req.body.currentUser,
+	notificationMessage: req.body.notificationMessage,
+	notificationTo: req.body.groupUsers,
+	notificationLink: req.body.notificationLink,
+	notificationType: req.body.notificationType,
+	groupID: groupOutcome.groupID
+}
+
+Notification.createGroupNotification(notification)
+
+const newRequest = {
+	requestType: "new_group",
+	requestTypeText: "invited you to join a group",
+	sentBy: req.body.currentUser,
+	sentTo: req.body.groupUsers,
+	groupID: groupOutcome.groupID
+}
+////
+*/
+
+/*
+async function checkUserGroupStatus(groupUser, groupID)  {
+	const connection = db.getConnection(); 
+
+	var addGroupUsersOutcome = {
+		outcome: 200,
+		newUsers: [],
+		currentUsers: [],
+		errors: []
+	}
+
+	return new Promise((resolve, reject) => {
+		try {
+			//const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"
+			const queryString = "SELECT user_name FROM group_users WHERE user_name = ? AND group_id = ? LIMIT 1"
+	
+			connection.query(queryString, [groupUser, groupID], (err, rows) => {
+				//console.log(rows[0].requestCount);
+				addGroupUsersOutcome.outcome = 200;
+				addGroupUsersOutcome.newUsers.push(rows[0].requestCount);
+				addGroupUsersOutcome.newUsers.push("ooof");
+				addGroupUsersOutcome.newUsers.push("test");
+				//console.log(addGroupUsersOutcome);
+				//console.log(rows[0].user_name);
+				let user = rows[0].user_name;
+				resolve(user)
+				//resolve(addGroupUsersOutcome)
+			}) 
+			
+			
+		} catch (err) {
+			addGroupUsersOutcome.outcome = 500;
+			addGroupUsersOutcome.errors.push(err);
+			reject(addGroupUsersOutcome)
+		}	
+	})
+}
+*/
+
+	
+	//res.json(addGroupUsersOutcome)
+	/*
+	var groupStatus;
+
+	try {
+		groupStatus = await checkUserGroupStatus(invitedUsers, groupID);
+		console.log(groupStatus)
+	} catch(err) {
+		console.log(err)	
+	}
+	*/
+
+
+	/*
+
+	console.log(groupUser);
+
+	return new Promise((resolve, reject) => {
+		const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"
+
+		connection.query(queryString, [groupUser, groupID], (err, rows) => {
+			if (!err) {
+				resolve(rows[0].requestCount);
+			} else {    
+				reject(err);
+				console.log(err)
+			} 
+		
+		}) 
+
+	});
+	*/
+
+
+
+////
+//TYPE 1: Try catch
+/*
+async function addGroupUser(req, res) {
+	const groupID = req.body.groupID;
+	const connection = db.getConnection(); 
+	const invitedUsers = req.body.invitedUsers;
+	const groupUsers = req.body.groupUsers;
+	var groupStatus;
+
+	try {
+		groupStatus = await checkUserGroupStatus(groupUsers, groupID);
+		console.log(groupStatus)
+	} catch(err) {
+		console.log(err)	
+	}
+
+	res.json({hi:"hi"})
+}
+
+async function checkUserGroupStatus(groupUsers, groupID)  {
+	return new Promise((resolve, reject) => {
+		if(1 == 2) {
+			resolve('data');
+		} else {
+			reject('some error')
+		}
+	});
+}
+*/
+
+//TYPE 2: Try catch in Promise
+/*
+async function addGroupUser(req, res) {
+	const groupID = req.body.groupID;
+	const connection = db.getConnection(); 
+	const invitedUsers = req.body.invitedUsers;
+	const groupUsers = req.body.groupUsers;
+	var groupStatus;
+
+	groupStatus = await checkUserGroupStatus(groupUsers, groupID);
+	console.log(groupStatus)
+
+	res.json({hi:"hi"})
+}
+
+async function checkUserGroupStatus(groupUsers, groupID)  {
+	return new Promise((resolve, reject) => {
+
+		try {
+			resolve('data');
+		} catch(err) {
+			reject('some error')	
+		}
+	});
+}
+*/
+
+////
+
+	/*
+	const groupUser = invitedUsers[0];
+	var groupStatus = {
+		outcome: 200,
+		newUsers: []
+	}
+
+	try {
+		for(let i = 0; i < invitedUsers.length; i++) {
+			let invitedUser = invitedUsers[i];
+			let user = await checkUserGroupStatus(invitedUser, groupID);
+			console.log(user);
+			groupStatus.newUsers.push(user);
+		}
+		
+		res.json(groupStatus)	
+		//groupStatus = await checkUserGroupStatus(invitedUsers, groupID);
+		//res.json(groupStatus)
+	} catch(err) {
+		console.log(err)	
+		res.json(groupStatus)
+	}
+	*/
+
+
