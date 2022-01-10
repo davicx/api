@@ -1,12 +1,11 @@
 const db = require('../conn');
-const groupFunctions = require('../groupFunctions')
 
 class Notification {
     constructor(notificationID) {
         this.notificationID = notificationID;
     }
-
-	//Method A1: Create Group Notification
+    
+    //Method A1: Create Group Notification
 	static async createGroupNotification(notification) {
 		const connection = db.getConnection(); 
         const masterSite = notification.masterSite;
@@ -35,15 +34,20 @@ class Notification {
     	}
 	}
 
+    
     //Method A2: Create Single Notification
 	static async createSingleNotification(notification) {
-        
+        console.log("worked!!")
+        console.log(notification)
     }
 
-    static testCreateGroupNotification(notification) {
-        console.log(notification);
-        console.log("TEST GROUP")
+    //Method A3: Temp Method 
+    static newNotification(notification)  {
+        console.log("worked!!")
+        console.log(notification)
     }
+
 }
+
 
 module.exports = Notification;

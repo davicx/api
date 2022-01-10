@@ -6,42 +6,55 @@ class Group {
         this.groupID = groupID;
     }
 
-    //Method A5: Leave Group
-    static leaveGroup(currentUser, groupID)  {
-        console.log("LEAVE " + currentUser + " " + groupID)
-    }
 
     //Method A4: Accept Group Invite
     static acceptGroupInvite(groupID, currentUser, requestID) {
         const connection = db.getConnection(); 
         console.log("Yay! " + groupID + " " + currentUser + " " + requestID)
 
-        //Update Request
-        const requestQuery = "UPDATE pending_requests SET request_is_pending = '0' WHERE request_id = ? AND group_id = ? AND sent_to = ? AND (request_type = 'new_group' OR request_type = 'group_invite')"
-        //const requestQuery = "UPDATE pending_requests SET request_is_pending = '0' WHERE request_id = ?"
-
-        connection.query(requestQuery, [requestID, groupID, currentUser], (err, results) => {
-            if (!err) {
-                console.log("request worky! ")
-                console.log(results);
-            } else {
-                console.log(err);
-            }
-        }) 
-
-        //Update Group 
+        //PART 1: Update group user status 
         const queryString = "UPDATE group_users SET active_member = '1' WHERE group_id = ? AND user_name = ?"
 
         connection.query(queryString, [groupID, currentUser], (err, results) => {
             if (!err) {
                 console.log("worky! ")
                 console.log(results);
+
+                //PART 2: Update Notification 
+                const notificationQuery = "UPDATE notifications SET notification_seen = '1' WHERE group_id = ? AND notification_to = ? AND notification_type = 'group_invite'"
+
+                connection.query(notificationQuery, [groupID, currentUser], (err, results) => {
+                    if (!err) {
+                        console.log("notification worky! ")
+                        console.log(results);
+                    } else {
+                        console.log(err);
+                    }
+                }) 
+
+                //PART 3: Update Request
+                const requestQuery = "UPDATE pending_requests SET request_is_pending = '0' WHERE request_id = ? AND group_id = ? AND sent_to = ? AND (request_type = 'new_group' OR request_type = 'group_invite')"
+
+                connection.query(requestQuery, [requestID, groupID, currentUser], (err, results) => {
+                    if (!err) {
+                        console.log("request worky! ")
+                        console.log(results);
+                    } else {
+                        console.log(err);
+                    }
+                }) 
+
             } else {
                 console.log(err);
             }
         })  
     }
     
+    
+    //Method A5: Leave Group
+    static leaveGroup(currentUser, groupID)  {
+        console.log("LEAVE " + currentUser + " " + groupID)
+    }
 
     //Method A4: Get Group Users
     static async getGroupUsers(groupID) {
@@ -57,8 +70,7 @@ class Group {
             pendingGroupUsers: [],
             errors: [],
         }
-    
-        //GET GROUP USERS
+
         return new Promise(async function(resolve, reject) {
             try {
                 
@@ -123,7 +135,7 @@ class Group {
     }
 
     //Method A3: Add Group Users 
-    static async addGroupUsers(groupID, groupUsers, groupCreator)  {
+    static async addNewGroupUsers(groupID, groupUsers, groupCreator)  {
         const connection = db.getConnection(); 
         var groupUsersOutcome = {
             outcome: 1,
@@ -131,60 +143,35 @@ class Group {
             errors: []
         }
 		const groupUserStatus = await functions.checkUserGroupStatus(groupUsers, groupID);
-        console.log("_________________")
-        console.log(groupUserStatus)
-        console.log("_________________")
+        const newGroupUsers = groupUserStatus.newUsers;
 
         return new Promise(async function(resolve, reject) {
             try {
-                for(let i = 0; i < groupUsers.length; i++) {
-                    let newGroupUser = groupUsers[i];
-                    var groupUserCount = 100;
+                for(let i = 0; i < newGroupUsers.length; i++) {
+                    let newGroupUser = newGroupUsers[i];
 
-                    //Part 1: Check if they are already in this group
-                    /*
-                    const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"			
-                    var groupUserCount = 100;
+                    //Part 2: Set Active Status
+                    let activeMember = 0;
 
-                    connection.query(queryString, [newGroupUser, groupID], (err, rows) => {
-                        if (!err) {
-                            //Step 2: Insert Record if it is new 
-                            console.log(rows[0])
-                            groupUserCount = rows[0].requestCount;	
-                            console.log(newGroupUser + " GROUP USER COUNT " + groupUserCount);
-                        }
-                    })
-                    console.log("TWO " + newGroupUser + " GROUP USER COUNT " + groupUserCount);
-                    */
-                    if(groupUserCount == 0) {
-                        console.log("OK TO ADD " + newGroupUser);
-                
-                        //Part 2: Set Active Status
-                        let activeMember = 0;
-                        if(newGroupUser.toLowerCase() == groupCreator.toLowerCase()) {
-                            activeMember = 1;
-                        } else {
-                            activeMember = 0;      
-                        }    
-                        console.log(groupUsers[i] + " " + activeMember)
-    
-                        //Part 3: Add them into the group 
-                        const queryString = "INSERT INTO group_users (group_id, user_name, active_member) VALUES (?, ?, ?)"
-    
-                        connection.query(queryString, [groupID, newGroupUser, activeMember], (err, results) => {
-                            if (err) {
-                                console.log(err);
-                                groupUsersOutcome.outcome = 500;
-                                groupUsersOutcome.errors.push(err);
-                            } else {
-                                groupUsersOutcome.addedUsers.push(newGroupUser);
-                            }
-                        })  
-                      } else {
+                    if(newGroupUser.toLowerCase() == groupCreator.toLowerCase()) {
+                        activeMember = 1;
+                    } else {
+                        activeMember = 0;      
+                    }   
 
-                      }
-         
-                    }
+                    console.log("We are now adding " + newGroupUser + " as " + activeMember)
+
+                    //Part 3: Add them into the group 
+                    const queryString = "INSERT INTO group_users (group_id, user_name, active_member) VALUES (?, ?, ?)"
+
+                    connection.query(queryString, [groupID, newGroupUser, activeMember], (err, results) => {
+                        if (err) {
+                            console.log(err);
+                            groupUsersOutcome.outcome = 500;
+                            groupUsersOutcome.errors.push(err);
+                        } 
+                    })  
+                }       
 
                 resolve(groupUsersOutcome); 
 
@@ -251,3 +238,81 @@ module.exports = Group;
 
 
 
+/*
+
+    //Method A3: Add Group Users 
+    static async addNewGroupUsers(groupID, groupUsers, groupCreator)  {
+        const connection = db.getConnection(); 
+        var groupUsersOutcome = {
+            outcome: 1,
+            addedUsers: [],
+            errors: []
+        }
+		const groupUserStatus = await functions.checkUserGroupStatus(groupUsers, groupID);
+        console.log("_________________")
+        console.log(groupUserStatus)
+        console.log("_________________")
+        const newGroupUsers = groupUserStatus.newUsers;
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                for(let i = 0; i < newGroupUsers.length; i++) {
+                    let newGroupUser = groupUsers[i];
+                    var groupUserCount = 100;
+
+                    //Part 1: Check if they are already in this group
+            
+                    const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"			
+                    var groupUserCount = 100;
+
+                    connection.query(queryString, [newGroupUser, groupID], (err, rows) => {
+                        if (!err) {
+                            //Step 2: Insert Record if it is new 
+                            console.log(rows[0])
+                            groupUserCount = rows[0].requestCount;	
+                            console.log(newGroupUser + " GROUP USER COUNT " + groupUserCount);
+                        }
+                    })
+          
+                    if(groupUserCount == 0) {
+                        console.log("OK TO ADD " + newGroupUser);
+                
+                        //Part 2: Set Active Status
+                        let activeMember = 0;
+                        if(newGroupUser.toLowerCase() == groupCreator.toLowerCase()) {
+                            activeMember = 1;
+                        } else {
+                            activeMember = 0;      
+                        }    
+                        console.log(groupUsers[i] + " " + activeMember)
+    
+                        //Part 3: Add them into the group 
+                        const queryString = "INSERT INTO group_users (group_id, user_name, active_member) VALUES (?, ?, ?)"
+    
+                        connection.query(queryString, [groupID, newGroupUser, activeMember], (err, results) => {
+                            if (err) {
+                                console.log(err);
+                                groupUsersOutcome.outcome = 500;
+                                groupUsersOutcome.errors.push(err);
+                            } else {
+                                groupUsersOutcome.addedUsers.push(newGroupUser);
+                            }
+                        })  
+                      } else {
+
+                      }
+         
+                    }
+
+                resolve(groupUsersOutcome); 
+
+            } catch(err) {
+                groupUsersOutcome.outcome = 200;
+                console.log("REJECTED " + err);
+                reject(groupUsersOutcome);
+            } 
+        });
+    }
+
+
+*/

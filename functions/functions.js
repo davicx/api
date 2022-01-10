@@ -44,6 +44,46 @@ async function checkUserGroupStatus(invitedUsers, groupID)  {
 
 }
 
+//Method B2: Check if Group exists (by ID)
+async function checkGroupExists(groupID)  {
+    const connection = db.getConnection(); 
+
+    var groupExistsStatus = {
+        outcome: 500,
+		groupExists: 0,
+        createdBy: "",
+		errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            
+            const queryString = "SELECT created_by FROM groups WHERE group_id = ?"			
+            
+            connection.query(queryString, [groupID], (err, rows) => {
+                if (!err) {
+
+                    if(rows.length >= 1){
+                        groupExistsStatus.outcome = 200;
+                        groupExistsStatus.groupExists = rows.length;
+                        groupExistsStatus.createdBy = rows[0].created_by
+                    } 
+
+                    resolve(groupExistsStatus); 
+
+                } else {
+                    groupUserStatus.outcome = 500;
+                    resolve(groupExistsStatus);
+                }
+            })
+        } catch(err) {
+            groupExistsStatus.outcome = 500;
+            reject(groupExistsStatus);
+        } 
+    })
+
+}
+
 //METHODS: General 
 //Method D1: Remove duplicate values from array
 function removeArrayDuplicates(fullArray) {
@@ -65,7 +105,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { checkUserGroupStatus, removeArrayDuplicates, convertElementsLowercase }
+module.exports = { checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase }
 
 
 

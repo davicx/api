@@ -1,8 +1,9 @@
 const db = require('./conn');
 const Group = require('./classes/Group');
-const Notification = require('./classes/Notification')
+const Notifications = require('./classes/Notification')
 const Requests = require('./classes/Requests');
 const Functions = require('./functions');
+const requestFunctions = require('./requestFunctions')
 //app.use(express.json());
 
 /*
@@ -19,79 +20,6 @@ FUNCTIONS B: All Functions Related to Groups
 */
 
 
-//Function A2: Invite User to a Group 
-async function addGroupUsers(req, res) {
-	const connection = db.getConnection(); 
-	const groupID = req.body.groupID;
-	var invitedUsersRaw = req.body.invitedUsers;
-	var invitedUsersArray = Functions.convertElementsLowercase(invitedUsersRaw) 
-	var invitedUsers = Functions.removeArrayDuplicates(invitedUsersArray);
-	//Remove the current user from invitedUsers
-
-	var addGroupUsersOutcome = {
-		outcome: 200,
-		existingUsers: [],
-		addedUsers: []
-	}
-
-	//STEP 1: Check the status of the added users to see if they are already in the group
-	const userGroupStatus = await Functions.checkUserGroupStatus(invitedUsers, groupID)
-
-	//STEP 2: Add them to the Group
-	/*
-	var groupUsersToAdd = userGroupStatus.newUsers;
-	var addedGroupUsersArray = [];
-	for(let i = 0; i < groupUsersToAdd.length; i++) {
-		let invitedUser = groupUsersToAdd[i];
-		const addGroupUserStatus = await Group.addGroupUser(groupID, invitedUser);
-		if(addGroupUserStatus.userAdded == 1) {
-			addedGroupUsersArray.push(invitedUser)
-		}
-		//console.log(addGroupUserStatus);
-	} 
-	*/
-
-	//STEP 3: Send Notification and Request to all Added Users 
-	//TEMP
-	var addedGroupUsersArray = ["davey", "sam"];
-	//TEMP
-	const notification = {
-		masterSite: "kite",
-		notificationFrom: req.body.currentUser,
-		notificationMessage: req.body.notificationMessage,
-		notificationTo: addedGroupUsersArray,
-		notificationLink: req.body.notificationLink,
-		notificationType: req.body.notificationType,
-		groupID: groupID
-	}
-
-	//Everthing works but Notification is not working I don't know why try rebuilding it, request works!
-
-	//Notification.createGroupNotification(notification)
-	//newNotification.testCreateGroupNotification(notification)
-	console.log(typeof(Notification))
-	/*
-	
-	console.log(notification);
-
-	const newRequest = {
-		requestType: "group_invite",
-		requestTypeText: "invited you to join a group",
-		sentBy: req.body.currentUser,
-		sentTo: addedGroupUsersArray,
-		groupID: groupID
-	}
-
-	Requests.newGroupRequest(newRequest) 
-	console.log(newRequest);
-	addGroupUsersOutcome.addedUsers = addedGroupUsersArray;
-	addGroupUsersOutcome.existingUsers = userGroupStatus.existingUsers;
-	*/
-	res.json(addGroupUsersOutcome)
-
-}
-
-
 //Function A1: Create a New Group
 async function createGroup(req, res) {
 	var groupOutcome = { groupID: 7}
@@ -102,8 +30,10 @@ async function createGroup(req, res) {
 	try {
 		groupOutcome = await Group.createGroup(req);
 
+		//TO DO: Add individually or the promise wont handle error (in Group Class)
 		if(groupOutcome.outcome == 1) {
-			groupUsersOutcome = await Group.addGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
+			groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
+			console.log(groupUsersOutcome);
 		} 
 
 		//STEP 2: Add the Notifications and Requests
@@ -118,7 +48,7 @@ async function createGroup(req, res) {
 				groupID: groupOutcome.groupID
 			}
 
-			Notification.createGroupNotification(notification)
+			Notifications.createGroupNotification(notification);
 
 			const newRequest = {
 				requestType: "new_group",
@@ -137,18 +67,142 @@ async function createGroup(req, res) {
 	}
 	
 	res.json({groupID: groupOutcome.groupID});
+
+}
+
+
+//Function A2: Invite User to a Group 
+async function addGroupUsers(req, res) {
+	const connection = db.getConnection(); 
+	const groupID = req.body.groupID;
+	var invitedUsersRaw = req.body.invitedUsers;
+	var invitedUsersArray = Functions.convertElementsLowercase(invitedUsersRaw) 
+	var invitedUsers = Functions.removeArrayDuplicates(invitedUsersArray);
+	
+	//Remove the current user from invitedUsers
+	var addGroupUsersOutcome = {
+		outcome: 200,
+		existingUsers: [],
+		addedUsers: [],
+		messages: [],
+		errors: []
+	}
+
+	//STEP 1: Check that there is a group that currently exists
+	//MAKE SURE INVITER IS IN THE GROUP!
+	const groupStatus = await Functions.checkGroupExists(groupID)
+
+	if(groupStatus.groupExists >= 1) {
+
+		//STEP 2: Check the status of the added users to see if they are already in the group
+		const userGroupStatus = await Functions.checkUserGroupStatus(invitedUsers, groupID)
+
+		//STEP 3: Add them to the Group
+		var groupUsersToAdd = userGroupStatus.newUsers;
+		var addedGroupUsersArray = [];
+
+		for(let i = 0; i < groupUsersToAdd.length; i++) {
+			let invitedUser = groupUsersToAdd[i];
+			const addGroupUserStatus = await Group.addGroupUser(groupID, invitedUser);
+			if(addGroupUserStatus.userAdded == 1) {
+				addedGroupUsersArray.push(invitedUser)
+			}
+			//console.log(addGroupUserStatus);
+		} 
+		
+		//STEP 4: Send Notification and Request to all Added Users 
+		const notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.currentUser,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: addedGroupUsersArray,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupID
+		}
+
+		Notifications.createGroupNotification(notification)
+
+		const newRequest = {
+			requestType: "group_invite",
+			requestTypeText: "invited you to join a group",
+			sentBy: req.body.currentUser,
+			sentTo: addedGroupUsersArray,
+			groupID: groupID
+		}
+
+		Requests.newGroupRequest(newRequest) 
+		console.log(newRequest);
+		addGroupUsersOutcome.addedUsers = addedGroupUsersArray;
+		addGroupUsersOutcome.existingUsers = userGroupStatus.existingUsers;
+	} else {
+		const message = "No users added because this group does not exist"
+		addGroupUsersOutcome.messages.push(message);
+	}
+	
+	res.json(addGroupUsersOutcome)
+
 }
 
 
 //Function A3: Accept Group Invite
-function acceptGroupInvite(req, res) {
+async function acceptGroupInvite(req, res) {
 	const currentUser = req.body.currentUser;
 	const groupID = req.body.groupID;
 	const requestID = req.body.requestID;
-	Group.acceptGroupInvite(groupID, currentUser, requestID)
+	console.log(requestID);
+	var acceptGroupInviteOutcome = {
+		outcome: 200,
+		messages: [],
+		errors: []
+	}
 	
-	res.json({currentUser: currentUser, groupID: groupID});
+	//STEP 1: Check that there is a group that currently exists 
+	const groupStatus = await Functions.checkGroupExists(groupID)
+
+	if(groupStatus.groupExists >= 1) {
+
+		//STEP 2: Make sure there is a Request and add the User to the Group 
+		const currentRequest = await requestFunctions.getSingleRequest(requestID)
+
+		if(currentRequest.requestExists == 1) {
+			
+			//Accept the Invite 
+			Group.acceptGroupInvite(groupID, currentUser, requestID)
+
+			//Create a Notification to let the Inviter know you have joined the group
+			const notificationMessage = currentUser + " accepted your Group Invite"
+			const notificationLink = "http://localhost:3003/group/" + groupID;
+	
+			const notification = {
+				masterSite: "kite",
+				notificationFrom: currentUser,
+				notificationMessage: notificationMessage,
+				notificationTo: [currentRequest.request.sentBy],
+				notificationLink: notificationLink,
+				notificationType: "accepted_group_invite",
+				groupID: groupID
+			}
+			//TO DO: ONLY ACCEPT THIS IF THE requestIsPending = 1 otherwise they get to many notifactions
+			//Also prevent notifications from duplicating 
+			Notifications.createGroupNotification(notification);
+
+		} else {
+			acceptGroupInviteOutcome.outcome = 500;
+			acceptGroupInviteOutcome.errors.push("NO request " + requestID + " exists")			
+		}
+
+	} else {
+		acceptGroupInviteOutcome.outcome = 500;
+		acceptGroupInviteOutcome.errors.push("NO group " + groupID + " exists")
+	}
+
+	//console.log(acceptGroupInviteOutcome);
+	
+	
+	res.json(acceptGroupInviteOutcome);
 }
+
 
 
 //Function A4: Leave a Group 

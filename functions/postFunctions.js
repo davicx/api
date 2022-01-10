@@ -25,7 +25,7 @@ async function postText(req, res) {
 			notificationType: req.body.notificationType,
 			groupID: groupID
 		}
-		//console.log(notification);
+
 		if(groupUsers.length > 0) {
 			Notification.createGroupNotification(notification);
 		}
@@ -36,10 +36,8 @@ async function postText(req, res) {
 
 //Route A2: Post Photo
 async function postPhoto(req, res, file) {
-	//console.log("post photo")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostPhoto(req, file);
-	//console.log(postOutcome);
 
 	//STEP 2: Add the Notification
 	var notification = {}
@@ -66,7 +64,6 @@ async function postPhoto(req, res, file) {
 
 //Route A3: Post Video
 async function postVideo(req, res) {
-	console.log("post video")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostVideo(req);
 		
@@ -85,7 +82,7 @@ async function postVideo(req, res) {
 			notificationType: req.body.notificationType,
 			groupID: groupID
 		}
-		//console.log(notification);
+
 		if(groupUsers.length > 0) {
 			Notification.createGroupNotification(notification);
 		}
@@ -122,7 +119,6 @@ function getGroupPosts(req, res) {
 			});
 
 			res.setHeader('Access-Control-Allow-Origin', '*');
-			//res.json({posts:posts});
 			res.json(posts);
 
         } else {
@@ -202,28 +198,10 @@ function getSinglePost(req, res) {
 		}
     })
 }
-/*
-function getSinglePost(req, res) {
-    const post_id = req.params.post_id;
-	const connection = db.getConnection(); 
-    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts WHERE post_id = ?";
-
-    connection.query(queryString, [post_id], (err, rows, fields) => {
-        if (err) {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-        }
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.json(rows);
-    })  
-}
-*/
 
 //Route 4: Get all Posts 
 function getAllPosts(req, res) {
    const connection = db.getConnection(); 
-   //const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts LIMIT 10";
    const queryString = "SELECT * FROM posts LIMIT 5";
 
    connection.query(queryString, (err, rows, fields) => {
