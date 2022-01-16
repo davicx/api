@@ -11,7 +11,7 @@ FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Create a New Group
 	2) Function A2: Invite User to a Group 
 	3) Function A3: Accept Group Invite
-
+	4) Function A4: Leave a Group 
 
 FUNCTIONS B: All Functions Related to Groups
 	1) Function A1: Create a New Group
@@ -171,21 +171,22 @@ async function acceptGroupInvite(req, res) {
 			Group.acceptGroupInvite(groupID, currentUser, requestID)
 
 			//Create a Notification to let the Inviter know you have joined the group
-			const notificationMessage = currentUser + " accepted your Group Invite"
-			const notificationLink = "http://localhost:3003/group/" + groupID;
-	
-			const notification = {
-				masterSite: "kite",
-				notificationFrom: currentUser,
-				notificationMessage: notificationMessage,
-				notificationTo: [currentRequest.request.sentBy],
-				notificationLink: notificationLink,
-				notificationType: "accepted_group_invite",
-				groupID: groupID
+			if(currentRequest.request.requestIsPending == 1) {
+				const notificationMessage = currentUser + " accepted your Group Invite"
+				const notificationLink = "http://localhost:3003/group/" + groupID;
+		
+				const notification = {
+					masterSite: "kite",
+					notificationFrom: currentUser,
+					notificationMessage: notificationMessage,
+					notificationTo: [currentRequest.request.sentBy],
+					notificationLink: notificationLink,
+					notificationType: "accepted_group_invite",
+					groupID: groupID
+				}
+				//Also prevent notifications from duplicating 
+				Notifications.createGroupNotification(notification);
 			}
-			//TO DO: ONLY ACCEPT THIS IF THE requestIsPending = 1 otherwise they get to many notifactions
-			//Also prevent notifications from duplicating 
-			Notifications.createGroupNotification(notification);
 
 		} else {
 			acceptGroupInviteOutcome.outcome = 500;
@@ -202,8 +203,6 @@ async function acceptGroupInvite(req, res) {
 	
 	res.json(acceptGroupInviteOutcome);
 }
-
-
 
 //Function A4: Leave a Group 
 function leaveGroup(req, res) {

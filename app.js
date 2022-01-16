@@ -8,11 +8,13 @@ const posts = require('./application/routes/postRoutes.js');
 const user = require('./application/routes/userRoutes.js');
 const group = require('./application/routes/groupRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js'); 
+const notification = require('./application/routes/notificationRoutes.js'); 
 
 app.use(user);
 app.use(group);
 app.use(posts);
 app.use(upload); 
+app.use(notification); 
 
 app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
