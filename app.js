@@ -4,12 +4,14 @@ const PORT = process.env.PORT || 3003;
 const app = express()
 app.use(express.json());
 
+const login = require('./application/routes/loginRoutes.js');
 const posts = require('./application/routes/postRoutes.js');
 const user = require('./application/routes/userRoutes.js');
 const group = require('./application/routes/groupRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js'); 
 const notification = require('./application/routes/notificationRoutes.js'); 
 
+app.use(login);
 app.use(user);
 app.use(group);
 app.use(posts);

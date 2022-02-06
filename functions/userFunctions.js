@@ -5,6 +5,7 @@ const User = require('./classes/User')
 /*
 FUNCTIONS A: All Functions Related to a User 
 	1) Function A1: Get User Profile 
+	1) Function A2: Get all Users 
 
 */
 
@@ -34,8 +35,40 @@ function getUserProfile(req, res) {
 
 }
 
+
+//Function A2: Get all Users 
+function getAllUsers(req, res) {
+    const userName = req.params.userName;
+	const connection = db.getConnection(); 
+	const queryString = "SELECT * FROM user_login";
+
+	connection.query(queryString, [userName], (err, rows) => {
+		if (!err) {
+			var usersArray = [];
+
+			rows.map((row) => {
+                let currentUser = {
+                    userID: row.user_id,
+                    userName: row.user_name,
+                    userEmail: row.user_email,
+                	salt: row.salt,
+                    pasword: row.password
+                }
+				usersArray.push(currentUser);
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.json(usersArray);
+		} else {
+			console.log("Failed to Select User: " + err);
+		}
+	  
+	})
+
+}
+
  
-//Function A2: Add a Friend 
+//Function A: Add a Friend 
 function addFriend(req, res) {
 	const currentUser = req.body.currentUser;
 	const friendName = req.body.friendName;
@@ -47,7 +80,7 @@ function addFriend(req, res) {
 
 }
 
-module.exports = { addFriend, getUserProfile};
+module.exports = { addFriend, getUserProfile, getAllUsers};
 
 
 

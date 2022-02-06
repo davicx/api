@@ -2,6 +2,50 @@ const db = require('./conn');
 //https://stackoverflow.com/questions/40141332/node-js-mysql-error-handling
 
 //USER FUNCTIONS
+//Method A1: Check if User Exists
+async function checkIfUserExists(userName) {
+    const connection = db.getConnection(); 
+
+    var userExistsStatus = {
+        outcome: 500,
+		userExists: 1,
+        userID: 0,
+        messages: [],
+		errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            
+            const queryString = "SELECT user_id FROM user_login WHERE user_name = ?"			
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    if(rows.length < 1){
+                        userExistsStatus.outcome = 200;
+                        userExistsStatus.userExists = 0;
+                    } else {
+                        userExistsStatus.outcome = 200;
+                        userExistsStatus.userID = rows[0].user_id;
+                        userExistsStatus.messages.push("There is already a user with the name " + userName)
+                    }
+
+                    resolve(userExistsStatus); 
+
+                } else {
+                    userExistsStatus.outcome = 500;
+                    resolve(userExistsStatus);
+                }
+            })
+        } catch(err) {
+            userExistsStatus.outcome = 500;
+            reject(userExistsStatus);
+        } 
+    })
+
+}
+
+
 //GROUP FUNCTIONS
 //Method B1: Check if users are already in the group
 async function checkUserGroupStatus(invitedUsers, groupID)  {
@@ -105,7 +149,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase }
+module.exports = { checkIfUserExists, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase }
 
 
 
