@@ -17,10 +17,10 @@ FUNCTIONS A: All Functions Related to a User
 //FUNCTIONS A: All Functions Related to a User 
 //Function A1: Get User Profile
 function userLogin(req, res) {
-
-    res.send({login:"login"})
-
+    const userLogin = req.body;
+    res.json(userLogin)
 }
+
 //Function A2: Register New User 
 async function userRegister(req, res) {
   const userName = req.body.userName;
@@ -38,20 +38,43 @@ async function userRegister(req, res) {
     password: hashedPassword,
     salt: salt
 	}
-  //console.log(newUser);
 
   //STEP 1: Check if Username is taken 
+  //NEED TO CHECK BOTH USER TABLES! 
 	const userExistsStatus = await Functions.checkIfUserExists(userName)
 
   //STEP 2: Validate Information (or do all at once in validationFunctions.js)
   const validationStatus = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
+  console.log(validationStatus)
 
+  //STEP 3: Make sure Username is Available
   if(userExistsStatus.userExists == 0) {
     console.log("user name is good!")
-     
-    registerUserLoginOutcome = await User.registerUserLogin(newUser)
+    
+    //STEP 4: Register the New User 
+    const registerUserLoginOutcome = await User.registerUserLogin(newUser)
+    console.log(registerUserLoginOutcome)
 
+    const userID = registerUserLoginOutcome.userID
+    console.log("your new ID " + userID)
+    newUser.userID = userID
+
+    const registerUserProfileOutcome = await User.registerUserProfile(newUser)
     //User.registerUserProfile(newUser)
+    console.log(registerUserProfileOutcome)
+
+    res.json(registerUserProfileOutcome)
+    //res.json(newUser)
+	} else {
+    console.log("user name is taken!")
+    res.json({userNameTaken: "userNameTaken"})
+	}
+
+} 
+
+module.exports = { userLogin, userRegister};
+
+
 
 
 
@@ -63,21 +86,6 @@ async function userRegister(req, res) {
 		$stmt->execute();
 		$stmt->close();
     */
-	} else {
-    console.log("user name is taken!")
-	}
-
-  //STEP 3: Register the New User 
-  //const registerUserOutcome = User.registerUser(newUser);
-
-	res.send(registerUserLoginOutcome) 
-
-} 
-
-module.exports = { userLogin, userRegister};
-
-
-
 
 /*
 		//Insert into User Login Table 

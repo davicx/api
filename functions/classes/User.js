@@ -23,11 +23,8 @@ class User {
     //INSERT USER
     return new Promise(async function(resolve, reject) {
         try {
-            //    $sql = 'INSERT INTO user_login (user_name, user_email, salt, password) VALUES (?, ?, ?, ?)';
             const queryString = "INSERT INTO user_login (user_name, user_email, salt, password) VALUES (?, ?, ?, ?)"
-
-            //connection.query(queryString, [newUser.userName, newUser.userEmail, newUser.salt, newUser.hashedPassword], (err, results) => {
-            connection.query(queryString, [newUser.userName, newUser.userEmail, newUser.salt, password], (err, results) => {
+           connection.query(queryString, [newUser.userName, newUser.userEmail, newUser.salt, password], (err, results) => {
                 if (!err) {
                     console.log("You created a new User with ID " + results.insertId);    
                     registerUserOutcome.outcome = 200;       
@@ -50,8 +47,67 @@ class User {
 
 
   static async registerUserProfile(newUser) {
-    console.log("you registered! " + newUser.userName)
+    const connection = db.getConnection(); 
+    var registerUserProfileOutcome = {
+        outcome: "",
+        message: "",
+        errors: []
+    }
+    console.log(newUser)
+    const biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves"
+    const bilboImage = "frodo.jpg"
+    const rootFolder = newUser.userName
+    const firstName = newUser.fullName
+    const lastName = newUser.fullName
 
+    //INSERT USER PROFILE 
+    return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+           connection.query(queryString, [newUser.userName, newUser.userID, bilboImage, rootFolder, biography, firstName, lastName, newUser.userEmail], (err, results) => {
+                if (!err) {
+                    console.log("You created a new User with ID " + results.insertId);    
+                    registerUserProfileOutcome.message = "you sucesfully registered " + newUser.userName + "!";       
+                    registerUserProfileOutcome.outcome = 200;       
+
+                } else {    
+                    registerUserProfileOutcome.outcome = "no worky"
+                    registerUserProfileOutcome.errors.push(err);
+                } 
+                resolve(registerUserProfileOutcome);
+            }) 
+            
+        } catch(err) {
+            registerUserProfileOutcome.outcome = "rejected";
+            console.log("REJECTED " + err);
+            reject(registerUserProfileOutcome);
+        } 
+    });
+  
+
+/*
+    const connection = db.getConnection(); 
+    var registerUserOutcome = {
+        outcome: "",
+        errors: []
+    }
+*/
+    /*
+    		$default_image = "david.jpg";
+		$biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves. 
+		Hobbits have no beards. There is little or no magic about them except the ordinary everyday sort which helps 
+		them to disappear quietly and quickly when large stupid folk like you and me come blundering along, 
+		making a noise like elephants which they can hear a mile off ";
+		
+		$sql = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";		  
+		$stmt = $conn->stmt_init();
+		$stmt = $conn->prepare($sql);
+		
+		$stmt->bind_param('sissssss', $username, $user_id, $default_image, $username, $biography, $first_name, $last_name, $email);
+		$stmt->execute();
+		$stmt->close();
+    */
+ 
     
   }
     /*

@@ -17,9 +17,6 @@ userRouter.post('/register', function(req, res) {
 })
 
 
-
- 
-
 module.exports = userRouter;
 
 

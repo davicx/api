@@ -1,10 +1,5 @@
 var validator = require("email-validator");
 //METHODS A: Validation 
-//validateUsername (valid character, 5 to 20)
-//validateEmail (valid email)
-//validateName (valid character, 5 to 100)
-//validatePassword (valid password)
-
  
 //Functions A: User Validation 
 //Function A1: Validate User Registration  
@@ -80,7 +75,6 @@ function validateUsername(username) {
         } else {
             usernameOutcome.usernameMessages.push("You must use valid alphabet and numbers and stuff")
         }  
-        
     }  
 
     return usernameOutcome;
@@ -140,22 +134,5 @@ function validAlphaNumeric(checkString) {
     console.log(Valid)
     return Valid
 }
- 
-
- 
-/*
-const validateEmail = (email) => {
-    return String(email)
-      .toLowerCase()
-      .match(
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-      );
-  };
-*/
-  
 
 module.exports = { validateRegisterUser, validateEmail, validateUsername, validateFullName, validatePassword }
-
-
-
-  
