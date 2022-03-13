@@ -45,6 +45,69 @@ async function checkIfUserExists(userName) {
 
 }
 
+//Method B2: Remove User from Login Table 
+async function removeUserFromLoginTable(userName)  {
+    const connection = db.getConnection(); 
+
+    var removeStatus = {
+        outcome: 500,
+        message: "",
+		errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            //const queryString = "SELECT created_by FROM groups WHERE group_id = ?"			
+            const queryString = "DELETE FROM user_login WHERE user_name= ?;"			
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    removeStatus.outcome = 200
+                    removeStatus.message = userName + " removed from Login Table"
+                    resolve(removeStatus); 
+                } else {
+                    removeStatus.errors.add(err)
+                    resolve(removeStatus);
+                }
+            })
+        } catch(err) {
+            removeStatus.errors.add(err)
+            reject(removeStatus);
+        } 
+    })
+}
+
+//Method B2: Remove User from Profile Table 
+async function removeUserFromProfileTable(userName)  {
+    const connection = db.getConnection(); 
+
+    var removeStatus = {
+        outcome: 500,
+        message: "",
+		errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {	
+            const queryString = "DELETE FROM user_profile WHERE user_name= ?;"			
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    removeStatus.outcome = 200
+                    removeStatus.message = userName + "removed from Profile Table"
+                    resolve(removeStatus); 
+                } else {
+                    removeStatus.errors.add(err)
+                    resolve(removeStatus);
+                }
+            })
+        } catch(err) {
+            removeStatus.errors.add(err)
+            reject(removeStatus);
+        } 
+    })
+}
+
 
 //GROUP FUNCTIONS
 //Method B1: Check if users are already in the group
@@ -149,7 +212,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { checkIfUserExists, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase }
+module.exports = { checkIfUserExists, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
 
 
 

@@ -8,7 +8,7 @@ class User {
     }
     
 
-    //METHODS A: USER RELATED
+  //METHODS A: USER RELATED
   //Method A1: Register User 
   static async registerUserLogin(newUser) {
     const connection = db.getConnection(); 
@@ -53,7 +53,7 @@ class User {
         message: "",
         errors: []
     }
-    console.log(newUser)
+ 
     const biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves"
     const bilboImage = "frodo.jpg"
     const rootFolder = newUser.userName
@@ -83,101 +83,57 @@ class User {
             reject(registerUserProfileOutcome);
         } 
     });
-  
-
-/*
-    const connection = db.getConnection(); 
-    var registerUserOutcome = {
-        outcome: "",
-        errors: []
-    }
-*/
-    /*
-    		$default_image = "david.jpg";
-		$biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves. 
-		Hobbits have no beards. There is little or no magic about them except the ordinary everyday sort which helps 
-		them to disappear quietly and quickly when large stupid folk like you and me come blundering along, 
-		making a noise like elephants which they can hear a mile off ";
-		
-		$sql = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";		  
-		$stmt = $conn->stmt_init();
-		$stmt = $conn->prepare($sql);
-		
-		$stmt->bind_param('sissssss', $username, $user_id, $default_image, $username, $biography, $first_name, $last_name, $email);
-		$stmt->execute();
-		$stmt->close();
-    */
- 
-    
   }
-    /*
-  //METHODS A: POST RELATED
-    //Method A1: Make a Text Post
-    static async createPostText(req)  {
-        const connection = db.getConnection(); 
-        const masterSite = req.body.masterSite 
-        const postType = req.body.postType 
-        const postFrom = req.body.postFrom 
-        const postTo = req.body.postTo 
-        const groupID = req.body.groupID 
-        const postCaption = req.body.postCaption 
-     
-        var postOutcome = {
-            outcome: 0,
-            postID: 0,
-            errors: []
-        }
 
-        //INSERT POST
+    //Method A1: Get User Info 
+    static async getUserInfo(userName) { 
+        const connection = db.getConnection(); 
+        console.log("Hiya!!" + userName)
+    }
+
+    //Method A2: Get User Login Info
+    static async getUserInfo(userName) { 
+        const connection = db.getConnection(); 
+        const queryString = "SELECT user_id, salt, password FROM user_login WHERE user_name = ?";
+
+        var currentUser = { userName: userName}
+
+        var userLoginOutcome = {
+            status: 500,
+            currentUser: currentUser,
+            errors: [],
+        }   
+        
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?, ?)"
-    
-                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
+                
+                connection.query(queryString, [userName], (err, rows) => {
+                    
                     if (!err) {
-                        console.log("You created a new Post with ID " + results.insertId);    
-                        postOutcome.outcome = 200;       
-                        postOutcome.postID = results.insertId;       
-                    } else {    
-                        postOutcome.outcome = "no worky"
-                        postOutcome.errors.push(err);
+                        rows.map((row) => {
+                            console.log(row)
+                        }); 
+                        userLoginOutcome.currentUser.userID = rows[0]
+                        userLoginOutcome.currentUser.salt = rows[1]
+                        userLoginOutcome.currentUser.password = rows[2]
+                        userLoginOutcome.status = 200; 
+ 
+                    } else {
+                        console.log("error getting group users")    
+                        userLoginOutcome.errors.push("no worky")
+                        userLoginOutcome.errors.push(err);
                     } 
-                    resolve(postOutcome);
+                    
+                    resolve(userLoginOutcome);
                 }) 
                 
             } catch(err) {
-                postOutcome.outcome = "rejected";
-                console.log("REJECTED " + err);
-                reject(postOutcome);
+                console.log("catch error getting group users")    
+                userLoginOutcome.errors.push("no worky")
+                userLoginOutcome.errors.push(err);
+                reject(groupUsersResponse);
             } 
         });
-    }
-
-    */
-    //Method A1: Get User Info 
-    async getUserInfo() {
-        this.lastName = "v"
- 
-        const connection = db.getConnection(); 
-        console.log("getUserInfo " + this.userName);
-        
-        const queryString = "SELECT first_name, last_name FROM user_profile WHERE user_name = ?";
-
-        connection.query(queryString, [this.userName], (err, rows, fields) => {
-            if (!err) {
-                this.firstName = rows[0].first_name
-                this.lastName = rows[0].last_name
-                //console.log("_________________")        
-                //.log(user.firstName + " " + user.lastName);     
-                console.log("from server " + rows[0].first_name + " " + rows[0].last_name);     
-                //console.log();     
-                //console.log("_________________")     
-                //res.sendStatus(500)
-                //return
-            } else {
-                console.log("Failed to Select User: " + err);
-            }
-        })
     }
 
 

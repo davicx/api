@@ -40,7 +40,7 @@ function getUserProfile(req, res) {
 function getAllUsers(req, res) {
     const userName = req.params.userName;
 	const connection = db.getConnection(); 
-	const queryString = "SELECT * FROM user_login";
+	const queryString = "SELECT * FROM user_login WHERE account_deleted = 0";
 
 	connection.query(queryString, [userName], (err, rows) => {
 		if (!err) {

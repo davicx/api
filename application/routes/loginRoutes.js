@@ -11,11 +11,15 @@ userRouter.post('/login', function(req, res) {
     loginFunctions.userLogin(req, res);
 })
 
-//Route A1: Register 
+//Route A2: Register 
 userRouter.post('/register', function(req, res) {
     loginFunctions.userRegister(req, res);
 })
 
+//Route A3: Delete a User 
+userRouter.post('/delete', function(req, res) {
+    loginFunctions.userDelete(req, res);
+})
 
 module.exports = userRouter;
 
