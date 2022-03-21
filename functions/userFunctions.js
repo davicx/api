@@ -5,38 +5,62 @@ const User = require('./classes/User')
 /*
 FUNCTIONS A: All Functions Related to a User 
 	1) Function A1: Get User Profile 
-	1) Function A2: Get all Users 
+	2) Function A2: Get Users Friends
+	3) Function A3: Get all Users 
 
 */
 
 //FUNCTIONS A: All Functions Related to a User 
 //Function A1: Get User Profile
-function getUserProfile(req, res) {
+async function getUserProfile(req, res) {
+    const userName = req.params.userName;
+	const userProfileResponse = await User.getUserProfile(userName)
+
+	res.json({userProfile: userProfileResponse.userProfile} );
+}
+
+
+//Route B2: Get User Friends  
+async function getUserFriends(req, res) {
     const userName = req.params.userName;
 	const connection = db.getConnection(); 
-	const queryString = "SELECT first_name, last_name FROM user_profile WHERE user_name = ?";
+
+
+	
+	/*
+	const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, user_login.user_id, user_login.account_deleted FROM user_login INNER JOIN friends ON user_login.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND user_login.account_deleted = 0"
 
 	connection.query(queryString, [userName], (err, rows) => {
 		if (!err) {
-			const firstName = rows[0].first_name
-			const lastName = rows[0].last_name
+			var friendsArray = [];
+			var friendCount = 0;
 
-			const currentUser = {
-				userName: userName,
-				firstName: firstName,
-				lastName: lastName
-			}
-			res.json(currentUser);
+			rows.map((row) => {
+                let currentUser = {
+                    friendUserName: row.friend_user_name,
+                    friendID: row.friend_id,
+					friendCount: friendCount
+                }
+				friendCount = friendCount + 1;
+
+				friendsArray.push(currentUser);
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.json(friendsArray);
 		} else {
 			console.log("Failed to Select User: " + err);
 		}
 	  
 	})
+	*/
 
 }
 
+ 
 
-//Function A2: Get all Users 
+
+//Function A3: Get all Users 
 function getAllUsers(req, res) {
     const userName = req.params.userName;
 	const connection = db.getConnection(); 
@@ -76,11 +100,11 @@ function addFriend(req, res) {
     console.log(currentUser);
     console.log(friendName);
 
-	res.json({addFriend: currentUser + " added a friend named " + friendName});
+	res.json({addFriend: currentUser + " (Need to do) added a friend named " + friendName});
 
 }
 
-module.exports = { addFriend, getUserProfile, getAllUsers};
+module.exports = { addFriend, getUserProfile, getAllUsers, getUserFriends};
 
 
 
@@ -91,21 +115,25 @@ module.exports = { addFriend, getUserProfile, getAllUsers};
 
 
 //APPENDIX
-
-	//let currentUser = new User(userName);
-	//console.log("Your Name Before " + currentUser.firstName + " " + currentUser.lastName);
-	//currentUser.getUserInfo();
-	//getUserInfo(currentUser);
-	//console.log("Your Name After " + currentUser.firstName + " " + currentUser.lastName);
-	//res.json({userProfile: "you got your info " + userName}); 
 /*
+const connection = db.getConnection(); 
+const queryString = "SELECT first_name, last_name FROM user_profile WHERE user_name = ?";
 
-function getUserInfo(currentUser) {
-	currentUser.lastName= "Vasq"
+connection.query(queryString, [userName], (err, rows) => {
+	if (!err) {
+		const firstName = rows[0].first_name
+		const lastName = rows[0].last_name
 
-}
+		const currentUser = {
+			userName: userName,
+			firstName: firstName,
+			lastName: lastName
+		}
+		res.json(currentUser);
+	} else {
+		console.log("Failed to Select User: " + err);
+	}
+})
 */
-	
-
 
 

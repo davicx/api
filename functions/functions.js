@@ -56,8 +56,7 @@ async function removeUserFromLoginTable(userName)  {
     }
 
     return new Promise(async function(resolve, reject) {
-        try {
-            //const queryString = "SELECT created_by FROM groups WHERE group_id = ?"			
+        try {			
             const queryString = "DELETE FROM user_login WHERE user_name= ?;"			
             
             connection.query(queryString, [userName], (err, rows) => {

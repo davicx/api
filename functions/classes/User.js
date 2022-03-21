@@ -17,6 +17,7 @@ class User {
         userID: 0,
         errors: []
     }
+
     const password = newUser.password
     console.log(password)
 
@@ -85,14 +86,141 @@ class User {
     });
   }
 
+    //Method A4: Get User Friends 
+    static async getUserFriends(userName) { 
+        const connection = db.getConnection(); 
+        const queryString = "SELECT user_id, image_name, first_name, last_name FROM user_profile WHERE user_name = ?";
+
+        var userProfileOutcome = {
+            status: 500,
+            errors: [],
+        }   
+        
+        return new Promise(async function(resolve, reject) {
+            try {
+                
+                connection.query(queryString, [userName], (err, rows) => {
+                    
+                    if (!err) {
+                        rows.map((row) => {
+                            console.log(row)
+                        }); 
+
+                        const userProfile = {
+                            userName: userName,
+                            userID: rows[0].user_id,
+                            userImage: rows[0].image_name,
+                            firstName: rows[0].first_name,
+                            lastName: rows[0].last_name
+                        }
+
+                        userProfileOutcome.userProfile = userProfile;
+                        userProfileOutcome.status = 200; 
+ 
+                    } else {
+                        console.log("error getting user profile")    
+                        userProfileOutcome.errors.push("no worky")
+                        userProfileOutcome.errors.push(err);
+                    } 
+                    
+                    resolve(userProfileOutcome);
+                }) 
+                
+            } catch(err) {
+                console.log("catch error getting group users")    
+                userProfileOutcome.errors.push("no worky")
+                userProfileOutcome.errors.push(err);
+                reject(userProfileOutcome);
+            } 
+        });
+        
+        /*
+        ADD THIS CODE TO THE ABOVE 
+	const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, user_login.user_id, user_login.account_deleted FROM user_login INNER JOIN friends ON user_login.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND user_login.account_deleted = 0"
+
+	connection.query(queryString, [userName], (err, rows) => {
+		if (!err) {
+			var friendsArray = [];
+			var friendCount = 0;
+
+			rows.map((row) => {
+                let currentUser = {
+                    friendUserName: row.friend_user_name,
+                    friendID: row.friend_id,
+					friendCount: friendCount
+                }
+				friendCount = friendCount + 1;
+
+				friendsArray.push(currentUser);
+			});
+
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.json(friendsArray);
+		} else {
+			console.log("Failed to Select User: " + err);
+		}
+	  
+	})
+        */
+    }
+
     //Method A1: Get User Info 
     static async getUserInfo(userName) { 
         const connection = db.getConnection(); 
         console.log("Hiya!!" + userName)
     }
+    
+    //Method A1: Get User Profile Info 
+    static async getUserProfile(userName){ 
+        const connection = db.getConnection(); 
+        const queryString = "SELECT user_id, image_name, first_name, last_name FROM user_profile WHERE user_name = ?";
 
-    //Method A2: Get User Login Info
-    static async getUserInfo(userName) { 
+        var userProfileOutcome = {
+            status: 500,
+            errors: [],
+        }   
+        
+        return new Promise(async function(resolve, reject) {
+            try {
+                
+                connection.query(queryString, [userName], (err, rows) => {
+                    
+                    if (!err) {
+                        rows.map((row) => {
+                            console.log(row)
+                        }); 
+
+                        const userProfile = {
+                            userName: userName,
+                            userID: rows[0].user_id,
+                            userImage: rows[0].image_name,
+                            firstName: rows[0].first_name,
+                            lastName: rows[0].last_name
+                        }
+
+                        userProfileOutcome.userProfile = userProfile;
+                        userProfileOutcome.status = 200; 
+ 
+                    } else {
+                        console.log("error getting user profile")    
+                        userProfileOutcome.errors.push("no worky")
+                        userProfileOutcome.errors.push(err);
+                    } 
+                    
+                    resolve(userProfileOutcome);
+                }) 
+                
+            } catch(err) {
+                console.log("catch error getting group users")    
+                userProfileOutcome.errors.push("no worky")
+                userProfileOutcome.errors.push(err);
+                reject(userProfileOutcome);
+            } 
+        });
+    }
+     
+    //Method A2: Get User Login Info 
+    static async getUserLoginInfo(userName) {  
         const connection = db.getConnection(); 
         const queryString = "SELECT user_id, salt, password FROM user_login WHERE user_name = ?";
 
@@ -135,8 +263,6 @@ class User {
             } 
         });
     }
-
-
 }
 
 module.exports = User;

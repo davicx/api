@@ -18,6 +18,12 @@ userRouter.get("/user/:userName", (req, res) => {
     userFunctions.getUserProfile(req, res);
 })
 
+//Route B2: Get User Friends 
+userRouter.get("/user/friends/:userName", (req, res) => {
+    userFunctions.getUserFriends(req, res);
+})
+
+//Route B3: Get all Site Users
 userRouter.get("/users/all", (req, res) => {
     userFunctions.getAllUsers(req, res);
 })

@@ -18,11 +18,19 @@ FUNCTIONS A: All Functions Related to a User
 //Function A3: Delete a User 
 async function userDelete(req, res) {
   const userName = req.body.userName;
-  const loginStatus = await Functions.removeUserFromLoginTable(userName)
-  const profileStatus = await Functions.removeUserFromProfileTable(userName)
-  console.log(loginStatus)
-  console.log(profileStatus)
-  res.json({loginStatus: loginStatus, profileStatus: profileStatus})
+  const typeOfDelete = req.body.type;
+
+  if(typeOfDelete == "permanent") {
+    const loginStatus = await Functions.removeUserFromLoginTable(userName)
+    const profileStatus = await Functions.removeUserFromProfileTable(userName)
+    console.log(loginStatus)
+    console.log(profileStatus)
+    res.json({loginStatus: loginStatus, profileStatus: profileStatus})
+  } else {
+    res.json({type: "Add temp delete"})
+  }
+
+
 }
 
 
