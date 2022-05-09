@@ -8,33 +8,14 @@ const User = require('./classes/User')
 
 /*
 FUNCTIONS A: All Functions Related to a User 
-	1) Function A1: Login
+	1) Function A1: User Login
 	1) Function A2: Register
 	1) Function A3: Delete a User 
 
 */
 
 //FUNCTIONS A: All Functions Related to a User 
-//Function A3: Delete a User 
-async function userDelete(req, res) {
-  const userName = req.body.userName;
-  const typeOfDelete = req.body.type;
-
-  if(typeOfDelete == "permanent") {
-    const loginStatus = await Functions.removeUserFromLoginTable(userName)
-    const profileStatus = await Functions.removeUserFromProfileTable(userName)
-    console.log(loginStatus)
-    console.log(profileStatus)
-    res.json({loginStatus: loginStatus, profileStatus: profileStatus})
-  } else {
-    res.json({type: "Add temp delete"})
-  }
-
-
-}
-
-
-//Function A1: Get User Profile
+//Function A1: User Login 
 async function userLogin(req, res) {
     const userName = req.body.username;
     const password = req.body.password;
@@ -54,6 +35,80 @@ async function userLogin(req, res) {
 
     res.json({userName: userName, password: password})
 }
+
+//Function A2: Register New User 
+async function userRegister(req, res) {
+  const userName = req.body.userName;
+  const fullName = req.body.fullName;
+  const userEmail = req.body.email;
+  const rawPassword = req.body.password
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(req.body.password, salt)
+  var registerUserLoginOutcome = {}
+
+	const newUser = {
+		userName: userName,
+		fullName: fullName,
+		userEmail: userEmail,
+    password: hashedPassword,
+    salt: salt
+	}
+
+  //STEP 1: Check if Username is taken 
+  //NEED TO CHECK BOTH USER TABLES! 
+	const userExistsStatus = await Functions.checkIfUserExists(userName)
+
+  //STEP 2: Validate Information (or do all at once in validationFunctions.js)
+  const validationStatus = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
+  console.log(validationStatus)
+
+  //STEP 3: Make sure Username is Available
+  if(userExistsStatus.userExists == 0) {
+    console.log("user name is good!")
+    
+    //STEP 4: Register the New User 
+    registerUserLoginOutcome = await User.registerUserLogin(newUser)
+    console.log(registerUserLoginOutcome)
+
+    const userID = registerUserLoginOutcome.userID
+    console.log("your new ID " + userID)
+    newUser.userID = userID
+
+    const registerUserProfileOutcome = await User.registerUserProfile(newUser)
+    //User.registerUserProfile(newUser)
+    console.log(registerUserProfileOutcome)
+
+    res.json(registerUserProfileOutcome)
+
+	} else {
+    console.log("user name is taken!")
+    res.json({userNameTaken: "userNameTaken"})
+	}
+
+} 
+//Function A3: Delete a User 
+async function userDelete(req, res) {
+  const userName = req.body.userName;
+  const typeOfDelete = req.body.type;
+
+  if(typeOfDelete == "permanent") {
+    const loginStatus = await Functions.removeUserFromLoginTable(userName)
+    const profileStatus = await Functions.removeUserFromProfileTable(userName)
+    console.log(loginStatus)
+    console.log(profileStatus)
+    res.json({loginStatus: loginStatus, profileStatus: profileStatus})
+  } else {
+    //Temp delete means setting the user to active is zero 
+    res.json({type: "Add temp delete"})
+  }
+
+
+}
+
+
+module.exports = { userLogin, userRegister, userDelete};
+
+
 
 /*
 app.post("/login", async(req, res) => {
@@ -90,56 +145,3 @@ app.post("/login", async(req, res) => {
 
 })
 */
-
-//Function A2: Register New User 
-async function userRegister(req, res) {
-  const userName = req.body.userName;
-  const fullName = req.body.fullName;
-  const userEmail = req.body.email;
-  const rawPassword = req.body.password
-  const salt = await bcrypt.genSalt();
-  const hashedPassword = await bcrypt.hash(req.body.password, salt)
-  var registerUserLoginOutcome = {}
-
-	const newUser = {
-		userName: userName,
-		fullName: fullName,
-		userEmail: userEmail,
-    password: hashedPassword,
-    salt: salt
-	}
-
-  //STEP 1: Check if Username is taken 
-  //NEED TO CHECK BOTH USER TABLES! 
-	const userExistsStatus = await Functions.checkIfUserExists(userName)
-
-  //STEP 2: Validate Information (or do all at once in validationFunctions.js)
-  const validationStatus = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
-  console.log(validationStatus)
-
-  //STEP 3: Make sure Username is Available
-  if(userExistsStatus.userExists == 0) {
-    console.log("user name is good!")
-    
-    //STEP 4: Register the New User 
-    const registerUserLoginOutcome = await User.registerUserLogin(newUser)
-    console.log(registerUserLoginOutcome)
-
-    const userID = registerUserLoginOutcome.userID
-    console.log("your new ID " + userID)
-    newUser.userID = userID
-
-    const registerUserProfileOutcome = await User.registerUserProfile(newUser)
-    //User.registerUserProfile(newUser)
-    console.log(registerUserProfileOutcome)
-
-    res.json(registerUserProfileOutcome)
-
-	} else {
-    console.log("user name is taken!")
-    res.json({userNameTaken: "userNameTaken"})
-	}
-
-} 
-
-module.exports = { userLogin, userRegister, userDelete};

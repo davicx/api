@@ -45,7 +45,7 @@ async function checkIfUserExists(userName) {
 
 }
 
-//Method B2: Remove User from Login Table 
+//Method A2: Remove User from Login Table 
 async function removeUserFromLoginTable(userName)  {
     const connection = db.getConnection(); 
 
@@ -76,7 +76,7 @@ async function removeUserFromLoginTable(userName)  {
     })
 }
 
-//Method B2: Remove User from Profile Table 
+//Method A2: Remove User from Profile Table 
 async function removeUserFromProfileTable(userName)  {
     const connection = db.getConnection(); 
 
@@ -106,6 +106,41 @@ async function removeUserFromProfileTable(userName)  {
         } 
     })
 }
+
+//Method A3: Update User to not active in the User Profile Table 
+//*** I JUST MADE THIS DONT KNOW IF IT WORKS = )
+async function makeUserNotActiveInProfileTable(userName)  {
+    const connection = db.getConnection(); 
+
+    var activeStatus = {
+        outcome: 500,
+        message: "",
+		errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {	
+            const queryString = "UPDATE user_profile SET active_member = '0' WHERE user_name = ?"			
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    activeStatus.outcome = 200
+                    activeStatus.message = userName + "User is no longer active in the Profile Table"
+                    resolve(activeStatus); 
+                } else {
+                    activeStatus.errors.add(err)
+                    resolve(activeStatus);
+                }
+            })
+        } catch(err) {
+            activeStatus.errors.add(err)
+            reject(activeStatus);
+        } 
+    })
+}
+
+
+
 
 
 //GROUP FUNCTIONS
