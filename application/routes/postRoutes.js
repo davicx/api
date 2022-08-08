@@ -1,10 +1,11 @@
 const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
-const cors = require('cors');
-postRouter.use(cors())
+//const cors = require('cors');
+//postRouter.use(cors())
+//const app = express()
 
-//POST ROUTES
+//CREATE POST 
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
     postFunctions.postText(req, res);
@@ -20,8 +21,9 @@ postRouter.post('/post/video', function(req, res) {
     postFunctions.postVideo(req, res);
 })
 
+//UPDATE POSTS
 
-//GET ROUTES
+//GET POSTS 
 //Route B1: Get Posts to a Group
 postRouter.get("/posts/group/:group_id", (req, res) => {
     postFunctions.getGroupPosts(req, res);
@@ -40,7 +42,13 @@ postRouter.get("/posts/:post_id", (req, res) => {
 //Route B4: Get all Posts 
 postRouter.get("/posts", (req, res) => {
 	postFunctions.getAllPosts(req, res);
+
 })
+
+
+
+
+
 
 
 module.exports = postRouter;

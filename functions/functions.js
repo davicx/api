@@ -1,7 +1,8 @@
 const db = require('./conn');
+const bcrypt = require('bcrypt')
 //https://stackoverflow.com/questions/40141332/node-js-mysql-error-handling
 
-//USER FUNCTIONS
+//LOGIN FUNCTIONS
 //Method A1: Check if User Exists
 async function checkIfUserExists(userName) {
     const connection = db.getConnection(); 
@@ -13,6 +14,8 @@ async function checkIfUserExists(userName) {
         messages: [],
 		errors: []
     }
+
+    //console.log("checkIfUserExists " + userName)
 
     return new Promise(async function(resolve, reject) {
         try {
@@ -45,7 +48,59 @@ async function checkIfUserExists(userName) {
 
 }
 
-//Method A2: Remove User from Login Table 
+//Method A2: Login User (Validate username and password)
+async function getUserPassword(userName) {
+    const connection = db.getConnection(); 
+    console.log("Function: loginUser")
+
+    var loginUserStatus = {
+        outcome: 500,
+        hashedPassword: '',
+		errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            
+            const queryString = "SELECT password FROM user_login WHERE user_name = ?"			
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    //console.log("_________ROWS_________");
+                    //console.log(rows);
+                    //console.log("_________ROWS_________");
+
+                    //const userHashedPassword = "temp";
+                    const userHashedPassword = rows[0].password;
+                    loginUserStatus.hashedPassword = userHashedPassword;
+
+                    resolve(loginUserStatus); 
+
+                } else {
+                    loginUserStatus.errors.push(err);
+                    resolve(loginUserStatus);
+                }
+            })
+        } catch(err) {
+            loginUserStatus.errors.push(err);
+            reject(loginUserStatus);
+        } 
+    })
+
+    /*
+      try {
+    if(await bcrypt.compare(req.body.password, user.password)) {
+      res.send('Success')
+    } else {
+      res.send('Not Allowed')
+    }
+  } catch {
+    res.status(500).send()
+  }
+  */
+}
+
+//Method A3: Remove User from Login Table 
 async function removeUserFromLoginTable(userName)  {
     const connection = db.getConnection(); 
 
@@ -76,7 +131,7 @@ async function removeUserFromLoginTable(userName)  {
     })
 }
 
-//Method A2: Remove User from Profile Table 
+//Method A4: Remove User from Profile Table 
 async function removeUserFromProfileTable(userName)  {
     const connection = db.getConnection(); 
 
@@ -107,7 +162,7 @@ async function removeUserFromProfileTable(userName)  {
     })
 }
 
-//Method A3: Update User to not active in the User Profile Table 
+//Method A5: Update User to not active in the User Profile Table 
 //*** I JUST MADE THIS DONT KNOW IF IT WORKS = )
 async function makeUserNotActiveInProfileTable(userName)  {
     const connection = db.getConnection(); 
@@ -139,9 +194,8 @@ async function makeUserNotActiveInProfileTable(userName)  {
     })
 }
 
-
-
-
+async function makeUserNotActiveInLoginTable(userName)  {
+}
 
 //GROUP FUNCTIONS
 //Method B1: Check if users are already in the group
@@ -246,7 +300,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { checkIfUserExists, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
+module.exports = { checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
 
 
 

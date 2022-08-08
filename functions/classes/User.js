@@ -19,13 +19,14 @@ class User {
     }
 
     const password = newUser.password
+    const salt = newUser.salt
     console.log(password)
 
     //INSERT USER
     return new Promise(async function(resolve, reject) {
         try {
             const queryString = "INSERT INTO user_login (user_name, user_email, salt, password) VALUES (?, ?, ?, ?)"
-           connection.query(queryString, [newUser.userName, newUser.userEmail, newUser.salt, password], (err, results) => {
+           connection.query(queryString, [newUser.userName, newUser.userEmail, salt, password], (err, results) => {
                 if (!err) {
                     console.log("You created a new User with ID " + results.insertId);    
                     registerUserOutcome.outcome = 200;       
@@ -46,7 +47,6 @@ class User {
     });
   }
 
-
   static async registerUserProfile(newUser) {
     const connection = db.getConnection(); 
     var registerUserProfileOutcome = {
@@ -60,12 +60,14 @@ class User {
     const rootFolder = newUser.userName
     const firstName = newUser.fullName
     const lastName = newUser.fullName
+    const university = "osu"
+    const postView = ""
 
     //INSERT USER PROFILE 
     return new Promise(async function(resolve, reject) {
         try {
-            const queryString = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-           connection.query(queryString, [newUser.userName, newUser.userID, bilboImage, rootFolder, biography, firstName, lastName, newUser.userEmail], (err, results) => {
+            const queryString = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, university, post_view, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+           connection.query(queryString, [newUser.userName, newUser.userID, bilboImage, rootFolder, biography, university, postView, firstName, lastName, newUser.userEmail], (err, results) => {
                 if (!err) {
                     console.log("You created a new User with ID " + results.insertId);    
                     registerUserProfileOutcome.message = "you sucesfully registered " + newUser.userName + "!";       

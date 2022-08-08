@@ -10,6 +10,12 @@ notificationRouter.get("/notifications/user/:user_name", (req, res) => {
     notificationFunctions.getUserNotifications(req, res);
 })
 
+//Route B2: Get Single Notification 
+notificationRouter.get("/notifications/user/:user_name", (req, res) => {
+    //notificationFunctions.getUserNotifications(req, res);
+    res.json({singleNotification: "singleNotification"})
+})
+
 //POST ROUTES
 //Route A1: Mark Notification as Seen 
 notificationRouter.post('/notifications/create', function(req, res) {

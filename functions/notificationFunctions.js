@@ -29,7 +29,7 @@ function getUserNotifications(req, res) {
 
             //const filteredNotifications = notificationsArray.filter(notification => notification.notificationType === "group_invite");
  
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json({notifications: notificationsArray});
 
         } else {

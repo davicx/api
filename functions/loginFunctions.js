@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt')
 const Functions = require('./functions');
 const validationFunctions = require('./validationFunctions');
 const User = require('./classes/User')
-//const Notification = require('./classes/Notifications');
+const Notifications = require('./classes/Notification')
 
 /*
 FUNCTIONS A: All Functions Related to a User 
@@ -17,25 +17,114 @@ FUNCTIONS A: All Functions Related to a User
 //FUNCTIONS A: All Functions Related to a User 
 //Function A1: User Login 
 async function userLogin(req, res) {
-    const userName = req.body.username;
+    const userName = req.body.userName;
     const password = req.body.password;
+
+    var userExists = 0;
+    var passwordCorrect = false;
+    var validUser = false;
+    var refreshToken = "myRefreshToken";
+    var accessToken = "myAccessToken";
+
+    //STEP 1: Check if user Exists 
+    const userExistsStatus = await Functions.checkIfUserExists(userName);
+    userExists = !!userExistsStatus.userExists;
     
-    const userExistsStatus = await Functions.checkIfUserExists(userName)
-    console.log("________Exists__________")
-    console.log(userExistsStatus)
-    console.log("_________user login_________")
-    if(userExistsStatus.userID == 0) {
-      console.log(userName + " is not a valid username")
-    } else {
-      var currentUserOutcome = await User.getUserInfo(userName)
-      console.log(currentUserOutcome)
-      console.log("__________________")
-      
+    //STEP 2: Validate user and password
+    if(userExists == true ) {
+      const passwordOutcome = await Functions.getUserPassword(userName);
+      const actualPassword = passwordOutcome.hashedPassword
+  
+      try {
+        if(await bcrypt.compare(password, actualPassword)) {
+          //console.log("worked the same!")
+          passwordCorrect = true;
+        } else {
+          //console.log("No same")
+        }
+      } catch {
+        console.log("CATCH error")
+      }
     }
 
-    res.json({userName: userName, password: password})
+    //STEP 3: Check for Valid User and Set Tokens 
+    if(userExists == true && passwordCorrect == true) {
+      validUser = true;
+      var myShortToken = "loggedIn" + userName;
+      res.cookie('accessToken', myShortToken, {httpOnly: true})
+      res.cookie('refreshToken', 'myLongToken!!', {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    } else {
+      res.cookie('accessToken', 'notLoggedIn', {httpOnly: true})
+    }
+
+    //TEMP: Send Cookies 
+    var accessToken = ""
+    var refreshToken = ""
+    
+    accessToken = req.cookies.accessToken;
+    refreshToken = req.cookies.refreshToken;
+
+    if(accessToken == undefined) {
+      accessToken = "empty"
+    }
+
+    if(refreshToken == undefined) {
+      refreshToken = "empty"
+    }
+  
+    const loginOutcome = {
+      validUser: validUser,
+      passwordCorrect: passwordCorrect,
+      accessToken: accessToken,
+      refreshToken, refreshToken
+    }
+
+    res.json(loginOutcome)
 }
 
+//TEMP
+//Function A3: Login Status
+async function loginStatus(req, res) {
+  const userName = req.body.userName;
+  const password = req.body.password;
+  var accessToken = ""
+  var refreshToken = ""
+  var userLoggedIn = false
+  
+  accessToken = req.cookies.accessToken;
+  refreshToken = req.cookies.refreshToken;
+
+  if(accessToken == undefined) {
+    accessToken = "notLoggedIn"
+  }
+
+  if(refreshToken == undefined) {
+    refreshToken = "empty"
+  }
+
+  if(accessToken != "empty") {
+    
+  }
+
+  if(accessToken != "notLoggedIn") {
+    userLoggedIn = true
+  }
+  
+
+
+  const loginStatusOutcome = {
+    userName: userName,
+    userLoggedIn: userLoggedIn,
+    accessToken: accessToken,
+    refreshToken, refreshToken
+  }
+
+  res.json(loginStatusOutcome)
+}
+//TEMP
+
+/* SALT FOR BYRCYPT DOESN"T WORK!!!!! */
+/* Need to make field a varchar */
 //Function A2: Register New User 
 async function userRegister(req, res) {
   const userName = req.body.userName;
@@ -75,7 +164,6 @@ async function userRegister(req, res) {
     newUser.userID = userID
 
     const registerUserProfileOutcome = await User.registerUserProfile(newUser)
-    //User.registerUserProfile(newUser)
     console.log(registerUserProfileOutcome)
 
     res.json(registerUserProfileOutcome)
@@ -106,42 +194,59 @@ async function userDelete(req, res) {
 }
 
 
-module.exports = { userLogin, userRegister, userDelete};
+module.exports = { userLogin, userRegister, loginStatus, userDelete};
 
 
 
-/*
-app.post("/login", async(req, res) => {
-  const loginUserName = req.body.username;
+
+//COOOKIES
+    
+    
+    /*
+
+    ////
+      //Set Cookie 
+      res.cookie('token', 'myShortToken', {httpOnly: true})
+      res.cookie('tokenLong', 'myLongToken!!', {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
   
-  //Search for User 
-  const user = users.find(user => user.userName = req.body.username)
+      //Get Cookie 
+      var myCookieToken = ""
+      var myLongCookieToken = ""
   
-  var loginResponse = {
-    user: user,
-    messages: [],
-    errorMessages: []
-  }
-
-  if (user != null ) {
-    try {
-      if(await bcrypt.compare(req.body.password, user.password)) {
-            const successMessage = 'yay! worked ' + req.body.username;
-            loginResponse.messages.push(successMessage);
-      } else {
-        const passwordErrorMessage = 'password no matchy!';
-        loginResponse.messages.push(passwordErrorMessage);
+      myCookieToken = req.cookies.token;
+      myLongCookieToken = req.cookies.tokenLong;
+  
+      if(myCookieToken == undefined) {
+        myCookieToken = "empty"
       }
-    } catch {
-      res.status(500).send();
-    }
-  } else {
-    const errorMessage = "Could not find "  + loginUserName
-    console.log("Could not find "  + loginUserName)
-    loginResponse.errorMessages.push(errorMessage);
-  }
   
-  res.json(loginResponse)
+      if(myLongCookieToken == undefined) {
+        myLongCookieToken = "empty"
+      }
+  
+      console.log("COOKIES " + myCookieToken, myLongCookieToken)
+  
+      ////
+    //Set Cookie 
+    res.cookie('token', 'myShortToken', {httpOnly: true})
+    res.cookie('tokenLong', 'myLongToken!!', {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
 
-})
-*/
+    //Get Cookie 
+    var myCookieToken = ""
+    var myLongCookieToken = ""
+
+    myCookieToken = req.cookies.token;
+    myLongCookieToken = req.cookies.tokenLong;
+
+    if(myCookieToken == undefined) {
+      myCookieToken = "empty"
+    }
+
+    if(myLongCookieToken == undefined) {
+      myLongCookieToken = "empty"
+    }
+
+    console.log("COOKIES " + myCookieToken, myLongCookieToken)
+   
+    */
+

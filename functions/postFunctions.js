@@ -118,7 +118,7 @@ function getGroupPosts(req, res) {
 				}
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json(posts);
 
         } else {
@@ -148,7 +148,7 @@ function getUserPosts(req, res) {
 				}
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json({posts:posts});
 
         } else {
@@ -186,7 +186,7 @@ function getSinglePost(req, res) {
 				}
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			//res.json({posts:posts});
 			console.log(typeof(posts))
 			res.json(posts);
@@ -224,7 +224,7 @@ function getAllPosts(req, res) {
 				}
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			//res.json({posts:posts});
 			res.json(posts);
 

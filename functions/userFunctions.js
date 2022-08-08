@@ -81,7 +81,7 @@ function getAllUsers(req, res) {
 				usersArray.push(currentUser);
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json(usersArray);
 		} else {
 			console.log("Failed to Select User: " + err);

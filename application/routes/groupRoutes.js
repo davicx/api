@@ -1,6 +1,6 @@
 const express = require('express')
 const groupRouter = express.Router();
-const groupFunctions = require('./../../functions/groupFunctions')
+//const groupFunctions = require('./../../functions/groupFunctions')
 //app.use(express.json());
 
 //USER ROUTES
@@ -9,6 +9,7 @@ groupRouter.post('/group/create/', function(req, res) {
     groupFunctions.createGroup(req, res);
 })
 
+/*
 //Route A2: Invite Users to a Group 
 groupRouter.post('/group/invite/', function(req, res) {
     groupFunctions.addGroupUsers(req, res);
@@ -39,7 +40,6 @@ groupRouter.get("/group/:groupID", (req, res) => {
 groupRouter.get("/group/users/:groupID", (req, res) => {
     groupFunctions.getGroupUsers(req, res);
 })
-
 
 
 

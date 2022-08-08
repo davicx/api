@@ -19,13 +19,12 @@ FUNCTIONS B: All Functions Related to Groups
 
 */
 
-
 //Function A1: Create a New Group
 async function createGroup(req, res) {
 	var groupOutcome = { groupID: 7}
 	var groupUsersOutcome = {}
 	var notification = {}
-
+	
 	//STEP 1: Create the Group and Add the New Users
 	try {
 		groupOutcome = await Group.createGroup(req);
@@ -65,9 +64,8 @@ async function createGroup(req, res) {
 		console.log(err);
 		console.log("were in the catch now!!");
 	}
-	
 	res.json({groupID: groupOutcome.groupID});
-
+	
 }
 
 
@@ -144,7 +142,6 @@ async function addGroupUsers(req, res) {
 
 }
 
-
 //Function A3: Accept Group Invite
 async function acceptGroupInvite(req, res) {
 	const currentUser = req.body.currentUser;
@@ -204,6 +201,7 @@ async function acceptGroupInvite(req, res) {
 	res.json(acceptGroupInviteOutcome);
 }
 
+
 //Function A4: Leave a Group 
 function leaveGroup(req, res) {
 	const currentUser = req.body.currentUser;
@@ -211,6 +209,7 @@ function leaveGroup(req, res) {
 	Group.leaveGroup(currentUser, groupID);
 	res.json({leave: "leave"})
 }
+
 
 //Function B1: Get All Groups User is In 
 function getUserGroups(req, res) {
@@ -226,7 +225,7 @@ function getUserGroups(req, res) {
 				groupList.push(row.group_id);
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json({groups: groupList} );
 
         } else {
@@ -263,14 +262,18 @@ async function getGroupUsers(req, res) {
 
 }
 
+//module.exports = { createGroup };
 module.exports = { createGroup, addGroupUsers, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };
 
 
 
+
+
+
+
+
+
 //APPENDIX
-
-
-
 	//groupUsersOutcome = await Group.addGroupUsers(groupID, groupUsers, currentUser);
 /*
 			notificationFrom: req.body.postFrom,
