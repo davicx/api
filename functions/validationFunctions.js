@@ -21,7 +21,9 @@ function validateRegisterUser(userEmail, userName, fullName, password) {
         fullNameMessages: [],
 
         passwordStatus: 0,
-        passwordMessages: []
+        passwordMessages: [],
+
+        validUserRegistration: 0
 
     }
 
@@ -34,7 +36,13 @@ function validateRegisterUser(userEmail, userName, fullName, password) {
     validationOutcome.fullNameMessages = validFullname.fullnameMessages;
     validationOutcome.passwordStatus = validPassword.passwordStatus;
     validationOutcome.passwordMessages = validPassword.passwordMessages;
+
+    var validUserSum =  validationOutcome.emailStatus + validationOutcome.usernameStatus + validationOutcome.fullNameStatus + validationOutcome.passwordStatus;
     
+    if(validUserSum == 4) {
+        validationOutcome.validUserRegistration = 1
+    } 
+
     return validationOutcome;
 
 }
@@ -49,7 +57,7 @@ function validateEmail(email) {
     if(validator.validate(email)) {
         emailOutcome.emailStatus = 1;
         emailOutcome.emailMessages.push("Appears to be a valid email")
-        console.log("appears to be a valid email")
+        //console.log("appears to be a valid email")
     } else {
         emailOutcome.emailMessages.push("This does not appear to be a valid email")
     }
@@ -87,7 +95,7 @@ function validateFullName(fullNameRaw) {
         fullnameMessages: [],
     }
     fullName = fullNameRaw.replace(/\s/g,'');
-    console.log(fullName)
+    //console.log(fullName)
 
     if(fullName.length > 50) {
         fullnameOutcome.fullnameMessages.push("Your fullname must be less then 50 characters")
@@ -114,7 +122,7 @@ function validatePassword(password) {
     }
 
     if(password.length < 5) {
-        passwordOutcome.passwordMessages.push("Your password must be less then 5 characters")
+        passwordOutcome.passwordMessages.push("Your password must be more then 5 characters")
     }  else {
         if(validAlphaNumeric(password)) {
             passwordOutcome.passwordMessages.push("Password looks good!")
@@ -131,7 +139,7 @@ function validAlphaNumeric(checkString) {
     var RegEx = /^[a-z0-9]+$/i;
     var Valid = RegEx.test(checkString);
 
-    console.log(Valid)
+    //console.log(Valid)
     return Valid
 }
 

@@ -1,8 +1,32 @@
 const db = require('./conn');
 const bcrypt = require('bcrypt')
-//https://stackoverflow.com/questions/40141332/node-js-mysql-error-handling
+var jwt = require('jsonwebtoken');
 
 //LOGIN FUNCTIONS
+//Function A1: Create Access Token 
+async function generateAccessToken(currentUser, accessTokenLength) {
+    //var accessToken = jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET);
+    //Minute
+    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60s'}); 
+
+    //5 Minutes
+    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '300s'}); 
+    
+    //Hour
+    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '3600s'}); 
+    
+    //Week 
+    return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
+    
+}
+
+//Function A: Create a new Access Token from a Refresh Token 
+async function generateTokenFromRefreshToken(currentUser, refreshToken, accessTokenLength) {
+
+    return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
+    
+}
+
 //Method A1: Check if User Exists
 async function checkIfUserExists(userName) {
     const connection = db.getConnection(); 
@@ -51,7 +75,7 @@ async function checkIfUserExists(userName) {
 //Method A2: Login User (Validate username and password)
 async function getUserPassword(userName) {
     const connection = db.getConnection(); 
-    console.log("Function: loginUser")
+    console.log("Function: getUserPassword")
 
     var loginUserStatus = {
         outcome: 500,
@@ -87,17 +111,6 @@ async function getUserPassword(userName) {
         } 
     })
 
-    /*
-      try {
-    if(await bcrypt.compare(req.body.password, user.password)) {
-      res.send('Success')
-    } else {
-      res.send('Not Allowed')
-    }
-  } catch {
-    res.status(500).send()
-  }
-  */
 }
 
 //Method A3: Remove User from Login Table 
@@ -300,173 +313,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
+module.exports = { generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
 
-
-
-
-
-/*
-async function checkUserGroupStatusORIGINAL(invitedUsers, groupID)  {
-    const connection = db.getConnection(); 
-    var groupUserStatus = {
-        outcome: 200,
-		existingUsers: [],
-		newUsers: []
-    }
-    return new Promise(async function(resolve, reject) {
-        const existingUsersSet = new Set();
-        try {
-            
-            const queryString = "SELECT user_name, active_member FROM group_users WHERE group_id = ?"			
-            
-            connection.query(queryString, [groupID], (err, rows) => {
-                if (!err) {
-                    for(let i = 0; i < rows.length; i++) {
-                        const userName = rows[i].user_name;
-                        existingUsersSet.add(userName)
-                    }
-
-                    let existingUsers = Array.from(existingUsersSet);
-                    groupUserStatus.existingUsers = existingUsers;
-                    groupUserStatus.newUsers = invitedUsers.filter(item=>existingUsers.indexOf(item)==-1);
-
-                    resolve(groupUserStatus); 
-
-                } else {
-                    groupUserStatus.outcome = 500;
-                    console.log("REJECTED " + err);
-                    reject(groupUserStatus);
-                }
-            })
-        } catch(err) {
-            groupUserStatus.outcome = 500;
-            console.log("REJECTED " + err);
-            reject(groupUserStatus);
-        } 
-    })
-
-}
-
-
-*/
-
-/*
-function learningStuff(invitedUsers, groupID)  {
-    const connection = db.getConnection(); 
-
-    try {
-            
-        const queryString = "SELECT user_name, active_member FROM group_users WHERE group_id = ?"			
-        
-        connection.query(queryString, [groupID], (err, rows) => {
-            if(!err) {
-                for(let i = 0; i < rows.length; i++) {
-                    const userName = rows[i].user_name;
-                    console.log(userName);
-                }
-                console.log("_______________")
-            } else {
-                console.log("error!!!!!")
-            }
-
-        })
-
-    } catch(error) {
-        console.log("error!")
-    } 
-}
-*/
-
-
-
-/*
-async function checkUserGroupStatus(groupUsers, groupID)  {
-    const connection = db.getConnection(); 
-    var groupUserStatus = {
-        outcome: 200,
-        newUsers: [],
-        currentUsers: []
-    }
-    for(let i = 0; i < groupUsers.length; i++) {
-        const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"
-
-        connection.query(queryString, [groupUsers[i], groupID], (err, rows) => {
-            if (!err) {
-                console.log(groupUsers[i] + " " + rows[0].requestCount) 
-                groupUserStatus.currentUsers.push(groupUsers[i]);
-            } else {    
-                console.log("error")
-            } 
-        }) 
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-     
-            resolve(groupUserStatus);
-        } catch(err) {
-            groupUserStatus.outcome = "rejected";
-            reject(groupUserStatus);
-        } 
-    });
-
-    /*
-
-    var groupUserStatus = {
-        outcome: 200,
-        newUsers: [],
-        currentUsers: []
-    }
-    
-
-    return new Promise(async function(resolve, reject) {
-        try {
-
-            for(let i = 0; i < groupUsers.length; i++) {
-                let groupUser = groupUsers[i];
-                const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"			
-                
-                connection.query(queryString, [groupUser, groupID], (err, rows) => {
-                    if (!err) {
-                        //groupUserStatus.currentUsers.push("test");
-                        const groupUserCount = rows[0].requestCount;	
-                        groupUserStatus.currentUsers.push("test");
-                        //They are not in this group already 
-                        if(groupUserCount == 0) {
-                            console.log("Add them! " + groupUser + " Group ID " + groupID);
-                            groupUserStatus.newUsers.push(groupUser);
-                        } else {
-                            console.log("Yo man there in the group " + groupUser + " Group ID " + groupID);
-                            groupUserStatus.currentUsers.push(groupUser);
-                            groupUserStatus.currentUsers.push("test");
-                        }
-                        
-                    } else {
-                        groupUserStatus.currentUsers.push("error");
-                        groupUserStatus = 500;
-                    }
-                })
-            }
-    
-            resolve(groupUserStatus); 
-    
-        } catch(err) {
-            groupUserStatus.outcome = 500;
-            console.log("REJECTED " + err);
-            reject(groupUserStatus);
-        } 
-    });
-    *//*
-}
-*/
-
-/////
-
-
-/////
-
-
-//POST FUNCTIONS
 
 

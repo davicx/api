@@ -3,23 +3,33 @@ const db = require('./../conn');
 class Post {
     constructor(commentID) {
         this.commentID = commentID;
-        this.postFrom = "";
-        this.postTo = "";
-        this.postCaption = "";
-    }
+        this.commentCaption = "";
+        this.commentFrom = "";
+        this.commentTo = "";
+     }
     
     //METHODS A: POST RELATED
     //Method A1: Make a Comment
-    static async createPostText(req)  {
+    static async createComment(req)  {
         const connection = db.getConnection(); 
+
         const masterSite = req.body.masterSite 
+        const commentCaption = req.body.commentCaption 
+        const commentType = req.body.commentType 
+        const commentFrom = req.body.commentFrom 
+        const commentTo = req.body.commentTo 
+        const groupID = req.body.groupID 
+        const postID = req.body.postID 
+        const listID = req.body.listID 
+
+
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
         const postTo = req.body.postTo 
-        const groupID = req.body.groupID 
+
         const postCaption = req.body.postCaption 
      
-        var postOutcome = {
+        var commentOutcome = {
             outcome: 0,
             postID: 0,
             errors: []
@@ -33,19 +43,19 @@ class Post {
                 connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
-                        postOutcome.outcome = 200;       
-                        postOutcome.postID = results.insertId;       
+                        commentOutcome.outcome = 200;       
+                        commentOutcome.postID = results.insertId;       
                     } else {    
-                        postOutcome.outcome = "no worky"
-                        postOutcome.errors.push(err);
+                        commentOutcome.outcome = "no worky"
+                        commentOutcome.errors.push(err);
                     } 
-                    resolve(postOutcome);
+                    resolve(commentOutcome);
                 }) 
                 
             } catch(err) {
-                postOutcome.outcome = "rejected";
+                commentOutcome.outcome = "rejected";
                 console.log("REJECTED " + err);
-                reject(postOutcome);
+                reject(commentOutcome);
             } 
         });
     }

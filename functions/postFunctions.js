@@ -6,6 +6,8 @@ const Requests = require('./classes/Requests');
 
 //Route A1: Post Text
 async function postText(req, res) {
+	//const connection = db.getConnection(); 
+
 	console.log("post text")
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostText(req);
@@ -31,8 +33,68 @@ async function postText(req, res) {
 		}
 	}
 
+	//TEMP
+	const newPost = {
+        postID: 254,
+        postType: "text",
+        groupID: 77,
+        listID: 0,
+        postFrom: "davey",
+        postTo: "frodo",
+        postCaption: "TRY",
+        fileName: "",
+        fileNameServer: "hiya.jpg",
+        fileUrl: "empty",
+        videoURL: "empty",
+        videoCode: "empty",
+        created: "2021-12-19T08:14:03.000Z"
+	}
+
+	//TEMP
+	postOutcome.newPost = newPost;
+
 	res.json(postOutcome);
 }
+
+//UPDATE
+async function postUpdateText(req, res) {
+	const connection = db.getConnection(); 
+	const postID = req.body.postID;
+	const postCaption = req.body.postCaption;
+	console.log("post update text " + postID + " " + postCaption)
+
+	const updatedPost = {
+		postType: "text",
+		groupID: 77,
+		listID: 0,
+		postFrom: "davey",
+		postTo: "frodo",
+		postCaption: "TRY",
+		fileName: "",
+		fileNameServer: "hiya.jpg",
+		fileUrl: "empty",
+		videoURL: "empty",
+		videoCode: "empty",
+		created: "2021-12-19T08:14:03.000Z"
+	}
+
+	updatedPost.postID = postID
+	updatedPost.postCaption = postCaption
+	
+	const queryString = "UPDATE posts SET post_caption = ? WHERE post_id = ?";
+
+    connection.query(queryString, [postCaption, postID], (err, rows) => {
+        if (!err) {
+			console.log("worked")
+        } else {
+			console.log("error")
+
+		}
+    })
+
+	res.json(updatedPost);
+}
+
 
 //Route A2: Post Photo
 async function postPhoto(req, res, file) {
@@ -202,10 +264,12 @@ function getSinglePost(req, res) {
 //Route 4: Get all Posts 
 function getAllPosts(req, res) {
    const connection = db.getConnection(); 
-   const queryString = "SELECT * FROM posts LIMIT 5";
+   const queryString = "SELECT * FROM posts LIMIT 100";
 
    connection.query(queryString, (err, rows, fields) => {
 		if (!err) {
+
+			//Return Object 
 			const posts = rows.map((row) => {
 				return {
 					postID: row.post_id,
@@ -223,10 +287,35 @@ function getAllPosts(req, res) {
 					created: row.created
 				}
 			});
+			
 
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			//res.json({posts:posts});
-			res.json(posts);
+			//Return Array
+			/*
+			var postArray = [];
+
+			rows.map((row) => {
+				let currentPost = {
+					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
+				}				
+				postArray.push(currentPost);
+			});
+			*/
+
+
+			res.json({posts:posts});
+			//res.json(posts);
 
 		} else {
 			console.log("Failed to Select Posts" + err)
@@ -237,4 +326,127 @@ function getAllPosts(req, res) {
 }
 
 
-module.exports = { postText, postPhoto, postVideo, getGroupPosts, getUserPosts, getSinglePost, getAllPosts };
+
+//Route 4: Get all Posts 
+function getAllPostsPagination(req, res) {
+	const connection = db.getConnection(); 	
+	//const queryString = "SELECT * FROM posts LIMIT 100";
+
+	const page = parseInt(req.query.page);
+	const limit = parseInt(req.query.limit);
+
+	console.log("page " + page + " limit " + limit)
+
+	const startIndex = (page - 1) * limit
+	const endIndex = page * limit 
+
+	console.log("startIndex " + startIndex + " endIndex " + endIndex)
+
+	//Start and End 
+	var results = {}
+		
+	//Check this is less then total amount
+	//if(endIndex < )
+	results.next = {
+		page: page + 1,
+		limit: limit
+	}
+
+	if(startIndex > 0) {
+		results.previous = {
+			page: page - 1,
+			limit: limit
+		}
+	}	
+
+    //const queryString = "SELECT * FROM posts WHERE post_id = ?";
+
+	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT ? OFFSET ?";
+
+    connection.query(queryString, [limit, startIndex], (err, rows) => {
+		 if (!err) {
+ 
+			 //Return Object 
+			 const posts = rows.map((row) => {
+				 return {
+					 postID: row.post_id,
+					 postType: row.post_type,
+					 groupID: row.group_id,
+					 postFrom: row.post_from,
+					 postTo: row.post_to,
+					 postCaption: row.post_caption
+				 }
+			 });
+ 
+			 //res.json({posts:posts});
+			 results.posts = posts
+			 res.json(results);
+ 
+		 } else {
+			 console.log("Failed to Select Posts" + err)
+			 res.sendStatus(500)
+			 return
+		 }
+	})
+ }
+
+ /*
+ //Middle ware
+ function paginatedResults(model) {
+	return (req, res, next) => {
+		const page = parseInt(req.query.page);
+		const limit = parseInt(req.query.limit);
+	
+		console.log("page " + page + " limit " + limit)
+	
+		const startIndex = (page - 1) * limit
+		const endIndex = page * limit 
+	
+		var results = {}
+		
+		//Check this is less then total amount
+		//if(endIndex < )
+		results.next = {
+			page: page + 1,
+			limit: limit
+		}
+	
+		if(startIndex > 0) {
+			results.previous = {
+				page: page - 1,
+				limit: limit
+			}
+		}
+	res.paginatedResults = results
+	}
+ }
+*/
+
+ /*
+ 	const page = parseInt(req.query.page);
+	const limit = parseInt(req.query.limit);
+
+	console.log("page " + page + " limit " + limit)
+
+	const startIndex = (page - 1) * limit
+	const endIndex = page * limit 
+
+	var results = {}
+    
+	//Check this is less then total amount
+	//if(endIndex < )
+	results.next = {
+		page: page + 1,
+		limit: limit
+	}
+
+	if(startIndex > 0) {
+		results.previous = {
+			page: page - 1,
+			limit: limit
+		}
+	}
+	*/
+ 
+
+module.exports = { postText, postPhoto, postVideo, getGroupPosts, getUserPosts, getSinglePost, getAllPosts, postUpdateText, getAllPostsPagination };

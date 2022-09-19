@@ -22,6 +22,26 @@ userRouter.post('/login/status', function(req, res) {
     loginFunctions.loginStatus(req, res);
 })
 
+//Route A3: Logout User 
+userRouter.post('/logout', function(req, res) {
+    console.log("Logout!")
+    loginFunctions.userLogout(req, res);
+})
+
+//Route A4: Get New Access Token
+userRouter.post('/tokens/refresh', function(req, res) {
+    console.log("Get New Access Token!")
+
+    loginFunctions.getRefreshToken(req, res);
+})
+
+//Route A5: Get Token List 
+userRouter.get('/tokens/all', function(req, res) {
+    console.log("Get Token List!")
+
+    loginFunctions.getTokenList(req, res);
+})
+
 //Route A4: Delete a User 
 userRouter.post('/delete', function(req, res) {
     loginFunctions.userDelete(req, res);

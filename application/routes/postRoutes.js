@@ -1,6 +1,7 @@
 const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
+var jwt = require('jsonwebtoken');
 //const cors = require('cors');
 //postRouter.use(cors())
 //const app = express()
@@ -22,6 +23,10 @@ postRouter.post('/post/video', function(req, res) {
 })
 
 //UPDATE POSTS
+postRouter.post('/post/update/text', function(req, res) {
+    postFunctions.postUpdateText(req, res);
+})
+
 
 //GET POSTS 
 //Route B1: Get Posts to a Group
@@ -29,10 +34,18 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     postFunctions.getGroupPosts(req, res);
 })
 
-//Route B2: Get Posts to a User
-postRouter.get("/posts/user/:user_name", (req, res) => {
+//Route B2: Get Posts to a User (ADDING PROTECT)
+postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
+    const currentUser = req.authorizationData.currentUser;
+
+    console.log("_____________________________________")
+    console.log("The Current User Asking for Posts")
+    console.log(currentUser)
+    console.log("_____________________________________")
+
     postFunctions.getUserPosts(req, res);
 })
+
 
 //Route B3: Get Single Post by ID 
 postRouter.get("/posts/:post_id", (req, res) => {
@@ -41,10 +54,74 @@ postRouter.get("/posts/:post_id", (req, res) => {
 
 //Route B4: Get all Posts 
 postRouter.get("/posts", (req, res) => {
+    console.log("Get all Posts")
 	postFunctions.getAllPosts(req, res);
 
 })
 
+//Route B5: Get all Posts Pagination
+postRouter.get("/pagination", (req, res) => {
+    console.log("Get all Posts")
+	postFunctions.getAllPostsPagination(req, res);
+
+})
+
+
+
+//TEMP
+postRouter.get("/posts/group/error", (req, res) => {
+    res.status(500).send({error: 'hello i failed'});
+})
+
+function verifyUser(req, res, next) {
+    console.log("Logged in User! ")
+    
+    //Part 1: Determine Auth Type 
+    cookieToken = req.cookies.accessToken;
+    const authHeader = req.headers['authorization'];
+    headerToken = authHeader && authHeader.split(' ')[1]
+    var tokenType = ""
+    
+    if(cookieToken != undefined) {
+        tokenType = "cookie"
+    } else if(headerToken != undefined) {
+        tokenType = "header"
+    } else {
+        tokenType = null;
+    }
+
+    //Part 2: Get the Token
+    if(tokenType == "cookie") {
+        var token = req.cookies.accessToken;
+    } else if(tokenType == "header") {
+        var token = authHeader && authHeader.split(' ')[1]
+    } else {
+        var token = null;
+    }
+
+    console.log("_____________________________________")
+    console.log("TOKEN TYPE: " + tokenType)
+    console.log("TOKEN: " + token)
+    console.log("_____________________________________")
+
+    //Part 3: Verify the Token 
+    if (token == null) {
+        console.log("You didn't present a token, no beuno!")
+        return res.sendStatus(401)
+    } 
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
+        if(!err) {
+            console.log("your good")
+            req.authorizationData = authorizationData
+            next();
+        } else {
+            console.log("Not Logged In")
+            return res.sendStatus(403)
+        }
+    })
+
+}
 
 
 

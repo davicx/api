@@ -7,30 +7,86 @@ const Notification = require('./classes/Notification')
 async function postComment(req, res) {
 	const connection = db.getConnection(); 
 	const masterSite = req.body.masterSite 
-	const postType = req.body.postType 
-	const postFrom = req.body.postFrom 
-	const postTo = req.body.postTo 
+	const commentCaption = req.body.commentCaption 
+	const commentType = req.body.commentType 
+	const commentFrom = req.body.commentFrom 
+	const commentTo = req.body.commentTo 
 	const groupID = req.body.groupID 
-	const postCaption = req.body.postCaption 
+	const postID = req.body.postID 
+	const listID = req.body.listID 
+	const notificationMessage = req.body.notificationMessage 
+	const notificationType = req.body.notificationType 
+	const notificationLink = req.body.notificationLink 
+
+	//STEP 1: Create Comment
+
+	//STEP 2: Create Notifications to Group 
+
+
+
+	console.log("Comment from! " + commentFrom)
+    res.json({comment: commentCaption});
+
+}
+
+async function TEMPpostText(req, res) {
+	console.log("post text")
+	const groupID = req.body.groupID;
+	postOutcome = await Post.createPostText(req);
+
+	//STEP 2: Add the Notifications
+	var notification = {}
+	const groupUsersOutcome = await Group.getGroupUsers(groupID);
+	const groupUsers = groupUsersOutcome.groupUsers;
 	
-	console.log("Comment!")
-    res.json({comment: "Comment!"});
+	if(postOutcome.outcome == 200) {
+		notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.postFrom,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupID
+		}
+
+		if(groupUsers.length > 0) {
+			Notification.createGroupNotification(notification);
+		}
+	}
+
+	res.json(postOutcome);
+}
+
+
+	/*
+	"masterSite": "kite",
+    "commentType": "post",
+    "commentFrom": "davey",
+    "commentTo": "frodo",
+    "groupID": 77,
+    "postID": 1,
+    "listID": 0,
+    "commentCaption": "Hiya Frodo!! The weather is perfect! wanna hike or we could garden!",   
+    "notificationMessage": "Posted a Comment on Post",   
+    "notificationType": "new_post_comment",
+    "notificationLink": "http://localhost:3003/posts/group/77" 
+
 
 	const queryString = "INSERT INTO comments (master_site, post_type, group_id, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?, ?)"
     
 	connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
 		if (!err) {
-			console.log("You created a new Post with ID " + results.insertId);    
-			postOutcome.outcome = 200;       
-			postOutcome.postID = results.insertId;       
+			console.log("You created a new Comment with ID " + results.insertId);    
+			//postOutcome.outcome = 200;       
+			//postOutcome.postID = results.insertId;       
 		} else {    
-			postOutcome.outcome = "no worky"
-			postOutcome.errors.push(err);
+			console.log(err)
+			//postOutcome.outcome = "no worky"
+			//postOutcome.errors.push(err);
 		} 
-		resolve(postOutcome);
+		//resolve();
 	}) 
-
-	/*
 	comment table
 
 	comment_id
@@ -87,7 +143,6 @@ async function postComment(req, res) {
 
 	res.json(postOutcome);
     */
-}
 
 
 module.exports = { postComment };

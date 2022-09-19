@@ -20,7 +20,6 @@ class User {
 
     const password = newUser.password
     const salt = newUser.salt
-    console.log(password)
 
     //INSERT USER
     return new Promise(async function(resolve, reject) {
@@ -29,7 +28,7 @@ class User {
            connection.query(queryString, [newUser.userName, newUser.userEmail, salt, password], (err, results) => {
                 if (!err) {
                     console.log("You created a new User with ID " + results.insertId);    
-                    registerUserOutcome.outcome = 200;       
+                    registerUserOutcome.outcome = 1;       
                     registerUserOutcome.userID = results.insertId;    
 
                 } else {    
@@ -71,7 +70,7 @@ class User {
                 if (!err) {
                     console.log("You created a new User with ID " + results.insertId);    
                     registerUserProfileOutcome.message = "you sucesfully registered " + newUser.userName + "!";       
-                    registerUserProfileOutcome.outcome = 200;       
+                    registerUserProfileOutcome.outcome = 1;       
 
                 } else {    
                     registerUserProfileOutcome.outcome = "no worky"
