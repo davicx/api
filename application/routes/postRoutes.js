@@ -64,6 +64,20 @@ postRouter.get("/pagination", (req, res) => {
     console.log("Get all Posts")
 	postFunctions.getAllPostsPagination(req, res);
 
+    /*
+    app.get('/fruit/:fruitName/:fruitColor', function(req, res) {
+    var data = {
+        "fruit": {
+            "apple": req.params.fruitName,
+            "color": req.params.fruitColor
+        }
+    }; 
+
+    send.json(data);
+});
+
+    */
+
 })
 
 

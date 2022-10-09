@@ -330,64 +330,109 @@ function getAllPosts(req, res) {
 //Route 4: Get all Posts 
 function getAllPostsPagination(req, res) {
 	const connection = db.getConnection(); 	
-	//const queryString = "SELECT * FROM posts LIMIT 100";
 
 	const page = parseInt(req.query.page);
 	const limit = parseInt(req.query.limit);
+	const maxPages = "include this in the query"
 
-	console.log("page " + page + " limit " + limit)
+	if(isNaN(page)|| isNaN(limit)) {
+		const queryString = "SELECT * FROM posts LIMIT 100";
 
-	const startIndex = (page - 1) * limit
-	const endIndex = page * limit 
+		connection.query(queryString, (err, rows, fields) => {
+			 if (!err) {
 
-	console.log("startIndex " + startIndex + " endIndex " + endIndex)
+				 const posts = rows.map((row) => {
+					 return {
+						postID: row.post_id,
+						postType: row.post_type,
+						groupID: row.group_id,
+						listID: row.list_id,
+						postFrom: row.post_from,
+						postTo: row.post_to,
+						postCaption: row.post_caption,
+						fileName: row.file_name,
+						fileNameServer: row.file_name_server,
+						fileUrl: row.file_url,
+						videoURL: row.video_url,
+						videoCode: row.video_code,
+						created: row.created
+					 }
+				 });
+				
+				 res.json({posts:posts});
 
-	//Start and End 
-	var results = {}
+			 } else {
+				 console.log("Failed to Select Posts" + err)
+				 res.sendStatus(500)
+				 return
+			 }
+		})
 		
-	//Check this is less then total amount
-	//if(endIndex < )
-	results.next = {
-		page: page + 1,
-		limit: limit
-	}
+	} else {
+		console.log("page " + page + " limit " + limit)
+		console.log("page " + page + " limit " + limit)
 
-	if(startIndex > 0) {
-		results.previous = {
-			page: page - 1,
+		const startIndex = (page - 1) * limit
+		const endIndex = page * limit 
+	
+		console.log("startIndex " + startIndex + " endIndex " + endIndex)
+	
+		//Start and End 
+		var results = {}
+			
+		//Check this is less then total amount
+		//if(endIndex < )
+		results.next = {
+			page: page + 1,
 			limit: limit
 		}
-	}	
+	
+		if(startIndex > 0) {
+			results.previous = {
+				page: page - 1,
+				limit: limit
+			}
+		}	
+	
+		//const queryString = "SELECT * FROM posts WHERE post_id = ?";
+		//const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT ? OFFSET ?";
+		const queryString = "SELECT * FROM posts ORDER BY post_id LIMIT ? OFFSET ?";
+	
+		connection.query(queryString, [limit, startIndex], (err, rows) => {
+			 if (!err) {
+	 
+				 //Return Object 
+				 const posts = rows.map((row) => {
+					 return {
+						postID: row.post_id,
+						postType: row.post_type,
+						groupID: row.group_id,
+						listID: row.list_id,
+						postFrom: row.post_from,
+						postTo: row.post_to,
+						postCaption: row.post_caption,
+						fileName: row.file_name,
+						fileNameServer: row.file_name_server,
+						fileUrl: row.file_url,
+						videoURL: row.video_url,
+						videoCode: row.video_code,
+						created: row.created
+					 }
+				 });
+	 
+				 //res.json({posts:posts});
+				 results.posts = posts
+				 res.json(results);
+	 
+			 } else {
+				 console.log("Failed to Select Posts" + err)
+				 res.sendStatus(500)
+				 return
+			 }
+		})
+	}
 
-    //const queryString = "SELECT * FROM posts WHERE post_id = ?";
 
-	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT ? OFFSET ?";
-
-    connection.query(queryString, [limit, startIndex], (err, rows) => {
-		 if (!err) {
- 
-			 //Return Object 
-			 const posts = rows.map((row) => {
-				 return {
-					 postID: row.post_id,
-					 postType: row.post_type,
-					 groupID: row.group_id,
-					 postFrom: row.post_from,
-					 postTo: row.post_to,
-					 postCaption: row.post_caption
-				 }
-			 });
- 
-			 //res.json({posts:posts});
-			 results.posts = posts
-			 res.json(results);
- 
-		 } else {
-			 console.log("Failed to Select Posts" + err)
-			 res.sendStatus(500)
-			 return
-		 }
-	})
  }
 
  /*
