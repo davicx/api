@@ -3,6 +3,81 @@ const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
 
 //LOGIN FUNCTIONS
+//Function A: Validate User with a Token
+async function currentUserStatus(req, res) {
+    console.log("currentUserStatus ")
+    var userName = null;
+    var accessToken = ""
+    var refreshToken = ""
+    var userLoggedIn = false
+
+    var loginStatus = {
+        userName: userName,
+        userLoggedIn: userLoggedIn,
+        accessToken: accessToken,
+        refreshToken, refreshToken
+    }
+
+    accessToken = req.cookies.accessToken;
+    refreshToken = req.cookies.refreshToken;
+    userLoggedIn = req.cookies.loggedInUser;
+    
+
+
+
+    /*
+    //Part 1: Determine Auth Type 
+    cookieToken = req.cookies.accessToken;
+    const authHeader = req.headers['authorization'];
+    headerToken = authHeader && authHeader.split(' ')[1]
+    var tokenType = ""
+    
+    if(cookieToken != undefined) {
+        tokenType = "cookie"
+    } else if(headerToken != undefined) {
+        tokenType = "header"
+    } else {
+        tokenType = null;
+    }
+
+    //Part 2: Get the Token
+    if(tokenType == "cookie") {
+        var token = req.cookies.accessToken;
+    } else if(tokenType == "header") {
+        var token = authHeader && authHeader.split(' ')[1]
+    } else {
+        var token = null;
+    }
+
+    console.log("_____________________________________")
+    console.log("TOKEN TYPE: " + tokenType)
+    console.log("TOKEN: " + token)
+    console.log("_____________________________________")
+
+    //Part 3: Verify the Token 
+    if (token == null) {
+        console.log("You didn't present a token, no beuno!")
+        //return res.sendStatus(401)
+    } 
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
+        if(!err) {
+            console.log("your good")
+            req.authorizationData = authorizationData
+
+        } else {
+            console.log("Not Logged In")
+            //return res.sendStatus(403)
+        }
+    })
+    */
+
+    return loginStatus
+
+}
+
+
+
 //Function A1: Create Access Token 
 async function generateAccessToken(currentUser, accessTokenLength) {
     //var accessToken = jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET);
@@ -313,7 +388,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
+module.exports = { currentUserStatus, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
 
 
 

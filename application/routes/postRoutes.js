@@ -30,9 +30,79 @@ postRouter.post('/post/update/text', function(req, res) {
 
 //GET POSTS 
 //Route B1: Get Posts to a Group
+/*
 postRouter.get("/posts/group/:group_id", (req, res) => {
+    accessToken = req.cookies.accessToken;
+    refreshToken = req.cookies.refreshToken;
+    console.log("___________________")
+    console.log("accessToken " + accessToken)
+    console.log("___________________")
+  
     postFunctions.getGroupPosts(req, res);
 })
+*/
+
+//postRouter.get("/posts/group/:group_id", verifyUser, (req, res) => {
+postRouter.get("/posts/group/:group_id", (req, res) => {
+    //const currentUser = req.authorizationData.currentUser;
+
+    //TEMP
+    console.log("_____________________________________")
+    var cookieAccessToken = req.cookies.accessToken;
+    var cookieRefreshToken = req.cookies.accessToken;
+    var authHeader = req.headers['authorization'];
+    var headerAccessToken = authHeader && authHeader.split(' ')[1]
+    
+    if(!cookieAccessToken) {
+      cookieAccessToken = "no cookieAccessToken"
+    }   
+    if(!cookieRefreshToken) {
+      cookieRefreshToken = "no cookieRefreshToken"
+    }   
+    if(!headerAccessToken) {
+     headerAccessToken = "no headerAccessToken"
+    }   
+    console.log("cookieAccessToken " + cookieAccessToken)
+    console.log("cookieRefreshToken " + cookieRefreshToken)
+    console.log("headerAccessToken " + headerAccessToken)
+    //console.log("The Current User Asking for Posts")
+    //console.log(currentUser)
+    /*
+       console.log("_____________________________________")
+    var cookieAccessToken = req.cookies.accessToken;
+    var cookieRefreshToken = req.cookies.accessToken;
+    var authHeader = req.headers['authorization'];
+    var headerAccessToken = authHeader && authHeader.split(' ')[1]
+    
+    if(!cookieAccessToken) {
+      cookieAccessToken = "no cookieAccessToken"
+    }   
+    if(!cookieRefreshToken) {
+      cookieRefreshToken = "no cookieRefreshToken"
+    }   
+    if(!headerAccessToken) {
+     headerAccessToken = "no headerAccessToken"
+    }   
+  
+    const response = {
+      currentUser: userName,
+      cookieAccessToken: cookieAccessToken, 
+      cookieRefreshToken: cookieRefreshToken,
+      headerAccessToken: headerAccessToken,
+    }
+  
+    console.log("___________________")
+    console.log(response)
+    console.log("___________________")
+    //console.log("The Current User Asking for Posts")
+    //console.log(currentUser)
+    console.log("_____________________________________")
+    */
+    console.log("_____________________________________")
+    
+    postFunctions.getGroupPosts(req, res);
+})
+
 
 //Route B2: Get Posts to a User (ADDING PROTECT)
 postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {

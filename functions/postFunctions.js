@@ -60,8 +60,10 @@ async function postText(req, res) {
 async function postUpdateText(req, res) {
 	const connection = db.getConnection(); 
 	const postID = req.body.postID;
+	const postType = req.body.postType;
 	const postCaption = req.body.postCaption;
-	console.log("post update text " + postID + " " + postCaption)
+	console.log(req.body)
+	console.log("post update text " + postID + " " + postCaption + " " + postType) 
 
 	const updatedPost = {
 		postType: "text",
@@ -69,7 +71,7 @@ async function postUpdateText(req, res) {
 		listID: 0,
 		postFrom: "davey",
 		postTo: "frodo",
-		postCaption: "TRY",
+		postCaption: postCaption,
 		fileName: "",
 		fileNameServer: "hiya.jpg",
 		fileUrl: "empty",
@@ -78,8 +80,7 @@ async function postUpdateText(req, res) {
 		created: "2021-12-19T08:14:03.000Z"
 	}
 
-	updatedPost.postID = postID
-	updatedPost.postCaption = postCaption
+	console.log(updatedPost)
 	
 	const queryString = "UPDATE posts SET post_caption = ? WHERE post_id = ?";
 
@@ -94,7 +95,6 @@ async function postUpdateText(req, res) {
 
 	res.json(updatedPost);
 }
-
 
 //Route A2: Post Photo
 async function postPhoto(req, res, file) {

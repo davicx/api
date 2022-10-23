@@ -11,12 +11,18 @@ const User = require('./classes/User')
 const Notifications = require('./classes/Notification')
 
 /*
-FUNCTIONS A: All Functions Related to a User 
+FUNCTIONS A: All Functions Related to User Login
 	1) Function A1: User Login
-	2) Function A2: Register
-  3) Function A3: Logout User 
-	4) Function A4: Delete a User 
+	2) Function A2: Login Status 
+	3) Function A3: Logout User 
+	4) Function A4: Register
+  5) Function A5: Get New Access Token
+  6) Function A6: Get a List of All Tokens 
+	7) Function A7: Delete a User 
 
+FUNCTIONS B: All Helper Functions Related to User Login
+	1) Function B1: Get New Access Token
+  
 */
 
 //FUNCTIONS A: All Functions Related to a User 
@@ -79,7 +85,8 @@ async function userLogin(req, res) {
       res.cookie('accessToken', accessToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
       res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
       res.cookie('loggedInUser', userName,{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-      
+    
+    //Login Information was not Correct   
     } else {
       res.cookie('accessToken', "accessToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
       res.cookie('refreshToken', "refreshToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
@@ -98,7 +105,16 @@ async function userLogin(req, res) {
     res.json(loginOutcome)
 }
 
-//Logout User
+//Function A2: Login Status
+async function loginStatus(req, res) {
+  const userName = req.body.userName;
+
+  var loginStatus = await Functions.currentUserStatus(req, res);
+
+  res.json(loginStatus)
+}
+
+//Function A3: Logout User 
 async function userLogout(req, res) {
   const connection = db.getConnection(); 
   const userName = req.body.userName;
@@ -125,248 +141,7 @@ async function userLogout(req, res) {
   res.json({logout: userName})
 }
 
-//Function A3: Login Status
-async function loginStatus(req, res) {
-  const userName = req.body.userName;
-  var accessToken = ""
-  var refreshToken = ""
-  var userLoggedIn = false
-  
-  accessToken = req.cookies.accessToken;
-  refreshToken = req.cookies.refreshToken;
-  userLoggedIn = req.cookies.loggedInUser;
-  
-  const loginStatusOutcome = {
-    userName: userName,
-    userLoggedIn: userLoggedIn,
-    accessToken: accessToken,
-    refreshToken, refreshToken
-  }
-
-  console.log(loginStatusOutcome);
-
-  res.json(loginStatusOutcome)
-}
-
-//Function A: 
-async function getRefreshToken(req, res) {
-  const userName = req.body.userName;
-  //const refreshToken = req.body.refreshToken;
-
-    //Part 1: Determine Auth Type 
-    const cookieToken = req.cookies.refreshToken
-    const authHeader = req.headers['authorization'];
-    console.log(authHeader);
-    headerToken = authHeader && authHeader.split(' ')[1]
-    var tokenType = ""
-    
- 
-  
-    console.log("_____________________________________")
-    //console.log("TOKEN TYPE: " + tokenType)
-    console.log("cookieToken: " + cookieToken)
-    console.log("headerToken: " + headerToken)
-    console.log("_____________________________________")
-    
-
-  /*
-  if(refreshToken == null) {
-    console.log("No token!")
-    return res.sendStatus(401)
-  }
-  */
-
-  console.log("getting refresh token")
-
-  res.json({cookieToken: cookieToken, headerToken:headerToken })
-
-}
-
-
-/*
-   if(cookieToken != undefined) {
-       tokenType = "cookie"
-    } else if(headerToken != undefined) {
-      tokenType = "header"
-    } else {
-      tokenType = null;
-    }
-  
-    //Part 2: Get the Token
-    if(tokenType == "cookie") {
-      var refreshToken = req.cookies.token;
-    } else if(tokenType == "header") {
-      var refreshToken = authHeader && authHeader.split(' ')[1]
-    } else {
-      var refreshToken = null;
-    }
-    */
-//Determine Which ONe
-/*
-  //Part 1: Determine Auth Type 
-  cookieToken = req.cookies.refreshToken
-  const authHeader = req.headers['authorization'];
-  headerToken = authHeader && authHeader.split(' ')[1]
-  var tokenType = ""
-  
-  if(cookieToken != undefined) {
-     tokenType = "cookie"
-  } else if(headerToken != undefined) {
-    tokenType = "header"
-  } else {
-    tokenType = null;
-  }
-
-  //Part 2: Get the Token
-  if(tokenType == "cookie") {
-    var token = req.cookies.token;
-  } else if(tokenType == "header") {
-    var token = authHeader && authHeader.split(' ')[1]
-  } else {
-    var token = null;
-  }
-
-  console.log("_____________________________________")
-  console.log("TOKEN TYPE: " + tokenType)
-  console.log("TOKEN: " + token)
-  console.log("_____________________________________")
-
-  //Part 3: Verify the Token 
-  if (token == null) {
-    console.log("You didn't present a token, no beuno!")
-    return res.sendStatus(401)
-  } 
-  */
-
-//Function A: Create a new Access Token from a Refresh Token 
-async function tempGenerateTokenFromRefreshToken(currentUser, refreshToken, accessTokenLength) {
-
-  return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
-  
-}
-
-
-
-////
-
-//FUNCTION 3: Use the Refresh Token to get a new Access Token 
-/*
-tempLoginApp.post("/token", (req, res) => {
-  const refreshToken = req.body.localRefreshToken;
-
-  if(refreshToken == null) {
-      console.log("No token!")
-      return res.sendStatus(401)
-  }
-
-  //STEP 1: Check against the database 
-  const connection = db.getConnection(); 
-  const queryString = "SELECT * FROM refresh_tokens WHERE refresh_token = ?";
-
-  connection.query(queryString, [refreshToken], (err, rows) => {
-      if (!err) {
-
-          //Cant find Token 
-          if(rows.length == 1) {
-              console.log("Found the Token: " + rows[0].refresh_token);
-
-              //STEP 2: Return the New Access Token
-              jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-                  console.log("_______________________________")
-                  console.log("Creating a new Access Token for user " + user);
-                  console.log("_______________________________")
-                  if(err) {
-                      return res.sendStatus(403)
-                  }
-                  const accessToken = generateAccessToken(user)
-                  res.json({accessToken: accessToken})
-              })
-
-          } else {
-              console.log("Cant find the refresh token in our database!")
-              return res.sendStatus(403)
-          }
-
-      } else {
-          console.log("Failed to Select Posts" + err)
-          res.sendStatus(500)
-          return
-  }
-  })
-  
-});
-*/
-
-////
-
-
-//Function A5: Get Token List 
-async function getTokenList(req, res) {
-  console.log("getting all tokens")
-
-  //Handle Database Errors Better 
-  //STEP 1: Check against the database 
-  const connection = db.getConnection(); 
-  const tokenDeleted = 0;
-  const queryString = "SELECT * FROM refresh_tokens LIMIT 10000";
-  
-  connection.query(queryString, (err, rows) => {
-      if (!err) {
-          const tokens = rows.map((row) => {
-              return {
-                  userName: row.user_name,
-                  refreshToken: row.refresh_token,
-                  tokenCreated: row.token_created,
-              }
-          });
-  
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.json({tokens:tokens});
-  
-      } else {
-          console.log("Failed to Select Posts" + err)
-          res.sendStatus(500)
-          return
-      }
-  })
-}
-
-
-
-
-/*
-
-  if(accessToken == undefined) {
-    accessToken = "notLoggedIn"
-  }
-
-  if(refreshToken == undefined) {
-    refreshToken = "notLoggedIn"
-  }
-
-  if(refreshToken != undefined) {
-    refreshToken = "notLoggedIn"
-  }
-*/
-
-
-/*
-app.post("/logout", (req, res) => {
-  //const logoutToken = req.body.localRefreshToken;
-  console.log("Log out the user with token")
-  //console.log(logoutToken)
-  console.log("________________________")
-
-  //const currentUser = req.authorizationData.currentUser;
-
-  //refreshTokens = refreshTokens.filter(token => token !== req.body.token);
-  //Delete from Database 
-  console.log(req.authorizationData)
-  res.json({logout:"logoutToken" })
-});
-
-*/
-//Function A2: Register New User 
+//Function A4: Register
 async function userRegister(req, res) {
   const userName = req.body.userName;
   const fullName = req.body.fullName;
@@ -458,10 +233,68 @@ async function userRegister(req, res) {
   }
 } 
 
+//Function A5: Get New Access Token
+async function getRefreshToken(req, res) {
+  const userName = req.body.userName;
+  //const refreshToken = req.body.refreshToken;
 
+  //Part 1: Determine Auth Type 
+  const cookieToken = req.cookies.refreshToken
+  const authHeader = req.headers['authorization'];
+  console.log(authHeader);
+  headerToken = authHeader && authHeader.split(' ')[1]
+  var tokenType = ""
 
+  console.log("_____________________________________")
+  //console.log("TOKEN TYPE: " + tokenType)
+  console.log("cookieToken: " + cookieToken)
+  console.log("headerToken: " + headerToken)
+  console.log("_____________________________________")
+  
+  /*
+  if(refreshToken == null) {
+    console.log("No token!")
+    return res.sendStatus(401)
+  }
+  */
+  console.log("getting refresh token")
 
-//Function A3: Delete a User 
+  res.json({cookieToken: cookieToken, headerToken:headerToken })
+
+}
+
+//Function A6: Delete a User 
+//Function A5: Get Token List 
+async function getTokenList(req, res) {
+  console.log("getting all tokens")
+
+  //STEP 1: Check against the database 
+  const connection = db.getConnection(); 
+  const tokenDeleted = 0;
+  const queryString = "SELECT * FROM refresh_tokens LIMIT 10000";
+  
+  connection.query(queryString, (err, rows) => {
+      if (!err) {
+          const tokens = rows.map((row) => {
+              return {
+                  userName: row.user_name,
+                  refreshToken: row.refresh_token,
+                  tokenCreated: row.token_created,
+              }
+          });
+  
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.json({tokens:tokens});
+  
+      } else {
+          console.log("Failed to Select Posts" + err)
+          res.sendStatus(500)
+          return
+      }
+  })
+}
+
+//Function A7: Delete a User 
 async function userDelete(req, res) {
   const userName = req.body.userName;
   const typeOfDelete = req.body.type;
@@ -476,15 +309,296 @@ async function userDelete(req, res) {
     //Temp delete means setting the user to active is zero 
     res.json({type: "Add temp delete"})
   }
+}
 
+//FUNCTIONS B: All Helper Functions Related to User Login
+//Function B1: Get New Access Token
+async function getRefreshToken(req, res) {
+  const userName = req.body.userName;
+  //const refreshToken = req.body.refreshToken;
+
+    //Part 1: Determine Auth Type 
+    const cookieToken = req.cookies.refreshToken
+    const authHeader = req.headers['authorization'];
+    console.log(authHeader);
+    headerToken = authHeader && authHeader.split(' ')[1]
+    var tokenType = ""
+  
+    console.log("_____________________________________")
+    //console.log("TOKEN TYPE: " + tokenType)
+    console.log("cookieToken: " + cookieToken)
+    console.log("headerToken: " + headerToken)
+    console.log("_____________________________________") 
+
+  /*
+  if(refreshToken == null) {
+    console.log("No token!")
+    return res.sendStatus(401)
+  }
+  */
+
+  console.log("getting refresh token")
+
+  res.json({cookieToken: cookieToken, headerToken:headerToken })
 
 }
 
 
-module.exports = { userLogin, userRegister, loginStatus, userLogout, getRefreshToken, getTokenList, userDelete};
+//FUNCTIONS C: Validation 
+//Function C1: Check User
+async function checkPosts(req, res) {
+  const userName = req.body.userName;
+
+  var cookieAccessToken = req.cookies.accessToken;
+  var cookieRefreshToken = req.cookies.accessToken;
+  var authHeader = req.headers['authorization'];
+  var headerAccessToken = authHeader && authHeader.split(' ')[1]
+  
+  if(!cookieAccessToken) {
+    cookieAccessToken = "no cookieAccessToken"
+  }   
+  if(!cookieRefreshToken) {
+    cookieRefreshToken = "no cookieRefreshToken"
+  }   
+  if(!headerAccessToken) {
+   headerAccessToken = "no headerAccessToken"
+  }   
+
+  const response = {
+    currentUser: userName,
+    cookieAccessToken: cookieAccessToken, 
+    cookieRefreshToken: cookieRefreshToken,
+    headerAccessToken: headerAccessToken,
+  }
+
+  console.log("___________________")
+  console.log(response)
+  console.log("___________________")
+
+  res.json(response)
+
+}
+
+/*
+postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
+    const currentUser = req.authorizationData.currentUser;
+
+    console.log("_____________________________________")
+    console.log("The Current User Asking for Posts")
+    console.log(currentUser)
+    console.log("_____________________________________")
+
+    postFunctions.getUserPosts(req, res);
+})
+*/ 
+
+//Function C2: Validate User 
+function verifyUser(req, res, next) {
+  console.log("Logged in User! ")
+  
+  //Part 1: Determine Auth Type 
+  cookieToken = req.cookies.accessToken;
+  const authHeader = req.headers['authorization'];
+  headerToken = authHeader && authHeader.split(' ')[1]
+  var tokenType = ""
+  
+  if(cookieToken != undefined) {
+      tokenType = "cookie"
+  } else if(headerToken != undefined) {
+      tokenType = "header"
+  } else {
+      tokenType = null;
+  }
+
+  //Part 2: Get the Token
+  if(tokenType == "cookie") {
+      var token = req.cookies.accessToken;
+  } else if(tokenType == "header") {
+      var token = authHeader && authHeader.split(' ')[1]
+  } else {
+      var token = null;
+  }
+
+  console.log("_____________________________________")
+  console.log("TOKEN TYPE: " + tokenType)
+  console.log("TOKEN: " + token)
+  console.log("_____________________________________")
+
+  //Part 3: Verify the Token 
+  if (token == null) {
+      console.log("You didn't present a token, no beuno!")
+      return res.sendStatus(401)
+  } 
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
+      if(!err) {
+          console.log("your good")
+          req.authorizationData = authorizationData
+          next();
+      } else {
+          console.log("Not Logged In")
+          return res.sendStatus(403)
+      }
+  })
+
+}
 
 
 
+
+
+
+module.exports = { userLogin, userRegister, loginStatus, userLogout, getRefreshToken, getTokenList, userDelete, checkPosts};
+
+
+
+
+//APPENDIX 
+/*
+   if(cookieToken != undefined) {
+       tokenType = "cookie"
+    } else if(headerToken != undefined) {
+      tokenType = "header"
+    } else {
+      tokenType = null;
+    }
+  
+    //Part 2: Get the Token
+    if(tokenType == "cookie") {
+      var refreshToken = req.cookies.token;
+    } else if(tokenType == "header") {
+      var refreshToken = authHeader && authHeader.split(' ')[1]
+    } else {
+      var refreshToken = null;
+    }
+    */
+//Determine Which ONe
+/*
+  //Part 1: Determine Auth Type 
+  cookieToken = req.cookies.refreshToken
+  const authHeader = req.headers['authorization'];
+  headerToken = authHeader && authHeader.split(' ')[1]
+  var tokenType = ""
+  
+  if(cookieToken != undefined) {
+     tokenType = "cookie"
+  } else if(headerToken != undefined) {
+    tokenType = "header"
+  } else {
+    tokenType = null;
+  }
+
+  //Part 2: Get the Token
+  if(tokenType == "cookie") {
+    var token = req.cookies.token;
+  } else if(tokenType == "header") {
+    var token = authHeader && authHeader.split(' ')[1]
+  } else {
+    var token = null;
+  }
+
+  console.log("_____________________________________")
+  console.log("TOKEN TYPE: " + tokenType)
+  console.log("TOKEN: " + token)
+  console.log("_____________________________________")
+
+  //Part 3: Verify the Token 
+  if (token == null) {
+    console.log("You didn't present a token, no beuno!")
+    return res.sendStatus(401)
+  } 
+  */
+
+
+////
+
+//FUNCTION 3: Use the Refresh Token to get a new Access Token 
+/*
+tempLoginApp.post("/token", (req, res) => {
+  const refreshToken = req.body.localRefreshToken;
+
+  if(refreshToken == null) {
+      console.log("No token!")
+      return res.sendStatus(401)
+  }
+
+  //STEP 1: Check against the database 
+  const connection = db.getConnection(); 
+  const queryString = "SELECT * FROM refresh_tokens WHERE refresh_token = ?";
+
+  connection.query(queryString, [refreshToken], (err, rows) => {
+      if (!err) {
+
+          //Cant find Token 
+          if(rows.length == 1) {
+              console.log("Found the Token: " + rows[0].refresh_token);
+
+              //STEP 2: Return the New Access Token
+              jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+                  console.log("_______________________________")
+                  console.log("Creating a new Access Token for user " + user);
+                  console.log("_______________________________")
+                  if(err) {
+                      return res.sendStatus(403)
+                  }
+                  const accessToken = generateAccessToken(user)
+                  res.json({accessToken: accessToken})
+              })
+
+          } else {
+              console.log("Cant find the refresh token in our database!")
+              return res.sendStatus(403)
+          }
+
+      } else {
+          console.log("Failed to Select Posts" + err)
+          res.sendStatus(500)
+          return
+  }
+  })
+  
+});
+*/
+
+////
+
+
+
+
+
+
+/*
+
+  if(accessToken == undefined) {
+    accessToken = "notLoggedIn"
+  }
+
+  if(refreshToken == undefined) {
+    refreshToken = "notLoggedIn"
+  }
+
+  if(refreshToken != undefined) {
+    refreshToken = "notLoggedIn"
+  }
+*/
+
+
+/*
+app.post("/logout", (req, res) => {
+  //const logoutToken = req.body.localRefreshToken;
+  console.log("Log out the user with token")
+  //console.log(logoutToken)
+  console.log("________________________")
+
+  //const currentUser = req.authorizationData.currentUser;
+
+  //refreshTokens = refreshTokens.filter(token => token !== req.body.token);
+  //Delete from Database 
+  console.log(req.authorizationData)
+  res.json({logout:"logoutToken" })
+});
+
+*/
 
 //COOOKIES
     
