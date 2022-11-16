@@ -90,7 +90,7 @@ async function generateAccessToken(currentUser, accessTokenLength) {
     //Hour
     //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '3600s'}); 
     
-    //Week 
+    //From Input 
     return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
     
 }

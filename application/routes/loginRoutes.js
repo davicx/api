@@ -52,6 +52,13 @@ userRouter.post('/verify', function(req, res) {
     loginFunctions.checkPosts(req, res);
 })
 
+//Route A8: Check if Cookie Expired 
+//http://localhost:3003/token/time
+userRouter.get('/token/time', function(req, res) {
+    loginFunctions.checkTokenTime(req, res);
+})
+
+
 module.exports = userRouter;
 
 

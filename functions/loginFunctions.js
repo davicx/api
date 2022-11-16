@@ -1,6 +1,8 @@
 const db = require('./conn');
 const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
+var jwt_decode = require('jwt-decode');
+
 
 //const cookieParser = require('cookie-parser');
 //app.use(cookieParser())
@@ -380,6 +382,75 @@ async function checkPosts(req, res) {
 }
 
 /*
+const JWT = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjEyMzQ1Njc4OTAsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.1c_yQjnMZfKUb4UTDE_WvbC71f8xxtyMsdqKKkI1hF8`;
+
+const jwtPayload = JSON.parse(window.atob(JWT.split('.')[1]))
+console.log(jwtPayload.exp);
+*/
+async function checkTokenTime(req, res) {
+  const userName = req.body.userName;
+
+  var cookieAccessToken = req.cookies.accessToken;
+  var cookieRefreshToken = req.cookies.accessToken;
+  var authHeader = req.headers['authorization'];
+  var headerAccessToken = authHeader && authHeader.split(' ')[1]
+  
+  if(!cookieAccessToken) {
+    cookieAccessToken = "no cookieAccessToken"
+  }   
+  if(!cookieRefreshToken) {
+    cookieRefreshToken = "no cookieRefreshToken"
+  }   
+  if(!headerAccessToken) {
+   headerAccessToken = "no headerAccessToken"
+  }   
+
+
+  console.log("___________________")
+  var decoded = jwt_decode(cookieAccessToken);
+
+  const tokenCreated = decoded.exp;
+  const tokenFinished = decoded.iat;
+  const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
+  var stillGood = false 
+   
+  if(tokenFinished - tokenCreated) {
+    stillGood = true
+  } 
+  console.log(decoded);
+
+  console.log("___________________")
+
+  const response = {
+    cookieAccessToken: cookieAccessToken, 
+    cookieRefreshToken: cookieRefreshToken,
+    created: tokenCreated,
+    finished: tokenFinished,
+    tokenGoodTell: dateTokenIsGoodTell,
+    stillGood: stillGood
+  }
+  res.json(response)
+
+}
+
+//temp
+function authenticateTokenOriginal(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  console.log("Middleware");
+  console.log(token);
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+      if(err) {
+          console.log("Not Logged In")
+          return res.sendStatus(403)
+      }
+
+      req.user = user;
+      next();
+  })
+}
+/*
 postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
     const currentUser = req.authorizationData.currentUser;
 
@@ -448,7 +519,7 @@ function verifyUser(req, res, next) {
 
 
 
-module.exports = { userLogin, userRegister, loginStatus, userLogout, getRefreshToken, getTokenList, userDelete, checkPosts};
+module.exports = { userLogin, userRegister, loginStatus, userLogout, getRefreshToken, getTokenList, userDelete, checkPosts, checkTokenTime};
 
 
 
