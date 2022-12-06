@@ -12,6 +12,12 @@ userRouter.post('/login', function(req, res) {
     loginFunctions.userLogin(req, res);
 })
 
+//userRouter.post('/login', async function(req, res) {
+userRouter.post('/login/temp', function(req, res) {
+    loginFunctions.userTempLogin(req, res);
+})
+    
+
 //Route A2: Login Status 
 userRouter.post('/login/status', function(req, res) {
     loginFunctions.loginStatus(req, res);
@@ -29,7 +35,7 @@ userRouter.post('/register', function(req, res) {
 })
 
 //Route A5: Get New Access Token
-userRouter.post('/tokens/refresh', function(req, res) {
+userRouter.post('/refresh/tokens', function(req, res) {
     console.log("Get New Access Token!")
 
     loginFunctions.getRefreshToken(req, res);
@@ -48,15 +54,156 @@ userRouter.post('/delete', function(req, res) {
 })
 
 //Route A8: Validate User 
-userRouter.post('/verify', function(req, res) {
-    loginFunctions.checkPosts(req, res);
+/*
+userRouter.post('/token/get', tryMiddleware, function(req, res) {
+    //loginFunctions.checkPosts(req, res);
 })
+*/
 
 //Route A8: Check if Cookie Expired 
 //http://localhost:3003/token/time
 userRouter.get('/token/time', function(req, res) {
     loginFunctions.checkTokenTime(req, res);
 })
+
+
+//Route A8: Get the Token from the incoming request 
+userRouter.post('/token/get', getTokenFromRequest, function(req, res) {
+    loginFunctions.getTokenType(req, res);
+})
+
+
+//Middleware 
+function getTokenFromRequest(req, res, next) {
+    console.log("Figuring out the token type!!")
+    var hasAccessToken = true;
+    var accessToken = "";
+
+    //Logging out doesn't delete the token so it thinks there is one still 
+    var cookieAccessToken = req.cookies.accessToken;
+    var authHeader = req.headers['authorization'];
+    var headerAccessToken = authHeader && authHeader.split(' ')[1]
+    var headerToken = false;
+    var cookieToken = false;
+
+
+    //The token is in the Header 
+    if(cookieAccessToken && cookieAccessToken != "noAccessToken") {
+        console.log("there is a cookieAccessToken")
+        console.log(cookieAccessToken);
+        accessToken = headerAccessToken;
+
+        cookieToken = true;
+    } 
+
+    //The token is from a Cookie 
+    if(authHeader) {
+        console.log("there is a headerAccessToken")
+        console.log(headerAccessToken);
+        accessToken = cookieAccessToken;
+
+        headerToken = true;
+    }   
+
+    //There is both 
+    if(headerToken == true && cookieToken == true) {
+        console.log("there is a both")
+        accessToken = cookieAccessToken;
+    }  
+
+    //There is no token 
+    if(headerToken == false && cookieToken == false){
+        console.log("No tokens!")
+        hasAccessToken = false
+
+    }
+
+    //TEMP
+    var refreshToken = req.cookies.refreshToken;
+
+    if(refreshToken != null) {
+      console.log("refreshToken")
+      console.log(refreshToken)
+      //return res.sendStatus(401) 
+    } else {
+        refreshToken = "noRefreshToken"
+        console.log("NO refreshToken")
+    }
+    console.log("______________________")
+
+    req.hasAccessToken = hasAccessToken;
+    req.accessToken = accessToken;
+    req.refreshToken = refreshToken;
+  
+    next();
+}
+
+
+
+
+
+
+/*
+function tryMiddleware(req, res, next) {
+    console.log("hiya my mid!!")
+    
+    req.tryMiddleware = "hi";
+    //res.sendStatus(403);
+  
+    next();
+}
+//TEMP
+
+function tryMiddleware(req, res, next) {
+    console.log("hiya my mid!!")
+    
+    req.tryMiddleware = "hi";
+    //res.sendStatus(403);
+  
+    next();
+}
+
+
+function verifyToken(req, res, next) {
+    // Get auth header value
+    const bearerHeader = req.headers['authorization'];
+    console.log(bearerHeader);
+
+    // Check if bearer is undefined
+    if(typeof bearerHeader !== 'undefined') {
+
+        // Split at the space
+        const bearer = bearerHeader.split(' ');
+        // Get token from array
+        const bearerToken = bearer[1];
+        // Set the token
+        req.token = bearerToken;
+        // Next middleware
+        next();
+
+    } else {
+      // Forbidden
+      res.sendStatus(403);
+    }
+  
+  }
+
+app.post('/api/posts', verifyToken, (req, res) => {  
+    jwt.verify(req.token, 'secretkey', (err, currentUser) => {
+      if(err) {
+        res.sendStatus(403);
+      } else {
+        res.json({
+          message: 'You created a post! ',
+          currentUser: currentUser
+        });
+      }
+    });
+});
+*/
+//TEMP
+
+
 
 
 module.exports = userRouter;

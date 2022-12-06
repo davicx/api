@@ -2,8 +2,6 @@ const db = require('./conn');
 const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
-
-
 //const cookieParser = require('cookie-parser');
 //app.use(cookieParser())
 
@@ -14,7 +12,7 @@ const Notifications = require('./classes/Notification')
 
 /*
 FUNCTIONS A: All Functions Related to User Login
-	1) Function A1: User Login
+	1) Function A1: Login User 
 	2) Function A2: Login Status 
 	3) Function A3: Logout User 
 	4) Function A4: Register
@@ -27,8 +25,27 @@ FUNCTIONS B: All Helper Functions Related to User Login
   
 */
 
+//TEMP: This is just to get the token from either the cookie or header
+async function getTokenType(req, res) {
+  const userName = req.body.userName;
+  const hasAccessToken = req.hasAccessToken;
+  const accessToken = req.accessToken;
+  const refreshToken = req.refreshToken;
+
+  let tokenInformation = {
+    userName: userName,
+    hasAccessToken: hasAccessToken,
+    accessToken: accessToken,
+    refreshToken: refreshToken
+  }
+  
+  res.json(tokenInformation);
+}
+
+
+
 //FUNCTIONS A: All Functions Related to a User 
-//Function A1: User Login 
+//Function A1: Login User 
 async function userLogin(req, res) {
     const connection = db.getConnection(); 
     const userName = req.body.userName;
@@ -67,6 +84,8 @@ async function userLogin(req, res) {
     if(userExists == true && passwordCorrect == true) {
       validUser = true;
 
+      console.log("STEP 3: Valid User was found")
+
       //STEP 4: Generate Refresh and Access Tokens
       var accessToken = await Functions.generateAccessToken(userName, '604800s') 
       var refreshToken = jwt.sign({currentUser: userName}, process.env.REFRESH_TOKEN_SECRET);
@@ -84,14 +103,16 @@ async function userLogin(req, res) {
       }) 
 
       //STEP 6: Set Cookies 
+      //res.cookie('name', 'tobi', { domain: '.example.com', path: '/refresh', secure: true });
       res.cookie('accessToken', accessToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-      res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+      //res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+      res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, path: '/refresh', httpOnly: true})
       res.cookie('loggedInUser', userName,{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
     
     //Login Information was not Correct   
     } else {
-      res.cookie('accessToken', "accessToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-      res.cookie('refreshToken', "refreshToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+      res.cookie('accessToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+      res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
       res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
     }
 
@@ -106,6 +127,88 @@ async function userLogin(req, res) {
 
     res.json(loginOutcome)
 }
+
+//Function A1: Temp Login User (TEMP)
+async function userTempLogin(req, res) {
+  const connection = db.getConnection(); 
+  const userName = req.body.userName;
+  const userID = 1;
+  const password = req.body.password;
+  
+  var userExists = false;
+  var passwordCorrect = false;
+  var validUser = false;
+  var refreshToken = "myRefreshToken";
+  var accessToken = "myAccessToken";
+
+  //STEP 1: Check if user Exists 
+  const userExistsStatus = await Functions.checkIfUserExists(userName);
+  userExists = !!userExistsStatus.userExists;
+
+
+  //STEP 2: Validate user and password
+  if(userExists == true ) {
+    const passwordOutcome = await Functions.getUserPassword(userName);
+    const actualPassword = passwordOutcome.hashedPassword
+
+    try {
+      if(await bcrypt.compare(password, actualPassword)) {
+        passwordCorrect = true;
+      } 
+    } catch {
+      console.log("CATCH error")
+    }
+  }
+
+  //STEP 3: Check for Valid User and Set Tokens 
+  if(userExists == true && passwordCorrect == true) {
+    validUser = true;
+
+    console.log("STEP 3: Valid User was found")
+
+    //STEP 4: Generate Refresh and Access Tokens
+    var accessToken = await Functions.generateAccessToken(userName, '60s') 
+    var refreshToken = jwt.sign({currentUser: userName}, process.env.REFRESH_TOKEN_SECRET);
+
+    //STEP 5: Add Refresh Token to Database
+    const queryString = "INSERT INTO refresh_tokens (refresh_token, user_name, user_id) VALUES (?,?,?)"
+    
+    connection.query(queryString, [refreshToken, userName, userID], (err, results) => {
+        if (!err) {
+            console.log("You created a new refreshToken with ID " + results.insertId);      
+        } else {    
+            console.log("Error Problem with the Database!")
+            console.log(err)
+        } 
+    }) 
+
+    //STEP 6: Set Cookies 
+    res.cookie('accessToken', accessToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    res.cookie('loggedInUser', userName,{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+  
+  //Login Information was not Correct   
+  } else {
+    res.cookie('accessToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+  }
+
+  const loginOutcome = {
+    userName: userName,
+    validUser: validUser,
+    passwordCorrect: passwordCorrect,
+    accessToken: accessToken,
+    refreshToken, refreshToken
+  }
+  console.log(loginOutcome);
+
+  res.json(loginOutcome)
+}
+
+
+
+
 
 //Function A2: Login Status
 async function loginStatus(req, res) {
@@ -135,8 +238,8 @@ async function userLogout(req, res) {
   })
 
   //STEP 2: Remove Access Tokens
-  res.cookie('accessToken', "accessToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-  res.cookie('refreshToken', "refreshToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+  res.cookie('accessToken', "noAccessToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+  res.cookie('refreshToken', "noRefreshToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
   res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
 
   console.log(refreshToken);
@@ -236,6 +339,7 @@ async function userRegister(req, res) {
 } 
 
 //Function A5: Get New Access Token
+/*Duplicate
 async function getRefreshToken(req, res) {
   const userName = req.body.userName;
   //const refreshToken = req.body.refreshToken;
@@ -253,17 +357,18 @@ async function getRefreshToken(req, res) {
   console.log("headerToken: " + headerToken)
   console.log("_____________________________________")
   
-  /*
+  
   if(refreshToken == null) {
     console.log("No token!")
     return res.sendStatus(401)
   }
-  */
+  
   console.log("getting refresh token")
 
   res.json({cookieToken: cookieToken, headerToken:headerToken })
 
 }
+*/
 
 //Function A6: Delete a User 
 //Function A5: Get Token List 
@@ -316,32 +421,74 @@ async function userDelete(req, res) {
 //FUNCTIONS B: All Helper Functions Related to User Login
 //Function B1: Get New Access Token
 async function getRefreshToken(req, res) {
-  const userName = req.body.userName;
-  //const refreshToken = req.body.refreshToken;
+    const userName = req.body.userName;
+    //const refreshToken = req.body.refreshToken;
+    const refreshToken = req.cookies.refreshToken;
 
+    if(refreshToken == null || refreshToken == "noRefreshToken") {
+      console.log("No token!")
+      //return res.sendStatus(401)
+    }
+  
+    console.log("getting refresh token")
+  
+    res.json({refreshToken: refreshToken })
+  
+
+    /*
+    console.log("Figuring out the token type!!")
+
+    //Logging out doesn't delete the token so it thinks there is one still 
+    var cookieAccessToken = req.cookies.accessToken;
+
+
+
+    //The token is in the Header 
+    if(cookieAccessToken && cookieAccessToken != "noAccessToken") {
+        console.log("there is a cookieAccessToken")
+        console.log(cookieAccessToken);
+        accessToken = headerAccessToken;
+
+        cookieToken = true;
+    } 
+
+
+    //There is both 
+    if(headerToken == true && cookieToken == true) {
+        console.log("there is a both")
+        accessToken = cookieAccessToken;
+    }  
+
+    //There is no token 
+    if(headerToken == false && cookieToken == false){
+        console.log("No tokens!")
+        hasAccessToken = false
+
+    }
+    console.log("______________________")
+
+    req.hasAccessToken = hasAccessToken;
+    req.accessToken = accessToken;
+    */
+    /*
     //Part 1: Determine Auth Type 
     const cookieToken = req.cookies.refreshToken
     const authHeader = req.headers['authorization'];
     console.log(authHeader);
     headerToken = authHeader && authHeader.split(' ')[1]
     var tokenType = ""
-  
+
     console.log("_____________________________________")
     //console.log("TOKEN TYPE: " + tokenType)
     console.log("cookieToken: " + cookieToken)
     console.log("headerToken: " + headerToken)
     console.log("_____________________________________") 
 
-  /*
-  if(refreshToken == null) {
-    console.log("No token!")
-    return res.sendStatus(401)
-  }
+  
+
   */
-
-  console.log("getting refresh token")
-
-  res.json({cookieToken: cookieToken, headerToken:headerToken })
+ //const accessTokenDuration = "604800s";
+  //const newToken = await Functions.generateAccessToken(userName, refreshToken, accessTokenDuration) 
 
 }
 
@@ -366,12 +513,49 @@ async function checkPosts(req, res) {
    headerAccessToken = "no headerAccessToken"
   }   
 
-  const response = {
+  var response = {
     currentUser: userName,
+    responseUser: "none",
     cookieAccessToken: cookieAccessToken, 
     cookieRefreshToken: cookieRefreshToken,
     headerAccessToken: headerAccessToken,
+    newToken: newToken,
   }
+
+  //TEMP
+  //Get Token Information 
+  jwt.verify(headerAccessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    if(err) {
+        console.log("Not Logged In")
+        return res.sendStatus(403)
+    } else {
+      //req.user = user;
+      response.responseUser = user;
+    }
+  })
+
+  //Get Time if good 
+  var decoded = jwt_decode(cookieAccessToken);
+
+  const tokenCreated = decoded.exp;
+  const tokenFinished = decoded.iat;
+  const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
+
+  var stillGood = false 
+   
+  if(tokenFinished - tokenCreated) {
+    stillGood = true
+  } 
+  response.created = tokenCreated;
+  response.finished = tokenFinished;
+  response.tokenGoodTell = dateTokenIsGoodTell; 
+  response.stillGood = stillGood;
+  var e = formatDate(dateTokenIsGoodTell);
+  response.formatDate = e;
+
+  //TEMP
+
+
 
   console.log("___________________")
   console.log(response)
@@ -380,6 +564,20 @@ async function checkPosts(req, res) {
   res.json(response)
 
 }
+
+function formatDate(date) {
+  var hours = date.getHours();
+  var minutes = date.getMinutes();
+  var ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  minutes = minutes < 10 ? '0'+minutes : minutes;
+  var strTime = hours + ':' + minutes + ' ' + ampm;
+  return date.getMonth()+1 + "/" + date.getDate() + "/" + date.getFullYear() + " " + strTime;
+}
+
+
+
 
 /*
 const JWT = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjEyMzQ1Njc4OTAsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.1c_yQjnMZfKUb4UTDE_WvbC71f8xxtyMsdqKKkI1hF8`;
@@ -421,6 +619,10 @@ async function checkTokenTime(req, res) {
 
   console.log("___________________")
 
+
+
+  console.log("___________________")
+
   const response = {
     cookieAccessToken: cookieAccessToken, 
     cookieRefreshToken: cookieRefreshToken,
@@ -450,18 +652,6 @@ function authenticateTokenOriginal(req, res, next) {
       next();
   })
 }
-/*
-postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
-    const currentUser = req.authorizationData.currentUser;
-
-    console.log("_____________________________________")
-    console.log("The Current User Asking for Posts")
-    console.log(currentUser)
-    console.log("_____________________________________")
-
-    postFunctions.getUserPosts(req, res);
-})
-*/ 
 
 //Function C2: Validate User 
 function verifyUser(req, res, next) {
@@ -515,13 +705,80 @@ function verifyUser(req, res, next) {
 }
 
 
+//Middleware 
+function tryMiddleware(req, res, next) {
+  console.log("tryMiddleware")
+  
+  req.tryMiddleware = "hi";
+
+  next();
+  /*
+  //Part 1: Determine Auth Type 
+  cookieToken = req.cookies.accessToken;
+  const authHeader = req.headers['authorization'];
+  headerToken = authHeader && authHeader.split(' ')[1]
+  var tokenType = ""
+  
+  if(cookieToken != undefined) {
+      tokenType = "cookie"
+  } else if(headerToken != undefined) {
+      tokenType = "header"
+  } else {
+      tokenType = null;
+  }
+
+  //Part 2: Get the Token
+  if(tokenType == "cookie") {
+      var token = req.cookies.accessToken;
+  } else if(tokenType == "header") {
+      var token = authHeader && authHeader.split(' ')[1]
+  } else {
+      var token = null;
+  }
+
+  console.log("_____________________________________")
+  console.log("TOKEN TYPE: " + tokenType)
+  console.log("TOKEN: " + token)
+  console.log("_____________________________________")
+
+  //Part 3: Verify the Token 
+  if (token == null) {
+      console.log("You didn't present a token, no beuno!")
+      return res.sendStatus(401)
+  } 
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
+      if(!err) {
+          console.log("your good")
+          req.authorizationData = authorizationData
+          next();
+      } else {
+          console.log("Not Logged In")
+          return res.sendStatus(403)
+      }
+  })
+ */
+}
 
 
 
 
-module.exports = { userLogin, userRegister, loginStatus, userLogout, getRefreshToken, getTokenList, userDelete, checkPosts, checkTokenTime};
+
+module.exports = { userLogin, userTempLogin, getTokenType, userRegister, loginStatus, userLogout, getRefreshToken, getTokenList, userDelete, checkPosts, checkTokenTime};
 
 
+/*
+postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
+    const currentUser = req.authorizationData.currentUser;
+
+    console.log("_____________________________________")
+    console.log("The Current User Asking for Posts")
+    console.log(currentUser)
+    console.log("_____________________________________")
+
+    postFunctions.getUserPosts(req, res);
+})
+*/ 
 
 
 //APPENDIX 

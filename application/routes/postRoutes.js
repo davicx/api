@@ -2,9 +2,31 @@ const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
 var jwt = require('jsonwebtoken');
+var jwt_decode = require('jwt-decode');
+
+
+
 //const cors = require('cors');
 //postRouter.use(cors())
 //const app = express()
+//Middleware 
+/*
+const express = require('express')
+const app = express()
+
+const myLogger = function (req, res, next) {
+  console.log('LOGGED')
+  next()
+}
+
+app.use(myLogger)
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(3000)
+*/
 
 //CREATE POST 
 //Route A1: Post Text
@@ -159,6 +181,12 @@ postRouter.get("/posts/group/error", (req, res) => {
 
 function verifyUser(req, res, next) {
     console.log("Logged in User! ")
+    var responseMessage = {
+        validateToken: "token validation",
+        noToken: false,
+        tokenExpired: false,
+        validToken: true
+    }
     
     //Part 1: Determine Auth Type 
     cookieToken = req.cookies.accessToken;
@@ -191,9 +219,30 @@ function verifyUser(req, res, next) {
     //Part 3: Verify the Token 
     if (token == null) {
         console.log("You didn't present a token, no beuno!")
-        return res.sendStatus(401)
+        //return res.sendStatus(401)
+        responseMessage.noToken = true
+        res.status(401).json(responseMessage)
+
     } 
 
+    //Part 4: Check still has time on it 
+    var decoded = jwt_decode(token);
+    const tokenCreated = decoded.exp;
+    const tokenFinished = decoded.iat;
+    const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
+    var stillGood = false 
+    
+    if(tokenFinished - tokenCreated) {
+        stillGood = true
+        
+    } 
+ 
+    responseMessage.tokenExpired = stillGood;
+    console.log("___________________")
+    console.log("Token is still good: " + stillGood);
+    console.log("___________________")
+
+    //Part 5: Verify token 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
         if(!err) {
             console.log("your good")
@@ -201,7 +250,10 @@ function verifyUser(req, res, next) {
             next();
         } else {
             console.log("Not Logged In")
-            return res.sendStatus(403)
+            responseMessage.validToken = false;
+            res.status(401).json(responseMessage)
+            //res.status(401).json({message: "Successfully Registered", status: 201})
+            //return res.sendStatus(403)
         }
     })
 

@@ -67,7 +67,7 @@ INSERT INTO `boards` (`board_id`, `board_name`, `group_id`, `board_type`, `creat
 -- Table structure for table `comments`
 --
 
-DROP TABLE IF EXISTS `comments`;
+commentsDROP TABLE IF EXISTS `comments`;
 CREATE TABLE IF NOT EXISTS `comments` (
   `comment_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `post_id` int(11) NOT NULL DEFAULT 0,

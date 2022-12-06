@@ -23,8 +23,6 @@ async function currentUserStatus(req, res) {
     userLoggedIn = req.cookies.loggedInUser;
     
 
-
-
     /*
     //Part 1: Determine Auth Type 
     cookieToken = req.cookies.accessToken;
@@ -101,6 +99,53 @@ async function generateTokenFromRefreshToken(currentUser, refreshToken, accessTo
     return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
     
 }
+
+/*
+
+//Refresh Token
+app.post("/token", (req, res) => {
+    const refreshToken = req.body.refreshToken;
+    console.log(refreshTokens);
+    console.log(refreshToken);
+
+    //res.send(req.body);
+    
+    //NEW I Think we need to check the refresh token is in the database 
+
+    if(refreshToken == null) {
+        return res.sendStatus(401)
+    }
+    if(!refreshTokens.includes(refreshToken)) {
+        return res.sendStatus(403)
+    }
+    console.log("USER");
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        console.log(user);
+        if(err) {
+            return res.sendStatus(403)
+        }
+        const accessToken = generateAccessToken(user)
+        res.json({accessToken: accessToken})
+    })
+
+});
+
+//Logout 
+app.delete("/logout", (req, res) => {
+    refreshTokens = refreshTokens.filter(token => token !== req.body.token)
+    res.sendStatus(204);
+});
+
+
+//Access Token
+function generateAccessToken(user) {
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30s'});
+}
+
+
+
+
+*/
 
 //Method A1: Check if User Exists
 async function checkIfUserExists(userName) {
