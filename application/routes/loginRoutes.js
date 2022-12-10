@@ -34,9 +34,9 @@ userRouter.post('/register', function(req, res) {
     loginFunctions.userRegister(req, res);
 })
 
-//Route A5: Get New Access Token
+//Route A5: Use Refresh Token to get New Access Token
 userRouter.post('/refresh/tokens', function(req, res) {
-    console.log("Get New Access Token!")
+    console.log("Use Refresh Token to get New Access Token!")
 
     loginFunctions.getRefreshToken(req, res);
 })
@@ -141,6 +141,16 @@ function getTokenFromRequest(req, res, next) {
 
 
 
+
+//TEMP
+userRouter.get('/good', function(req, res) {
+    res.json({hi: "hi"})
+})
+
+userRouter.get('/no', function(req, res) {
+    //res.sendStatus(401)
+    res.status(401).json({oh:"no"});
+})
 
 
 /*

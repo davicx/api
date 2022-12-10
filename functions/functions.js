@@ -5,8 +5,7 @@ var jwt = require('jsonwebtoken');
 //LOGIN FUNCTIONS
 //Function A: Validate User with a Token
 async function currentUserStatus(req, res) {
-    console.log("currentUserStatus ")
-    var userName = null;
+    const userName = req.body.userName;
     var accessToken = ""
     var refreshToken = ""
     var userLoggedIn = false
@@ -195,7 +194,7 @@ async function checkIfUserExists(userName) {
 //Method A2: Login User (Validate username and password)
 async function getUserPassword(userName) {
     const connection = db.getConnection(); 
-    console.log("Function: getUserPassword")
+    //console.log("Function: getUserPassword")
 
     var loginUserStatus = {
         outcome: 500,
