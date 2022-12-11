@@ -187,6 +187,7 @@ async function userLogin(req, res) {
     const userName = req.body.userName;
     const userID = 1;
     const password = req.body.password;
+    var loginSuccess = true;
     
     console.log("API: Logging in " + userName + " " + password);
 
@@ -220,6 +221,7 @@ async function userLogin(req, res) {
     //STEP 3: Check for Valid User and Set Tokens 
     if(userExists == true && passwordCorrect == true) {
       validUser = true;
+      loginSuccess = true;
 
       console.log("STEP 3: Valid User was found PASS")
 
@@ -235,6 +237,7 @@ async function userLogin(req, res) {
               console.log("Removed old refresh tokens " + userName);      
           } else {    
               console.log("Error Problem with the Database!")
+              loginSuccess = false;
               console.log(err)
           } 
       }) 
@@ -246,6 +249,7 @@ async function userLogin(req, res) {
               console.log("You created a new refreshToken with ID " + results.insertId);      
           } else {    
               console.log("Error Problem with the Database!")
+              loginSuccess = false;
               console.log(err)
           } 
       }) 
@@ -256,15 +260,19 @@ async function userLogin(req, res) {
       //res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
       res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, path: '/refresh', httpOnly: true})
       res.cookie('loggedInUser', userName,{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+      loginSuccess = true;
     
     //Login Information was not Correct   
     } else {
+      loginSuccess = false;
       res.cookie('accessToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
       res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+      res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, path: '/refresh', httpOnly: true})
       res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
     }
 
     const loginOutcome = {
+      loginSuccess: loginSuccess,
       userName: userName,
       validUser: validUser,
       passwordCorrect: passwordCorrect,
@@ -390,6 +398,7 @@ async function userLogout(req, res) {
   res.cookie('accessToken', "noAccessToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
   res.cookie('refreshToken', "noRefreshToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
   res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+  res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, path: '/refresh', httpOnly: true})
 
   console.log(refreshToken);
   res.json({logout: userName})

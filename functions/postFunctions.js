@@ -4,6 +4,48 @@ const Post = require('./classes/Post');
 const Notification = require('./classes/Notification')
 const Requests = require('./classes/Requests');
 
+
+
+//Route B2: Get Posts to a User
+function getUserPosts(req, res) {
+	const connection = db.getConnection(); 
+    const post_to = req.params.user_name;
+	console.log(req.params);
+    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts WHERE post_to = ?";
+
+    connection.query(queryString, [post_to], (err, rows, fields) => {
+        if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption
+				}
+			});
+
+			//res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.json({posts:posts});
+			res.json(posts);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+}
+
+
+
+
+
+
+
+
+
+
+
 //Route A1: Post Text
 async function postText(req, res) {
 	//const connection = db.getConnection(); 
@@ -192,34 +234,7 @@ function getGroupPosts(req, res) {
 }
 
 
-//Route B2: Get Posts to a User
-function getUserPosts(req, res) {
-	const connection = db.getConnection(); 
-    const post_to = req.params.user_name;
-	console.log(req.params);
-    const queryString = "SELECT post_id, post_from, post_to, post_caption FROM posts WHERE post_to = ?";
 
-    connection.query(queryString, [post_to], (err, rows, fields) => {
-        if (!err) {
-			const posts = rows.map((row) => {
-				return {
-					postID: row.post_id,
-					postFrom: row.post_from,
-					postTo: row.post_to,
-					postCaption: row.post_caption
-				}
-			});
-
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json({posts:posts});
-
-        } else {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-		}
-    })
-}
 
 
 //Route B3: Get Single Post by ID 

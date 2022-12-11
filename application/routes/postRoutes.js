@@ -5,7 +5,121 @@ var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 
 
+//Route B2: Get Posts to a User (ADDING PROTECT)
+postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
+    const currentUser = req.authorizationData.currentUser;
+    const responseMessage = req.responseMessage;
 
+    console.log("_____________________________________")
+    console.log("The Current User Asking for Posts")
+    console.log(currentUser)
+    //console.log("Response Message")
+    //console.log(responseMessage)
+    console.log("_____________________________________")
+
+    postFunctions.getUserPosts(req, res);
+})
+
+
+function verifyUser(req, res, next) {
+    //48 hour token refresh every 24 hours 
+    console.log("_____________________________________")
+    var responseMessage = {
+        validateToken: "token validation",
+        noToken: false,
+        tokenExpired: false,
+        validToken: true
+    }
+    
+    //STEP 1: Determine Auth Type 
+    cookieToken = req.cookies.accessToken;
+    const authHeader = req.headers['authorization'];
+    headerToken = authHeader && authHeader.split(' ')[1]
+    var tokenType = ""
+    
+    if(cookieToken != undefined) {
+        tokenType = "cookie"
+    } else if(headerToken != undefined) {
+        tokenType = "header"
+    } else {
+        tokenType = null;
+    }
+
+    //STEP 2: 
+    if(tokenType == "cookie") {
+        var token = req.cookies.accessToken;
+    } else if(tokenType == "header") {
+        var token = authHeader && authHeader.split(' ')[1]
+    } else {
+        var token = null;
+    }
+
+    console.log("STEP 1: the token is from " + tokenType)
+    console.log("STEP 2: The token " + token)
+
+    //STEP 3: Verify the Token 
+    if (token == null) {
+        console.log("STEP 3: You didn't present a token, no beuno!")
+        //return res.sendStatus(401)
+        responseMessage.noToken = true
+        res.status(401).json(responseMessage)
+    } else {
+        console.log("STEP 3: There is a token so we can verify")
+    }
+
+    //STEP 4: Check still has time on it (move to first middle ware check for refresh, then validate)
+    var decoded = jwt_decode(token);
+    const tokenCreated = decoded.exp;
+    const tokenFinished = decoded.iat;
+    const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
+    var stillGood = false 
+    console.log("tokenCreated " + tokenCreated)
+    console.log("tokenFinished " + tokenFinished)
+    console.log((tokenCreated - tokenFinished) / 60 / 60)
+    console.log((tokenCreated - tokenFinished) / 60 / 60 / 24)
+    /*
+    when to get new token 
+    if(tokenCreated - tokenFinished) / 60 / 60 < 24) {
+
+
+    }
+    */
+    console.log("")
+    
+    if(tokenFinished - tokenCreated) {
+        stillGood = true
+        responseMessage.tokenExpired = false;
+        console.log("STEP 4: There is still time on the token. It is good until " + dateTokenIsGoodTell)
+    } else {
+        responseMessage.tokenExpired = true;
+        console.log("STEP 4: The token ran out of time need to refresh")
+    }
+
+    //STEP 5: Verify Token 
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
+        if(!err) {
+            console.log("STEP 5: The token was a good one!")
+            req.authorizationData = authorizationData
+            req.responseMessage = responseMessage;
+            next();
+        } else {
+            console.log("STEP 5: The token was no good try to get a new one with refresh token ")
+            responseMessage.validToken = false;
+            res.status(401).json(responseMessage)
+        }
+    })
+
+}
+
+
+
+
+
+
+
+
+
+///////////
 //const cors = require('cors');
 //postRouter.use(cors())
 //const app = express()
@@ -27,6 +141,8 @@ app.get('/', (req, res) => {
 
 app.listen(3000)
 */
+///////////
+
 
 //CREATE POST 
 //Route A1: Post Text
@@ -126,17 +242,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
 })
 
 
-//Route B2: Get Posts to a User (ADDING PROTECT)
-postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
-    const currentUser = req.authorizationData.currentUser;
 
-    console.log("_____________________________________")
-    console.log("The Current User Asking for Posts")
-    console.log(currentUser)
-    console.log("_____________________________________")
-
-    postFunctions.getUserPosts(req, res);
-})
 
 
 //Route B3: Get Single Post by ID 
@@ -178,86 +284,6 @@ postRouter.get("/pagination", (req, res) => {
 postRouter.get("/posts/group/error", (req, res) => {
     res.status(500).send({error: 'hello i failed'});
 })
-
-function verifyUser(req, res, next) {
-    console.log("Logged in User! ")
-    var responseMessage = {
-        validateToken: "token validation",
-        noToken: false,
-        tokenExpired: false,
-        validToken: true
-    }
-    
-    //Part 1: Determine Auth Type 
-    cookieToken = req.cookies.accessToken;
-    const authHeader = req.headers['authorization'];
-    headerToken = authHeader && authHeader.split(' ')[1]
-    var tokenType = ""
-    
-    if(cookieToken != undefined) {
-        tokenType = "cookie"
-    } else if(headerToken != undefined) {
-        tokenType = "header"
-    } else {
-        tokenType = null;
-    }
-
-    //Part 2: Get the Token
-    if(tokenType == "cookie") {
-        var token = req.cookies.accessToken;
-    } else if(tokenType == "header") {
-        var token = authHeader && authHeader.split(' ')[1]
-    } else {
-        var token = null;
-    }
-
-    console.log("_____________________________________")
-    console.log("TOKEN TYPE: " + tokenType)
-    console.log("TOKEN: " + token)
-    console.log("_____________________________________")
-
-    //Part 3: Verify the Token 
-    if (token == null) {
-        console.log("You didn't present a token, no beuno!")
-        //return res.sendStatus(401)
-        responseMessage.noToken = true
-        res.status(401).json(responseMessage)
-
-    } 
-
-    //Part 4: Check still has time on it 
-    var decoded = jwt_decode(token);
-    const tokenCreated = decoded.exp;
-    const tokenFinished = decoded.iat;
-    const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
-    var stillGood = false 
-    
-    if(tokenFinished - tokenCreated) {
-        stillGood = true
-        
-    } 
- 
-    responseMessage.tokenExpired = stillGood;
-    console.log("___________________")
-    console.log("Token is still good: " + stillGood);
-    console.log("___________________")
-
-    //Part 5: Verify token 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
-        if(!err) {
-            console.log("your good")
-            req.authorizationData = authorizationData
-            next();
-        } else {
-            console.log("Not Logged In")
-            responseMessage.validToken = false;
-            res.status(401).json(responseMessage)
-            //res.status(401).json({message: "Successfully Registered", status: 201})
-            //return res.sendStatus(403)
-        }
-    })
-
-}
 
 
 
