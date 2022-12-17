@@ -73,15 +73,31 @@ function verifyUser(req, res, next) {
     const tokenFinished = decoded.iat;
     const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
     var stillGood = false 
-    console.log("tokenCreated " + tokenCreated)
-    console.log("tokenFinished " + tokenFinished)
-    console.log((tokenCreated - tokenFinished) / 60 / 60)
-    console.log((tokenCreated - tokenFinished) / 60 / 60 / 24)
+
+
+    //current date in seconds since epoch
+    var d = new Date();
+    var currentSecondsSinceEpoch = Math.round(d.getTime() / 1000);
+    const tokenLifeSeconds = (tokenCreated - tokenFinished);
+    const tokenLifeMinutes = tokenLifeSeconds / 60;
+
+    const timeBeforeRefresh = 60;
+    //If expires - timeBeforeRefresh is greater then today get a new token 
+
+    console.log("Token life in seconds " + tokenLifeSeconds)
+    console.log("Token life in minutes " + tokenLifeMinutes)
+
+    
+    //console.log("currentSecondsSinceEpoch " + currentSecondsSinceEpoch)
+    //console.log("tokenCreated " + tokenCreated)
+    //console.log("tokenFinished " + tokenFinished)
+    //console.log("Time remaining " + (currentSecondsSinceEpoch - tokenFinished))
+
+    //console.log((tokenCreated - tokenFinished) / 60 / 60)
+    //console.log((tokenCreated - tokenFinished) / 60 / 60 / 24)
     /*
     when to get new token 
     if(tokenCreated - tokenFinished) / 60 / 60 < 24) {
-
-
     }
     */
     console.log("")
@@ -110,6 +126,9 @@ function verifyUser(req, res, next) {
     })
 
 }
+
+
+
 
 
 

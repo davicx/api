@@ -27,8 +27,11 @@ FUNCTIONS B: All Helper Functions Related to User Login
 
 //Function B1: Get New Access Token
 async function getRefreshToken(req, res) {
+  console.log("GOAL: Get a new access token from a refresh token")
+  console.log("Route: http://localhost:3003/refresh/tokens " + "Function: getRefreshToken")
   const connection = db.getConnection(); 
   const userName = req.body.userName;
+  var currentUserPerson = ""
 
   var accessToken = await Functions.generateAccessToken(userName, '604800s')
   var status = ""
@@ -37,23 +40,25 @@ async function getRefreshToken(req, res) {
   const refreshToken = req.cookies.refreshToken;
 
   if(refreshToken == null || refreshToken == "noRefreshToken") {
-    console.log("No token!")
+    //console.log("No token!")
+    //logoutUser();
     //return res.sendStatus(401)
   } 
 
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, userName) => {
+
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, authData) => {
   //jwt.verify(refreshToken, "process.env.REFRESH_TOKEN_SECRET", (err, userName) => {
-    console.log("_______________________________")
-    console.log("Verified the refresh token for " + userName); 
-    console.log("_______________________________")
+    //console.log("_______________________________")
+    //console.log("Verified the refresh token for "); 
+    //console.log(authData.currentUser); 
+    currentUserPerson = authData.currentUser;
+    //console.log("_______________________________")
     if(err) {
-      console.log("Error verifying the refreshToken")
+      //console.log("Error verifying the refreshToken")
       status = "Error verifying the refreshToken"
     } else {
       status = "looks good sir!"
     }
-  
-
   })
 
   //STEP 2: Verify that the database has a matching Refresh Token for the user 
@@ -78,10 +83,14 @@ async function getRefreshToken(req, res) {
         console.log(refresh_tokens)
         console.log("HERE IT IS ")
 
+
         //STEP 4: Generate the new Access Token 
         if(refresh_tokens.length > 0) {
+          console.log("currentUserPerson " + currentUserPerson)
+          res.cookie('accessToken', accessToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
           res.json({worked: "worked!", accessToken: accessToken, status: status })
- 
+          //SET NEW TOKEN HERE !!!!!!!!
+          
         } else {
           res.json({refreshToken: refreshToken, error: "oh man" })
         }
@@ -94,7 +103,7 @@ async function getRefreshToken(req, res) {
           return
   }
   })
-  
+  console.log("____________________________________")
 
 }
 
@@ -226,7 +235,15 @@ async function userLogin(req, res) {
       console.log("STEP 3: Valid User was found PASS")
 
       //STEP 4: Generate Refresh and Access Tokens
-      var accessToken = await Functions.generateAccessToken(userName, '604800s') 
+      const tokenLengthFiveSeconds = '5s'
+      const tokenLengthOneMinute = '60s'
+      const tokenLengthTwoMinutes = '120s'
+      const tokenLengthFiveMinutes = '300s'
+      const tokenLengthOneHour = '3600s'
+      const tokenDuration = '604800s'
+
+
+      var accessToken = await Functions.generateAccessToken(userName, tokenLengthFiveSeconds) 
       var refreshToken = jwt.sign({currentUser: userName}, process.env.REFRESH_TOKEN_SECRET);
 
       //STEP 5: Add Refresh Token to Database

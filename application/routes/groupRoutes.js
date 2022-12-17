@@ -67,7 +67,7 @@ groupRouter.get("/groups/:userName", (req, res) => {
         if (!err) {
 			var groupList = [];
 			rows.map((row) => {
-                console.log(row)
+                //console.log(row)
                 let currentGroup = {
                     groupID: row.group_id,
                     groupName: "row.group_name"
