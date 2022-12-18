@@ -25,6 +25,16 @@ FUNCTIONS B: All Helper Functions Related to User Login
   
 */
 
+//var tokenLife = "60s"
+var tokenLengthFiveSeconds = '5s'
+//const tokenLengthOneMinute = '60s'
+//const tokenLengthTwoMinutes = '120s'
+//const tokenLengthFiveMinutes = '300s'
+//const tokenLengthOneHour = '3600s'
+//const tokenDuration = '604800s'
+
+//Functions.generateAccessToken Set here with variable above 
+
 //Function B1: Get New Access Token
 async function getRefreshToken(req, res) {
   console.log("GOAL: Get a new access token from a refresh token")
@@ -33,7 +43,8 @@ async function getRefreshToken(req, res) {
   const userName = req.body.userName;
   var currentUserPerson = ""
 
-  var accessToken = await Functions.generateAccessToken(userName, '604800s')
+  //var accessToken = await Functions.generateAccessToken(userName, '604800s')
+  var accessToken = await Functions.generateAccessToken(userName, '30s')
   var status = ""
   
   //STEP 1: Verify there is a refresh token 
@@ -235,12 +246,7 @@ async function userLogin(req, res) {
       console.log("STEP 3: Valid User was found PASS")
 
       //STEP 4: Generate Refresh and Access Tokens
-      const tokenLengthFiveSeconds = '5s'
-      const tokenLengthOneMinute = '60s'
-      const tokenLengthTwoMinutes = '120s'
-      const tokenLengthFiveMinutes = '300s'
-      const tokenLengthOneHour = '3600s'
-      const tokenDuration = '604800s'
+
 
 
       var accessToken = await Functions.generateAccessToken(userName, tokenLengthFiveSeconds) 

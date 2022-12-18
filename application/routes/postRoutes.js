@@ -105,7 +105,8 @@ function verifyUser(req, res, next) {
     if(tokenFinished - tokenCreated) {
         stillGood = true
         responseMessage.tokenExpired = false;
-        console.log("STEP 4: There is still time on the token. It is good until " + dateTokenIsGoodTell)
+        console.log("STEP 4: There is still time on the token. It is good until " + dateTokenIsGoodTell) 
+        console.log("STEP 4: There is still time on the token. It has " + (tokenLifeSeconds + (tokenFinished - currentSecondsSinceEpoch)) + " seconds left")
     } else {
         responseMessage.tokenExpired = true;
         console.log("STEP 4: The token ran out of time need to refresh")

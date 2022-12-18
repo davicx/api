@@ -40,12 +40,6 @@ function getUserPosts(req, res) {
 
 
 
-
-
-
-
-
-
 //Route A1: Post Text
 async function postText(req, res) {
 	//const connection = db.getConnection(); 
