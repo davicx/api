@@ -26,11 +26,11 @@ FUNCTIONS B: All Helper Functions Related to User Login
 */
 
 //var tokenLife = "60s"
-var tokenLengthFiveSeconds = '5s'
+//var tokenLengthFiveSeconds = '5s'
 //const tokenLengthOneMinute = '60s'
 //const tokenLengthTwoMinutes = '120s'
 //const tokenLengthFiveMinutes = '300s'
-//const tokenLengthOneHour = '3600s'
+const tokenLength = '3600s'
 //const tokenDuration = '604800s'
 
 //Functions.generateAccessToken Set here with variable above 
@@ -249,7 +249,7 @@ async function userLogin(req, res) {
 
 
 
-      var accessToken = await Functions.generateAccessToken(userName, tokenLengthFiveSeconds) 
+      var accessToken = await Functions.generateAccessToken(userName, tokenLength) 
       var refreshToken = jwt.sign({currentUser: userName}, process.env.REFRESH_TOKEN_SECRET);
 
       //STEP 5: Add Refresh Token to Database
@@ -571,7 +571,7 @@ async function getTokenList(req, res) {
               }
           });
   
-          res.setHeader('Access-Control-Allow-Origin', '*');
+          //res.setHeader('Access-Control-Allow-Origin', '*');
           res.json({tokens:tokens});
   
       } else {

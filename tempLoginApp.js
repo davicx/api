@@ -124,7 +124,7 @@ tempLoginApp.get("/tokens", (req, res) => {
 				}
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json({tokens:tokens});
 
         } else {

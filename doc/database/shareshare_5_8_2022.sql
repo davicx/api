@@ -428,17 +428,18 @@ INSERT INTO `friends` (`friends_id`, `user_name`, `user_id`, `friend_user_name`,
 -- Table structure for table `groups`
 --
 
+
 DROP TABLE IF EXISTS `groups`;
 CREATE TABLE IF NOT EXISTS `groups` (
   `group_id` int(11) NOT NULL AUTO_INCREMENT,
   `group_type` varchar(255) NOT NULL DEFAULT 'normal',
-  `created_by` varchar(255) NOT NULL,
-  `group_name` varchar(255) NOT NULL,
+  `created_by` varchar(255) NOT NULL DEFAULT '',
+  `group_name` varchar(255) NOT NULL DEFAULT 'name me!',
   `group_image` varchar(255) NOT NULL DEFAULT 'group.png',
   `group_key` varchar(255) NOT NULL DEFAULT 'nokey',
   `group_private` int(11) NOT NULL DEFAULT 1,
   `group_deleted` int(11) NOT NULL DEFAULT 0,
-  `updated` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `updated` timestamp NOT NULL DEFAULT '1995-07-19 22:06:22',
   `created` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`group_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=413 DEFAULT CHARSET=latin1;
@@ -449,7 +450,7 @@ CREATE TABLE IF NOT EXISTS `groups` (
 
 INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `group_image`, `group_key`, `group_private`, `group_deleted`, `updated`, `created`) VALUES
 (70, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2021-12-19 01:20:57'),
-(412, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2022-01-09 00:03:23');
+(72, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2022-01-09 00:03:23');
 
 -- --------------------------------------------------------
 

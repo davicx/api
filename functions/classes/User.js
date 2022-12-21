@@ -155,7 +155,7 @@ class User {
 				friendsArray.push(currentUser);
 			});
 
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.json(friendsArray);
 		} else {
 			console.log("Failed to Select User: " + err);

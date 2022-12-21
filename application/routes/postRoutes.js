@@ -86,20 +86,6 @@ function verifyUser(req, res, next) {
 
     console.log("Token life in seconds " + tokenLifeSeconds)
     console.log("Token life in minutes " + tokenLifeMinutes)
-
-    
-    //console.log("currentSecondsSinceEpoch " + currentSecondsSinceEpoch)
-    //console.log("tokenCreated " + tokenCreated)
-    //console.log("tokenFinished " + tokenFinished)
-    //console.log("Time remaining " + (currentSecondsSinceEpoch - tokenFinished))
-
-    //console.log((tokenCreated - tokenFinished) / 60 / 60)
-    //console.log((tokenCreated - tokenFinished) / 60 / 60 / 24)
-    /*
-    when to get new token 
-    if(tokenCreated - tokenFinished) / 60 / 60 < 24) {
-    }
-    */
     console.log("")
     
     if(tokenFinished - tokenCreated) {
@@ -127,6 +113,35 @@ function verifyUser(req, res, next) {
     })
 
 }
+
+
+
+
+
+
+
+
+    //console.log("currentSecondsSinceEpoch " + currentSecondsSinceEpoch)
+    //console.log("tokenCreated " + tokenCreated)
+    //console.log("tokenFinished " + tokenFinished)
+    //console.log("Time remaining " + (currentSecondsSinceEpoch - tokenFinished))
+
+    //console.log((tokenCreated - tokenFinished) / 60 / 60)
+    //console.log((tokenCreated - tokenFinished) / 60 / 60 / 24)
+    /*
+    when to get new token 
+    if(tokenCreated - tokenFinished) / 60 / 60 < 24) {
+    }
+    */
+
+
+
+
+
+
+
+
+
 
 
 
