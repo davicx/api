@@ -26,6 +26,7 @@ class User {
         try {
             const queryString = "INSERT INTO user_login (user_name, user_email, salt, password) VALUES (?, ?, ?, ?)"
            connection.query(queryString, [newUser.userName, newUser.userEmail, salt, password], (err, results) => {
+            console.log(err)
                 if (!err) {
                     console.log("You created a new User with ID " + results.insertId);    
                     registerUserOutcome.outcome = 1;       

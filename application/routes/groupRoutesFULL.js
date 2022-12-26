@@ -8,45 +8,7 @@ var jwt_decode = require('jwt-decode');
 
 //app.use(express.json());
 
-//USER ROUTES
-//Route A1: Create a New Group
-groupRouter.post('/group/create/', function(req, res) {
-    groupFunctions.createGroup(req, res);
-})
 
-/*
-//Route A2: Invite Users to a Group 
-groupRouter.post('/group/invite/', function(req, res) {
-    groupFunctions.addGroupUsers(req, res);
-})
-
-//Route A3: Join Group 
-groupRouter.post('/group/join/', function(req, res) {
-    groupFunctions.acceptGroupInvite(req, res);
-})
-
-//Route A4: Leave a Group
-groupRouter.post('/group/leave/', function(req, res) {
-    groupFunctions.leaveGroup(req, res);
-})
-
-//GET ROUTES
-//Route B1: Get All Groups a User is In
-groupRouter.get("/group/user/:userName", (req, res) => {
-    groupFunctions.getUserGroups(req, res);
-})
-
-//Route B2: Get Single Group by ID 
-groupRouter.get("/group/:groupID", (req, res) => {
-    groupFunctions.getGroup(req, res);
-})
-
-//Route B3: Get Group Users 
-groupRouter.get("/group/users/:groupID", (req, res) => {
-    groupFunctions.getGroupUsers(req, res);
-})
-
-*/
 
 //Need to make SQL query get all the groups a user is in and there name 
 groupRouter.get("/groups/:userName", (req, res) => {
@@ -168,6 +130,49 @@ function verifyUser(req, res, next) {
 */
 }
 
+
+
+
+
+//USER ROUTES
+//Route A1: Create a New Group
+groupRouter.post('/group/create/', function(req, res) {
+    groupFunctions.createGroup(req, res);
+})
+
+/*
+//Route A2: Invite Users to a Group 
+groupRouter.post('/group/invite/', function(req, res) {
+    groupFunctions.addGroupUsers(req, res);
+})
+
+//Route A3: Join Group 
+groupRouter.post('/group/join/', function(req, res) {
+    groupFunctions.acceptGroupInvite(req, res);
+})
+
+//Route A4: Leave a Group
+groupRouter.post('/group/leave/', function(req, res) {
+    groupFunctions.leaveGroup(req, res);
+})
+
+//GET ROUTES
+//Route B1: Get All Groups a User is In
+groupRouter.get("/group/user/:userName", (req, res) => {
+    groupFunctions.getUserGroups(req, res);
+})
+
+//Route B2: Get Single Group by ID 
+groupRouter.get("/group/:groupID", (req, res) => {
+    groupFunctions.getGroup(req, res);
+})
+
+//Route B3: Get Group Users 
+groupRouter.get("/group/users/:groupID", (req, res) => {
+    groupFunctions.getGroupUsers(req, res);
+})
+
+*/
 
 
 

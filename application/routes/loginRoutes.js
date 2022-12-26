@@ -1,74 +1,74 @@
 const express = require('express')
-const userRouter = express.Router(); 
+const loginRouter = express.Router(); 
 const loginFunctions = require('../../functions/loginFunctions')
 //const cors = require('cors');
-//userRouter.use(cors())
+//loginRouter.use(cors())
 
 
 //USER ROUTES
 //Route A1: User Login 
-//userRouter.post('/login', async function(req, res) {
-userRouter.post('/login', function(req, res) {
+//loginRouter.post('/login', async function(req, res) {
+loginRouter.post('/login', function(req, res) {
     loginFunctions.userLogin(req, res);
 })
 
-//userRouter.post('/login', async function(req, res) {
-userRouter.post('/login/temp', function(req, res) {
+//loginRouter.post('/login', async function(req, res) {
+loginRouter.post('/login/temp', function(req, res) {
     loginFunctions.userTempLogin(req, res);
 })
     
 
 //Route A2: Login Status 
-userRouter.post('/login/status', function(req, res) {
+loginRouter.post('/login/status', function(req, res) {
     loginFunctions.loginStatus(req, res);
 })
 
 //Route A3: Logout User 
-userRouter.post('/logout', function(req, res) {
+loginRouter.post('/logout', function(req, res) {
     console.log("Logout!")
     loginFunctions.userLogout(req, res);
 })
 
 //Route A4: Register 
-userRouter.post('/register', function(req, res) {
+loginRouter.post('/register', function(req, res) {
     loginFunctions.userRegister(req, res);
 })
 
 //Route A5: Use Refresh Token to get New Access Token
-userRouter.post('/refresh/tokens', function(req, res) {
+loginRouter.post('/refresh/tokens', function(req, res) {
     console.log("Use Refresh Token to get New Access Token!")
 
     loginFunctions.getRefreshToken(req, res);
 })
 
 //Route A6: Get Token List 
-userRouter.get('/tokens/all', function(req, res) {
+loginRouter.get('/tokens/all', function(req, res) {
     console.log("Get Token List!")
 
     loginFunctions.getTokenList(req, res);
 })
 
 //Route A7: Delete a User 
-userRouter.post('/delete', function(req, res) {
+loginRouter.post('/delete', function(req, res) {
     loginFunctions.userDelete(req, res);
 })
 
 //Route A8: Validate User 
 /*
-userRouter.post('/token/get', tryMiddleware, function(req, res) {
+loginRouter.post('/token/get', tryMiddleware, function(req, res) {
     //loginFunctions.checkPosts(req, res);
 })
 */
 
 //Route A8: Check if Cookie Expired 
 //http://localhost:3003/token/time
-userRouter.get('/token/time', function(req, res) {
+loginRouter.get('/token/time', function(req, res) {
     loginFunctions.checkTokenTime(req, res);
 })
 
 
 //Route A8: Get the Token from the incoming request 
-userRouter.post('/token/get', getTokenFromRequest, function(req, res) {
+loginRouter.post('/token/get', getTokenFromRequest, function(req, res) {
     loginFunctions.getTokenType(req, res);
 })
 
@@ -143,11 +143,11 @@ function getTokenFromRequest(req, res, next) {
 
 
 //TEMP
-userRouter.get('/good', function(req, res) {
+loginRouter.get('/good', function(req, res) {
     res.json({hi: "hi"})
 })
 
-userRouter.get('/no', function(req, res) {
+loginRouter.get('/no', function(req, res) {
     //res.sendStatus(401)
     res.status(401).json({oh:"no"});
 })
@@ -216,7 +216,7 @@ app.post('/api/posts', verifyToken, (req, res) => {
 
 
 
-module.exports = userRouter;
+module.exports = loginRouter;
 
 
 

@@ -1,72 +1,22 @@
 const express = require('express')
-const postRouter = express.Router();
+const groupRouter = express.Router();
 const postFunctions = require('../../functions/postFunctions')
-const groupFunctions = require('./../../functions/groupFunctions')
+const groupFunctions = require('../../functions/groupFunctions')
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 //const db = require('../functions/conn');
 const db = require('../../functions/conn');
 
-//Route B2: Get Posts to a User (ADDING PROTECT)
-postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
-    const currentUser = req.authorizationData.currentUser;
-    const responseMessage = req.responseMessage;
 
-    console.log("_____________________________________")
-    console.log("The Current User Asking for Posts")
-    console.log(currentUser)
-    //console.log("Response Message")
-    //console.log(responseMessage)
-    console.log("_____________________________________")
-
-    postFunctions.getUserPosts(req, res);
-})
-
-/*
-postRouter.get("/groups/user/:user_name", verifyUser, (req, res) => {
+groupRouter.get("/groups/user/:user_name", verifyUser, (req, res) => {
     const currentUser = req.authorizationData.currentUser;
     console.log("_____________________________________")
     //const responseMessage = req.responseMessage;
     console.log(currentUser)
     console.log("_____________________________________")
     groupFunctions.getUserGroups(req, res, currentUser);
-    /*
-    const connection = db.getConnection(); 
-	//const userName = req.params.userName;
-	console.log("Function: getUserGroups")
-    
-	//const queryString = "SELECT * FROM group_users WHERE user_name = ? AND active_member = 1";
-	const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 
 
-    connection.query(queryString, [currentUser], (err, rows) => {
-        console.log(err)
-        if (!err) {
-			var groupList = [];
-			rows.map((row) => {
-                let currentGroup = {
-                    groupID: row.group_id,
-                    groupName: row.group_name
-                }
-
-				groupList.push(currentGroup);
-			});
-
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json({groups: groupList} );
-
-        } else {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-		}
-    })
-    */
-
-/*
 })
-*/
-
-
 
 
 
@@ -166,6 +116,8 @@ function verifyUser(req, res, next) {
 
 
 
+module.exports = groupRouter;
+
 
 
 
@@ -228,6 +180,7 @@ app.listen(3000)
 */
 ///////////
 
+/*
 
 //CREATE POST 
 //Route A1: Post Text
@@ -250,7 +203,7 @@ postRouter.post('/post/update/text', function(req, res) {
     postFunctions.postUpdateText(req, res);
 })
 
-
+*/
 //GET POSTS 
 //Route B1: Get Posts to a Group
 /*
@@ -265,6 +218,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
 })
 */
 
+/*
 //postRouter.get("/posts/group/:group_id", verifyUser, (req, res) => {
 postRouter.get("/posts/group/:group_id", (req, res) => {
     //const currentUser = req.authorizationData.currentUser;
@@ -290,7 +244,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     console.log("headerAccessToken " + headerAccessToken)
     //console.log("The Current User Asking for Posts")
     //console.log(currentUser)
-    /*
+    
        console.log("_____________________________________")
     var cookieAccessToken = req.cookies.accessToken;
     var cookieRefreshToken = req.cookies.accessToken;
@@ -320,33 +274,38 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     //console.log("The Current User Asking for Posts")
     //console.log(currentUser)
     console.log("_____________________________________")
-    */
+    
     console.log("_____________________________________")
     
     postFunctions.getGroupPosts(req, res);
 })
 
 
-
+*/
 
 
 //Route B3: Get Single Post by ID 
+/*
 postRouter.get("/posts/:post_id", (req, res) => {
 	postFunctions.getSinglePost(req, res);
 })
+*/
 
 //Route B4: Get all Posts 
+/*
 postRouter.get("/posts", (req, res) => {
     console.log("Get all Posts")
 	postFunctions.getAllPosts(req, res);
 
 })
+*/
 
 //Route B5: Get all Posts Pagination
+/*
 postRouter.get("/pagination", (req, res) => {
     console.log("Get all Posts")
 	postFunctions.getAllPostsPagination(req, res);
-
+*/
     /*
     app.get('/fruit/:fruitName/:fruitColor', function(req, res) {
     var data = {
@@ -359,23 +318,24 @@ postRouter.get("/pagination", (req, res) => {
     send.json(data);
 });
 
-    */
+    *//*
 
 })
+*/
+
 
 
 
 //TEMP
+/*
 postRouter.get("/posts/group/error", (req, res) => {
     res.status(500).send({error: 'hello i failed'});
 })
 
+*/
 
 
 
-
-
-module.exports = postRouter;
 
 
 

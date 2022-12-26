@@ -158,7 +158,7 @@ async function checkIfUserExists(userName) {
 		errors: []
     }
 
-    //console.log("checkIfUserExists " + userName)
+    console.log("INSIDE FUNCTION checkIfUserExists " + userName)
 
     return new Promise(async function(resolve, reject) {
         try {
@@ -166,6 +166,8 @@ async function checkIfUserExists(userName) {
             const queryString = "SELECT user_id FROM user_login WHERE user_name = ?"			
             
             connection.query(queryString, [userName], (err, rows) => {
+                console.log(err)
+
                 if (!err) {
                     if(rows.length < 1){
                         userExistsStatus.outcome = 200;
@@ -174,6 +176,7 @@ async function checkIfUserExists(userName) {
                         userExistsStatus.outcome = 200;
                         userExistsStatus.userID = rows[0].user_id;
                         userExistsStatus.messages.push("There is already a user with the name " + userName)
+                        console.log(rows)
                     }
 
                     resolve(userExistsStatus); 
