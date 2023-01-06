@@ -40,8 +40,16 @@ function logoutUser() {
   //res.cookie('refreshToken', "noRefreshToken", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
   //res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
   //res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, path: '/refresh', httpOnly: true})
-
-  console.log("Logout " + userName)
+  cookies.set('loggedInUser', {expires: Date.now()});
+  cookies.set('accessToken', {expires: Date.now()});
+  cookies.set('refreshToken', {expires: Date.now()});
+  let logoutUser = {
+    logoutCurrentUser: "currentUser"
+  }
+  
+  res.json(logoutUser);
+  //console.log("Logout " + userName)
+  //On Front end need to 
 }
 
 //Function B1: Get New Access Token
@@ -62,6 +70,7 @@ async function getRefreshToken(req, res) {
   if(refreshToken == null || refreshToken == "noRefreshToken") {
     console.log("STEP 1: No refresh token was sent so logout " + userName)
     logoutUser();
+
     //return res.sendStatus(200)
   } else {
     console.log("STEP 1: A refresh token was found for " + userName)
