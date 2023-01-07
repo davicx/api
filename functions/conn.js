@@ -2,6 +2,7 @@ const mysql = require('mysql')
 
 //CONNECTION
 //Windows WAMP
+/*
 const pool = mysql.createPool({
     connectionLimit: 10,
     host: 'localhost',
@@ -9,10 +10,9 @@ const pool = mysql.createPool({
     password: '',
     database: 'shareshare'
 })
+*/
 
-
-//CONNECTION
-/*
+//MAC
 const pool = mysql.createPool({
     connectionLimit: 10,
     host: 'localhost',
@@ -20,7 +20,6 @@ const pool = mysql.createPool({
     password: 'password',
     database: 'shareshare'
 })
-*/
 
 /*
 const pool = mysql.createPool({
