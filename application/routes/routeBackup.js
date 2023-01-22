@@ -1,206 +1,6 @@
-const express = require('express')
-const postRouter = express.Router();
-const postFunctions = require('../../functions/postFunctions')
-const groupFunctions = require('./../../functions/groupFunctions')
-var jwt = require('jsonwebtoken');
-var jwt_decode = require('jwt-decode');
-//const db = require('../functions/conn');
-const db = require('../../functions/conn');
-
-//Route B2: Get Posts to a User (ADDING PROTECT)
-postRouter.get("/posts/user/:user_name", verifyUser, (req, res) => {
-    const currentUser = req.authorizationData.currentUser;
-    const responseMessage = req.responseMessage;
-
-    console.log("_____________________________________")
-    console.log("The Current User Asking for Posts")
-    console.log(currentUser)
-    //console.log("Response Message")
-    //console.log(responseMessage)
-    console.log("_____________________________________")
-
-    postFunctions.getUserPosts(req, res);
-})
-
-/*
-postRouter.get("/groups/user/:user_name", verifyUser, (req, res) => {
-    const currentUser = req.authorizationData.currentUser;
-    console.log("_____________________________________")
-    //const responseMessage = req.responseMessage;
-    console.log(currentUser)
-    console.log("_____________________________________")
-    groupFunctions.getUserGroups(req, res, currentUser);
-    /*
-    const connection = db.getConnection(); 
-	//const userName = req.params.userName;
-	console.log("Function: getUserGroups")
-    
-	//const queryString = "SELECT * FROM group_users WHERE user_name = ? AND active_member = 1";
-	const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 
-
-    connection.query(queryString, [currentUser], (err, rows) => {
-        console.log(err)
-        if (!err) {
-			var groupList = [];
-			rows.map((row) => {
-                let currentGroup = {
-                    groupID: row.group_id,
-                    groupName: row.group_name
-                }
-
-				groupList.push(currentGroup);
-			});
-
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json({groups: groupList} );
-
-        } else {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-		}
-    })
-    */
-
-/*
-})
-*/
-
-
-
-
-
-
-function verifyUser(req, res, next) {
-    //48 hour token refresh every 24 hours 
-    console.log("_____________________________________")
-    var responseMessage = {
-        validateToken: "token validation",
-        noToken: false,
-        tokenExpired: false,
-        validToken: true
-    }
-    
-    //STEP 1: Determine Auth Type 
-    cookieToken = req.cookies.accessToken;
-    const authHeader = req.headers['authorization'];
-    headerToken = authHeader && authHeader.split(' ')[1]
-    var tokenType = ""
-    
-    if(cookieToken != undefined) {
-        tokenType = "cookie"
-    } else if(headerToken != undefined) {
-        tokenType = "header"
-    } else {
-        tokenType = null;
-    }
-
-    //STEP 2: 
-    if(tokenType == "cookie") {
-        var token = req.cookies.accessToken;
-    } else if(tokenType == "header") {
-        var token = authHeader && authHeader.split(' ')[1]
-    } else {
-        var token = null;
-    }
-
-    console.log("STEP 1: the token is from " + tokenType)
-    console.log("STEP 2: The token " + token)
-
-    //STEP 3: Verify the Token 
-    if (token == null) {
-        console.log("STEP 3: You didn't present a token, no beuno!")
-        //return res.sendStatus(401)
-        responseMessage.noToken = true
-        res.status(401).json(responseMessage)
-    } else {
-        console.log("STEP 3: There is a token so we can verify")
-    }
-
-    //STEP 4: Check still has time on it (move to first middle ware check for refresh, then validate)
-    var decoded = jwt_decode(token);
-    const tokenCreated = decoded.exp;
-    const tokenFinished = decoded.iat;
-    const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
-    var stillGood = false 
-
-
-    //current date in seconds since epoch
-    var d = new Date();
-    var currentSecondsSinceEpoch = Math.round(d.getTime() / 1000);
-    const tokenLifeSeconds = (tokenCreated - tokenFinished);
-    const tokenLifeMinutes = tokenLifeSeconds / 60;
-
-    const timeBeforeRefresh = 60;
-    //If expires - timeBeforeRefresh is greater then today get a new token 
-
-    console.log("Token life in seconds " + tokenLifeSeconds)
-    console.log("Token life in minutes " + tokenLifeMinutes)
-    console.log("")
-    
-    if(tokenFinished - tokenCreated) {
-        stillGood = true
-        responseMessage.tokenExpired = false;
-        console.log("STEP 4: There is still time on the token. It is good until " + dateTokenIsGoodTell) 
-        console.log("STEP 4: There is still time on the token. It has " + (tokenLifeSeconds + (tokenFinished - currentSecondsSinceEpoch)) + " seconds left")
-    } else {
-        responseMessage.tokenExpired = true;
-        console.log("STEP 4: The token ran out of time need to refresh")
-    }
-
-    //STEP 5: Verify Token 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
-        if(!err) {
-            console.log("STEP 5: The token was a good one!")
-            req.authorizationData = authorizationData
-            req.responseMessage = responseMessage;
-            next();
-        } else {
-            console.log("STEP 5: The token was no good try to get a new one with refresh token ")
-            responseMessage.validToken = false;
-            res.status(401).json(responseMessage)
-        }
-    })
-
-}
-
-
-
-
-
-
-
-
-    //console.log("currentSecondsSinceEpoch " + currentSecondsSinceEpoch)
-    //console.log("tokenCreated " + tokenCreated)
-    //console.log("tokenFinished " + tokenFinished)
-    //console.log("Time remaining " + (currentSecondsSinceEpoch - tokenFinished))
-
-    //console.log((tokenCreated - tokenFinished) / 60 / 60)
-    //console.log((tokenCreated - tokenFinished) / 60 / 60 / 24)
-    /*
-    when to get new token 
-    if(tokenCreated - tokenFinished) / 60 / 60 < 24) {
-    }
-    */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//////////////////////////
+//       GROUPS         //
+//////////////////////////
 
 
 
@@ -228,6 +28,7 @@ app.listen(3000)
 */
 ///////////
 
+/*
 
 //CREATE POST 
 //Route A1: Post Text
@@ -250,7 +51,7 @@ postRouter.post('/post/update/text', function(req, res) {
     postFunctions.postUpdateText(req, res);
 })
 
-
+*/
 //GET POSTS 
 //Route B1: Get Posts to a Group
 /*
@@ -265,6 +66,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
 })
 */
 
+/*
 //postRouter.get("/posts/group/:group_id", verifyUser, (req, res) => {
 postRouter.get("/posts/group/:group_id", (req, res) => {
     //const currentUser = req.authorizationData.currentUser;
@@ -290,7 +92,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     console.log("headerAccessToken " + headerAccessToken)
     //console.log("The Current User Asking for Posts")
     //console.log(currentUser)
-    /*
+    
        console.log("_____________________________________")
     var cookieAccessToken = req.cookies.accessToken;
     var cookieRefreshToken = req.cookies.accessToken;
@@ -320,33 +122,38 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     //console.log("The Current User Asking for Posts")
     //console.log(currentUser)
     console.log("_____________________________________")
-    */
+    
     console.log("_____________________________________")
     
     postFunctions.getGroupPosts(req, res);
 })
 
 
-
+*/
 
 
 //Route B3: Get Single Post by ID 
+/*
 postRouter.get("/posts/:post_id", (req, res) => {
 	postFunctions.getSinglePost(req, res);
 })
+*/
 
 //Route B4: Get all Posts 
+/*
 postRouter.get("/posts", (req, res) => {
     console.log("Get all Posts")
 	postFunctions.getAllPosts(req, res);
 
 })
+*/
 
 //Route B5: Get all Posts Pagination
+/*
 postRouter.get("/pagination", (req, res) => {
     console.log("Get all Posts")
 	postFunctions.getAllPostsPagination(req, res);
-
+*/
     /*
     app.get('/fruit/:fruitName/:fruitColor', function(req, res) {
     var data = {
@@ -359,23 +166,24 @@ postRouter.get("/pagination", (req, res) => {
     send.json(data);
 });
 
-    */
+    *//*
 
 })
+*/
+
 
 
 
 //TEMP
+/*
 postRouter.get("/posts/group/error", (req, res) => {
     res.status(500).send({error: 'hello i failed'});
 })
 
+*/
 
 
 
-
-
-module.exports = postRouter;
 
 
 
