@@ -8,8 +8,8 @@ USE shareshare;
 
 
 #TOKENS
-SELECT * FROM refresh_tokens;
-#DELETE FROM refresh_tokens where token_id > 0;
+#SELECT * FROM refresh_tokens;
+DELETE FROM refresh_tokens where token_id > 0;
 
 #UPDATE posts SET post_to = 'davey', post_from = 'sam', post_caption = 'Hiya Davey!! The weather is perfect! wanna hike or we could garden!' WHERE post_id = 257;
 #

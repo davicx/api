@@ -411,8 +411,9 @@ async function getRefreshToken(req, res) {
     refreshTokenResponse.messages.push("No refresh token was sent so logout")
   
     res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
-    res.cookie('refreshToken', refreshToken, {maxAge: 1, httpOnly: true})
-    res.json(refreshTokenResponse)
+    res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
+    res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
+    res.status(403).json(refreshTokenResponse)
     return 
   } else {
 
@@ -433,8 +434,9 @@ async function getRefreshToken(req, res) {
       refreshTokenResponse.messages.push("Error verifying the refreshToken so logout user")
     
       res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
-      res.cookie('refreshToken', refreshToken, {maxAge: 1, httpOnly: true})
-      res.json(refreshTokenResponse)
+      res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
+      res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
+      res.status(403).json(refreshTokenResponse)
       return 
     } else {
 
@@ -480,9 +482,9 @@ async function getRefreshToken(req, res) {
             refreshTokenResponse.logUserOut = true;
             refreshTokenResponse.errorMessages.push("no worky yours didn't match the database")
             res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
-            res.cookie('refreshToken', refreshToken, {maxAge: 1, httpOnly: true})
-            return res.sendStatus(403)
-            //res.json(refreshTokenResponse)
+            res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
+            res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
+            res.status(403).json(refreshTokenResponse)
             return 
           }
         
