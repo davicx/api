@@ -37,6 +37,7 @@ loginRouter.get('/token/time', function(req, res) {
 //TOKEN ROUTES
 //Route A7: Use Refresh Token to get New Access Token
 loginRouter.post('/refresh/tokens', function(req, res) {
+    console.log("ROUTE /refresh/tokens: Requesting a new token by sending a refresh token")
     loginFunctions.getRefreshToken(req, res);
 })
 

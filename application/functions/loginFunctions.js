@@ -382,8 +382,9 @@ async function getRefreshToken(req, res) {
 
   var accessToken = await Functions.generateAccessToken(userName, tokenLength)
 
+  //This may be too much maybe make a smaller response and log this to the server
   var refreshTokenResponse = {
-    messageFrom: "LOGIN FUNCTIONS: Requesting a new Refresh Token",
+    messageFrom: "LOGIN FUNCTIONS: Requesting a new Access Token from an existing Refresh Token",
     userName: userName,
     currentUser: "",
     refreshTokenFound: false, 
@@ -394,6 +395,7 @@ async function getRefreshToken(req, res) {
     messages: [],
     errorMessages: []
   }
+
   var refreshToken = "noRefreshToken"
 
   //STEP 1: Verify there is a refresh token 
@@ -413,7 +415,8 @@ async function getRefreshToken(req, res) {
     res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
     res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
     res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
-    res.status(403).json(refreshTokenResponse)
+    console.log(refreshTokenResponse)
+    res.status(440).json(refreshTokenResponse)
     return 
   } else {
 
@@ -436,7 +439,8 @@ async function getRefreshToken(req, res) {
       res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
       res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
       res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
-      res.status(403).json(refreshTokenResponse)
+      console.log(refreshTokenResponse)
+      res.status(440).json(refreshTokenResponse)
       return 
     } else {
 
@@ -472,6 +476,7 @@ async function getRefreshToken(req, res) {
             refreshTokenResponse.masterRefreshSuccess = true;
             refreshTokenResponse.accessToken = accessToken;
             refreshTokenResponse.messages.push("Need to get a new access token and it worked!")
+            console.log(refreshTokenResponse)
          
             res.json(refreshTokenResponse)
             
@@ -484,7 +489,9 @@ async function getRefreshToken(req, res) {
             res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
             res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
             res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
-            res.status(403).json(refreshTokenResponse)
+            console.log(refreshTokenResponse)
+
+            res.status(440).json(refreshTokenResponse)
             return 
           }
         
@@ -492,6 +499,8 @@ async function getRefreshToken(req, res) {
         } else {
             console.log("Failed to Select Posts" + err)
             console.log("____________________________________")
+            console.log(refreshTokenResponse)
+            
             res.sendStatus(500)
             return
     }
@@ -597,7 +606,7 @@ async function checkPosts(req, res) {
   jwt.verify(headerAccessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
     if(err) {
         console.log("Not Logged In")
-        return res.sendStatus(403)
+        return res.sendStatus(440)
     } else {
       //req.user = user;
       response.responseUser = user;
@@ -728,7 +737,7 @@ function verifyUser(req, res, next) {
           next();
       } else {
           console.log("Not Logged In")
-          return res.sendStatus(403)
+          return res.sendStatus(440)
       }
   })
 

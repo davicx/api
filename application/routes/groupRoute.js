@@ -18,12 +18,17 @@ groupRouter.get("/groups/user/:user_name", verifyUser, (req, res) => {
 function verifyUser(req, res, next) {
     console.log("____________________________________________")
     console.log("MIDDLEWARE: verifyUser")
+
+    var token = null;
+    var tokenType = ""
+
     var responseMessage = {
         messageFrom: "MIDDLEWARE: verifyUser to access route",
-        validateToken: "token validation",
-        noToken: false,
+        validateToken: "Access token validation",
+        tokenType: "",
+        noAccessToken: false,
         tokenExpired: false,
-        validToken: true,
+        validToken: false,
         requestNewAccessToken: false,
         message: []
     }
@@ -32,35 +37,37 @@ function verifyUser(req, res, next) {
     cookieToken = req.cookies.accessToken;
     const authHeader = req.headers['authorization'];
     headerToken = authHeader && authHeader.split(' ')[1]
-    var tokenType = ""
     
     if(cookieToken != undefined) {
-        console.log("STEP 1: the token is from a cookie")
         tokenType = "cookie";
     } else if(headerToken != undefined) {
-        console.log("STEP 1: the token is from a header")
         tokenType = "header";
     } else {
-        console.log("STEP 1: it looks like there is no token")
+      tokenType = "null";
+    }
+
+    if(tokenType == "cookie") {
+        console.log("STEP 1: the access token is from a cookie")
+        token = req.cookies.accessToken;
+        responseMessage.tokenType = "cookie"
+    } else if(tokenType == "header") {
+        console.log("STEP 1: the access token is from a header")
+        responseMessage.tokenType = "header"
+        token = authHeader && authHeader.split(' ')[1]
+    } else {
+        console.log("STEP 1: There is no access token or it is null")
+        responseMessage.tokenType = "empty"
         tokenType = null;
     }
 
-    //STEP 2: Set the token if there is one 
-    if(tokenType == "cookie") {
-        var token = req.cookies.accessToken;
-    } else if(tokenType == "header") {
-        var token = authHeader && authHeader.split(' ')[1]
-    } else {
-        responseMessage.requestNewAccessToken = true
-        res.status(401).json(responseMessage)
-        var token = null;
-        return
-    }
-
+    //STEP 2: Verify there is an access token we can use to validate 
     if(token == null || undefined) {
-        console.log("STEP 2: The token is null (we couldn't find one)")
+        console.log("STEP 2: There is no access token send a 401 and request a new access token with a refresh token")
+        responseMessage.noAccessToken = true
         responseMessage.requestNewAccessToken = true
-        res.status(401).json(responseMessage)
+        console.log(responseMessage)
+        res.status(498).json(responseMessage)
+        var token = null;
         return
 
     } else {
@@ -75,7 +82,8 @@ function verifyUser(req, res, next) {
         responseMessage.noToken = true
         responseMessage.requestNewAccessToken = true
         responseMessage.message.push("You didn't present an access token, no beuno gotta try to get a new one with a refresh token")
-        res.status(401).json(responseMessage)
+        console.log(responseMessage)
+        res.status(498).json(responseMessage)
         return 
     } else {
         console.log("STEP 3: There is a token so we can verify")
@@ -105,7 +113,8 @@ function verifyUser(req, res, next) {
             console.log("____________________________________________")
             responseMessage.validToken = false;
             responseMessage.requestNewAccessToken = true
-            res.status(401).json(responseMessage)
+            console.log(responseMessage)
+            res.status(498).json(responseMessage)
             return 
         }
     })

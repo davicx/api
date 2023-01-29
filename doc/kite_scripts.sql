@@ -1,4 +1,4 @@
-USE shareshare;
+#USE shareshare;
 #DELETE FROM refresh_tokens where token_id > 0;
 #ALTER TABLE refresh_tokens
 #ADD user_id int(11) NOT NULL DEFAULT 0
@@ -25,5 +25,20 @@ DELETE FROM refresh_tokens where token_id > 0;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
 #SELECT * FROM posts;
 
+#GROUPS
+/*
+SELECT group_users.user_name, group_users.active_member, user_login.user_name, user_login.account_deleted
+FROM group_users INNER JOIN user_login
+	ON group_users.user_name = user_login.user_name
+	WHERE group_id = 70
+	AND active_member = 1 
+	AND account_deleted = 0;
+    
+SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name
+FROM group_users INNER JOIN shareshare.groups
+	ON group_users.group_id = shareshare.groups.group_id
+	WHERE group_users.user_name = 'davey'
+	AND active_member = 1 
+*/
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = 'davey' AND active_member = 1 
