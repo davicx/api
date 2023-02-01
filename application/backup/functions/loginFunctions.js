@@ -30,8 +30,8 @@ FUNCTIONS B: All Helper Functions Related to User Login
 //const tokenLength = '60s'
 //const tokenLength = '120s'
 //const tokenLength = '300s'
-var tokenLength = '3600s'
-//const tokenLength = '604800s'
+//var tokenLength = '3600s'
+var tokenLength = '604800s'
 
 //Functions.generateAccessToken Set here with variable above 
 

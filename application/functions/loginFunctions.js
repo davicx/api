@@ -372,7 +372,6 @@ async function userDelete(req, res) {
 
 //FUNCTIONS B: All Helper Functions Related to User Login
 //Function B1: Get New Access Token 
-//TO NEXT- Need to send a message to logout user if this doesn't work! 
 async function getRefreshToken(req, res) {
   console.log("____________________________________________")
   console.log("LOGIN FUNCTIONS: Get a Refresh Token")

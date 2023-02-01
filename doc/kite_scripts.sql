@@ -1,4 +1,4 @@
-#USE shareshare;
+USE shareshare;
 #DELETE FROM refresh_tokens where token_id > 0;
 #ALTER TABLE refresh_tokens
 #ADD user_id int(11) NOT NULL DEFAULT 0
@@ -9,10 +9,9 @@
 
 #TOKENS
 #SELECT * FROM refresh_tokens;
-DELETE FROM refresh_tokens where token_id > 0;
+#DELETE FROM refresh_tokens where token_id > 0;
 
 #UPDATE posts SET post_to = 'davey', post_from = 'sam', post_caption = 'Hiya Davey!! The weather is perfect! wanna hike or we could garden!' WHERE post_id = 257;
-#
 #SELECT * FROM shareshare.groups;           
 #SELECT group_id, user_name, active_member FROM group_users WHERE user_name = 'davey' AND active_member = 1;
 #UPDATE group_users SET group_id = 72  WHERE primary_id = 1013;
@@ -26,6 +25,40 @@ DELETE FROM refresh_tokens where token_id > 0;
 #SELECT * FROM posts;
 
 #GROUPS
+/*
+DROP TABLE IF EXISTS `groups`;
+CREATE TABLE IF NOT EXISTS `groups` (
+  `group_id` int(11) NOT NULL AUTO_INCREMENT,
+  `group_type` varchar(255) NOT NULL DEFAULT 'normal',
+  `created_by` varchar(255) NOT NULL DEFAULT '',
+  `group_name` varchar(255) NOT NULL DEFAULT 'name me!',
+  `group_image` varchar(255) NOT NULL DEFAULT 'group.png',
+  `group_key` varchar(255) NOT NULL DEFAULT 'nokey',
+  `group_private` int(11) NOT NULL DEFAULT 1,
+  `group_deleted` int(11) NOT NULL DEFAULT 0,
+  `updated` timestamp NOT NULL DEFAULT '1995-07-19 22:06:22',
+  `created` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`group_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=413 DEFAULT CHARSET=latin1;
+*/
+/*
+INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `group_image`, `group_key`, `group_private`, `group_deleted`, `updated`, `created`) VALUES
+(70, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2021-12-19 01:20:57'),
+(72, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2021-12-19 01:20:57'),
+(74, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2022-01-09 00:03:23');
+*/
+SELECT * FROM shareshare.groups;
+
+#DELETE FROM shareshare.groups where group_id > 100;
+
+#INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private)
+#VALUES ("group_type", "created_by", "group_name", "group_image", 1); 
+
+
+
+SELECT * FROM group_users;
+
+
 /*
 SELECT group_users.user_name, group_users.active_member, user_login.user_name, user_login.account_deleted
 FROM group_users INNER JOIN user_login

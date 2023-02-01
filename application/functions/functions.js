@@ -1,6 +1,8 @@
 const db = require('./conn');
 const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
+var jwt_decode = require('jwt-decode');
+
 
 
 //LOGIN FUNCTIONS
@@ -16,6 +18,7 @@ FUNCTIONS D: Login Functions
 	1) Function D1: Create Access Token  
 	2) Function D2: Verify a refresh token is in the database  
 	3) Function D3: Logout a user 
+	4) Function D4: Check Token Time
 
 */
 
@@ -117,7 +120,42 @@ async function logoutUser(userName) {
     })  
 }
 
+//Function D4: Check Token Time
+function checkRemainingTokenTime(token) {
+    var decoded = jwt_decode(token);
+    const tokenCreated = decoded.exp;
+    const tokenFinished = decoded.iat;
+    const dateTokenIsGoodTell =  new Date(decoded.exp * 1000)
 
+    var tokenTimeRemaining = {
+        stillGood: false,
+        tokenCreated: decoded.exp,
+        tokenFinished: decoded.iat,
+        minutesRemaining: 0,
+        secondsRemaining: 0,
+        tokenGoodTellDate: dateTokenIsGoodTell
+    }
+
+    //current date in seconds since epoch
+    var d = new Date();
+    var currentSecondsSinceEpoch = Math.round(d.getTime() / 1000);
+    const tokenLifeSeconds = (tokenCreated - tokenFinished);
+    const tokenLifeMinutes = tokenLifeSeconds / 60;
+
+    tokenTimeRemaining.tokenLifeMinutes = tokenLifeMinutes
+    //tokenTimeRemaining.minutesRemaining = tokenLifeMinutes
+    tokenTimeRemaining.secondsRemaining = tokenLifeSeconds + (tokenFinished - currentSecondsSinceEpoch)
+    tokenTimeRemaining.minutesRemaining = tokenLifeSeconds + (tokenFinished - currentSecondsSinceEpoch) / 60
+
+    //console.log("STEP 4: Token life minutes: " + tokenLifeMinutes + " seconds: " + tokenLifeSeconds);
+    if(tokenFinished - tokenCreated) {
+        tokenTimeRemaining.stillGood = true
+    } else {
+        tokenTimeRemaining.stillGood = true
+    }
+
+    return tokenTimeRemaining;
+}
 
 ////
 //CLEAN BELOW
@@ -415,7 +453,7 @@ function convertElementsLowercase(stringArray) {
 }
 
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
 
 
 

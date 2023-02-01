@@ -270,6 +270,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
 postRouter.get("/posts/group/:group_id", (req, res) => {
     //const currentUser = req.authorizationData.currentUser;
 
+
     //TEMP
     console.log("_____________________________________")
     var cookieAccessToken = req.cookies.accessToken;
@@ -289,6 +290,10 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     console.log("cookieAccessToken " + cookieAccessToken)
     console.log("cookieRefreshToken " + cookieRefreshToken)
     console.log("headerAccessToken " + headerAccessToken)
+   
+    console.log("_____________________________________")
+    
+    postFunctions.getGroupPosts(req, res);
     //console.log("The Current User Asking for Posts")
     //console.log(currentUser)
     /*
@@ -322,9 +327,7 @@ postRouter.get("/posts/group/:group_id", (req, res) => {
     //console.log(currentUser)
     console.log("_____________________________________")
     */
-    console.log("_____________________________________")
-    
-    postFunctions.getGroupPosts(req, res);
+
 })
 
 

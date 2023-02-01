@@ -4,7 +4,7 @@ const Notifications = require('./classes/Notification')
 const Requests = require('./classes/Requests');
 const Functions = require('./functions');
 const requestFunctions = require('./requestFunctions')
-//app.use(express.json());
+
 
 /*
 FUNCTIONS A: All Functions Related to Groups
@@ -20,14 +20,18 @@ FUNCTIONS A: All Functions Related to Groups
 
 //Function A1: Create a New Group
 async function createGroup(req, res) {
-	var groupOutcome = { groupID: 7}
+	const connection = db.getConnection(); 
+	var groupOutcome = {}
 	var groupUsersOutcome = {}
 	var notification = {}
-	
-	//STEP 1: Create the Group and Add the New Users
+	console.log("_______________________")
+	console.log("Creating a new Group")
+
+	//STEP 1: Create the Group 
 	try {
 		groupOutcome = await Group.createGroup(req);
 
+		////
 		//TO DO: Add individually or the promise wont handle error (in Group Class)
 		if(groupOutcome.outcome == 1) {
 			groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
@@ -57,14 +61,17 @@ async function createGroup(req, res) {
 			}
 
 			Requests.newGroupRequest(newRequest) 
-		}
+		}	
+		////
+
 
 	} catch(err) {
 		console.log(err);
 		console.log("were in the catch now!!");
 	}
-	res.json({groupID: groupOutcome.groupID});
-	
+
+	res.json(groupOutcome)
+
 }
 
 //Function A2: Invite User to a Group 

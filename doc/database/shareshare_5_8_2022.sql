@@ -450,7 +450,8 @@ CREATE TABLE IF NOT EXISTS `groups` (
 
 INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `group_image`, `group_key`, `group_private`, `group_deleted`, `updated`, `created`) VALUES
 (70, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2021-12-19 01:20:57'),
-(72, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2022-01-09 00:03:23');
+(72, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2021-12-19 01:20:57'),
+(74, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '0000-00-00 00:00:00', '2022-01-09 00:03:23');
 
 -- --------------------------------------------------------
 

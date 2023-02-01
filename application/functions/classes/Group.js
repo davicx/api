@@ -34,7 +34,7 @@ class Group {
 
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO groups (group_type, created_by, group_name, group_image, group_private) VALUES (?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private) VALUES (?, ?, ?, ?, ?)"
 
                 connection.query(queryString, [groupType, currentUser, groupName, groupImage, groupPrivate], (err, results) => {
                     if (!err) {
