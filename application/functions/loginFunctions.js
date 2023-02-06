@@ -23,9 +23,10 @@ FUNCTIONS B: All Helper Functions Related to User Login
 	1) Function B1: Get New Access Token  
 */
 
+var tokenLength = '86000s'
 //var tokenLength = '3600s'
 //var tokenLength = '30s'
-var tokenLength = '8s'
+//var tokenLength = '8s'
 
 //FUNCTIONS A: All Functions Related to a User 
 //Function A1: Login User 
@@ -378,7 +379,6 @@ async function getRefreshToken(req, res) {
   const connection = db.getConnection(); 
   const userName = req.body.userName;
   var currentUserFromToken = ""
-
   var accessToken = await Functions.generateAccessToken(userName, tokenLength)
 
   //This may be too much maybe make a smaller response and log this to the server
@@ -504,7 +504,9 @@ async function getRefreshToken(req, res) {
             return
     }
     })
+
 }
+
 
 //Function B2: Check remaining token time (maybe don't need)
 async function checkTokenTime(req, res) {

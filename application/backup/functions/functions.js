@@ -2,150 +2,33 @@ const db = require('./conn');
 const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
 
-//LOGIN FUNCTIONS
-//Function A: Validate User with a Token
-async function currentUserStatus(req, res) {
-    const userName = req.body.userName;
-    var accessToken = ""
-    var refreshToken = ""
-    var userLoggedIn = false
-
-    var loginStatus = {
-        userName: userName,
-        userLoggedIn: userLoggedIn,
-        accessToken: accessToken,
-        refreshToken, refreshToken
-    }
-
-    accessToken = req.cookies.accessToken;
-    refreshToken = req.cookies.refreshToken;
-    userLoggedIn = req.cookies.loggedInUser;
-    
-
-    /*
-    //Part 1: Determine Auth Type 
-    cookieToken = req.cookies.accessToken;
-    const authHeader = req.headers['authorization'];
-    headerToken = authHeader && authHeader.split(' ')[1]
-    var tokenType = ""
-    
-    if(cookieToken != undefined) {
-        tokenType = "cookie"
-    } else if(headerToken != undefined) {
-        tokenType = "header"
-    } else {
-        tokenType = null;
-    }
-
-    //Part 2: Get the Token
-    if(tokenType == "cookie") {
-        var token = req.cookies.accessToken;
-    } else if(tokenType == "header") {
-        var token = authHeader && authHeader.split(' ')[1]
-    } else {
-        var token = null;
-    }
-
-    console.log("_____________________________________")
-    console.log("TOKEN TYPE: " + tokenType)
-    console.log("TOKEN: " + token)
-    console.log("_____________________________________")
-
-    //Part 3: Verify the Token 
-    if (token == null) {
-        console.log("You didn't present a token, no beuno!")
-        //return res.sendStatus(401)
-    } 
-
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
-        if(!err) {
-            console.log("your good")
-            req.authorizationData = authorizationData
-
-        } else {
-            console.log("Not Logged In")
-            //return res.sendStatus(403)
-        }
-    })
-    */
-
-    return loginStatus
-
-}
-
-
-
-//Function A1: Create Access Token 
-async function generateAccessToken(currentUser, accessTokenLength) {
-    //var accessToken = jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET);
-    //Minute
-    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60s'}); 
-
-    //5 Minutes
-    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '300s'}); 
-    
-    //Hour
-    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '3600s'}); 
-    
-    //From Input 
-    return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
-    
-}
-
-//Function A: Create a new Access Token from a Refresh Token 
-async function generateTokenFromRefreshToken(currentUser, refreshToken, accessTokenLength) {
-
-    return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
-    
-}
 
 /*
+FUNCTIONS A: All Functions Related to Login 
+	1) Function A1: Check if User Exists
+	2) Function A2: Login User (Validate username and password)
+	3) Function A3: Remove User from Login Table 
+	4) Function A4: Remove User from Profile Table 
+	5) Function A5: Update User to not active in the User Profile Table 
+	6) Function A6: Update User to not active in the Login Table 
+	7) Function A7: Validate User with a Token
+	8) Function A8: Create Access Token
+	9) Function A9: Create a new Access Token from a Refresh Token 
 
-//Refresh Token
-app.post("/token", (req, res) => {
-    const refreshToken = req.body.refreshToken;
-    console.log(refreshTokens);
-    console.log(refreshToken);
+FUNCTIONS B: All Functions Related to Posts 
 
-    //res.send(req.body);
+FUNCTIONS C: All Functions Related to Groups 
+	1) Function C1: Check if users are already in the group
+	2) Function C2: Check if Group exists (by ID)
     
-    //NEW I Think we need to check the refresh token is in the database 
-
-    if(refreshToken == null) {
-        return res.sendStatus(401)
-    }
-    if(!refreshTokens.includes(refreshToken)) {
-        return res.sendStatus(403)
-    }
-    console.log("USER");
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-        console.log(user);
-        if(err) {
-            return res.sendStatus(403)
-        }
-        const accessToken = generateAccessToken(user)
-        res.json({accessToken: accessToken})
-    })
-
-});
-
-//Logout 
-app.delete("/logout", (req, res) => {
-    refreshTokens = refreshTokens.filter(token => token !== req.body.token)
-    res.sendStatus(204);
-});
-
-
-//Access Token
-function generateAccessToken(user) {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30s'});
-}
-
-
-
-
+FUNCTIONS B: All Functions 
+ 	1) Function D1: Remove duplicate values from array
+	1) Function D2: Convert elements in array to lowercase
+    
 */
 
+
+//////ORGANIZE/////
 //Method A1: Check if User Exists
 async function checkIfUserExists(userName) {
     const connection = db.getConnection(); 
@@ -297,8 +180,7 @@ async function removeUserFromProfileTable(userName)  {
     })
 }
 
-//Method A5: Update User to not active in the User Profile Table 
-//*** I JUST MADE THIS DONT KNOW IF IT WORKS = )
+//Method A5: Update User to not active in the User Profile Table (May not work)
 async function makeUserNotActiveInProfileTable(userName)  {
     const connection = db.getConnection(); 
 
@@ -329,11 +211,109 @@ async function makeUserNotActiveInProfileTable(userName)  {
     })
 }
 
+//Method A6: Update User to not active in the Login Table 
 async function makeUserNotActiveInLoginTable(userName)  {
 }
 
+//Function A7: Validate User with a Token
+async function currentUserStatus(req, res) {
+    const userName = req.body.userName;
+    var accessToken = ""
+    var refreshToken = ""
+    var userLoggedIn = false
+
+    var loginStatus = {
+        userName: userName,
+        userLoggedIn: userLoggedIn,
+        accessToken: accessToken,
+        refreshToken, refreshToken
+    }
+
+    accessToken = req.cookies.accessToken;
+    refreshToken = req.cookies.refreshToken;
+    userLoggedIn = req.cookies.loggedInUser;
+    
+
+    /*
+    //Part 1: Determine Auth Type 
+    cookieToken = req.cookies.accessToken;
+    const authHeader = req.headers['authorization'];
+    headerToken = authHeader && authHeader.split(' ')[1]
+    var tokenType = ""
+    
+    if(cookieToken != undefined) {
+        tokenType = "cookie"
+    } else if(headerToken != undefined) {
+        tokenType = "header"
+    } else {
+        tokenType = null;
+    }
+
+    //Part 2: Get the Token
+    if(tokenType == "cookie") {
+        var token = req.cookies.accessToken;
+    } else if(tokenType == "header") {
+        var token = authHeader && authHeader.split(' ')[1]
+    } else {
+        var token = null;
+    }
+
+    console.log("_____________________________________")
+    console.log("TOKEN TYPE: " + tokenType)
+    console.log("TOKEN: " + token)
+    console.log("_____________________________________")
+
+    //Part 3: Verify the Token 
+    if (token == null) {
+        console.log("You didn't present a token, no beuno!")
+        //return res.sendStatus(401)
+    } 
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
+        if(!err) {
+            console.log("your good")
+            req.authorizationData = authorizationData
+
+        } else {
+            console.log("Not Logged In")
+            //return res.sendStatus(403)
+        }
+    })
+    */
+
+    return loginStatus
+
+}
+
+//Function A8: Create Access Token 
+async function generateAccessToken(currentUser, accessTokenLength) {
+    //var accessToken = jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET);
+    //Minute
+    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60s'}); 
+
+    //5 Minutes
+    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '300s'}); 
+    
+    //Hour
+    //return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '3600s'}); 
+    
+    //From Input 
+    return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
+    
+}
+
+//Function A9: Create a new Access Token from a Refresh Token 
+async function generateTokenFromRefreshToken(currentUser, refreshToken, accessTokenLength) {
+
+    return jwt.sign({currentUser: currentUser}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: accessTokenLength}); 
+    
+}
+
+//POST FUNCTIONS
+//Method B1: 
+
 //GROUP FUNCTIONS
-//Method B1: Check if users are already in the group
+//Method C1: Check if users are already in the group
 async function checkUserGroupStatus(invitedUsers, groupID)  {
     const connection = db.getConnection(); 
 
@@ -374,7 +354,7 @@ async function checkUserGroupStatus(invitedUsers, groupID)  {
 
 }
 
-//Method B2: Check if Group exists (by ID)
+//Method C2: Check if Group exists (by ID)
 async function checkGroupExists(groupID)  {
     const connection = db.getConnection(); 
 
@@ -436,6 +416,5 @@ function convertElementsLowercase(stringArray) {
 
 
 module.exports = { currentUserStatus, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable }
-
 
 

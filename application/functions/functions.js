@@ -406,7 +406,7 @@ async function checkGroupExists(groupID)  {
     return new Promise(async function(resolve, reject) {
         try {
             
-            const queryString = "SELECT created_by FROM groups WHERE group_id = ?"			
+            const queryString = "SELECT created_by FROM shareshare.groups WHERE group_id = ?"			
             
             connection.query(queryString, [groupID], (err, rows) => {
                 if (!err) {

@@ -17,9 +17,11 @@ app.use(
 //Application 
 const login = require('./application/routes/loginRoutes.js'); 
 const group = require('./application/routes/groupRoute.js'); 
+const posts = require('./application/routes/postRoutes.js'); 
 
 app.use(login);
 app.use(group);
+app.use(posts);
 
 
 //Server Login 

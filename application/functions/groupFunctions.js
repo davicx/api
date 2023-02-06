@@ -15,61 +15,81 @@ FUNCTIONS A: All Functions Related to Groups
 	5) Function A5: Get All Groups User is In 
 	6) Function A6: Get Single Group by ID 
 	7) Function A7: Get Group Users
-
 */
 
 //Function A1: Create a New Group
 async function createGroup(req, res) {
 	const connection = db.getConnection(); 
+	console.log("TEMP: ")
+	console.log(req.body)
 	var groupOutcome = {}
 	var groupUsersOutcome = {}
 	var notification = {}
 	console.log("_______________________")
 	console.log("Creating a new Group")
-
-	//STEP 1: Create the Group 
+ 
 	try {
 		groupOutcome = await Group.createGroup(req);
 
-		////
-		//TO DO: Add individually or the promise wont handle error (in Group Class)
+		//STEP 1: Create the Group
 		if(groupOutcome.outcome == 1) {
-			groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
-			console.log(groupUsersOutcome);
-		} 
+			console.log("STEP 1: You succesfully created a new group with Group ID " + groupOutcome.groupID);
+		} else {
+			console.log("STEP 1: There was an error creating the group");
+			console.log(groupOutcome.errors);
+			res.status(500).json(groupOutcome);
+			return 
+		}
 
-		//STEP 2: Add the Notifications and Requests
+		//STEP 2: Add all the users to the new group
+		groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
 		if(groupUsersOutcome.outcome == 1) {
-			notification = {
-				masterSite: "kite",
-				notificationFrom: req.body.currentUser,
-				notificationMessage: req.body.notificationMessage,
-				notificationTo: req.body.groupUsers,
-				notificationLink: req.body.notificationLink,
-				notificationType: req.body.notificationType,
-				groupID: groupOutcome.groupID
-			}
+			console.log("STEP 2: You succesfully added the new users");
+		} else {
+			console.log("STEP 2: There was an error adding the new users");
+			console.log(groupUsersOutcome.errors);
+			res.status(500).json(grougroupUsersOutcomepOutcome);
+			return 
+		}
 
-			Notifications.createGroupNotification(notification);
 
-			const newRequest = {
-				requestType: "new_group",
-				requestTypeText: "invited you to join a group",
-				sentBy: req.body.currentUser,
-				sentTo: req.body.groupUsers,
-				groupID: groupOutcome.groupID
-			}
+		//STEP 3: Add the Notifications
+		console.log("STEP 3: Adding Group Notifications");
+		notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.currentUser,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: req.body.groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupOutcome.groupID
+		}
+		
+		Notifications.createGroupNotification(notification);
 
-			Requests.newGroupRequest(newRequest) 
-		}	
-		////
+		//STEP 4: Add the Requests
+		console.log("STEP 4: Adding Group Requests");
+		const newRequest = {
+			requestType: "new_group",
+			requestTypeText: "invited you to join a group",
+			sentBy: req.body.currentUser,
+			sentTo: req.body.groupUsers,
+			groupID: groupOutcome.groupID
+		}
 
+		Requests.newGroupRequest(newRequest) 
+		
+		
 
 	} catch(err) {
 		console.log(err);
 		console.log("were in the catch now!!");
+		res.status(500).json(grougroupUsersOutcomepOutcome);
+		return 
 	}
 
+	//STEP 5: Succesfully created the new group
+	console.log("STEP 5: Succesfully created the new group, yay!");
 	res.json(groupOutcome)
 
 }
@@ -92,8 +112,8 @@ async function addGroupUsers(req, res) {
 	}
 
 	//STEP 1: Check that there is a group that currently exists
-	//MAKE SURE INVITER IS IN THE GROUP!
 	const groupStatus = await Functions.checkGroupExists(groupID)
+
 
 	if(groupStatus.groupExists >= 1) {
 
@@ -144,7 +164,7 @@ async function addGroupUsers(req, res) {
 	}
 	
 	res.json(addGroupUsersOutcome)
-
+	
 }
 
 //Function A3: Accept Group Invite
@@ -163,12 +183,13 @@ async function acceptGroupInvite(req, res) {
 	const groupStatus = await Functions.checkGroupExists(groupID)
 
 	if(groupStatus.groupExists >= 1) {
+		console.log("STEP 1: Check that there is a group that currently exists groupStatus.groupExists =" + groupStatus.groupExists);
 
 		//STEP 2: Make sure there is a Request and add the User to the Group 
 		const currentRequest = await requestFunctions.getSingleRequest(requestID)
 
 		if(currentRequest.requestExists == 1) {
-			
+			console.log("STEP 2: There is a Request that matches the one sent")
 			//Accept the Invite 
 			Group.acceptGroupInvite(groupID, currentUser, requestID)
 
@@ -191,11 +212,14 @@ async function acceptGroupInvite(req, res) {
 			}
 
 		} else {
+			console.log("STEP 2: This request was not found in the database")
+
 			acceptGroupInviteOutcome.outcome = 500;
 			acceptGroupInviteOutcome.errors.push("NO request " + requestID + " exists")			
 		}
 
 	} else {
+		console.log("STEP 1: No Group Exists with this group Number");
 		acceptGroupInviteOutcome.outcome = 500;
 		acceptGroupInviteOutcome.errors.push("NO group " + groupID + " exists")
 	}

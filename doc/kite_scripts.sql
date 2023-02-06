@@ -1,10 +1,30 @@
-USE shareshare;
+#USE shareshare;
 #DELETE FROM refresh_tokens where token_id > 0;
 #ALTER TABLE refresh_tokens
 #ADD user_id int(11) NOT NULL DEFAULT 0
 
 #USERS
 #SELECT * FROM user_login;
+
+
+
+#GROUPS
+/*
+INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `group_image`, `group_key`, `group_private`, `group_deleted`, `updated`, `created`) VALUES
+(70, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2021-12-19 01:20:57'),
+(72, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2021-12-19 01:20:57'),
+(74, 'kite', 'davey', 'music', 'the_shgroupsire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2022-01-09 00:03:23');
+*/
+#SELECT * FROM shareshare.groups;
+
+#SELECT * FROM shareshare.groups;
+
+#DELETE FROM shareshare.groups where group_id > 100;
+#SELECT * FROM shareshare.groups;
+
+
+#INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private)
+#VALUES ("group_type", "created_by", "group_name", "group_image", 1); 
 
 
 #TOKENS
@@ -24,39 +44,10 @@ USE shareshare;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
 #SELECT * FROM posts;
 
-#GROUPS
-/*
-DROP TABLE IF EXISTS `groups`;
-CREATE TABLE IF NOT EXISTS `groups` (
-  `group_id` int(11) NOT NULL AUTO_INCREMENT,
-  `group_type` varchar(255) NOT NULL DEFAULT 'normal',
-  `created_by` varchar(255) NOT NULL DEFAULT '',
-  `group_name` varchar(255) NOT NULL DEFAULT 'name me!',
-  `group_image` varchar(255) NOT NULL DEFAULT 'group.png',
-  `group_key` varchar(255) NOT NULL DEFAULT 'nokey',
-  `group_private` int(11) NOT NULL DEFAULT 1,
-  `group_deleted` int(11) NOT NULL DEFAULT 0,
-  `updated` timestamp NOT NULL DEFAULT '1995-07-19 22:06:22',
-  `created` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`group_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=413 DEFAULT CHARSET=latin1;
-*/
-/*
-INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `group_image`, `group_key`, `group_private`, `group_deleted`, `updated`, `created`) VALUES
-(70, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2021-12-19 01:20:57'),
-(72, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2021-12-19 01:20:57'),
-(74, 'kite', 'davey', 'music', 'the_shire.jpg', 'nokey', 1, 0, '2021-12-19 01:20:57', '2022-01-09 00:03:23');
-*/
-SELECT * FROM shareshare.groups;
-
-#DELETE FROM shareshare.groups where group_id > 100;
-
-#INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private)
-#VALUES ("group_type", "created_by", "group_name", "group_image", 1); 
-
-
-
-SELECT * FROM group_users;
+###################################
+#GROUP USERS 
+###################################
+#SELECT * FROM group_users;
 
 
 /*
@@ -75,3 +66,30 @@ FROM group_users INNER JOIN shareshare.groups
 */
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = 'davey' AND active_member = 1 
+
+
+
+###################################
+#NOTIFICATIONS
+###################################
+#DELETE FROM notifications where notification_id > 0;
+#SELECT * FROM notifications;
+
+###################################
+#REQUESTS
+###################################
+#DELETE FROM pending_requests where request_id > 0;
+#SELECT * FROM pending_requests;
+
+
+
+
+
+
+
+
+
+
+
+
+

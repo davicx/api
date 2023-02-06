@@ -4,17 +4,53 @@ const Post = require('./classes/Post');
 const Notification = require('./classes/Notification')
 const Requests = require('./classes/Requests');
 
-
 /*
-FUNCTIONS A: All Functions Related to making Posts
+FUNCTIONS A: All Functions Related to Posts
 	1) Function A1: Post Text
-	2) Function A2: Post Photo
-	3) Function A3: Post Video
-
+	2) Function A2: Post Video
+	3) Function A3: Post Photo
+	4) Function A4: Post Article
+ 
 FUNCTIONS B: All Functions Related to getting Posts
-	1) Function B1: Get all posts
-	2) Function B2: Get all posts with Pagination
+	1) Function B1: Get all Group Posts
+	2) Function B2: Get all User Posts 
+	3) Function B3: Get Single Post by ID 
+	4) Function B4: Get All Posts
 */
+
+
+async function postTemp(req, res) {
+	const masterSite = req.body.masterSite 
+	const postType = req.body.postType 
+	const postFrom = req.body.postFrom 
+	const postTo = req.body.postTo 
+	const groupID = req.body.groupID 
+	const postCaption = "NEW CAPTION:  " + req.body.postCaption 
+	console.log("POST: Make a temp post")
+	var postOutcome = await Post.createPostText(req);
+	const postID = postOutcome.postID;
+
+	const newPost = {
+        postID: postID,
+        postType: postType,
+        groupID: groupID,
+        listID: 0,
+        postFrom: postFrom,
+        postTo: postTo,
+        postCaption: postCaption,
+        fileName: "",
+        fileNameServer: "hiya.jpg",
+        fileUrl: "empty",
+        videoURL: "empty",
+        videoCode: "empty",
+        created: "2021-12-19T08:14:03.000Z"
+	}
+
+	//TEMP
+	postOutcome.newPost = newPost;
+
+	res.json(newPost);
+}
 
 //Function A1: Post Text
 async function postText(req, res) {
@@ -125,12 +161,18 @@ async function postVideo(req, res) {
 	res.json(postOutcome);
 }
 
+//Function A4: Post Article
+
 
 //FUNCTIONS B: All Functions Related to getting Posts
-//Function B1: Get all posts
+//Function B1: Get all Group Posts
+//Function B2: Get all User Posts 
+//Function B3: Get Single Post by ID 
+
+//Function 4: Get all Posts 
 function getAllPosts(req, res) {
 	const connection = db.getConnection(); 
-	const queryString = "SELECT * FROM posts LIMIT 100";
+	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 3";
  
 	connection.query(queryString, (err, rows, fields) => {
 		 if (!err) {
@@ -165,6 +207,25 @@ function getAllPosts(req, res) {
 		 }
 	})
  }
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+//CLEAN BELOW 
+/*
+
+ */
+/*
 
 //Function B2: Get all posts with Pagination
 function getAllPostsPagination(req, res) {
@@ -271,14 +332,8 @@ function getAllPostsPagination(req, res) {
 
 
 }
-
-
-
-
-
-
-//CLEAN BELOW 
-
+*/
+/*
 //Route B2: Get Posts to a User
 function getUserPosts(req, res) {
 	const connection = db.getConnection(); 
@@ -430,10 +485,11 @@ function getSinglePost(req, res) {
 
 
 //Route 4: Get all Posts 
-
+*/
  
 
-module.exports = { postText, postPhoto, postVideo, getGroupPosts, getUserPosts, getSinglePost, getAllPosts, postUpdateText, getAllPostsPagination };
+//module.exports = { postText, postPhoto, postVideo, getGroupPosts, getUserPosts, getSinglePost, getAllPosts, postUpdateText, getAllPostsPagination };
+module.exports = { postTemp, postText, postPhoto, postVideo, getAllPosts };
 
 
 

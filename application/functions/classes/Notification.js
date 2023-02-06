@@ -4,6 +4,37 @@ class Notification {
     constructor(notificationID) {
         this.notificationID = notificationID;
     }
+
+    //Method: Example of Simple Promise
+    /*
+        static async addGroupUser(groupID, groupUser)  {
+        const connection = db.getConnection(); 
+        var addGroupUserStatus = {
+            userAdded: 0,
+            userName: groupUser
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                const activeMember = 0;
+                const queryString = "INSERT INTO group_users (group_id, user_name, active_member) VALUES (?, ?, ?)"
+    
+                connection.query(queryString, [groupID, groupUser, activeMember], (err, results) => {
+                    if (!err) {
+                        //console.log("You added " + groupUser)
+                        addGroupUserStatus.userAdded = 1;
+                        resolve(addGroupUserStatus);
+                    } else {
+                        addGroupUserStatus.userAdded = 0;
+                        resolve(addGroupUserStatus);
+                    }
+                })  
+            } catch(err) {
+                reject(addGroupUserStatus);
+            } 
+        });
+    }
+    */
     
     //Method A1: Create Group Notification
 	static async createGroupNotification(notification) {
