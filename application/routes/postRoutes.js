@@ -5,7 +5,7 @@ var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 //const db = require('../functions/conn');
 const db = require('../functions/conn');
-
+const middlewares = require('../functions/middlewareFunctions')
 
 /*
 FUNCTIONS A: All Functions Related to Posts
@@ -45,6 +45,10 @@ postRouter.post('/post/photo', function(req, res) {
 
 //FUNCTIONS B: All Functions Related to getting Posts
 //Route B1: Get all Group Posts
+postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
+    postFunctions.getGroupPosts(req, res);
+})
+
 //Route B2: Get all User Posts 
 //Route B3: Get Single Post by ID 
 postRouter.get("/posts/:post_id", (req, res) => {

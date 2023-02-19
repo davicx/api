@@ -6,7 +6,8 @@
 #USERS
 #SELECT * FROM user_login;
 
-
+#REQUESTS
+#SELECT * FROM pending_requests;
 
 #GROUPS
 /*
@@ -43,6 +44,10 @@ INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `gro
 #UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
 #SELECT * FROM posts;
+
+DELETE FROM posts where post_id > 260;
+SELECT * FROM posts WHERE group_id = 70;
+
 
 ###################################
 #GROUP USERS 

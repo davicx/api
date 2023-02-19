@@ -25,6 +25,7 @@ class Post {
             errors: []
         }
 
+
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {

@@ -19,46 +19,20 @@ FUNCTIONS B: All Functions Related to getting Posts
 */
 
 
-async function postTemp(req, res) {
-	const masterSite = req.body.masterSite 
-	const postType = req.body.postType 
-	const postFrom = req.body.postFrom 
-	const postTo = req.body.postTo 
-	const groupID = req.body.groupID 
-	const postCaption = "NEW CAPTION:  " + req.body.postCaption 
-	console.log("POST: Make a temp post")
-	var postOutcome = await Post.createPostText(req);
-	const postID = postOutcome.postID;
-
-	const newPost = {
-        postID: postID,
-        postType: postType,
-        groupID: groupID,
-        listID: 0,
-        postFrom: postFrom,
-        postTo: postTo,
-        postCaption: postCaption,
-        fileName: "",
-        fileNameServer: "hiya.jpg",
-        fileUrl: "empty",
-        videoURL: "empty",
-        videoCode: "empty",
-        created: "2021-12-19T08:14:03.000Z"
-	}
-
-	//TEMP
-	postOutcome.newPost = newPost;
-
-	res.json(newPost);
-}
-
 //Function A1: Post Text
 async function postText(req, res) {
 	//const connection = db.getConnection(); 
 
-	console.log("post text")
+	console.log("Make a new Post text")
+	console.log(req.body)
 	const groupID = req.body.groupID;
-	postOutcome = await Post.createPostText(req);
+	var postOutcome = await Post.createPostText(req);
+
+	console.log(postOutcome)
+	
+	if(postOutcome.outcome == 0) {
+		console.log("Something went wrong making this post!")
+	}
 
 	//STEP 2: Add the Notifications
 	var notification = {}
@@ -81,24 +55,22 @@ async function postText(req, res) {
 		}
 	}
 
-	//TEMP
 	const newPost = {
-        postID: 254,
+        postID: postOutcome.postID,
         postType: "text",
-        groupID: 77,
+        groupID: groupID,
         listID: 0,
-        postFrom: "davey",
-        postTo: "frodo",
-        postCaption: "TRY",
-        fileName: "",
-        fileNameServer: "hiya.jpg",
-        fileUrl: "empty",
-        videoURL: "empty",
-        videoCode: "empty",
+        postFrom: req.body.postFrom,
+        postTo: req.body.postTo,
+        postCaption: req.body.postCaption,
+        fileName: req.body.fileName,
+        fileNameServer: req.body.fileNameServer,
+        fileUrl: req.body.fileUrl,
+        videoURL: req.body.videoURL,
+        videoCode: req.body.videoCode,
         created: "2021-12-19T08:14:03.000Z"
 	}
 
-	//TEMP
 	postOutcome.newPost = newPost;
 
 	res.json(postOutcome);
@@ -166,6 +138,41 @@ async function postVideo(req, res) {
 
 //FUNCTIONS B: All Functions Related to getting Posts
 //Function B1: Get all Group Posts
+function getGroupPosts(req, res) {
+	const connection = db.getConnection(); 
+    const group_id = req.params.group_id;
+	
+    const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
+
+    connection.query(queryString, [group_id], (err, rows) => {
+        if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
+				}
+			});
+
+			res.json(posts);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+}
 //Function B2: Get all User Posts 
 //Function B3: Get Single Post by ID 
 
@@ -208,7 +215,43 @@ function getAllPosts(req, res) {
 	})
  }
 
+ //APPENDIX (TEMP)
+ async function postTemp(req, res) {
+	const masterSite = req.body.masterSite 
+	const postType = req.body.postType 
+	const postFrom = req.body.postFrom 
+	const postTo = req.body.postTo 
+	const groupID = req.body.groupID 
+	const postCaption = "NEW CAPTION:  " + req.body.postCaption 
+	console.log("POST: Make a temp post")
+	var postOutcome = await Post.createPostText(req);
+	const postID = postOutcome.postID;
 
+	const newPost = {
+        postID: postID,
+        postType: postType,
+        groupID: groupID,
+        listID: 0,
+        postFrom: postFrom,
+        postTo: postTo,
+        postCaption: postCaption,
+        fileName: "",
+        fileNameServer: "hiya.jpg",
+        fileUrl: "empty",
+        videoURL: "empty",
+        videoCode: "empty",
+        created: "2021-12-19T08:14:03.000Z"
+	}
+
+	//TEMP
+	postOutcome.newPost = newPost;
+
+	res.json(newPost);
+
+}
+
+
+ module.exports = { postTemp, postText, postPhoto, postVideo, getGroupPosts, getAllPosts };
 
  
 
@@ -407,41 +450,7 @@ async function postUpdateText(req, res) {
 
 //GET ROUTES
 //Route B1: Get Posts to a Group
-function getGroupPosts(req, res) {
-	const connection = db.getConnection(); 
-    const group_id = req.params.group_id;
-    const queryString = "SELECT * FROM posts WHERE group_id = ?";
 
-    connection.query(queryString, [group_id], (err, rows) => {
-        if (!err) {
-			const posts = rows.map((row) => {
-				return {
-					postID: row.post_id,
-					postType: row.post_type,
-					groupID: row.group_id,
-					listID: row.list_id,
-					postFrom: row.post_from,
-					postTo: row.post_to,
-					postCaption: row.post_caption,
-					fileName: row.file_name,
-					fileNameServer: row.file_name_server,
-					fileUrl: row.file_url,
-					videoURL: row.video_url,
-					videoCode: row.video_code,
-					created: row.created
-				}
-			});
-
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json(posts);
-
-        } else {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-		}
-    })
-}
 
 
 //Route B3: Get Single Post by ID 
@@ -489,7 +498,6 @@ function getSinglePost(req, res) {
  
 
 //module.exports = { postText, postPhoto, postVideo, getGroupPosts, getUserPosts, getSinglePost, getAllPosts, postUpdateText, getAllPostsPagination };
-module.exports = { postTemp, postText, postPhoto, postVideo, getAllPosts };
 
 
 
