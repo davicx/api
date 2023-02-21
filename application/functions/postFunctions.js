@@ -16,6 +16,11 @@ FUNCTIONS B: All Functions Related to getting Posts
 	2) Function B2: Get all User Posts 
 	3) Function B3: Get Single Post by ID 
 	4) Function B4: Get All Posts
+
+FUNCTIONS C: All Functions Related to Post Actions
+	1) Function C1: Like a Post
+	2) Function C2: Unlike a Post 
+
 */
 
 
@@ -141,7 +146,11 @@ async function postVideo(req, res) {
 function getGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const group_id = req.params.group_id;
+
+	//Get Post Likes
 	
+
+	//Get Post
     const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
 
     connection.query(queryString, [group_id], (err, rows) => {
@@ -174,18 +183,62 @@ function getGroupPosts(req, res) {
     })
 }
 //Function B2: Get all User Posts 
-//Function B3: Get Single Post by ID 
+
+//Function B3: Get Single Post by ID (May not work just added)
+function getSinglePost(req, res) {
+	const connection = db.getConnection(); 
+    const postID = req.params.post_id;
+    const queryString = "SELECT * FROM posts WHERE post_id = ?";
+
+    connection.query(queryString, [postID], (err, rows) => {
+        if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
+				}
+			});
+
+			//res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.json({posts:posts});
+			console.log(typeof(posts))
+			res.json(posts);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+}
+
 
 //Function 4: Get all Posts 
 function getAllPosts(req, res) {
 	const connection = db.getConnection(); 
+
+	//Get All Posts 
 	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 3";
  
 	connection.query(queryString, (err, rows, fields) => {
 		 if (!err) {
- 
 			 //Return Object 
 			 const posts = rows.map((row) => {
+
+				var postLikes = {}
+			
+				//Post Likes
 				 return {
 					 postID: row.post_id,
 					 postType: row.post_type,
@@ -194,6 +247,7 @@ function getAllPosts(req, res) {
 					 postFrom: row.post_from,
 					 postTo: row.post_to,
 					 postCaption: row.post_caption,
+					 postLikes: postLikes,
 					 fileName: row.file_name,
 					 fileNameServer: row.file_name_server,
 					 fileUrl: row.file_url,
@@ -251,7 +305,249 @@ function getAllPosts(req, res) {
 }
 
 
- module.exports = { postTemp, postText, postPhoto, postVideo, getGroupPosts, getAllPosts };
+//FUNCTIONS C: All Functions Related to Post Actions
+//Function C1: Like a Post
+async function likePost(req, res) {
+	const connection = db.getConnection(); 
+	var currentUser = req.body.currentUser
+	var postID = req.body.postID
+    
+	const queryString = "SELECT COUNT(*) AS likeCount FROM post_likes WHERE post_id = ? AND liked_by_name = ?"	
+	
+	connection.query(queryString, [postID, currentUser], (err, rows) => {
+		if (!err) {
+	
+			likeCount = rows[0].likeCount;	
+			if(likeCount == 0) { 
+				const insertString = "INSERT INTO post_likes (post_id, liked_by, liked_by_name) VALUES (?, ?, ?)"
+				connection.query(insertString, [postID, 1, currentUser], (err, results) => {
+					if (!err) {
+						console.log("You created a new like " + results.insertId);  
+						res.json({totalLikes: "liked! ", likeID: results.insertId})	 
+					} else {    
+						console.log(err)
+						res.json({err:err})	
+					} 
+				}) 	
+
+			} else {
+				res.json({totalLikes: "already liked"})	
+			}
+				
+		} else {
+			console.log("Failed to Select Requests: " + err);
+			res.json({totalLikes: "error"})
+		}
+	})
+}
+
+
+//Function C2: Unlike a Post 
+async function unlikePost(req, res) {
+	const connection = db.getConnection();
+	var currentUser = req.body.currentUser
+	var postID = req.body.postID
+
+	var likeOutcome = {
+		success: false,
+		currentUser: currentUser,
+		postID: postID
+	}
+
+	const queryString = "DELETE FROM post_likes WHERE post_id = ? AND liked_by_name = ?;"	
+	
+	connection.query(queryString, [postID, currentUser], (err, rows) => {
+		if (!err) {
+			likeOutcome.success = true;
+			res.json(likeOutcome)
+	
+		} else {
+			console.log("Failed to Unlike Requests: " + err);
+			res.json(likeOutcome)
+		}
+	})
+}
+
+
+//Function C3: Select all Likes
+async function getAllLikes(req, res) {
+	const connection = db.getConnection(); 
+	const queryString = "SELECT * FROM post_likes ORDER BY post_id DESC LIMIT 20";
+ 
+	connection.query(queryString, (err, rows, fields) => {
+		 if (!err) {
+ 
+			 //Return Object 
+			 const likes = rows.map((row) => {
+				 return {
+					 postLikeID: row.post_like_id,
+					 postID: row.post_id,
+					 likedBy: row.liked_by,
+					 likedByName: row.liked_by_name,
+					 timestamp: row.timestamp
+				 }
+			 });
+			 
+			 res.json({likes:likes});
+ 
+		 } else {
+			 console.log("Failed to Select Posts" + err)
+			 res.sendStatus(500)
+			 return
+		 }
+	})
+}
+
+//Function C4: Select all Likes for a Post
+async function getPostLikes(req, res) {
+	const connection = db.getConnection(); 
+    const postID = req.params.post_id;
+    const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
+
+    connection.query(queryString, [postID], (err, rows) => {
+        if (!err) {
+			const postLikes = rows.map((row) => {
+				return {
+					postLikeID: row.post_like_id,
+					postID: row.post_id,
+					likedBy: row.liked_by,
+					likedByName: row.liked_by_name,
+					timestamp: row.timestamp
+				}
+			});
+			res.json(postLikes);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+}
+ 
+
+ module.exports = { postTemp, postText, postPhoto, postVideo, getGroupPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes };
+
+
+
+/*
+
+//FUNCTIONS B: All Functions Related to Post Actions 
+//Function B1: Like a Post 
+ if (isset($_POST["like_post"]) && (!empty($_POST["like_post"]))) {
+	$logged_in_user = $_POST["logged_in_user"]; 
+	$post_id     	= $_POST["post_id"]; 
+	$user_id 		= getUserID($logged_in_user);
+	
+	//STEP 1: Make Sure User Has Not Already Liked Post 
+$user_post_like_count = $result_likes->num_rows;
+	
+	if ($user_post_like_count == 0){
+		
+		//STEP 2: Insert into likes table 	
+		$stmt = $conn->prepare("INSERT INTO post_likes(post_id, liked_by, liked_by_name) VALUES (?, ?, ?)");
+		$stmt->bind_param("iis",  $post_id, $user_id, $logged_in_user);
+		$user_post_like_count = $user_post_like_count + 1;
+		if ($stmt->execute()) {
+			
+			//STEP 3: Get count of new post likes 
+			$result_total_likes = mysqli_query($conn,"SELECT * FROM post_likes WHERE post_id = '$post_id'");
+			$total_post_likes = $result_total_likes->num_rows;	
+			echo $total_post_likes;
+	
+		} else {
+			echo "Error: " . $sql . "<br>" . mysqli_error($conn);
+		}			
+	} 
+}	
+
+//Function B2: UnLike a Post	
+if (isset($_POST["unlike_post"]) && (!empty($_POST["unlike_post"]))) {
+	$logged_in_user = $_POST["logged_in_user"]; 
+	$post_id     	= $_POST["post_id"]; 
+	$user_id 		= getUserID($logged_in_user);
+	
+	//STEP 1: Delete the users Like 
+	$sql = "DELETE FROM post_likes WHERE liked_by_name ='$logged_in_user' and post_id = '$post_id'";
+	
+	if (mysqli_query($conn, $sql)) {
+		
+		//STEP 2: Get count of new post likes 
+		$result_total_likes = mysqli_query($conn,"SELECT * FROM post_likes WHERE post_id = '$post_id'");
+		$total_post_likes = $result_total_likes->num_rows;	
+		echo $total_post_likes;		
+		
+		//echo "Record deleted successfully";
+	} else {
+		echo "Error deleting record: " . mysqli_error($conn);
+	}
+}	
+ 
+*/
+
+
+ /*
+
+//Like a Post
+postRouter.post("/api/post/like", (req, res) => {
+  const postID = req.body.postID
+  console.log("You liked post with the POST ID " + postID)
+
+  for (let i = 0; i < posts.length; i++) {
+    console.log(posts[i].postID + " " + postID)
+    if(posts[i].postID == postID) {
+      if(posts[i].postLikesArray.includes(currentUser)) {
+        console.log(currentUser + " Had already liked this post so we will unlike! with POST ID  " + postID)
+        const index = posts[i].postLikesArray.indexOf(currentUser);
+        if (index > -1) { 
+          posts[i].postLikesArray.splice(index, 1); 
+        }
+        posts[i].totalLikes = posts[i].postLikesArray.length
+        res.json(posts[i])
+        return 
+      } else {
+        console.log(currentUser + " Liked this post!")
+        posts[i].postLikesArray.push(currentUser);
+        posts[i].totalLikes = posts[i].postLikesArray.length
+        res.json(posts[i])
+        return 
+      }
+      posts[i].postLikesArray.includes(currentUser)
+    }
+
+  } 
+  console.log(posts)
+  
+  //res.json(posts)
+})
+
+//Edit a Post
+postRouter.post("/api/post/edit", (req, res) => {
+    const post = req.body
+    const postID = post.postID
+    const newPostCaption = post.newPostCaption
+    console.log("error! post not found " + postID)
+  
+    for (let i = 0; i < posts.length; i++) {
+      
+      if(posts[i].postID == postID) {
+        console.log("Found the post " + posts[i].postID + " " + postID)
+        console.log(posts[i].postCaption);
+        console.log(newPostCaption);
+        posts[i].postCaption = newPostCaption;
+        res.json(posts[i])
+        return 
+        
+      } else {
+        console.log("error! post not found " + posts[i].postID + " " + postID)
+        res.json(posts[i])
+        return
+      }
+    } 
+    
+  })
+  
+ */
 
  
 

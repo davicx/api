@@ -1,7 +1,29 @@
 #USE shareshare;
+
+
+#POSTS
+#UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
+#UPDATE posts SET group_id = 72 WHERE post_id = 260;
+#SELECT * FROM posts;
+
+#DELETE FROM posts where post_id > 260;
+#SELECT * FROM posts WHERE group_id = 70;
+
+#DELETE FROM post_likes WHERE post_id > 0;
+SELECT * FROM post_likes;
+
+
+
+
+
+
+
+
 #DELETE FROM refresh_tokens where token_id > 0;
 #ALTER TABLE refresh_tokens
 #ADD user_id int(11) NOT NULL DEFAULT 0
+
+
 
 #USERS
 #SELECT * FROM user_login;
@@ -40,13 +62,7 @@ INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `gro
 #SELECT * FROM shareshare.groups;
 #UPDATE shareshare.groups SET group_name = 'gardening' WHERE group_id = 72;
 
-#POSTS
-#UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
-#UPDATE posts SET group_id = 72 WHERE post_id = 260;
-#SELECT * FROM posts;
 
-DELETE FROM posts where post_id > 260;
-SELECT * FROM posts WHERE group_id = 70;
 
 
 ###################################

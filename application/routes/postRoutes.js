@@ -20,7 +20,11 @@ FUNCTIONS B: All Functions Related to getting Posts
 	3) Function B3: Get Single Post by ID 
 	4) Function B4: Get All Posts
 
-    postFunctions.postText(req, res);
+FUNCTIONS C: All Functions Related to Post Actions
+	1) Function C1: Like a Post
+	2) Function C2: Unlike a Post 
+	3) Function C3: Select all Likes
+	4) Function C4: Select all Likes for a Post
 
 */
 
@@ -61,7 +65,26 @@ postRouter.get("/posts", (req, res) => {
 	postFunctions.getAllPosts(req, res);
 })
 
+//FUNCTIONS C: All Functions Related to Post Actions
+//Function C1: Like a Post
+postRouter.post('/post/like', function(req, res) {
+    postFunctions.likePost(req, res);
+})
 
+//Function C2: Unlike a Post 
+postRouter.post('/post/unlike', function(req, res) {
+	postFunctions.unlikePost(req, res);
+})
+
+//Function C3: Select all Likes
+postRouter.get("/post/likes", (req, res) => {
+	postFunctions.getAllLikes(req, res);
+})
+
+//Function C4: Select all Likes for a Post
+postRouter.get("/post/likes/:post_id", (req, res) => {
+	postFunctions.getPostLikes(req, res);
+})
 
 module.exports = postRouter;
 

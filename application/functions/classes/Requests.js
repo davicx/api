@@ -85,7 +85,8 @@ class Requests {
 							//console.log("MAKEY " + requestTo + " " + existingRequestCount);
 							connection.query(insertString, [masterSite, requestType, requestTypeText, requestIsPending, requestFrom, requestTo, groupID], (err, results) => {
 								if (!err) {
-									console.log("You created a new Request with ID " + results.insertId + " for user " + requestTo);    
+									console.log("You created a new Request with ID " + results.insertId + " for user " + requestTo
+									);    
 								} else {    
 									console.log(err)
 								} 
