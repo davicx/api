@@ -20,6 +20,8 @@ FUNCTIONS D: Login Functions
 	3) Function D3: Logout a user 
 	4) Function D4: Check Token Time
 
+//FUNCTIONS E: Post Functions 
+    1) Get all Post Likes 
 */
 
 //FUNCTIONS D: Login Functions 
@@ -452,8 +454,51 @@ function convertElementsLowercase(stringArray) {
 
 }
 
+//FUNCTIONS E: Post Functions 
+//Get all Post Likes 
+async function getPostLikes(postID)  {
+    const connection = db.getConnection(); 
+    const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
+    var postLikesOutcome = {
+        success: false
+    }
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+                    postLikes = rows.map((row) => {
+                        return {
+                            postLikeID: row.post_like_id,
+                            postID: row.post_id,
+                            likedBy: row.liked_by,
+                            likedByName: row.liked_by_name,
+                            timestamp: row.timestamp
+                        }
+                    });
+                    postLikesOutcome.success = true;
+                    postLikesOutcome.postLikes = postLikes;
+                    resolve(postLikesOutcome);
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(postLikesOutcome);
+                }
+            })
+            
+        } catch(err) { 
+            reject(postLikesOutcome);
+        } 
+    })
+
+
+
+}
+
+
+
+
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes }
 
 
 

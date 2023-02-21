@@ -3,6 +3,7 @@ const Group = require('./classes/Group');
 const Post = require('./classes/Post');
 const Notification = require('./classes/Notification')
 const Requests = require('./classes/Requests');
+const Functions = require('./functions');
 
 /*
 FUNCTIONS A: All Functions Related to Posts
@@ -225,15 +226,53 @@ function getSinglePost(req, res) {
 
 
 //Function 4: Get all Posts 
-function getAllPosts(req, res) {
+async function getAllPosts(req, res) {
 	const connection = db.getConnection(); 
+	var postsArray = []
 
 	//Get All Posts 
-	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 3";
- 
+	//Put this in Async Function 
+	//Then get Post Likes
+
+
+		/*
+		Using the await keyword:
+		const rows = await db.query( 'SELECT * FROM users WHERE id = 1' );
+		*/
+
+	////WORKS
+	//const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 3";
+	//var postRows = await connection.query(queryString, (err, rows, fields));
+	//console.log(postRows)
 	connection.query(queryString, (err, rows, fields) => {
 		 if (!err) {
-			 //Return Object 
+
+			//Return Object 
+			for (let i = 0; i < rows.length; i++) {
+				//const currentPostLikes = await Functions.getPostLikes(72) 
+				//console.log(currentPostLikes)
+
+				let post = {
+					postID: rows[i].post_id,
+					postType: rows[i].post_type,
+					groupID: rows[i].group_id,
+					listID: rows[i].list_id,
+					postFrom: rows[i].post_from,
+					postTo: rows[i].post_to,
+					postCaption: rows[i].post_caption,
+					fileName: rows[i].file_name,
+					fileNameServer: rows[i].file_name_server,
+					fileUrl: rows[i].file_url,
+					videoURL: rows[i].video_url,
+					videoCode: rows[i].video_code,
+					created: rows[i].created	
+				}
+				postsArray.push(post)
+        
+			}
+
+
+			 /*
 			 const posts = rows.map((row) => {
 
 				var postLikes = {}
@@ -256,9 +295,10 @@ function getAllPosts(req, res) {
 					 created: row.created
 				 }
 			 });
+			 */
+			//const currentPostLikes = await Functions.getPostLikes(72) 			
 			 
- 
-			 res.json({posts:posts});
+			 res.json(postsArray);
 			 //res.json(posts);
  
 		 } else {
