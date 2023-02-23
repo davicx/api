@@ -21,7 +21,10 @@ FUNCTIONS D: Login Functions
 	4) Function D4: Check Token Time
 
 //FUNCTIONS E: Post Functions 
-    1) Get all Post Likes 
+    1) Get all Posts
+    2) Get all Post Comments
+    3) Get all Post Likes 
+
 */
 
 //FUNCTIONS D: Login Functions 
@@ -158,6 +161,9 @@ function checkRemainingTokenTime(token) {
 
     return tokenTimeRemaining;
 }
+
+
+
 
 ////
 //CLEAN BELOW
@@ -455,7 +461,10 @@ function convertElementsLowercase(stringArray) {
 }
 
 //FUNCTIONS E: Post Functions 
+//Get all Posts
+//Get all Post Comments
 //Get all Post Likes 
+
 async function getPostLikes(postID)  {
     const connection = db.getConnection(); 
     const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
@@ -494,6 +503,7 @@ async function getPostLikes(postID)  {
 
 
 }
+
 
 
 

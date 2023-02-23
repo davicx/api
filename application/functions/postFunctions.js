@@ -226,6 +226,9 @@ function getSinglePost(req, res) {
 
 
 //Function 4: Get all Posts 
+
+
+
 async function getAllPosts(req, res) {
 	const connection = db.getConnection(); 
 	var postsArray = []
@@ -233,20 +236,19 @@ async function getAllPosts(req, res) {
 	//Get All Posts 
 	//Put this in Async Function 
 	//Then get Post Likes
-
-
-		/*
-		Using the await keyword:
-		const rows = await db.query( 'SELECT * FROM users WHERE id = 1' );
-		*/
+	/*
+	Using the await keyword:
+	const rows = await db.query( 'SELECT * FROM users WHERE id = 1' );
+	*/
 
 	////WORKS
-	//const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 3";
+	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 5";
 	//var postRows = await connection.query(queryString, (err, rows, fields));
 	//console.log(postRows)
 	connection.query(queryString, (err, rows, fields) => {
 		 if (!err) {
 
+			/*
 			//Return Object 
 			for (let i = 0; i < rows.length; i++) {
 				//const currentPostLikes = await Functions.getPostLikes(72) 
@@ -270,13 +272,9 @@ async function getAllPosts(req, res) {
 				postsArray.push(post)
         
 			}
-
-
-			 /*
+			*/
 			 const posts = rows.map((row) => {
 
-				var postLikes = {}
-			
 				//Post Likes
 				 return {
 					 postID: row.post_id,
@@ -286,7 +284,6 @@ async function getAllPosts(req, res) {
 					 postFrom: row.post_from,
 					 postTo: row.post_to,
 					 postCaption: row.post_caption,
-					 postLikes: postLikes,
 					 fileName: row.file_name,
 					 fileNameServer: row.file_name_server,
 					 fileUrl: row.file_url,
@@ -295,10 +292,10 @@ async function getAllPosts(req, res) {
 					 created: row.created
 				 }
 			 });
-			 */
+			 
 			//const currentPostLikes = await Functions.getPostLikes(72) 			
 			 
-			 res.json(postsArray);
+			 res.json(posts);
 			 //res.json(posts);
  
 		 } else {
@@ -308,6 +305,36 @@ async function getAllPosts(req, res) {
 		 }
 	})
  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
  //APPENDIX (TEMP)
  async function postTemp(req, res) {
