@@ -61,7 +61,6 @@ postRouter.get("/posts/:post_id", (req, res) => {
 
 //Route B4: Get All Posts
 postRouter.get("/posts", (req, res) => {
-    console.log("Get all Posts")
 	postFunctions.getAllPosts(req, res);
 })
 

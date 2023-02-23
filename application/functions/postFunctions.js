@@ -226,56 +226,34 @@ function getSinglePost(req, res) {
 
 
 //Function 4: Get all Posts 
-
-
-
 async function getAllPosts(req, res) {
+	const connection = db.getConnection(); 
+	console.log("Get all Posts")
+
+	//Get All Posts
+	//var postsOutcome = getAllPosts;
+	var postsOutcome = await Functions.getAllPosts()
+	var posts = postsOutcome.posts;
+ 
+	for (let i = 0; i < posts.length; i++) {
+		var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
+		posts[i].postLikes = currentPostLikes.postLikes;
+	}
+
+	res.json(posts)
+
+}
+
+async function getAllPostsOLD(req, res) {
 	const connection = db.getConnection(); 
 	var postsArray = []
 
-	//Get All Posts 
-	//Put this in Async Function 
-	//Then get Post Likes
-	/*
-	Using the await keyword:
-	const rows = await db.query( 'SELECT * FROM users WHERE id = 1' );
-	*/
-
-	////WORKS
 	const queryString = "SELECT * FROM posts ORDER BY post_id DESC LIMIT 5";
 	//var postRows = await connection.query(queryString, (err, rows, fields));
 	//console.log(postRows)
 	connection.query(queryString, (err, rows, fields) => {
 		 if (!err) {
-
-			/*
-			//Return Object 
-			for (let i = 0; i < rows.length; i++) {
-				//const currentPostLikes = await Functions.getPostLikes(72) 
-				//console.log(currentPostLikes)
-
-				let post = {
-					postID: rows[i].post_id,
-					postType: rows[i].post_type,
-					groupID: rows[i].group_id,
-					listID: rows[i].list_id,
-					postFrom: rows[i].post_from,
-					postTo: rows[i].post_to,
-					postCaption: rows[i].post_caption,
-					fileName: rows[i].file_name,
-					fileNameServer: rows[i].file_name_server,
-					fileUrl: rows[i].file_url,
-					videoURL: rows[i].video_url,
-					videoCode: rows[i].video_code,
-					created: rows[i].created	
-				}
-				postsArray.push(post)
-        
-			}
-			*/
 			 const posts = rows.map((row) => {
-
-				//Post Likes
 				 return {
 					 postID: row.post_id,
 					 postType: row.post_type,
@@ -292,11 +270,7 @@ async function getAllPosts(req, res) {
 					 created: row.created
 				 }
 			 });
-			 
-			//const currentPostLikes = await Functions.getPostLikes(72) 			
-			 
-			 res.json(posts);
-			 //res.json(posts);
+	
  
 		 } else {
 			 console.log("Failed to Select Posts" + err)
@@ -304,6 +278,7 @@ async function getAllPosts(req, res) {
 			 return
 		 }
 	})
+	
  }
 
 

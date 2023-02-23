@@ -462,14 +462,64 @@ function convertElementsLowercase(stringArray) {
 
 //FUNCTIONS E: Post Functions 
 //Get all Posts
+async function getAllPosts()  {
+    const connection = db.getConnection(); 
+    console.log("Yoo!! GET ALL POSTS")
+
+    const queryString = "SELECT * FROM posts ORDER BY post_id DESC";
+    var postsOutcome = {
+        success: false,
+        posts: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, (err, rows) => {
+                if (!err) {
+                    const posts = rows.map((row) => {
+                        return {
+                            postID: row.post_id,
+                            postType: row.post_type,
+                            groupID: row.group_id,
+                            listID: row.list_id,
+                            postFrom: row.post_from,
+                            postTo: row.post_to,
+                            postCaption: row.post_caption,
+                            fileName: row.file_name,
+                            fileNameServer: row.file_name_server,
+                            fileUrl: row.file_url,
+                            videoURL: row.video_url,
+                            videoCode: row.video_code,
+                            created: row.created
+                        }
+                    });
+                    postsOutcome.posts = posts;
+
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            reject(postsOutcome);
+        } 
+    })
+    
+}
+
 //Get all Post Comments
 //Get all Post Likes 
-
 async function getPostLikes(postID)  {
     const connection = db.getConnection(); 
+
+    console.log("Get all Posts")
     const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
     var postLikesOutcome = {
-        success: false
+        success: false,
+        postLikes: []
     }
 
     return new Promise(async function(resolve, reject) {
@@ -499,16 +549,13 @@ async function getPostLikes(postID)  {
             reject(postLikesOutcome);
         } 
     })
-
-
-
 }
 
 
 
 
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes }
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getAllPosts }
 
 
 
