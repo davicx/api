@@ -516,7 +516,31 @@ async function getPostLikes(postID)  {
     const connection = db.getConnection(); 
 
     console.log("Get all Posts")
-    const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
+  
+    /*
+    $result_friends = mysqli_query($conn,"SELECT friends.user_name, friends.friend_user_name, friends.friend_id, 
+        friends.request_pending, user_login.user_name, 
+        user_login.user_id, user_login.account_deleted
+
+        FROM user_login INNER JOIN friends
+        ON user_login.user_name = friends.friend_user_name
+        WHERE friends.user_name = '$userName'
+        AND friends.request_pending = 0
+        AND user_login.account_deleted = 0");
+
+        post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.timestamp,
+        user_profile.user_name, user_profile.image_name,  user_profile.first_name, user_profile.last_name
+        FROM post_likes INNER JOIN user_profile
+        ON post_likes.liked_by_name = user_profile.user_name
+        WHERE WHERE post_id = ?
+
+        
+    */
+    
+    const queryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name,  user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = ?"
+   
+    //const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
+
     var postLikesOutcome = {
         success: false,
         postLikes: []
@@ -526,6 +550,8 @@ async function getPostLikes(postID)  {
         try {
             connection.query(queryString, [postID], (err, rows) => {
                 if (!err) {
+                    console.log(rows)
+                    /*
                     postLikes = rows.map((row) => {
                         return {
                             postLikeID: row.post_like_id,
@@ -537,6 +563,7 @@ async function getPostLikes(postID)  {
                     });
                     postLikesOutcome.success = true;
                     postLikesOutcome.postLikes = postLikes;
+                    */
                     resolve(postLikesOutcome);
         
                 } else {

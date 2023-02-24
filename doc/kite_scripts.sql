@@ -1,4 +1,4 @@
-#USE shareshare;
+USE shareshare;
 
 
 #POSTS
@@ -10,15 +10,19 @@
 #SELECT * FROM posts WHERE group_id = 70;
 
 #DELETE FROM post_likes WHERE post_id > 0;
-SELECT * FROM post_likes;
+#SELECT * FROM post_likes;
+#DELETE FROM posts WHERE post_id > 100;
+#UPDATE posts SET post_id = 70 WHERE post_id = 255;
+#SELECT * FROM posts;
 
+#COMMENTS
 
+SELECT * FROM user_profile;
+#SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name,  user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = 72
+    
+#SELECT * FROM post_likes;
 
-
-
-
-
-
+ 
 #DELETE FROM refresh_tokens where token_id > 0;
 #ALTER TABLE refresh_tokens
 #ADD user_id int(11) NOT NULL DEFAULT 0
