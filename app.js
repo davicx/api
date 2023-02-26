@@ -18,11 +18,12 @@ app.use(
 const login = require('./application/routes/loginRoutes.js'); 
 const group = require('./application/routes/groupRoute.js'); 
 const posts = require('./application/routes/postRoutes.js'); 
+const comments = require('./application/routes/commentRoutes.js');
 
 app.use(login);
 app.use(group);
 app.use(posts);
-
+app.use(comments);
 
 //Server Login 
 app.listen(3003, () => {
@@ -43,7 +44,7 @@ app.get("/", (req, res) => {
 //const group = require('./application/routes/groupRoutes.js');
 //const groups = require('./application/routes/groupRoute.js');
 //const notification = require('./application/routes/notificationRoutes.js');
-//const comments = require('./application/routes/commentRoutes.js');
+
 //const upload = require('./application/routes/uploadRoutes.js'); 
 //const learning = require('./application/routes/learningRoutes.js'); 
 
@@ -53,6 +54,5 @@ app.get("/", (req, res) => {
 //app.use(user);
 //app.use(postGroup);
 //app.use(notification); 
-//app.use(comments);
 //app.use(upload); 
 //app.use(learning); 

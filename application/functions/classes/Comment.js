@@ -10,25 +10,16 @@ class Post {
     
     //METHODS A: POST RELATED
     //Method A1: Make a Comment
-    static async createComment(req)  {
+    static async newComment(req)  {
         const connection = db.getConnection(); 
-
-        const masterSite = req.body.masterSite 
         const commentCaption = req.body.commentCaption 
         const commentType = req.body.commentType 
         const commentFrom = req.body.commentFrom 
         const commentTo = req.body.commentTo 
         const groupID = req.body.groupID 
         const postID = req.body.postID 
-        const listID = req.body.listID 
-
-
-        const postType = req.body.postType 
-        const postFrom = req.body.postFrom 
-        const postTo = req.body.postTo 
-
-        const postCaption = req.body.postCaption 
-     
+        const commentStatus = 0;
+   
         var commentOutcome = {
             outcome: 0,
             postID: 0,
@@ -38,9 +29,9 @@ class Post {
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?, ?)"
-    
-                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
+                const queryString = "INSERT INTO comments (post_id, comment, comment_type, comment_from, comment_deleted) VALUES (?, ?, ?, ?, ?)"
+
+                connection.query(queryString, [postID, commentCaption, commentType, commentFrom, commentStatus], (err, results) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
                         commentOutcome.outcome = 200;       
@@ -59,9 +50,6 @@ class Post {
             } 
         });
     }
-
-
-
 }
 
 
