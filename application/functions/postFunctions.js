@@ -144,14 +144,40 @@ async function postVideo(req, res) {
 
 //FUNCTIONS B: All Functions Related to getting Posts
 //Function B1: Get all Group Posts
-function getGroupPosts(req, res) {
+async function getGroupPosts(req, res) {
 	const connection = db.getConnection(); 
-    const group_id = req.params.group_id;
+    const groupID = req.params.group_id;
 
-	//Get Post Likes
+	//Get All Posts
+	var postsOutcome = await Functions.getGroupPosts(groupID)
+	var posts = postsOutcome.posts;
+	let likedByUsernameArray = []
+ 
+	for (let i = 0; i < posts.length; i++) {
+		var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
+		//console.log(currentPostLikes.postLikes)
+		posts[i].postLikesArray = currentPostLikes.postLikes;
+		console.log("currentPostLikes")
+		//This works just need to pull users out maybe don't use the map thing not working
+		console.log(currentPostLikes)
+		console.log("____________________")
+
+		//Create an Array of just post user names
+		/*
+		posts[i].postLikesArray.map((postLike) => (
+			likedByUsernameArray.push(postLike.likedByUserName)
+		))
+		console.log("POST ID: "  + posts[i].postID)
+		console.log(likedByUsernameArray)
+		*/
+		//posts[i].likedByUsernameArray = likedByUsernameArray;
+	}
+
+	res.json(posts)
 	
 
 	//Get Post
+	/*
     const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
 
     connection.query(queryString, [group_id], (err, rows) => {
@@ -182,6 +208,7 @@ function getGroupPosts(req, res) {
             return
 		}
     })
+	*/
 }
 //Function B2: Get all User Posts 
 
@@ -228,10 +255,8 @@ function getSinglePost(req, res) {
 //Function 4: Get all Posts 
 async function getAllPosts(req, res) {
 	const connection = db.getConnection(); 
-	console.log("Get all Posts")
 
 	//Get All Posts
-	//var postsOutcome = getAllPosts;
 	var postsOutcome = await Functions.getAllPosts()
 	var posts = postsOutcome.posts;
  

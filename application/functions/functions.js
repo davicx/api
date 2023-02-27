@@ -510,13 +510,66 @@ async function getAllPosts()  {
     
 }
 
+
+//Get Group Posts
+async function getGroupPosts(groupID)  {
+    const connection = db.getConnection(); 
+
+    //const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
+    const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
+    var postsOutcome = {
+        success: false,
+        posts: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [groupID], (err, rows) => {
+                if (!err) {
+                    const posts = rows.map((row) => {
+                        return {
+                            postID: row.post_id,
+                            postType: row.post_type,
+                            groupID: row.group_id,
+                            listID: row.list_id,
+                            postFrom: row.post_from,
+                            postTo: row.post_to,
+                            postCaption: row.post_caption,
+                            fileName: row.file_name,
+                            fileNameServer: row.file_name_server,
+                            fileUrl: row.file_url,
+                            videoURL: row.video_url,
+                            videoCode: row.video_code,
+                            created: row.created
+                        }
+                    });
+                    postsOutcome.posts = posts;
+
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            reject(postsOutcome);
+        } 
+    })
+    
+}
+
+
+
+
+
 //Get all Post Comments
 //Get all Post Likes 
 async function getPostLikes(postID)  {
     const connection = db.getConnection(); 
 
-    
-    const queryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name,  user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = ?"
+    const queryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = ?"
 
     var postLikesOutcome = {
         success: false,
@@ -527,20 +580,22 @@ async function getPostLikes(postID)  {
         try {
             connection.query(queryString, [postID], (err, rows) => {
                 if (!err) {
-                    console.log(rows)
-                    /*
+                    
                     postLikes = rows.map((row) => {
                         return {
                             postLikeID: row.post_like_id,
                             postID: row.post_id,
-                            likedBy: row.liked_by,
-                            likedByName: row.liked_by_name,
-                            timestamp: row.timestamp
+                            likedByUserName: row.liked_by_name,
+                            likedByImage: row.image_name, 
+                            likedByFirstName: row.first_name, 
+                            likedByLastName:row.last_name,
+                            timestamp: row.time_stamp
                         }
                     });
+                    
                     postLikesOutcome.success = true;
                     postLikesOutcome.postLikes = postLikes;
-                    */
+                    
                     resolve(postLikesOutcome);
         
                 } else {
@@ -559,7 +614,7 @@ async function getPostLikes(postID)  {
 
 
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getAllPosts }
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getGroupPosts, getAllPosts }
 
 
 

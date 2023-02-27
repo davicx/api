@@ -74,7 +74,7 @@ function validateUsername(username) {
 
     if(username.length > 20) {
         usernameOutcome.usernameMessages.push("Your username must be less then 20 characters")
-    } else if (username.length < 5) {
+    } else if (username.length < 2) {
         usernameOutcome.usernameMessages.push("Your username must be greater then 5 characters")
     } else {
         if(validAlphaNumeric(username)) {

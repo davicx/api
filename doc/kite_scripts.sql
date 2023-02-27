@@ -4,7 +4,6 @@ USE shareshare;
 #POSTS
 #UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
-SELECT * FROM posts;
 
 #DELETE FROM posts where post_id > 260;
 #SELECT * FROM posts WHERE group_id = 70;
@@ -21,22 +20,23 @@ SELECT * FROM posts;
 #ALTER TABLE comments ADD comment_type varchar(256) NOT NULL DEFAULT "post" AFTER comment
 
 #SELECT * FROM comments WHERE post_id = 70;
-#UPDATE comments SET comment_from = "davey" WHERE comment_id = 3;
 
-
-
-
-SELECT * FROM user_profile;
 #SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name,  user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = 72
     
 #SELECT * FROM post_likes;
 
- 
+
+SELECT * FROM user_login
+
+#DELETE FROM user_login WHERE user_id > 28;
+
 #DELETE FROM refresh_tokens where token_id > 0;
 #ALTER TABLE refresh_tokens
 #ADD user_id int(11) NOT NULL DEFAULT 0
 
 
+#SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments 
+#INNER JOIN user_profile ON comments.comment_from = user_profile.user_name  WHERE comments.post_id = 70
 
 #USERS
 #SELECT * FROM user_login;
