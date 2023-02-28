@@ -151,65 +151,25 @@ async function getGroupPosts(req, res) {
 	//Get All Posts
 	var postsOutcome = await Functions.getGroupPosts(groupID)
 	var posts = postsOutcome.posts;
-	let likedByUsernameArray = []
- 
+
 	for (let i = 0; i < posts.length; i++) {
+		let simpleLikesArray = []
 		var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
-		//console.log(currentPostLikes.postLikes)
 		posts[i].postLikesArray = currentPostLikes.postLikes;
-		console.log("currentPostLikes")
-		//This works just need to pull users out maybe don't use the map thing not working
-		console.log(currentPostLikes)
-		console.log("____________________")
 
 		//Create an Array of just post user names
-		/*
 		posts[i].postLikesArray.map((postLike) => (
-			likedByUsernameArray.push(postLike.likedByUserName)
+			simpleLikesArray.push(postLike.likedByUserName)
 		))
-		console.log("POST ID: "  + posts[i].postID)
-		console.log(likedByUsernameArray)
-		*/
-		//posts[i].likedByUsernameArray = likedByUsernameArray;
+
+		posts[i].simpleLikesArray = simpleLikesArray;
+
 	}
 
 	res.json(posts)
-	
 
-	//Get Post
-	/*
-    const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
-
-    connection.query(queryString, [group_id], (err, rows) => {
-        if (!err) {
-			const posts = rows.map((row) => {
-				return {
-					postID: row.post_id,
-					postType: row.post_type,
-					groupID: row.group_id,
-					listID: row.list_id,
-					postFrom: row.post_from,
-					postTo: row.post_to,
-					postCaption: row.post_caption,
-					fileName: row.file_name,
-					fileNameServer: row.file_name_server,
-					fileUrl: row.file_url,
-					videoURL: row.video_url,
-					videoCode: row.video_code,
-					created: row.created
-				}
-			});
-
-			res.json(posts);
-
-        } else {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-		}
-    })
-	*/
 }
+
 //Function B2: Get all User Posts 
 
 //Function B3: Get Single Post by ID (May not work just added)
@@ -390,7 +350,8 @@ async function likePost(req, res) {
 				connection.query(insertString, [postID, 1, currentUser], (err, results) => {
 					if (!err) {
 						console.log("You created a new like " + results.insertId);  
-						res.json({totalLikes: "liked! ", likeID: results.insertId})	 
+
+						res.json({success: 1, successMessage: "you liked", postLikeID: results.insertId, postID: postID, currentUser: currentUser})
 					} else {    
 						console.log(err)
 						res.json({err:err})	
@@ -398,7 +359,9 @@ async function likePost(req, res) {
 				}) 	
 
 			} else {
-				res.json({totalLikes: "already liked"})	
+				//res.json({totalLikes: "already liked"})	
+				res.json({success: 0, successMessage: "already liked", postLikeID: null, postID: postID, currentUser: currentUser})
+			
 			}
 				
 		} else {
@@ -932,4 +895,40 @@ function getSinglePost(req, res) {
 			limit: limit
 		}
 	}
+	*/
+
+		
+
+	//Get Post
+	/*
+    const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
+
+    connection.query(queryString, [group_id], (err, rows) => {
+        if (!err) {
+			const posts = rows.map((row) => {
+				return {
+					postID: row.post_id,
+					postType: row.post_type,
+					groupID: row.group_id,
+					listID: row.list_id,
+					postFrom: row.post_from,
+					postTo: row.post_to,
+					postCaption: row.post_caption,
+					fileName: row.file_name,
+					fileNameServer: row.file_name_server,
+					fileUrl: row.file_url,
+					videoURL: row.video_url,
+					videoCode: row.video_code,
+					created: row.created
+				}
+			});
+
+			res.json(posts);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
 	*/
