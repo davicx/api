@@ -27,8 +27,7 @@
 
 #DELETE FROM user_profile WHERE user_id > 28;
 
-#INSERT INTO `user_profile` (`user_profile_id`, `user_id`, `user_name`, `email`, `image_name`, `first_name`, `last_name`, `root_folder`, `biography`, `university`, `post_view`, `updated`, `created`) VALUES
-#(183, 30, 'davey', 'davey@gmail.com', 'davey.png', 'davey', 'v', '', 'hiya!!', '', '', '2021-03-26 22:23:23', '2021-03-26 21:25:16');
+#INSERT INTO `user_profile` (`user_profile_id`, `user_id`, `user_name`, `email`, `image_name`, `first_name`, `last_name`, `root_folder`, `biography`, `university`, `post_view`, `updated`, `created`) VALUES (183, 30, 'davey', 'davey@gmail.com', 'davey.png', 'davey', 'v', '', 'hiya!!', '', '', '2021-03-26 22:23:23', '2021-03-26 21:25:16');
 
 SELECT * FROM user_profile
 

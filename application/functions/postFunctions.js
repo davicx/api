@@ -338,20 +338,52 @@ async function likePost(req, res) {
 	const connection = db.getConnection(); 
 	var currentUser = req.body.currentUser
 	var postID = req.body.postID
+
+	var likePostOutcome = {
+		
+	}
     
+	//STEP 1: Check if user has already liked 
 	const queryString = "SELECT COUNT(*) AS likeCount FROM post_likes WHERE post_id = ? AND liked_by_name = ?"	
 	
 	connection.query(queryString, [postID, currentUser], (err, rows) => {
 		if (!err) {
 	
+			//STEP 2: User has not liked so you can like the post 
 			likeCount = rows[0].likeCount;	
+
 			if(likeCount == 0) { 
 				const insertString = "INSERT INTO post_likes (post_id, liked_by, liked_by_name) VALUES (?, ?, ?)"
 				connection.query(insertString, [postID, 1, currentUser], (err, results) => {
 					if (!err) {
-						console.log("You created a new like " + results.insertId);  
 
-						res.json({success: 1, successMessage: "you liked", postLikeID: results.insertId, postID: postID, currentUser: currentUser})
+						//STEP 3: Get the Users information 
+						console.log("You created a new like " + results.insertId);  
+						 const likeQueryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_like_id = ?"
+						 connection.query(likeQueryString, [results.insertId], (err, rows) => {
+							if (!err) {
+								
+								newLike = rows.map((row) => {
+									return {
+										postLikeID: row.post_like_id,
+										postID: row.post_id,
+										likedByUserName: row.liked_by_name,
+										likedByImage: row.image_name, 
+										likedByFirstName: row.first_name, 
+										likedByLastName:row.last_name,
+										timestamp: row.time_stamp
+									}
+								});
+								
+								res.json({success: 1, successMessage: "you liked", newLike: newLike, postID: postID, currentUser: currentUser})
+					
+					
+							} else {
+								console.log("Failed to Select the New Like" + err)
+								res.json({err:err})	
+			
+							}
+						})		
 					} else {    
 						console.log(err)
 						res.json({err:err})	
