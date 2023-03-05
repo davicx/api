@@ -82,7 +82,7 @@ async function userLogin(req, res) {
     console.log("STEP 4: Generated access and refresh tokens")
 
     //STEP 5: Add Refresh Token to Database
-    const clearQueryString = "DELETE FROM user_profile WHERE user_name= ?;"		
+    const clearQueryString = "DELETE FROM refresh_tokens WHERE user_name= ?;"		
     
     connection.query(clearQueryString, [userName], (err) => {
         if (!err) {
@@ -165,7 +165,7 @@ async function userLogout(req, res) {
 
 //Function A3: Register new User 
 async function userRegister(req, res) {
-  const userName = req.body.userName;
+  const userName = req.body.userName.toLowerCase();
   const fullName = req.body.fullName;
   const userEmail = req.body.email;
   const rawPassword = req.body.password

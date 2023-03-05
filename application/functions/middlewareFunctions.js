@@ -101,6 +101,8 @@ function verifyUser(req, res, next) {
           console.log("STEP 5: The token was a good one!")
           console.log("____________________________________________")
           req.authorizationData = authorizationData
+          console.log("authorizationData")
+          console.log(authorizationData)
           responseMessage.requestNewAccessToken = false;
           req.responseMessage = responseMessage;
           next();

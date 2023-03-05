@@ -14,6 +14,9 @@ FUNCTIONS A: User Functions
 FUNCTIONS B: Group Functions 
 	1) Function H1: Get All User Groups
 
+FUNCTIONS C: Comment Functions
+    1) Get Post Comments 
+
 FUNCTIONS D: Login Functions 
 	1) Function D1: Create Access Token  
 	2) Function D2: Verify a refresh token is in the database  
@@ -24,6 +27,7 @@ FUNCTIONS D: Login Functions
     1) Get all Posts
     2) Get all Post Comments
     3) Get all Post Likes 
+
 
 */
 
@@ -162,6 +166,101 @@ function checkRemainingTokenTime(token) {
     return tokenTimeRemaining;
 }
 
+//FUNCTIONS C: Comment Functions
+//Function C1: Get all Comments on a post (paginate by 5?)
+async function getPostComments(postID)  {
+    const connection = db.getConnection(); 
+
+    const queryString = "SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
+    var commentsOutcome = {
+        success: false,
+        comments: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+    
+                    commentsArray = rows.map((row) => {
+                        console.log(row)
+                        
+                        return {
+                            postID: row.post_id,
+                            commentCaption: row.comment,
+                            commentFrom: row.comment_from,
+                            commentType: row.comment_type,	
+                            userName: row.user_name,	
+                            imageName: row.image_name,	
+                            firstName: row.first_name,	
+                            lastName: row.last_name,	
+                            commentLikes: [],
+                            created: row.created
+                        }
+                    });
+                    
+                    commentsOutcome.success = true;
+                    commentsOutcome.comments = commentsArray;
+                    
+                    
+                    resolve(commentsOutcome);
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(commentsOutcome);
+                }
+            })
+            
+        } catch(err) { 
+            reject(commentsOutcome);
+        } 
+    })
+    /*
+    var commentOutcome = {
+        success: false,
+        comments: []
+    }
+
+    //COMMENT
+    const queryString =	"SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
+
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+                    const comments = rows.map((row) => {
+                        return {
+                            postID: row.post_id,
+                            commentCaption: row.comment,
+                            commentFrom: row.comment_from,
+                            commentType: row.comment_type,	
+                            userName: row.user_name,	
+                            imageName: row.image_name,	
+                            firstName: row.first_name,	
+                            lastName: row.last_name,	
+                            commentLikes: [],
+                            created: row.created
+                        }
+                    });
+                    commentOutcome.comments = comments;
+                    commentOutcome.success = true;
+
+                    resolve(commentOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(commentOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            reject(commentOutcome);
+        } 
+    })
+    */
+    
+}
 
 
 
@@ -614,7 +713,7 @@ async function getPostLikes(postID)  {
 
 
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getGroupPosts, getAllPosts }
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getGroupPosts, getAllPosts, getPostComments }
 
 
 

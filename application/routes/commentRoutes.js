@@ -16,6 +16,11 @@ commentRouter.get('/comments/:post_id', function(req, res) {
     commentFunctions.getComments(req, res);
 })
 
+//Route A2: Get all Comments 
+commentRouter.get('/comments', function(req, res) {
+    commentFunctions.getAllComments(req, res);
+})
+
 
 
 module.exports = commentRouter;

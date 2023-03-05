@@ -1,5 +1,18 @@
 #USE shareshare;
 
+#LOGIN
+#DELETE FROM user_login WHERE user_id > 10;
+
+#INSERT INTO `user_profile` (`user_profile_id`, `user_id`, `user_name`, `email`, `image_name`, `first_name`, `last_name`, `root_folder`, `biography`, `university`, `post_view`, `updated`, `created`) VALUES (185, 40, 'davey', 'davey@gmail.com', 'davey.png', 'davey', 'v', '', 'hiya!!', '', '', '2021-03-26 22:23:23', '2021-03-26 21:25:16');
+
+
+
+SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name 
+FROM comments 
+INNER JOIN user_profile ON comments.comment_from = user_profile.user_name 
+WHERE comments.post_id = 70
+
+
 #POSTS
 #UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
@@ -25,11 +38,7 @@
 #SELECT * FROM post_likes;
 
 
-#DELETE FROM user_profile WHERE user_id > 28;
 
-#INSERT INTO `user_profile` (`user_profile_id`, `user_id`, `user_name`, `email`, `image_name`, `first_name`, `last_name`, `root_folder`, `biography`, `university`, `post_view`, `updated`, `created`) VALUES (183, 30, 'davey', 'davey@gmail.com', 'davey.png', 'davey', 'v', '', 'hiya!!', '', '', '2021-03-26 22:23:23', '2021-03-26 21:25:16');
-
-SELECT * FROM user_profile
 
 
 #DELETE FROM refresh_tokens where token_id > 0;
