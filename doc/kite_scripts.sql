@@ -1,4 +1,4 @@
-#USE shareshare;
+USE shareshare;
 
 #LOGIN
 #DELETE FROM user_login WHERE user_id > 10;
@@ -6,11 +6,6 @@
 #INSERT INTO `user_profile` (`user_profile_id`, `user_id`, `user_name`, `email`, `image_name`, `first_name`, `last_name`, `root_folder`, `biography`, `university`, `post_view`, `updated`, `created`) VALUES (185, 40, 'davey', 'davey@gmail.com', 'davey.png', 'davey', 'v', '', 'hiya!!', '', '', '2021-03-26 22:23:23', '2021-03-26 21:25:16');
 
 
-
-SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name 
-FROM comments 
-INNER JOIN user_profile ON comments.comment_from = user_profile.user_name 
-WHERE comments.post_id = 70
 
 
 #POSTS
@@ -35,7 +30,7 @@ WHERE comments.post_id = 70
 
 #SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name,  user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = 72
     
-#SELECT * FROM post_likes;
+SELECT * FROM post_likes;
 
 
 

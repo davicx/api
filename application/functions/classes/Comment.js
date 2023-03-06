@@ -50,6 +50,18 @@ class Post {
             } 
         });
     }
+
+    //Method A2: Like a Comment
+    static async likeComment(postID, currentUser)  {
+        
+        
+    }
+
+    //Method A3: UnLike a Comment
+    static async unlikeComment(postID, currentUser)  {
+        
+    }
+
 }
 
 
