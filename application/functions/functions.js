@@ -168,7 +168,9 @@ function checkRemainingTokenTime(token) {
 
 //FUNCTIONS C: Comment Functions
 //Function C1: Get all Comments on a post (paginate by 5?)
-async function getPostComments(postID)  {
+
+
+async function getPostCommentsNOTNEEDED(postID)  {
     const connection = db.getConnection(); 
 
     const queryString = "SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
@@ -713,7 +715,7 @@ async function getPostLikes(postID)  {
 
 
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getGroupPosts, getAllPosts, getPostComments }
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getGroupPosts, getAllPosts }
 
 
 

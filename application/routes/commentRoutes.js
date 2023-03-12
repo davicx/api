@@ -26,7 +26,7 @@ commentRouter.post('/comment/unlike', function(req, res) {
     commentFunctions.unlikeComment(req, res);
 })
 
-//Route A6: Get all Comments 
+//Route A6: Get all Comments (with Pagination)
 commentRouter.get('/comments', function(req, res) {
     commentFunctions.getAllComments(req, res);
 })

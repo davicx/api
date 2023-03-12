@@ -1,4 +1,4 @@
-#USE shareshare;
+USE shareshare;
 
 #LOGIN
 #DELETE FROM user_login WHERE user_id > 10;
@@ -29,9 +29,18 @@
     
 #UPDATE comment_likes SET liked_by_name = 'davey';
     
-SELECT * FROM comment_likes;
-#DELETE FROM comment_likes;
+SELECT * FROM comments;
 
+
+#DELETE FROM comment_likes;
+SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_id = 2
+#SELECT * FROM comment_likes;
+
+#SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name 
+#FROM comment_likes 
+#INNER JOIN user_profile 
+#ON comment_likes.liked_by_name = user_profile.user_name 
+#WHERE comment_likes.comment_like_id = 27
 
 
 

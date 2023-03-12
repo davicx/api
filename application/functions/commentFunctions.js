@@ -1,7 +1,7 @@
-const db = require('./conn');
-const Comment = require('./classes/Comment');
-const Notification = require('./classes/Notification')
-const Functions = require('./functions');
+const db = require('../functions/conn');
+const Comment = require('../functions/classes/Comment');
+const Notification = require('../functions/classes/Notification')
+const Functions = require('../functions/functions');
 //const Post = require('./classes/Post');
 //const Group = require('./classes/Group');
 
@@ -32,7 +32,7 @@ async function postComment(req, res) {
 	//STEP 1: Create Comment
 	var commentOutcome = await Comment.newComment(req);
 
-	console.log(commentOutcome);
+	//console.log(commentOutcome);
 	//STEP 2: Create Notifications to Group 
 
 	
@@ -47,16 +47,53 @@ async function getComments(req, res) {
     const postID = req.params.post_id;
 
 	//STEP 1: Get all Comments 
-	var commentsOutcome = await Functions.getPostComments(postID)
+	var commentsOutcome = await Comment.getPostComments(postID)
 	
 	//STEP 2: Get all the likes for these comments
 	if(commentsOutcome.success == true) {
-		//var comments = commentsOutcome.comments;
-		console.log(commentsOutcome)
-		res.json(commentsOutcome)
+		var comments = commentsOutcome.comments;
+
+		for (let i = 0; i < comments.length; i++) {
+			let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
+			comments[i].commentLikes = currentCommentLikes.commentLikes;
+			comments[i].commentLikeCount = currentCommentLikes.commentLikes.length
+			console.log() 
+		}
+
+		
+		/*
+		getCommentLikes(commentID) 
+		var commentLikesOutcome = {
+            success: false,
+            commentLikes: []
+        }
+		*/
+		//console.log(commentsOutcome)
+		res.json(comments)
+
+		/*
+		var postsOutcome = await Functions.getGroupPosts(groupID)
+		var posts = postsOutcome.posts;
+
+		for (let i = 0; i < posts.length; i++) {
+			let simpleLikesArray = []
+			var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
+			posts[i].postLikesArray = currentPostLikes.postLikes;
+
+			//Create an Array of just post user names
+			posts[i].postLikesArray.map((postLike) => (
+				simpleLikesArray.push(postLike.likedByUserName)
+			))
+
+			posts[i].simpleLikesArray = simpleLikesArray;
+
+		}
+
+		res.json(posts)
+	*/
 
 	} else {
-		res.json(commentsOutcome)
+		res.json(comments)
 	}
 
 }
@@ -119,7 +156,7 @@ async function likeComment(req, res) {
 							if (!err) {
 								
 								newLike = rows.map((row) => {
-									console.log(row)
+									//console.log(row)
 									return {
 										commentLikeID: row.comment_like_id,
 										commentID: row.comment_id,
