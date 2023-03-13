@@ -9,6 +9,8 @@ USE shareshare;
 #UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
 
+SELECT * FROM posts WHERE group_id = 72 LIMIT 4 OFFSET 1 ORDER BY post_id DESC
+
 #DELETE FROM posts where post_id > 260;
 #SELECT * FROM posts WHERE group_id = 70;
 
@@ -29,11 +31,11 @@ USE shareshare;
     
 #UPDATE comment_likes SET liked_by_name = 'davey';
     
-SELECT * FROM comments;
+#SELECT * FROM comments;
 
 
 #DELETE FROM comment_likes;
-SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_id = 2
+#SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_id = 2
 #SELECT * FROM comment_likes;
 
 #SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name 

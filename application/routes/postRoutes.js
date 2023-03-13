@@ -53,6 +53,13 @@ postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
     postFunctions.getGroupPosts(req, res);
 })
 
+//Temp Pagination
+postRouter.get("/pagination/posts/group/:group_id/:page", (req, res) => {
+    postFunctions.getGroupPostsPagination(req, res);
+})
+
+
+
 //Route B2: Get all User Posts 
 //Route B3: Get Single Post by ID 
 postRouter.get("/posts/:post_id", (req, res) => {

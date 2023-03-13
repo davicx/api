@@ -72,6 +72,9 @@ async function postText(req, res) {
         fileName: req.body.fileName,
         fileNameServer: req.body.fileNameServer,
         fileUrl: req.body.fileUrl,
+        postLikesArray: [],
+        simpleLikesArray: [],
+        fileUrl: req.body.fileUrl,
         videoURL: req.body.videoURL,
         videoCode: req.body.videoCode,
         created: "2021-12-19T08:14:03.000Z"
@@ -169,6 +172,45 @@ async function getGroupPosts(req, res) {
 	res.json(posts)
 
 }
+
+//TEMP: Get all Group Posts (Pagination)
+//http://localhost:3003/pagination/posts/group/72/page/2/
+async function getGroupPostsPagination(req, res) {
+	const connection = db.getConnection(); 
+    const groupID = req.params.group_id;
+	const currentPage = req.params.page;
+	
+	//Get All Posts
+	var postsOutcome = await Functions.getGroupPostsPagination(groupID, currentPage)
+	var posts = postsOutcome.posts;
+
+	for (let i = 0; i < posts.length; i++) {
+		let simpleLikesArray = []
+		var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
+		posts[i].postLikesArray = currentPostLikes.postLikes;
+
+		//Create an Array of just post user names
+		posts[i].postLikesArray.map((postLike) => (
+			simpleLikesArray.push(postLike.likedByUserName)
+		))
+
+		posts[i].simpleLikesArray = simpleLikesArray;
+
+	}
+
+	res.json(posts)
+
+}
+
+
+
+
+
+
+
+
+
+
 
 //Function B2: Get all User Posts 
 
@@ -454,7 +496,7 @@ async function getPostLikes(req, res) {
 }
  
 
- module.exports = { postTemp, postText, postPhoto, postVideo, getGroupPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes };
+ module.exports = { getGroupPostsPagination, postTemp, postText, postPhoto, postVideo, getGroupPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes };
 
 
 
