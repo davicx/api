@@ -4,9 +4,6 @@ var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 
 
-
-//LOGIN FUNCTIONS
-
 /* FUNCTIONS 
 FUNCTIONS A: User Functions
 	1) Function A1: 
@@ -168,57 +165,6 @@ function checkRemainingTokenTime(token) {
 
 //FUNCTIONS C: Comment Functions
 //Function C1: Get all Comments on a post (paginate by 5?)
-
-
-async function getPostCommentsNOTNEEDED(postID)  {
-    const connection = db.getConnection(); 
-
-    const queryString = "SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
-    var commentsOutcome = {
-        success: false,
-        comments: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [postID], (err, rows) => {
-                if (!err) {
-    
-                    commentsArray = rows.map((row) => {
-                        console.log(row)
-                        
-                        return {
-                            postID: row.post_id,
-                            commentCaption: row.comment,
-                            commentFrom: row.comment_from,
-                            commentType: row.comment_type,	
-                            userName: row.user_name,	
-                            imageName: row.image_name,	
-                            firstName: row.first_name,	
-                            lastName: row.last_name,	
-                            commentLikes: [],
-                            created: row.created
-                        }
-                    });
-                    
-                    commentsOutcome.success = true;
-                    commentsOutcome.comments = commentsArray;
-                    
-                    
-                    resolve(commentsOutcome);
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(commentsOutcome);
-                }
-            })
-            
-        } catch(err) { 
-            reject(commentsOutcome);
-        } 
-    })
-   
-}
 
 
 
@@ -817,11 +763,6 @@ function getAllPostsPagination(req, res) {
 	}
  }
  
-/////
-
-
-
-
 
 //Function E3: Get all Post Likes 
 async function getPostLikes(postID)  {
@@ -867,8 +808,6 @@ async function getPostLikes(postID)  {
         } 
     })
 }
-
-
 
 
 
@@ -975,3 +914,56 @@ function generateAccessToken(user) {
     })
     */
     
+
+/*
+async function getPostCommentsNOTNEEDED(postID)  {
+    const connection = db.getConnection(); 
+
+    const queryString = "SELECT comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
+    var commentsOutcome = {
+        success: false,
+        comments: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+    
+                    commentsArray = rows.map((row) => {
+                        console.log(row)
+                        
+                        return {
+                            postID: row.post_id,
+                            commentCaption: row.comment,
+                            commentFrom: row.comment_from,
+                            commentType: row.comment_type,	
+                            userName: row.user_name,	
+                            imageName: row.image_name,	
+                            firstName: row.first_name,	
+                            lastName: row.last_name,	
+                            commentLikes: [],
+                            created: row.created
+                        }
+                    });
+                    
+                    commentsOutcome.success = true;
+                    commentsOutcome.comments = commentsArray;
+                    
+                    
+                    resolve(commentsOutcome);
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(commentsOutcome);
+                }
+            })
+            
+        } catch(err) { 
+            reject(commentsOutcome);
+        } 
+    })
+   
+}
+
+*/
