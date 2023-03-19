@@ -1,6 +1,7 @@
 const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../functions/postFunctions')
+const posts = require('../logic/posts')
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 //const db = require('../functions/conn');
@@ -29,46 +30,46 @@ FUNCTIONS C: All Functions Related to Post Actions
 */
 
 //FUNCTIONS A: All Functions Related to Posts
-postRouter.post('/post/temp', function(req, res) {
-	 postFunctions.postTemp(req, res);
-})
-
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
-    postFunctions.postText(req, res);
+    posts.postText(req, res);
 })
 
 //Route A2: Post Photo
 postRouter.post('/post/photo', function(req, res) {
-    postFunctions.postPhoto(req, res);
+    posts.postPhoto(req, res);
 })
 
 //Route A3: Post Video
+postRouter.post('/post/video', function(req, res) {
+    posts.postVideo(req, res);
+})
 
 //Route A4: Post Article
+postRouter.post('/post/article', function(req, res) {
+    posts.postArticle(req, res);
+})
 
 //FUNCTIONS B: All Functions Related to getting Posts
 //Route B1: Get all Group Posts
 postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
-    postFunctions.getGroupPosts(req, res);
+    posts.getAllGroupPosts(req, res);
 })
 
-//Temp Pagination
-postRouter.get("/pagination/posts/group/:group_id/:page", (req, res) => {
-    postFunctions.getGroupPostsPagination(req, res);
+//Route B2: Get Group Posts Pagination
+postRouter.get("/posts/group/:group_id/:page", (req, res) => {
+    posts.getGroupPosts(req, res);
 })
-
-
 
 //Route B2: Get all User Posts 
 //Route B3: Get Single Post by ID 
 postRouter.get("/posts/:post_id", (req, res) => {
-	postFunctions.getSinglePost(req, res);
+	posts.getSinglePost(req, res);
 })
 
 //Route B4: Get All Posts
 postRouter.get("/posts", (req, res) => {
-	postFunctions.getAllPosts(req, res);
+	posts.getAllPosts(req, res);
 })
 
 //FUNCTIONS C: All Functions Related to Post Actions

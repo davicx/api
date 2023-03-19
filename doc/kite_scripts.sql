@@ -1,5 +1,12 @@
 USE shareshare;
 
+#UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
+#SELECT * FROM shareshare.groups;
+#UPDATE group_users SET group_id = 77 WHERE group_id = 423;
+SELECT * FROM group_users;
+
+#SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
+
 #LOGIN
 #DELETE FROM user_login WHERE user_id > 10;
 
@@ -9,7 +16,7 @@ USE shareshare;
 #UPDATE posts SET post_to = 'davey', post_from = 'frodo', post_caption = 'Hi!! want to go on a hike!' WHERE post_id = 258;
 #UPDATE posts SET group_id = 72 WHERE post_id = 260;
 
-SELECT * FROM posts WHERE group_id = 72 LIMIT 4 OFFSET 1 ORDER BY post_id DESC
+#SELECT * FROM posts WHERE group_id = 72 LIMIT 4 OFFSET 1 ORDER BY post_id DESC
 
 #DELETE FROM posts where post_id > 260;
 #SELECT * FROM posts WHERE group_id = 70;

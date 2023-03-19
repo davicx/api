@@ -565,20 +565,17 @@ async function getGroupPosts(groupID)  {
 
 
 
-//TEMP: Get all Group Posts (Pagination)
 async function getGroupPostsPagination(groupID, currentPage)  {
     const connection = db.getConnection(); 
-    const limit = 4;
+    const limit = 2;
     const currentOffset = limit * (currentPage - 1);
 
-    ////
     var postsCountOutcome = await getGroupPostCount(groupID)
-    console.log(postsCountOutcome)
-    ////
 
     const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC LIMIT ? OFFSET ?";
     var postsOutcome = {
         success: false,
+        totalGroupPosts: postsCountOutcome.groupPostCount,
         posts: []
     }
 
@@ -811,7 +808,7 @@ async function getPostLikes(postID)  {
 
 
 
-module.exports = { getGroupPostsPagination, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getGroupPosts, getAllPosts }
+module.exports = { getGroupPosts, getGroupPostsPagination, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getAllPosts }
 
 
 
