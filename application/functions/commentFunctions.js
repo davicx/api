@@ -6,6 +6,7 @@ const Functions = require('../functions/functions');
 //const Group = require('./classes/Group');
 
 
+//REMOVE ALL to comments.js
 /*
 FUNCTIONS A: All Functions Related to Comments
 	1) Function A1: Post a new Comment

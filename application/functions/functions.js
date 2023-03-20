@@ -11,8 +11,6 @@ FUNCTIONS A: User Functions
 FUNCTIONS B: Group Functions 
 	1) Function H1: Get All User Groups
 
-FUNCTIONS C: Comment Functions
-    1) Get Post Comments 
 
 FUNCTIONS D: Login Functions 
 	1) Function D1: Create Access Token  
@@ -20,10 +18,6 @@ FUNCTIONS D: Login Functions
 	3) Function D3: Logout a user 
 	4) Function D4: Check Token Time
 
-//FUNCTIONS E: Post Functions 
-    1) Function E1: Get all Posts
-    2) Function E2: Get all Group Posts
-    3) Function E3: Get all Post Likes 
 
 
 */
@@ -463,198 +457,14 @@ function convertElementsLowercase(stringArray) {
 
 }
 
-//FUNCTIONS E: Post Functions 
-//Function E1: Get all Posts
-async function getAllPosts()  {
-    const connection = db.getConnection(); 
-    console.log("Yoo!! GET ALL POSTS")
-
-    const queryString = "SELECT * FROM posts ORDER BY post_id DESC";
-    var postsOutcome = {
-        success: false,
-        posts: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, (err, rows) => {
-                if (!err) {
-                    const posts = rows.map((row) => {
-                        return {
-                            postID: row.post_id,
-                            postType: row.post_type,
-                            groupID: row.group_id,
-                            listID: row.list_id,
-                            postFrom: row.post_from,
-                            postTo: row.post_to,
-                            postCaption: row.post_caption,
-                            fileName: row.file_name,
-                            fileNameServer: row.file_name_server,
-                            fileUrl: row.file_url,
-                            videoURL: row.video_url,
-                            videoCode: row.video_code,
-                            created: row.created
-                        }
-                    });
-                    postsOutcome.posts = posts;
-
-                    resolve(postsOutcome)
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postsOutcome);
-                }
-           })
-            
-        } catch(err) { 
-            reject(postsOutcome);
-        } 
-    })
-    
-}
 
 
-//Function E2: Get all Group Posts
-async function getGroupPosts(groupID)  {
-    const connection = db.getConnection(); 
-
-    //const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
-    const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
-    var postsOutcome = {
-        success: false,
-        posts: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [groupID], (err, rows) => {
-                if (!err) {
-                    const posts = rows.map((row) => {
-                        return {
-                            postID: row.post_id,
-                            postType: row.post_type,
-                            groupID: row.group_id,
-                            listID: row.list_id,
-                            postFrom: row.post_from,
-                            postTo: row.post_to,
-                            postCaption: row.post_caption,
-                            fileName: row.file_name,
-                            fileNameServer: row.file_name_server,
-                            fileUrl: row.file_url,
-                            videoURL: row.video_url,
-                            videoCode: row.video_code,
-                            created: row.created
-                        }
-                    });
-                    postsOutcome.posts = posts;
-
-                    resolve(postsOutcome)
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postsOutcome);
-                }
-           })
-            
-        } catch(err) { 
-            reject(postsOutcome);
-        } 
-    })
-    
-}
+module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
 
 
+//APPENDIX
 
-async function getGroupPostsPagination(groupID, currentPage)  {
-    const connection = db.getConnection(); 
-    const limit = 2;
-    const currentOffset = limit * (currentPage - 1);
-
-    var postsCountOutcome = await getGroupPostCount(groupID)
-
-    const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC LIMIT ? OFFSET ?";
-    var postsOutcome = {
-        success: false,
-        totalGroupPosts: postsCountOutcome.groupPostCount,
-        posts: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [groupID, limit, currentOffset], (err, rows) => {
-                if (!err) {
-                    const posts = rows.map((row) => {
-                        return {
-                            postID: row.post_id,
-                            postType: row.post_type,
-                            groupID: row.group_id,
-                            listID: row.list_id,
-                            postFrom: row.post_from,
-                            postTo: row.post_to,
-                            postCaption: row.post_caption,
-                            fileName: row.file_name,
-                            fileNameServer: row.file_name_server,
-                            fileUrl: row.file_url,
-                            videoURL: row.video_url,
-                            videoCode: row.video_code,
-                            created: row.created
-                        }
-                    });
-                    postsOutcome.posts = posts;
-
-                    resolve(postsOutcome)
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postsOutcome);
-                }
-           })
-            
-        } catch(err) { 
-            reject(postsOutcome);
-        } 
-    })
-    
-}
-
-
-async function getGroupPostCount(groupID)  {
-    const connection = db.getConnection(); 
- 
-    //const queryString = "SELECT * FROM posts WHERE group_id = ? ";
-    const queryString = "SELECT COUNT(post_id) AS post_count FROM posts WHERE group_id = ?";
-
-    var postsOutcome = {
-        success: false,
-        groupPostCount: 0
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [groupID], (err, rows) => {
-            //connection.query(queryString, (err, rows) => {
-                if (!err) {
-                    console.log(rows)
-                    
-                    postsOutcome.groupPostCount = rows[0].post_count;
-
-                    resolve(postsOutcome)
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postsOutcome);
-                }
-           })
-            
-        } catch(err) { 
-            reject(postsOutcome);
-        } 
-    })
-    
-}
-
-
-/////
+/*
 function getAllPostsPagination(req, res) {
 	const connection = db.getConnection(); 	
 
@@ -759,59 +569,7 @@ function getAllPostsPagination(req, res) {
 	res.paginatedResults = results
 	}
  }
- 
-
-//Function E3: Get all Post Likes 
-async function getPostLikes(postID)  {
-    const connection = db.getConnection(); 
-
-    const queryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = ?"
-
-    var postLikesOutcome = {
-        success: false,
-        postLikes: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [postID], (err, rows) => {
-                if (!err) {
-                    
-                    postLikes = rows.map((row) => {
-                        return {
-                            postLikeID: row.post_like_id,
-                            postID: row.post_id,
-                            likedByUserName: row.liked_by_name,
-                            likedByImage: row.image_name, 
-                            likedByFirstName: row.first_name, 
-                            likedByLastName:row.last_name,
-                            timestamp: row.time_stamp
-                        }
-                    });
-                    
-                    postLikesOutcome.success = true;
-                    postLikesOutcome.postLikes = postLikes;
-                    
-                    resolve(postLikesOutcome);
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postLikesOutcome);
-                }
-            })
-            
-        } catch(err) { 
-            reject(postLikesOutcome);
-        } 
-    })
-}
-
-
-
-module.exports = { getGroupPosts, getGroupPostsPagination, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, getPostLikes, getAllPosts }
-
-
-
+ */
 
 /*
 //Function A: Create a new Access Token from a Refresh Token 

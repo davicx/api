@@ -23,8 +23,8 @@ FUNCTIONS B: All Helper Functions Related to User Login
 	1) Function B1: Get New Access Token  
 */
 
-var tokenLength = '86000s'
-//var tokenLength = '3600s'
+//var tokenLength = '86000s'
+var tokenLength = '3600s'
 //var tokenLength = '12s'
 //var tokenLength = '8s'
 

@@ -26,6 +26,7 @@ FUNCTIONS C: All Functions Related to Post Actions
 	2) Function C2: Unlike a Post 
 	3) Function C3: Select all Likes
 	4) Function C4: Select all Likes for a Post
+	5) Function C5: Delete a Post
 
 */
 
@@ -62,6 +63,9 @@ postRouter.get("/posts/group/:group_id/:page", (req, res) => {
 })
 
 //Route B2: Get all User Posts 
+postRouter.get("/posts/user/:user_name/:page", middlewares.verifyUser, (req, res) => {
+    posts.getAllUserPosts(req, res);
+})
 //Route B3: Get Single Post by ID 
 postRouter.get("/posts/:post_id", (req, res) => {
 	posts.getSinglePost(req, res);
@@ -75,23 +79,29 @@ postRouter.get("/posts", (req, res) => {
 //FUNCTIONS C: All Functions Related to Post Actions
 //Function C1: Like a Post
 postRouter.post('/post/like', function(req, res) {
-    postFunctions.likePost(req, res);
+    posts.likePost(req, res);
 })
 
 //Function C2: Unlike a Post 
 postRouter.post('/post/unlike', function(req, res) {
-	postFunctions.unlikePost(req, res);
+	posts.unlikePost(req, res);
 })
 
 //Function C3: Select all Likes
 postRouter.get("/post/likes", (req, res) => {
-	postFunctions.getAllLikes(req, res);
+	posts.getAllLikes(req, res);
 })
 
 //Function C4: Select all Likes for a Post
 postRouter.get("/post/likes/:post_id", (req, res) => {
-	postFunctions.getPostLikes(req, res);
+	posts.getPostLikes(req, res);
 })
+
+//Function C5: Delete a Post
+postRouter.post("/post/delete/", (req, res) => {
+	posts.deletePost(req, res);
+})
+
 
 module.exports = postRouter;
 

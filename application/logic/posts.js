@@ -4,6 +4,7 @@ const Post = require('../functions/classes/Post');
 const Notification = require('../functions/classes/Notification')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
+const PostFunctions = require('../functions/postFunctions');
 
 /*
 FUNCTIONS A: All Functions Related to Posts
@@ -23,6 +24,7 @@ FUNCTIONS C: All Functions Related to Post Actions
 	2) Function C2: Unlike a Post 
 	3) Function C3: Select all Likes
 	4) Function C4: Select all Likes for a Post
+	5) Function C5: Delete a Post
 
 */
 
@@ -152,18 +154,17 @@ async function postArticle(req, res) {
 //FUNCTIONS B: All Functions Related to getting Posts
 //Function B1: Get all Group Posts
 //http://localhost:3003/posts/group/70
-
 async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
 
 	//Get All Posts
-	var postsOutcome = await Functions.getGroupPosts(groupID)
+	var postsOutcome = await PostFunctions.getGroupPostsAll(groupID)
 	var posts = postsOutcome.posts;
 
 	for (let i = 0; i < posts.length; i++) {
 		let simpleLikesArray = []
-		var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
+		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
 		posts[i].postLikesArray = currentPostLikes.postLikes;
 
 		//Create an Array of just post user names
@@ -177,7 +178,6 @@ async function getAllGroupPosts(req, res) {
 
 	res.json(posts)
 
-
 }
 
 //Route B2: Get Group Posts Pagination
@@ -188,12 +188,12 @@ async function getGroupPosts(req, res) {
 	const currentPage = req.params.page;
 	
 	//Get All Posts
-	var postsOutcome = await Functions.getGroupPostsPagination(groupID, currentPage)
+	var postsOutcome = await PostFunctions.getGroupPosts(groupID, currentPage)
 	var posts = postsOutcome.posts;
 
 	for (let i = 0; i < posts.length; i++) {
 		let simpleLikesArray = []
-		var currentPostLikes = await Functions.getPostLikes(posts[i].postID) 
+		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
 		posts[i].postLikesArray = currentPostLikes.postLikes;
 
 		//Create an Array of just post user names
@@ -211,6 +211,33 @@ async function getGroupPosts(req, res) {
 }
 
 //Function B2: Get all User Posts 
+async function getAllUserPosts(req, res) {
+    const userName = req.params.user_name;
+	const currentPage = req.params.page;
+
+	//Get All Posts
+	var postsOutcome = await PostFunctions.getUserPosts(userName, currentPage)
+	var posts = postsOutcome.posts;
+
+	for (let i = 0; i < posts.length; i++) {
+		let simpleLikesArray = []
+		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
+		posts[i].postLikesArray = currentPostLikes.postLikes;
+
+		//Create an Array of just post user names
+		posts[i].postLikesArray.map((postLike) => (
+			simpleLikesArray.push(postLike.likedByUserName)
+		))
+
+		posts[i].simpleLikesArray = simpleLikesArray;
+
+	}
+	console.log(postsOutcome);
+
+	res.json(posts)
+
+}
+
 //Function B3: Get Single Post by ID 
 function getSinglePost(req, res) {
 	const connection = db.getConnection(); 
@@ -255,7 +282,7 @@ async function getAllPosts(req, res) {
 	const connection = db.getConnection(); 
 
 	//Get All Posts
-	var postsOutcome = await Functions.getAllPosts()
+	var postsOutcome = await PostFunctions.getAllPosts()
 	var posts = postsOutcome.posts;
  
 	for (let i = 0; i < posts.length; i++) {
@@ -267,14 +294,187 @@ async function getAllPosts(req, res) {
 
 }
 
-
-
 //FUNCTIONS C: All Functions Related to Post Actions
 //Function C1: Like a Post
+async function likePost(req, res) {
+	const connection = db.getConnection(); 
+	var currentUser = req.body.currentUser
+	var postID = req.body.postID
+
+	var likePostOutcome = {
+		
+	}
+    
+	//STEP 1: Check if user has already liked 
+	const queryString = "SELECT COUNT(*) AS likeCount FROM post_likes WHERE post_id = ? AND liked_by_name = ?"	
+	
+	connection.query(queryString, [postID, currentUser], (err, rows) => {
+		if (!err) {
+	
+			//STEP 2: User has not liked so you can like the post 
+			likeCount = rows[0].likeCount;	
+
+			if(likeCount == 0) { 
+				const insertString = "INSERT INTO post_likes (post_id, liked_by, liked_by_name) VALUES (?, ?, ?)"
+				connection.query(insertString, [postID, 1, currentUser], (err, results) => {
+					if (!err) {
+
+						//STEP 3: Get the Users information 
+						console.log("You created a new like " + results.insertId);  
+						 const likeQueryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_like_id = ?"
+						 connection.query(likeQueryString, [results.insertId], (err, rows) => {
+							if (!err) {
+								
+								
+								newLike = rows.map((row) => {
+									console.log(row)
+									return {
+										postLikeID: row.post_like_id,
+										postID: row.post_id,
+										likedByUserName: row.liked_by_name,
+										likedByImage: row.image_name, 
+										likedByFirstName: row.first_name, 
+										likedByLastName:row.last_name,
+										timestamp: row.time_stamp
+									}
+								});
+								
+								res.json({success: 1, successMessage: "you liked", newLike: newLike, postID: postID, currentUser: currentUser})
+					
+					
+							} else {
+								console.log("Failed to Select the New Like" + err)
+								res.json({err:err})	
+			
+							}
+						})		
+					} else {    
+						console.log(err)
+						res.json({err:err})	
+					} 
+				}) 	
+
+			} else {
+				//res.json({totalLikes: "already liked"})	
+				res.json({success: 0, successMessage: "already liked", postLikeID: null, postID: postID, currentUser: currentUser})
+			
+			}
+				
+		} else {
+			console.log("Failed to Select Requests: " + err);
+			res.json({totalLikes: "error"})
+		}
+	})
+}
+
 //Function C2: Unlike a Post 
+async function unlikePost(req, res) {
+	const connection = db.getConnection();
+	var currentUser = req.body.currentUser
+	var postID = req.body.postID
+
+	var likeOutcome = {
+		success: false,
+		currentUser: currentUser,
+		postID: postID
+	}
+
+	const queryString = "DELETE FROM post_likes WHERE post_id = ? AND liked_by_name = ?;"	
+	
+	connection.query(queryString, [postID, currentUser], (err, rows) => {
+		if (!err) {
+			likeOutcome.success = true;
+			res.json(likeOutcome)
+	
+		} else {
+			console.log("Failed to Unlike Requests: " + err);
+			res.json(likeOutcome)
+		}
+	})
+}
+
 //Function C3: Select all Likes
+async function getAllLikes(req, res) {
+	const connection = db.getConnection(); 
+	const queryString = "SELECT * FROM post_likes ORDER BY post_id DESC LIMIT 20";
+ 
+	connection.query(queryString, (err, rows, fields) => {
+		 if (!err) {
+ 
+			 //Return Object 
+			 const likes = rows.map((row) => {
+				 return {
+					 postLikeID: row.post_like_id,
+					 postID: row.post_id,
+					 likedBy: row.liked_by,
+					 likedByName: row.liked_by_name,
+					 timestamp: row.timestamp
+				 }
+			 });
+			 
+			 res.json({likes:likes});
+ 
+		 } else {
+			 console.log("Failed to Select Posts" + err)
+			 res.sendStatus(500)
+			 return
+		 }
+	})
+}
+
 //Function C4: Select all Likes for a Post
+async function getPostLikes(req, res) {
+	const connection = db.getConnection(); 
+    const postID = req.params.post_id;
+    const queryString = "SELECT * FROM post_likes WHERE post_id = ?";
+
+    connection.query(queryString, [postID], (err, rows) => {
+        if (!err) {
+			const postLikes = rows.map((row) => {
+				return {
+					postLikeID: row.post_like_id,
+					postID: row.post_id,
+					likedBy: row.liked_by,
+					likedByName: row.liked_by_name,
+					timestamp: row.timestamp
+				}
+			});
+			res.json(postLikes);
+
+        } else {
+            console.log("Failed to Select Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+}
+
+//Function C5: Delete a Post
+async function deletePost(req, res) {
+	const connection = db.getConnection(); 
+	const postID = req.body.postID;
+	const currentUser = req.body.currentUser;
+
+    const queryString = "UPDATE posts SET post_status = 0 WHERE post_id = ?;";
+
+    connection.query(queryString, [postID], (err, rows) => {
+        if (!err) {
+			var response = {
+				postID: postID,
+				currentUser: currentUser,
+				status: "succesfully deleted post!"	
+			}
+			res.json(response);
+
+        } else {
+            console.log("Failed to Delete Posts" + err)
+            res.sendStatus(500)
+            return
+		}
+    })
+	
+}
 
 
 
-module.exports = { postText, postPhoto, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getSinglePost, getAllPosts };
+module.exports = { postText, postPhoto, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost  };
