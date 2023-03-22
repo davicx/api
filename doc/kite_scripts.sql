@@ -3,7 +3,13 @@ USE shareshare;
 #UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
 #SELECT * FROM shareshare.groups;
 #UPDATE group_users SET group_id = 77 WHERE group_id = 423;
-SELECT * FROM group_users;
+#UPDATE posts SET post_to = "davey" WHERE post_id = 371;
+
+#SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1;
+
+DELETE FROM posts WHERE post_id > 350;
+SELECT * FROM posts
+
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
 

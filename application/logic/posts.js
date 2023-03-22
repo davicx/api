@@ -455,6 +455,9 @@ async function deletePost(req, res) {
 	const postID = req.body.postID;
 	const currentUser = req.body.currentUser;
 
+	console.log("DELETE POST")
+	console.log(postID)
+
     const queryString = "UPDATE posts SET post_status = 0 WHERE post_id = ?;";
 
     connection.query(queryString, [postID], (err, rows) => {
