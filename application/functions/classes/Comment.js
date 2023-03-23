@@ -156,7 +156,66 @@ class Comment {
 
     //Method A4: Like a Comment
     static async likeComment(commentID, currentUser)  {
+        const connection = db.getConnection(); 
         console.log("You should like " + commentID)
+        var createdLike = {}
+        
+        var likeCommentOutcome = {
+            success: 0, 
+            successMessage: "", 
+            newLike: createdLike, 
+            commentID: commentID, 
+            currentUser: currentUser,
+            errors: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            const insertString = "INSERT INTO comment_likes (comment_id, liked_by, liked_by_name) VALUES (?, ?, ?)"
+            connection.query(insertString, [commentID, 1, currentUser], (err, results) => {
+                if (!err) {
+    
+                    //STEP 3: Get the Users information 
+                    console.log("You created a new like " + results.insertId);  
+                        const likeQueryString = "SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_like_id = ?"
+                        connection.query(likeQueryString, [results.insertId], (err, rows) => {
+                        if (!err) {
+                            
+                            createdLike = rows.map((row) => {
+                                return {
+                                    commentLikeID: row.comment_like_id,
+                                    commentID: row.comment_id,
+                                    likedByUserName: row.liked_by_name,
+                                    likedByImage: row.image_name, 
+                                    likedByFirstName: row.first_name, 
+                                    likedByLastName:row.last_name,
+                                    timestamp: row.updated
+                                }
+                            });
+                            
+         
+                            likeCommentOutcome.success = 1;
+                            likeCommentOutcome.successMessage = "you liked"
+                            likeCommentOutcome.newLike = createdLike;
+                            
+                            resolve(likeCommentOutcome);
+                
+                        } else {
+                            console.log("Failed to Select the New Like" + err)
+                            //res.json({err:err})
+                            likeCommentOutcome.errors.push(err)
+                            reject(likeCommentOutcome);	
+                        }
+                    })		
+    
+                } else {    
+                    console.log(err)
+                    //res.json({err:err})	
+                    likeCommentOutcome.errors.push(err)
+                    reject(likeCommentOutcome);
+                } 
+            }) 
+            
+        });
 
     }
 

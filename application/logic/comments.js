@@ -16,6 +16,15 @@ FUNCTIONS C: All Functions Related to Comment Actions
 	1) Function C1: Like a Comment
 	2) Function C2: Unlike a Comment 
 
+Data 
+- Current User
+- Post or Comment ID
+Message: ""
+Status code: 200
+Errors: [] 
+Outcome Success: true or false
+
+
 */
 
 //FUNCTIONS A: All Functions Related to Comments
@@ -103,11 +112,23 @@ async function likeComment(req, res) {
     const commentID = req.body.commentID;
     const postID = "Use this?"
 
-	var likeCommentOutcome = {
-		success: 0, 
-		successMessage: "", 
-		newLike: {},
-		commentID: commentID, 
+	/*
+	Data 
+		- Post or Comment ID
+	Message: ""
+	Current User: ""
+	Status code: 200
+	Errors: [] 
+	Outcome Success: true or false
+	*/
+	//The comment contains the comentID so maybe don't need it again 
+
+	var commentOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
 		currentUser: currentUser
 	}
 
@@ -115,53 +136,33 @@ async function likeComment(req, res) {
 	var commentLikeStatus = await CommentFunctions.checkCommentLike(commentID, currentUser) 
 
 	//STEP 2: Like Comment or say already liked
-	var commentOutcome = await Comment.likeComment(commentID, currentUser);
+	var commentLikeOutcome = await Comment.likeComment(commentID, currentUser);
+	console.log(commentLikeOutcome.newLike[0])
 
 	if(commentLikeStatus.alreadyLiked == false) { 
-		const insertString = "INSERT INTO comment_likes (comment_id, liked_by, liked_by_name) VALUES (?, ?, ?)"
-		connection.query(insertString, [commentID, 1, currentUser], (err, results) => {
-			if (!err) {
-
-				//STEP 3: Get the Users information 
-				console.log("You created a new like " + results.insertId);  
-					const likeQueryString = "SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_like_id = ?"
-					connection.query(likeQueryString, [results.insertId], (err, rows) => {
-					if (!err) {
-						
-						newLike = rows.map((row) => {
-							return {
-								commentLikeID: row.comment_like_id,
-								commentID: row.comment_id,
-								likedByUserName: row.liked_by_name,
-								likedByImage: row.image_name, 
-								likedByFirstName: row.first_name, 
-								likedByLastName:row.last_name,
-								timestamp: row.updated
-							}
-						});
-						
-						res.json({success: 1, successMessage: "you liked", newLike: newLike, commentID: commentID, currentUser: currentUser})
+		if(commentLikeOutcome.success == 1) {
+			commentOutcome.data.push(commentLikeOutcome.newLike[0])
+			commentOutcome.success = true
+			commentOutcome.message = "You liked " + commentID;
 			
-			
-					} else {
-						console.log("Failed to Select the New Like" + err)
-						res.json({err:err})	
-	
-					}
-				})		
+			//STEP 3: Add Notification
 
-			} else {    
-				console.log(err)
-				res.json({err:err})	
-			} 
-		}) 	
+		} else {
+			commentLikeOutcome.message = "There was an error trying to like " + commentLikeStatus.commentID;
+			commentLikeOutcome.errors = commentLikeStatus.errors
+		}
+
+		res.json(commentOutcome)
 
 	} else {
-		res.json({success: 0, successMessage: "already liked", postLikeID: null, commentID: commentID, currentUser: currentUser})
+		
+		commentOutcome.message = "already liked"
+
+		res.json(commentOutcome)
+		//res.json({success: 0, successMessage: "already liked", postLikeID: null, commentID: commentID, currentUser: currentUser})
 	}
-	
 			
-		//STEP 3: Add Notification
+		
 
 	
 }
