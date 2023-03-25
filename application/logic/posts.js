@@ -25,6 +25,7 @@ FUNCTIONS C: All Functions Related to Post Actions
 	3) Function C3: Select all Likes
 	4) Function C4: Select all Likes for a Post
 	5) Function C5: Delete a Post
+	6) Function C5: Edit a Post
 
 */
 
@@ -450,6 +451,24 @@ async function getPostLikes(req, res) {
 }
 
 //Function C5: Delete a Post
+/*
+Data 
+- Current User
+- Post or Comment ID
+Message: ""
+Status code: 200
+Errors: [] 
+Outcome Success: true or false
+
+	var commentOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+*/
 async function deletePost(req, res) {
 	const connection = db.getConnection(); 
 	const postID = req.body.postID;
@@ -458,6 +477,15 @@ async function deletePost(req, res) {
 	console.log("DELETE POST")
 	console.log(postID)
 
+	var deletePostOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
     const queryString = "UPDATE posts SET post_status = 0 WHERE post_id = ?;";
 
     connection.query(queryString, [postID], (err, rows) => {
@@ -465,19 +493,36 @@ async function deletePost(req, res) {
 			var response = {
 				postID: postID,
 				currentUser: currentUser,
-				status: "succesfully deleted post!"	
 			}
-			res.json(response);
+			deletePostOutcome.data.push(response)
+			deletePostOutcome.message = true;
+			deletePostOutcome.success = "Sucesfully deleted post " + postID;
+
+			res.json(deletePostOutcome);
 
         } else {
             console.log("Failed to Delete Posts" + err)
-            res.sendStatus(500)
+			deletePostOutcome.statusCode = 500
+			deletePostOutcome.message = "Could not delete post " + postID;
+			deletePostOutcome.errors.push(err);
+			
+			res.status(500).json(deletePostOutcome)
             return
 		}
     })
 	
 }
 
+//Function C6:  Edit a Post
+async function editPost(req, res) {
+	//const post = req.body
+	console.log(req.body)
+	//STEP 1: Check if Post Exists
+	//STEP 2: Update Image
+	res.json({editMe: "Yay!"})
+
+}
 
 
-module.exports = { postText, postPhoto, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost  };
+
+module.exports = { postText, postPhoto, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };

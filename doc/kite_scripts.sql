@@ -8,8 +8,11 @@ USE shareshare;
 #SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1;
 
 #DELETE FROM notifications WHERE notification_id > 0;
-SELECT * FROM notifications
+#DELETE FROM posts WHERE post_id > 350
 
+
+UPDATE posts SET post_caption = "update!" WHERE post_id = 450;
+#SELECT * FROM posts
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
 

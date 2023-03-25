@@ -27,6 +27,7 @@ FUNCTIONS C: All Functions Related to Post Actions
 	3) Function C3: Select all Likes
 	4) Function C4: Select all Likes for a Post
 	5) Function C5: Delete a Post
+	6) Function C6: Edit a Post 
 
 */
 
@@ -100,6 +101,11 @@ postRouter.get("/post/likes/:post_id", (req, res) => {
 //Function C5: Delete a Post
 postRouter.post("/post/delete/", (req, res) => {
 	posts.deletePost(req, res);
+})
+
+//Function C6: Edit a Text Post 
+postRouter.post("/post/text/edit/", (req, res) => {
+	posts.editPost(req, res);
 })
 
 

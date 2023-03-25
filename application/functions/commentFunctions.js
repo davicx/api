@@ -24,7 +24,6 @@ async function checkCommentLike(commentID, userName)  {
         alreadyLiked: true,
         error: false,
         errorMessages: []
-
     }
 
     return new Promise(async function(resolve, reject) {
