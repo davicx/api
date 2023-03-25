@@ -36,6 +36,15 @@ app.get("/", (req, res) => {
     res.end()
 })
 
+/*
+Data 
+  - Post or Comment ID
+Message: ""
+Current User: ""
+Status code: 200
+Errors: [] 
+Outcome Success: true or false
+*/
 
  
 //

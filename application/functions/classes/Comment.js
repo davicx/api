@@ -157,7 +157,6 @@ class Comment {
     //Method A4: Like a Comment
     static async likeComment(commentID, currentUser)  {
         const connection = db.getConnection(); 
-        console.log("You should like " + commentID)
         var createdLike = {}
         
         var likeCommentOutcome = {

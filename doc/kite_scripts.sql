@@ -7,8 +7,8 @@ USE shareshare;
 
 #SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1;
 
-DELETE FROM posts WHERE post_id > 350;
-SELECT * FROM posts
+#DELETE FROM notifications WHERE notification_id > 0;
+SELECT * FROM notifications
 
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
@@ -37,6 +37,8 @@ SELECT * FROM posts
 #INSERT INTO comments (post_id, comment, comment_from, comment_deleted) VALUES (5, "hiya!", "sam", 0); 
 
 #ALTER TABLE comments ADD comment_type varchar(256) NOT NULL DEFAULT "post" AFTER comment
+#ALTER TABLE notifications ADD comment_id int(11) NOT NULL DEFAULT 0 AFTER post_id
+
 
 #SELECT * FROM comments WHERE post_id = 70;
 
@@ -46,6 +48,7 @@ SELECT * FROM posts
     
 #SELECT * FROM comments;
 
+#SELECT comment_from FROM comments WHERE comment_id = 1 AND comment_deleted = 0;
 
 #DELETE FROM comment_likes;
 #SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_id = 2

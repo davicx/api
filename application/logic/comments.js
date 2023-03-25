@@ -105,24 +105,13 @@ async function getAllComments(req, res) {
 //FUNCTIONS C: All Functions Related to Comment Actions
 
 //Function C1: Like a Comment
-
 async function likeComment(req, res) {
 	const connection = db.getConnection(); 
     const currentUser = req.body.currentUser;
+	const groupID = req.body.groupID;
+	const postID = req.body.postID;
     const commentID = req.body.commentID;
-    const postID = "Use this?"
-
-	/*
-	Data 
-		- Post or Comment ID
-	Message: ""
-	Current User: ""
-	Status code: 200
-	Errors: [] 
-	Outcome Success: true or false
-	*/
-	//The comment contains the comentID so maybe don't need it again 
-
+    
 	var commentOutcome = {
 		data: [],
 		success: false,
@@ -137,33 +126,42 @@ async function likeComment(req, res) {
 
 	//STEP 2: Like Comment or say already liked
 	var commentLikeOutcome = await Comment.likeComment(commentID, currentUser);
-	console.log(commentLikeOutcome.newLike[0])
+	//console.log(commentLikeOutcome.newLike[0])
 
 	if(commentLikeStatus.alreadyLiked == false) { 
 		if(commentLikeOutcome.success == 1) {
 			commentOutcome.data.push(commentLikeOutcome.newLike[0])
 			commentOutcome.success = true
 			commentOutcome.message = "You liked " + commentID;
-			
+
+			var commentFrom = await CommentFunctions.checkCommentFrom(commentID);
+			//console.log(commentFrom) 
+
 			//STEP 3: Add Notification
+			var notification = {
+				masterSite: "kite",
+				notificationFrom: currentUser,
+				notificationMessage: currentUser + " liked your comment",
+				notificationTo: commentFrom.data,
+				notificationLink: "",
+				notificationType: "comment_like",
+				groupID: groupID,
+				postID: postID,
+				commentID: commentID 
+			}
+
+			Notification.createCommentNotification(notification);
 
 		} else {
 			commentLikeOutcome.message = "There was an error trying to like " + commentLikeStatus.commentID;
 			commentLikeOutcome.errors = commentLikeStatus.errors
 		}
 
-		res.json(commentOutcome)
-
-	} else {
-		
+	} else {	
 		commentOutcome.message = "already liked"
-
-		res.json(commentOutcome)
-		//res.json({success: 0, successMessage: "already liked", postLikeID: null, commentID: commentID, currentUser: currentUser})
 	}
-			
-		
 
+	res.json(commentOutcome)
 	
 }
 
@@ -248,37 +246,44 @@ async function unlikeComment(req, res) {
 	const connection = db.getConnection();
 	var currentUser = req.body.currentUser
 	var commentID = req.body.commentID
+	//var groupID = req.body.groupID
+
+	var commentOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
 
 	var commentLikeOutcome = await CommentFunctions.checkCommentLike(commentID, currentUser) 
 
 	console.log("unliking comment " + commentID + " for user " + currentUser )
-	var likeOutcome = {
-		commentDeleted: false,
-		commentDeletedMessage: "",
-		currentUser: currentUser,
-		commentID: commentID
-	}
-
 
 	//The comment is not liked
 	if(commentLikeOutcome.alreadyLiked == false ) {
-		likeOutcome.commentDeletedMessage = "This comment was not liked so there was nothing to remove"
-		res.json(likeOutcome)
+		commentOutcome.message = "This comment was not liked so there was nothing to remove"
+		commentOutcome.success = true;
+		res.json(commentOutcome)
 
 	} else {
 		const queryString = "DELETE FROM comment_likes WHERE comment_id = ? AND liked_by_name = ?;"	
 	
 		connection.query(queryString, [commentID, currentUser], (err, rows) => {
 			if (!err) {
-				//likeOutcome.commentDeletedMessage = "The like was removed";
-				likeOutcome.commentDeleted = true;
-				likeOutcome.commentDeletedMessage = "You sucesfully deleted the comment";
-				res.json(likeOutcome)
+				commentOutcome.message = "The like was removed";
+				commentOutcome.success = true;
+				
+				//TO DO: Remove Notification
+				var comment_type = "comment_like"
+				Notification.removeNotification(commentID, currentUser, comment_type);
+				res.json(commentOutcome)
 		
 			} else {
 				console.log("Failed to Unlike Requests: " + err);
 				//likeOutcome.commentDeletedMessage = "There was no like to remove";
-				res.json(likeOutcome)
+				res.json(commentOutcome)
 			}
 		})
 	}

@@ -9,6 +9,7 @@ const Functions = require('./functions');
  
 FUNCTIONS A: All Functions Related to Comments
 	1) Function A1: Check for Liked Comment
+	2) Function A2: Find who made Comment 
 */
 
 
@@ -30,7 +31,7 @@ async function checkCommentLike(commentID, userName)  {
         try {
             connection.query(queryString, [commentID, userName], (err, rows) => {
                 if (!err) {
-                    console.log(rows)
+                    //console.log(rows)
                     likeCount = rows[0].likeCount;	
 
                     if(likeCount < 1) {
@@ -56,4 +57,41 @@ async function checkCommentLike(commentID, userName)  {
 
 }
 
-module.exports = { checkCommentLike }
+//Function A2: Find who made Comment 
+async function checkCommentFrom(commentID)  {
+    const connection = db.getConnection(); 
+
+	const queryString = "SELECT comment_from FROM comments WHERE comment_id = ? AND comment_deleted = 0"	
+	
+    var commentFromOutcome = {
+        data: [],
+        success: false,
+        message: "", 
+        errors: [], 
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [commentID], (err, rows) => {
+                if (!err) {
+                    commentFromOutcome.data.push(rows[0].comment_from);	
+                    commentFromOutcome.success = true;
+                    commentFromOutcome.message = "The comment was from " + rows[0].comment_from;
+                    resolve(commentFromOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    commentFromOutcome.errors.push(err)
+                    reject(commentFromOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            commentFromOutcome.errors.push(err)
+            reject(commentFromOutcome);
+        } 
+    })
+
+}
+
+module.exports = { checkCommentLike,checkCommentFrom }
