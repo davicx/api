@@ -144,6 +144,46 @@ class Post {
         
     }
 
+    //METHODS B: UPDATE POST
+    static async updatePostCaption(postID, newPostCaption, currentUser)  {
+        const connection = db.getConnection(); 
+
+        var updatePostOutcome = {
+            postID: postID,
+            success: false,
+            message: "", 
+            errors: []
+        }
+
+        //UPDATE POST
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "UPDATE posts SET post_caption = ? WHERE post_id = ? AND post_from = ?"
+
+                connection.query(queryString, [newPostCaption, postID, currentUser], (err, rows) => {
+                    if (!err) {  
+                        console.log("ROWS " + rows.affectedRows)
+                        if(rows.affectedRows > 0) {
+                            updatePostOutcome.success = true     
+                            updatePostOutcome.message = "You updated the post!"   
+                        }
+                    } else {    
+                        updatePostOutcome.message = "no worky"
+                        updatePostOutcome.errors.push(err);
+                    } 
+                    resolve(updatePostOutcome);
+                }) 
+                
+            } catch(err) {
+                updatePostOutcome.message = "rejected";
+                updatePostOutcome.errors.push(err);
+                console.log("REJECTED " + err);
+                reject(updatePostOutcome);
+            } 
+        });
+    }
+  
+
 }
 
 

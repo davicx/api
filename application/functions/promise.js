@@ -7,14 +7,21 @@ Status code: 200
 Errors: [] 
 Outcome Success: true or false
 
-	var commentOutcome = {
-		data: [],
-		success: false,
-		message: "", 
-		statusCode: 200,
-		errors: [], 
-		currentUser: currentUser
-	}
+var commentOutcome = {
+    data: [],
+    success: false,
+    message: "", 
+    statusCode: 200,
+    errors: [], 
+    currentUser: currentUser
+}
+
+var functionOutcome = {
+    data: [],
+    success: false,
+    message: "", 
+    errors: [], 
+}    
 */
 
 async function examplePromise() {

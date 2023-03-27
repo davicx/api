@@ -17,6 +17,7 @@ FUNCTIONS A: All Functions Related to getting Posts
 FUNCTIONS B: All Post Helper Functions	
 	1) Function B1: Get count of posts in Group
 	2) Function B2: Get count of posts to a User
+    3) Function B3: Check if Post Exists 
 */
 
 //FUNCTIONS A: All Functions Related to getting Posts
@@ -343,7 +344,44 @@ async function getUserPostCount(userName)  {
             reject(postsOutcome);
         } 
     })
+}//
+
+//Function B3: Check if Post Exists 
+async function checkPostExists(postID)  {
+    const connection = db.getConnection(); 
+ 
+    //const queryString = "SELECT * FROM posts WHERE group_id = ? ";
+    const queryString = "SELECT COUNT(post_id) AS post_count FROM posts WHERE post_id = ? AND post_status = 1";
+
+    var postsOutcome = {
+        postCount: 0,
+        postExists: false,
+        success: false,
+        message: "",
+        errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+                    postsOutcome.success = true;                
+                    postsOutcome.postExists = true;
+                    postsOutcome.postCount = rows[0].post_count;
+
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            reject(postsOutcome);
+        } 
+    })
 }
 
 
-module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes }
+module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, checkPostExists }

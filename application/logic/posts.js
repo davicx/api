@@ -515,11 +515,34 @@ async function deletePost(req, res) {
 
 //Function C6:  Edit a Post
 async function editPost(req, res) {
-	//const post = req.body
+	const currentUser = req.body.currentUser;
+	const postID = req.body.postID;
+	const newPostCaption = req.body.newPostCaption;
+
 	console.log(req.body)
+
+	var editPostOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
 	//STEP 1: Check if Post Exists
-	//STEP 2: Update Image
-	res.json({editMe: "Yay!"})
+	const postExistsOutcome = await PostFunctions.checkPostExists(postID)
+
+	//STEP 2: Update Caption
+	if(postExistsOutcome.postExists == true) {
+		const updatePostOutcome = await Post.updatePostCaption(postID, newPostCaption, currentUser);
+		editPostOutcome.data.push({postID: postID, newPostCaption: newPostCaption})
+		editPostOutcome.success = true;
+	} else {
+		console.log("else")
+	}
+
+	res.json(editPostOutcome)
 
 }
 

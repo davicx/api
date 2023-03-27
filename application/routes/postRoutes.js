@@ -104,7 +104,7 @@ postRouter.post("/post/delete/", (req, res) => {
 })
 
 //Function C6: Edit a Text Post 
-postRouter.post("/post/text/edit/", (req, res) => {
+postRouter.post("/post/caption/edit/", (req, res) => {
 	posts.editPost(req, res);
 })
 
