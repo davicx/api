@@ -11,8 +11,9 @@ USE shareshare;
 #DELETE FROM posts WHERE post_id > 350
 
 
-UPDATE posts SET post_caption = "update!" WHERE post_id = 450;
-#SELECT * FROM posts
+#UPDATE posts SET post_caption = "update!" WHERE post_id = 450; 350 70
+#UPDATE posts SET post_status = 0 WHERE post_id = 70;
+SELECT * FROM posts
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
 

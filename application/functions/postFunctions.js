@@ -79,7 +79,6 @@ async function getGroupPosts(groupID, currentPage)  {
 async function getGroupPostsAll(groupID)  {
     const connection = db.getConnection(); 
 
-    //const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC";
     const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC";
     var postsOutcome = {
         success: false,

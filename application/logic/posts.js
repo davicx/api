@@ -2,6 +2,7 @@ const db = require('../functions/conn');
 const Group = require('../functions/classes/Group');
 const Post = require('../functions/classes/Post');
 const Notification = require('../functions/classes/Notification')
+const Comment = require('../functions/classes/Comment')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const PostFunctions = require('../functions/postFunctions');
@@ -158,11 +159,35 @@ async function postArticle(req, res) {
 async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
+	const currentUser = "Get from middles"
 
-	//Get All Posts
+	//STEP 1: Get All Posts
 	var postsOutcome = await PostFunctions.getGroupPostsAll(groupID)
 	var posts = postsOutcome.posts;
 
+	//STEP 2: Get All Comments for these Posts 
+	//Step 2A: Get All Comments for these Posts 
+	for (let i = 0; i < posts.length; i++) {
+		let postID = posts[i].postID	
+		console.log("Get Comments for " + postID)
+
+		var commentsOutcome = await Comment.getPostComments(postID)
+
+		//Step 2B: Get all the likes for these comments
+		if(commentsOutcome.success == true) {
+			var comments = commentsOutcome.comments;
+
+			for (let i = 0; i < comments.length; i++) {
+				let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
+				comments[i].commentLikes = currentCommentLikes.commentLikes;
+				comments[i].commentLikeCount = currentCommentLikes.commentLikes.length
+			}
+		} 
+
+		posts[i].commentsArray = comments;
+	}
+
+	//STEP 3: Get all Likes for these Posts 
 	for (let i = 0; i < posts.length; i++) {
 		let simpleLikesArray = []
 		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
@@ -177,7 +202,17 @@ async function getAllGroupPosts(req, res) {
 
 	}
 
-	res.json(posts)
+	var postsResponse = {
+		postCount: "get me 10",
+		posts: posts,
+		success: true,
+		message: "Need to add error and stuff in this always works!", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	res.json(postsResponse)
 
 }
 

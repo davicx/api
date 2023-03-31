@@ -3,6 +3,7 @@ const groupRouter = express.Router();
 const middlewares = require('../functions/middlewareFunctions')
 const postFunctions = require('../functions/postFunctions')
 const groupFunctions = require('../functions/groupFunctions')
+
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 const db = require('../functions/conn');
@@ -41,8 +42,9 @@ groupRouter.get("/groups/user/:user_name", middlewares.verifyUser, (req, res) =>
     groupFunctions.getUserGroups(req, res, currentUser);
 })
 
+//http://localhost:3003/group/users/72
 //Route A5: Get Group Users 
-groupRouter.get("/group/users/:groupID", (req, res) => {
+groupRouter.get("/group/users/:groupID", middlewares.verifyUser, (req, res) => {
     groupFunctions.getGroupUsers(req, res);
 })
 

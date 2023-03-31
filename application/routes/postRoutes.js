@@ -59,7 +59,7 @@ postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
 })
 
 //Route B2: Get Group Posts Pagination
-postRouter.get("/posts/group/:group_id/:page", (req, res) => {
+postRouter.get("/posts/group/:group_id/:page", middlewares.verifyUser, (req, res) => {
     posts.getGroupPosts(req, res);
 })
 

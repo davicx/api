@@ -108,7 +108,7 @@ class Comment {
     static async getCommentLikes(commentID)  {
         const connection = db.getConnection(); 
     
-        console.log("CLASS getCommentLikes(commentID) " + commentID)
+        //console.log("CLASS getCommentLikes(commentID) " + commentID)
         //const queryString = "SELECT post_likes.post_like_id, post_likes.post_id, post_likes.liked_by, post_likes.liked_by_name, post_likes.time_stamp, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM post_likes INNER JOIN user_profile ON post_likes.liked_by_name = user_profile.user_name WHERE post_likes.post_id = ?"
         const queryString = "SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comment_likes INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name WHERE comment_likes.comment_id = ?"
         var commentLikesArray = []
@@ -124,7 +124,7 @@ class Comment {
                     if (!err) {
                         
                         commentLikesArray = rows.map((row) => {
-                            console.log(row)
+                            //console.log(row)
                             return {
                                 commentLikeID: row.comment_like_id,
                                 commentID: row.comment_id,

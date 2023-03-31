@@ -25,6 +25,7 @@ Errors: []
 Outcome Success: true or false
 
 
+
 */
 
 //FUNCTIONS A: All Functions Related to Comments
@@ -51,9 +52,12 @@ async function postComment(req, res) {
 async function getComments(req, res) {
 	const connection = db.getConnection(); 
     const postID = req.params.post_id;
+	console.log("Trying to get all the comments! for post " + postID)
+
 
 	//STEP 1: Get all Comments 
 	var commentsOutcome = await Comment.getPostComments(postID)
+
 	
 	//STEP 2: Get all the likes for these comments
 	if(commentsOutcome.success == true) {
@@ -63,7 +67,7 @@ async function getComments(req, res) {
 			let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
 			comments[i].commentLikes = currentCommentLikes.commentLikes;
 			comments[i].commentLikeCount = currentCommentLikes.commentLikes.length
-			console.log() 
+			
 		}
 
 		res.json(comments)

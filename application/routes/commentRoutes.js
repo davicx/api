@@ -1,8 +1,10 @@
 const express = require('express')
 const commentRouter = express.Router(); 
 const comments = require('../logic/comments')
-const cors = require('cors');
-commentRouter.use(cors())
+const middlewares = require('../functions/middlewareFunctions')
+
+//const cors = require('cors');
+//commentRouter.use(cors())
 
 /*
 FUNCTIONS A: All Functions Related to Comments
@@ -25,7 +27,8 @@ commentRouter.post('/comment', function(req, res) {
 })
 
 //Route A2: Get all Comments to a Post
-commentRouter.get('/comments/:post_id', function(req, res) {
+commentRouter.get('/comments/:post_id', middlewares.verifyUser, (req, res) => {
+//commentRouter.get('/comments/:post_id', (req, res) => {
     comments.getComments(req, res);
 })
 

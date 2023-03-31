@@ -8,12 +8,14 @@ const Functions = require('./functions');
 /*
  
 FUNCTIONS A: All Functions Related to Comments
-	1) Function A1: Check for Liked Comment
-	2) Function A2: Find who made Comment 
+	1) Function A2: Check for Liked Comment
+	2) Function A3: Find who made Comment 
 */
 
 
 //Function A1: Check for Liked Comment
+
+//Function A2: Check for Liked Comment
 async function checkCommentLike(commentID, userName)  {
     const connection = db.getConnection(); 
 
@@ -56,7 +58,7 @@ async function checkCommentLike(commentID, userName)  {
 
 }
 
-//Function A2: Find who made Comment 
+//Function A3: Find who made Comment 
 async function checkCommentFrom(commentID)  {
     const connection = db.getConnection(); 
 
