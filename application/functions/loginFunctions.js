@@ -82,6 +82,7 @@ async function userLogin(req, res) {
     console.log("STEP 4: Generated access and refresh tokens")
 
     //STEP 5: Add Refresh Token to Database
+    //Await function new to database
     const clearQueryString = "DELETE FROM refresh_tokens WHERE user_name= ?;"		
     
     connection.query(clearQueryString, [userName], (err) => {
@@ -124,16 +125,26 @@ async function userLogin(req, res) {
   }
 
   //STEP 7: Send login information 
-  const loginOutcome = {
+  const loginObject = {
     loginSuccess: loginSuccess,
-    userName: userName,
     validUser: validUser,
     passwordCorrect: passwordCorrect,
     accessToken: accessToken,
     refreshToken, refreshToken
   }
+
+  var loginOutcome = {
+		data: loginObject,
+		success: true,
+		message: userName + "was succesfully logged in!", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: userName
+	}
+
   console.log("STEP 7: Login information for user")
-  console.log(loginOutcome);
+  console.log(loginObject);
+  console.log("STEP 8: The User was succesfully logged in!")
 
   res.json(loginOutcome)
 }
