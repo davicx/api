@@ -21,32 +21,34 @@ FUNCTIONS C: All Functions Related to Comment Actions
 */
 
 //COMMENT ROUTES
+//FUNCTIONS A: All Functions Related to Comments
 //Route A1: Make a New Comment 
 commentRouter.post('/comment', function(req, res) {
     comments.postComment(req, res);
 })
 
-//Route A2: Get all Comments to a Post
+
+//FUNCTIONS B: All Functions Related to getting Comments
+//Function B1: Get all Comments to a Post
 commentRouter.get('/comments/:post_id', middlewares.verifyUser, (req, res) => {
 //commentRouter.get('/comments/:post_id', (req, res) => {
     comments.getComments(req, res);
 })
-
-//Route A3: Like a Comment
+    
+//Function B2: Get all Comments
 commentRouter.post('/comment/like', function(req, res) {
     comments.likeComment(req, res);
 })
 
-//Route A4: UnLike a Comment 
+//FUNCTIONS C: All Functions Related to Comment Actions
+//Route C1: UnLike a Comment 
 commentRouter.post('/comment/unlike', function(req, res) {
     comments.unlikeComment(req, res);
 })
 
-//Route A6: Get all Comments (with Pagination)
+//Route C2: Get all Comments (with Pagination)
 commentRouter.get('/comments', function(req, res) {
     comments.getAllComments(req, res);
 })
-
-
 
 module.exports = commentRouter;

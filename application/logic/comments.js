@@ -24,8 +24,6 @@ Status code: 200
 Errors: [] 
 Outcome Success: true or false
 
-
-
 */
 
 //FUNCTIONS A: All Functions Related to Comments
@@ -169,8 +167,62 @@ async function likeComment(req, res) {
 	
 }
 
+//Function C2: Unlike a Comment 
+async function unlikeComment(req, res) {
+	const connection = db.getConnection();
+	var currentUser = req.body.currentUser
+	var commentID = req.body.commentID
+	//var groupID = req.body.groupID
+
+	var commentOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	var commentLikeOutcome = await CommentFunctions.checkCommentLike(commentID, currentUser) 
+
+	console.log("unliking comment " + commentID + " for user " + currentUser )
+
+	//The comment is not liked
+	if(commentLikeOutcome.alreadyLiked == false ) {
+		commentOutcome.message = "This comment was not liked so there was nothing to remove"
+		commentOutcome.success = true;
+		res.json(commentOutcome)
+
+	} else {
+		const queryString = "DELETE FROM comment_likes WHERE comment_id = ? AND liked_by_name = ?;"	
+	
+		connection.query(queryString, [commentID, currentUser], (err, rows) => {
+			if (!err) {
+				commentOutcome.message = "The like was removed";
+				commentOutcome.success = true;
+				
+				//TO DO: Remove Notification
+				var comment_type = "comment_like"
+				Notification.removeNotification(commentID, currentUser, comment_type);
+				res.json(commentOutcome)
+		
+			} else {
+				console.log("Failed to Unlike Requests: " + err);
+				//likeOutcome.commentDeletedMessage = "There was no like to remove";
+				res.json(commentOutcome)
+			}
+		})
+	}
 
 
+
+}
+
+
+module.exports = { postComment, getComments, getAllComments, likeComment, unlikeComment };
+
+
+/*
 async function likeCommentWORKS(req, res) {
 	const connection = db.getConnection(); 
     const currentUser = req.body.currentUser;
@@ -244,57 +296,5 @@ async function likeCommentWORKS(req, res) {
 		//STEP 2: Add Notification
 
 }
-
-//Function C2: Unlike a Comment 
-async function unlikeComment(req, res) {
-	const connection = db.getConnection();
-	var currentUser = req.body.currentUser
-	var commentID = req.body.commentID
-	//var groupID = req.body.groupID
-
-	var commentOutcome = {
-		data: [],
-		success: false,
-		message: "", 
-		statusCode: 200,
-		errors: [], 
-		currentUser: currentUser
-	}
-
-	var commentLikeOutcome = await CommentFunctions.checkCommentLike(commentID, currentUser) 
-
-	console.log("unliking comment " + commentID + " for user " + currentUser )
-
-	//The comment is not liked
-	if(commentLikeOutcome.alreadyLiked == false ) {
-		commentOutcome.message = "This comment was not liked so there was nothing to remove"
-		commentOutcome.success = true;
-		res.json(commentOutcome)
-
-	} else {
-		const queryString = "DELETE FROM comment_likes WHERE comment_id = ? AND liked_by_name = ?;"	
-	
-		connection.query(queryString, [commentID, currentUser], (err, rows) => {
-			if (!err) {
-				commentOutcome.message = "The like was removed";
-				commentOutcome.success = true;
-				
-				//TO DO: Remove Notification
-				var comment_type = "comment_like"
-				Notification.removeNotification(commentID, currentUser, comment_type);
-				res.json(commentOutcome)
-		
-			} else {
-				console.log("Failed to Unlike Requests: " + err);
-				//likeOutcome.commentDeletedMessage = "There was no like to remove";
-				res.json(commentOutcome)
-			}
-		})
-	}
-
-
-
 }
-
-
-module.exports = { postComment, getComments, getAllComments, likeComment, unlikeComment };
+*/

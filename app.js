@@ -19,11 +19,13 @@ const login = require('./application/routes/loginRoutes.js');
 const group = require('./application/routes/groupRoute.js'); 
 const posts = require('./application/routes/postRoutes.js'); 
 const comments = require('./application/routes/commentRoutes.js');
+const notifications = require('./application/routes/notificationRoutes.js');
 
 app.use(login);
 app.use(group);
 app.use(posts);
 app.use(comments);
+app.use(notifications);
 
 //Server Login 
 app.listen(3003, () => {

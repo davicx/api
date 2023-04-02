@@ -9,11 +9,9 @@ class Notification {
     Comment
      
     table
-    
     group_id, post_id, comment_id
 
     */
-
 
     constructor(notificationID) {
         this.notificationID = notificationID;
@@ -108,8 +106,6 @@ class Notification {
     	}
         
 	}
-
-
 
     static async removeNotification(commentID, currentUser, comment_type) {
 
