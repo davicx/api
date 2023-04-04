@@ -41,6 +41,42 @@ loginRouter.post('/refresh/tokens', function(req, res) {
     loginFunctions.getRefreshToken(req, res);
 })
 
+//TEMP
+loginRouter.get("/cookie/get", (req, res) => {
+    let loggedInUser = "empty";
+    let accessToken = "empty";
+    let refreshToken = "empty";
+    /*
+        res.cookie('accessToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    //res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    res.cookie('refreshToken', "notLoggedIn", {maxAge: 60 * 1000 * 525600  , path: '/refresh', httpOnly: true})
+    res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    */
+    console.log("Trying to get the cookies! ")
+    if(req.cookies.accessToken) {
+        accessToken = req.cookies.accessToken;
+    }    
+    if(req.cookies.loggedInUser) {
+        loggedInUser = req.cookies.loggedInUser;
+    }
+    if(req.cookies.refreshToken) {
+        userName = req.cookies.refreshToken;
+    }
+
+    var response = {
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        userName: loggedInUser
+    }
+    console.log(response);
+
+    res.json(response)
+
+})
+
+//TEMP
+
+
 module.exports = loginRouter;
 
 

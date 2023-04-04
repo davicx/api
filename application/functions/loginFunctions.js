@@ -133,6 +133,9 @@ async function userLogin(req, res) {
     refreshToken, refreshToken
   }
 
+
+  //USE Temp change for swift below
+  /*
   var loginOutcome = {
 		data: loginObject,
 		success: true,
@@ -141,9 +144,16 @@ async function userLogin(req, res) {
 		errors: [], 
 		currentUser: userName
 	}
+  */
+  var loginOutcome = {
+		success: true,
+		message: userName + "was succesfully logged in!", 
+		errors: [], 
+	}
+
 
   console.log("STEP 7: Login information for user")
-  console.log(loginObject);
+  console.log(loginOutcome);
   console.log("STEP 8: The User was succesfully logged in!")
 
   res.json(loginOutcome)
