@@ -167,6 +167,7 @@ async function getAllGroupPosts(req, res) {
 
 	//STEP 2: Get All Comments for these Posts 
 	//Step 2A: Get All Comments for these Posts 
+	
 	for (let i = 0; i < posts.length; i++) {
 		let postID = posts[i].postID	
 		console.log("Get Comments for " + postID)
@@ -186,6 +187,7 @@ async function getAllGroupPosts(req, res) {
 
 		posts[i].commentsArray = comments;
 	}
+	
 
 	//STEP 3: Get all Likes for these Posts 
 	for (let i = 0; i < posts.length; i++) {
@@ -203,8 +205,8 @@ async function getAllGroupPosts(req, res) {
 	}
 
 	var postsResponse = {
-		postCount: "get me 10",
 		posts: posts,
+		postCount: "get me 10",
 		success: true,
 		message: "Need to add error and stuff in this always works!", 
 		statusCode: 200,

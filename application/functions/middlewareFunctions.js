@@ -67,7 +67,8 @@ function verifyUser(req, res, next) {
       return
 
   } else {
-      var tokenSmall = token.substring(0,5);
+      //var tokenSmall = token.substring(0,5);
+      var tokenSmall = token.substring(0,8);
       console.log("STEP 2: The token " + tokenSmall)
   }
 

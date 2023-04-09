@@ -1,7 +1,7 @@
 const express = require('express')
 const loginRouter = express.Router(); 
 const loginFunctions = require('../functions/loginFunctions')
-
+const login = require('../logic/login')
 
 //LOGIN ROUTES
 //Route A1: User Login 
@@ -34,47 +34,17 @@ loginRouter.get('/token/time', function(req, res) {
     loginFunctions.checkTokenTime(req, res);
 })
 
-//TOKEN ROUTES
+//TOKEN AND COOKIE ROUTES
 //Route A7: Use Refresh Token to get New Access Token
 loginRouter.post('/refresh/tokens', function(req, res) {
     console.log("ROUTE /refresh/tokens: Requesting a new token by sending a refresh token")
     loginFunctions.getRefreshToken(req, res);
 })
 
-//TEMP
+//Route A8 Get current Cookies
 loginRouter.get("/cookie/get", (req, res) => {
-    let loggedInUser = "empty";
-    let accessToken = "empty";
-    let refreshToken = "empty";
-    /*
-        res.cookie('accessToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-    //res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-    res.cookie('refreshToken', "notLoggedIn", {maxAge: 60 * 1000 * 525600  , path: '/refresh', httpOnly: true})
-    res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
-    */
-    console.log("Trying to get the cookies! ")
-    if(req.cookies.accessToken) {
-        accessToken = req.cookies.accessToken;
-    }    
-    if(req.cookies.loggedInUser) {
-        loggedInUser = req.cookies.loggedInUser;
-    }
-    if(req.cookies.refreshToken) {
-        userName = req.cookies.refreshToken;
-    }
-
-    var response = {
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        userName: loggedInUser
-    }
-    console.log(response);
-
-    res.json(response)
-
+    login.getUserCookies(req, res);
 })
-
-//TEMP
 
 
 module.exports = loginRouter;

@@ -135,7 +135,6 @@ async function userLogin(req, res) {
 
 
   //USE Temp change for swift below
-  /*
   var loginOutcome = {
 		data: loginObject,
 		success: true,
@@ -144,12 +143,14 @@ async function userLogin(req, res) {
 		errors: [], 
 		currentUser: userName
 	}
-  */
+  
+  /*
   var loginOutcome = {
 		success: true,
 		message: userName + "was succesfully logged in!", 
 		errors: [], 
 	}
+  */
 
 
   console.log("STEP 7: Login information for user")
