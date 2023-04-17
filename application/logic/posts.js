@@ -488,24 +488,6 @@ async function getPostLikes(req, res) {
 }
 
 //Function C5: Delete a Post
-/*
-Data 
-- Current User
-- Post or Comment ID
-Message: ""
-Status code: 200
-Errors: [] 
-Outcome Success: true or false
-
-	var commentOutcome = {
-		data: [],
-		success: false,
-		message: "", 
-		statusCode: 200,
-		errors: [], 
-		currentUser: currentUser
-	}
-*/
 async function deletePost(req, res) {
 	const connection = db.getConnection(); 
 	const postID = req.body.postID;

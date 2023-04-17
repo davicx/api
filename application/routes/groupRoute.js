@@ -1,8 +1,8 @@
 const express = require('express')
 const groupRouter = express.Router();
 const middlewares = require('../functions/middlewareFunctions')
-const postFunctions = require('../functions/postFunctions')
-const groupFunctions = require('../functions/groupFunctions')
+//const postFunctions = require('../functions/postFunctions')
+const groupFunctions = require('../logic/groups')
 
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');

@@ -5,6 +5,20 @@ USE shareshare;
 #UPDATE group_users SET group_id = 77 WHERE group_id = 423;
 #UPDATE posts SET post_to = "davey" WHERE post_id = 371;
 
+#DELETE FROM notifications WHERE notification_id > 0;
+#DELETE FROM pending_requests WHERE request_id > 0;
+
+#DELETE FROM shareshare.groups WHERE group_id > 100;
+#SELECT * FROM shareshare.groups
+#SELECT * FROM notifications 
+#SELECT * FROM pending_requests 
+SELECT * FROM group_users 
+#SELECT * FROM notifications WHERE notification_to = "davey" AND notification_deleted = 0
+
+
+
+
+
 #SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1;
 
 #DELETE FROM notifications WHERE notification_id > 0;
@@ -13,7 +27,6 @@ USE shareshare;
 
 #UPDATE posts SET post_caption = "update!" WHERE post_id = 450; 350 70
 #UPDATE posts SET post_status = 0 WHERE post_id = 70;
-SELECT * FROM posts
 
 #SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
 

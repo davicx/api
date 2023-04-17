@@ -24,6 +24,15 @@ Status code: 200
 Errors: [] 
 Outcome Success: true or false
 
+		posts: posts,
+		postCount: "get me 10",
+		success: true,
+		message: "Need to add error and stuff in this always works!", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+	
 */
 
 //FUNCTIONS A: All Functions Related to Comments
