@@ -1,5 +1,6 @@
 const db = require('./../conn');
 const functions = require('./../functions');
+const groupFunctions = require('./../groupFunctions');
 
 /*
 METHODS A: Group RELATED
@@ -17,14 +18,10 @@ class Group {
     }
 
     //Method A1: Create a Group
-    static async createGroup(req)  {
+    static async createGroup(currentUser, groupName, groupType, groupPrivate)  {
         const connection = db.getConnection(); 
         var groupID = 0;
-        const currentUser = req.body.currentUser; 
-        const groupName = req.body.groupName; 
-        const groupType = req.body.groupType; 
         const groupImage = "the_shire.jpg"; 
-        const groupPrivate = req.body.groupPrivate; 
 
         var groupOutcome = {
             outcome: 0,
@@ -92,9 +89,10 @@ class Group {
         var groupUsersOutcome = {
             outcome: 1,
             addedUsers: [],
+            pendingUsers: [],
             errors: []
         }
-		const groupUserStatus = await functions.checkUserGroupStatus(groupUsers, groupID);
+		const groupUserStatus = await groupFunctions.checkUserGroupStatus(groupUsers, groupID);
         const newGroupUsers = groupUserStatus.newUsers;
 
         return new Promise(async function(resolve, reject) {
@@ -112,7 +110,11 @@ class Group {
                     }   
 
                     console.log("We are now adding " + newGroupUser + " as " + activeMember)
-
+                    groupUsersOutcome.addedUsers.push(newGroupUser)
+                    if(activeMember != 1) {
+                        groupUsersOutcome.pendingUsers.push(newGroupUser)
+                    }
+                    
                     //Part 3: Add them into the group 
                     const queryString = "INSERT INTO group_users (group_id, user_name, active_member) VALUES (?, ?, ?)"
 

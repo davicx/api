@@ -2,17 +2,23 @@ USE shareshare;
 
 #UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
 #SELECT * FROM shareshare.groups;
-#UPDATE group_users SET group_id = 77 WHERE group_id = 423;
+#
 #UPDATE posts SET post_to = "davey" WHERE post_id = 371;
 
 #DELETE FROM notifications WHERE notification_id > 0;
 #DELETE FROM pending_requests WHERE request_id > 0;
 
+#DELETE FROM group_users WHERE user_name = "bilbo";
+#DELETE FROM group_users WHERE group_id > 100;
 #DELETE FROM shareshare.groups WHERE group_id > 100;
 #SELECT * FROM shareshare.groups
+#SELECT * FROM user_profile
+#UPDATE user_login SET user_name = "Frodo" WHERE user_id = 40;
+SELECT * FROM user_login
+
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
-SELECT * FROM group_users 
+
 #SELECT * FROM notifications WHERE notification_to = "davey" AND notification_deleted = 0
 
 

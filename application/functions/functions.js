@@ -5,11 +5,10 @@ var jwt_decode = require('jwt-decode');
 
 
 /* FUNCTIONS 
-FUNCTIONS A: User Functions
-	1) Function A1: 
-
-FUNCTIONS B: Group Functions 
-	1) Function H1: Get All User Groups
+FUNCTIONS A: Validation Functions 
+	1) Function A1: Clean a Username 
+	2) Function A2: Clean a Username Array
+	3) Function A3: Remove duplicate values from array
 
 
 FUNCTIONS D: Login Functions 
@@ -18,9 +17,48 @@ FUNCTIONS D: Login Functions
 	3) Function D3: Logout a user 
 	4) Function D4: Check Token Time
 
-
-
 */
+
+//FUNCTIONS A: Validation Functions 
+//Function A1: Clean a Username 
+function cleanUserName(userName) {
+
+    //STEP 1: Clean whitespace from name
+    userName = userName.trim()
+
+    //STEP 2: Create all lowercase
+    userName = userName.toLowerCase()
+
+    return userName;
+
+}
+
+//Function A2: Clean a Username Array
+function cleanUserNameArray(usernameArray) {
+    let newArray = []
+    
+    //STEP 1: Clean whitespace from name and convert to lowercase 
+    for(let i = 0; i < usernameArray.length; i++) {
+        let cleanUsername = usernameArray[i].toLowerCase().trim();
+        newArray.push(cleanUsername)
+
+    }
+
+    return newArray;
+}
+
+//Method D3: Remove duplicate values from array
+function removeArrayDuplicates(fullArray) {
+    let uniqueSet = [...new Set(fullArray)];
+    let uniqueArray = Array.from(uniqueSet);  
+    return uniqueArray;
+}
+
+
+////
+
+//CLEAN BELOW
+////
 
 //FUNCTIONS D: Login Functions 
 //Function D1: Create Access Token 
@@ -157,16 +195,6 @@ function checkRemainingTokenTime(token) {
     return tokenTimeRemaining;
 }
 
-//FUNCTIONS C: Comment Functions
-//Function C1: Get all Comments on a post (paginate by 5?)
-
-
-
-////
-//CLEAN BELOW
-////
-
-
 
 
 //Method A1: Check if User Exists
@@ -186,7 +214,7 @@ async function checkIfUserExists(userName) {
     return new Promise(async function(resolve, reject) {
         try {
             
-            const queryString = "SELECT user_id FROM user_login WHERE user_name = ?"			
+            const queryString = "SELECT user_id, user_name FROM user_login WHERE user_name = ?"			
             
             connection.query(queryString, [userName], (err, rows) => {
                 console.log(err)
@@ -197,9 +225,10 @@ async function checkIfUserExists(userName) {
                         userExistsStatus.userExists = 0;
                     } else {
                         userExistsStatus.outcome = 200;
-                        userExistsStatus.userID = rows[0].user_id;
+                        userExistsStatus.userName = rows[0].user_name; 
+                        userExistsStatus.userID = rows[0].user_id; 
                         userExistsStatus.messages.push("There is already a user with the name " + userName)
-                        console.log(rows)
+                        //console.log(rows)
                     }
 
                     resolve(userExistsStatus); 
@@ -355,111 +384,10 @@ async function makeUserNotActiveInProfileTable(userName)  {
 async function makeUserNotActiveInLoginTable(userName)  {
 }
 
-//GROUP FUNCTIONS
-//Method B1: Check if users are already in the group
-async function checkUserGroupStatus(invitedUsers, groupID)  {
-    const connection = db.getConnection(); 
-
-    var groupUserStatus = {
-        outcome: 200,
-		existingUsers: [],
-		newUsers: []
-    }
-    return new Promise(async function(resolve, reject) {
-        const existingUsersSet = new Set();
-        try {
-            
-            const queryString = "SELECT user_name, active_member FROM group_users WHERE group_id = ?"			
-            
-            connection.query(queryString, [groupID], (err, rows) => {
-                if (!err) {
-                    for(let i = 0; i < rows.length; i++) {
-                        const userName = rows[i].user_name.toLowerCase();
-                        existingUsersSet.add(userName)
-                    }
-
-                    let existingUsers = Array.from(existingUsersSet);
-                    groupUserStatus.existingUsers = existingUsers;
-                    groupUserStatus.newUsers = invitedUsers.filter(item=>existingUsers.indexOf(item)==-1);
-
-                    resolve(groupUserStatus); 
-
-                } else {
-                    groupUserStatus.outcome = 500;
-                    resolve(groupUserStatus);
-                }
-            })
-        } catch(err) {
-            groupUserStatus.outcome = 500;
-            reject(groupUserStatus);
-        } 
-    })
-
-}
-
-//Method B2: Check if Group exists (by ID)
-async function checkGroupExists(groupID)  {
-    const connection = db.getConnection(); 
-
-    var groupExistsStatus = {
-        outcome: 500,
-		groupExists: 0,
-        createdBy: "",
-		errors: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            
-            const queryString = "SELECT created_by FROM shareshare.groups WHERE group_id = ?"			
-            
-            connection.query(queryString, [groupID], (err, rows) => {
-                if (!err) {
-
-                    if(rows.length >= 1){
-                        groupExistsStatus.outcome = 200;
-                        groupExistsStatus.groupExists = rows.length;
-                        groupExistsStatus.createdBy = rows[0].created_by
-                    } 
-
-                    resolve(groupExistsStatus); 
-
-                } else {
-                    groupUserStatus.outcome = 500;
-                    resolve(groupExistsStatus);
-                }
-            })
-        } catch(err) {
-            groupExistsStatus.outcome = 500;
-            reject(groupExistsStatus);
-        } 
-    })
-
-}
-
-//METHODS: General 
-//Method D1: Remove duplicate values from array
-function removeArrayDuplicates(fullArray) {
-    let uniqueSet = [...new Set(fullArray)];
-    let uniqueArray = Array.from(uniqueSet);  
-    return uniqueArray;
-}
-
-//Method D2: Convert elements in array to lowercase
-function convertElementsLowercase(stringArray) {
-    var lowerCaseArray = [];
-
-    for(let i = 0; i < stringArray.length; i++) {
-        const lowerCaseItem = stringArray[i].toLowerCase();
-        lowerCaseArray.push(lowerCaseItem)
-    }
-    return lowerCaseArray;
-
-}
 
 
 
-module.exports = { logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, checkUserGroupStatus, checkGroupExists, removeArrayDuplicates, convertElementsLowercase, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
+module.exports = { cleanUserName, cleanUserNameArray, removeArrayDuplicates, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
 
 
 //APPENDIX

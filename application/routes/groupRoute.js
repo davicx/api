@@ -62,9 +62,6 @@ groupRouter.get("/group/:groupID", (req, res) => {
     groupFunctions.getGroup(req, res);
 })
 
-posts/group/72
-
-
 */
 
 

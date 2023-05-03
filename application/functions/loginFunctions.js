@@ -47,10 +47,12 @@ async function userLogin(req, res) {
 
   //STEP 1: Check if user Exists 
   const userExistsStatus = await Functions.checkIfUserExists(userName);
+  console.log("THIS IS THE USERNAME TO USER " + userExistsStatus.userName)
   userExists = !!userExistsStatus.userExists;
 
   //STEP 2: Validate user and password
   if(userExists == true ) {
+    
     console.log("STEP 1: User Exists PASS");
     const passwordOutcome = await Functions.getUserPassword(userName);
     const actualPassword = passwordOutcome.hashedPassword
@@ -127,6 +129,7 @@ async function userLogin(req, res) {
   //STEP 7: Send login information 
   const loginObject = {
     loginSuccess: loginSuccess,
+    loggedInUser: userExistsStatus.userName,
     validUser: validUser,
     passwordCorrect: passwordCorrect,
     accessToken: accessToken,
@@ -141,7 +144,7 @@ async function userLogin(req, res) {
 		message: userName + "was succesfully logged in!", 
 		statusCode: 200,
 		errors: [], 
-		currentUser: userName
+		currentUser: userExistsStatus.userName
 	}
   
   /*
@@ -187,7 +190,8 @@ async function userLogout(req, res) {
 
 //Function A3: Register new User 
 async function userRegister(req, res) {
-  const userName = req.body.userName.toLowerCase();
+  //const userName = req.body.userName.toLowerCase();
+  const userName = req.body.userName;
   const fullName = req.body.fullName;
   const userEmail = req.body.email;
   const rawPassword = req.body.password
@@ -204,6 +208,24 @@ async function userRegister(req, res) {
     salt: salt
 	}
 
+  let userName2 = "DA_Vid_"
+  let userName3 = "david_"
+
+  var areEqual = userName2.toUpperCase() === userName3.toUpperCase();
+  /*
+  var regexp = /^[a-zA-Z0-9-_-]+$/;
+  var check = "checkme";
+
+  if (userName.search(regexp) === -1)
+      { console.log('invalid'); }
+  else { 
+    console.log('valid'); 
+    }
+*/
+  res.json({userName: areEqual})
+
+
+  /*
   //STEP 1: Validate Information
   var registrationOutcome = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
   registrationOutcome.UserRegistrationMessages = []
@@ -275,6 +297,8 @@ async function userRegister(req, res) {
     registrationOutcome.validUserRegistration = 0
     res.json(registrationOutcome)
   }
+
+  */
 } 
 
 //Function A4: Login Status 

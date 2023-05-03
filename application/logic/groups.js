@@ -5,6 +5,7 @@ const Notifications = require('../functions/classes/Notification')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const requestFunctions = require('../functions/requestFunctions')
+const groupFunctions = require('../functions/groupFunctions')
 
 
 /*
@@ -21,13 +22,18 @@ FUNCTIONS A: All Functions Related to Groups
 //Function A1: Create a New Group
 async function createGroup(req, res) {
 	const connection = db.getConnection(); 
-	console.log("TEMP: ")
-	console.log(req.body)
+	var currentUser = req.body.currentUser; 
+	var groupName = req.body.groupName
+	var groupType = req.body.groupType; 
+	var groupPrivate = req.body.groupPrivate;
+
+	var newGroupUsersRaw = req.body.groupUsers;
+	var newGroupUsersClean = Functions.cleanUserNameArray(newGroupUsersRaw)
+	var newGroupUsers = Functions.removeArrayDuplicates(newGroupUsersClean)
+
 	var groupOutcome = {}
 	var groupUsersOutcome = {}
 	var notification = {}
-	console.log("_______________________")
-	console.log("Creating a new Group")
 
     var newGroupOutcome = {
 		groupData: {},
@@ -39,7 +45,7 @@ async function createGroup(req, res) {
 	}
  
 	try {
-		groupOutcome = await Group.createGroup(req);
+		groupOutcome = await Group.createGroup(currentUser, groupName, groupType, groupPrivate);
 
 		//STEP 1: Create the Group
 		if(groupOutcome.outcome == 1) {
@@ -54,9 +60,11 @@ async function createGroup(req, res) {
 		}
 
 		//STEP 2: Add all the users to the new group
-		groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, req.body.groupUsers, req.body.currentUser);
+		var groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, newGroupUsers, currentUser);
+		
 		if(groupUsersOutcome.outcome == 1) {
 			console.log("STEP 2: You succesfully added the new users");
+			console.log(groupUsersOutcome)
 		} else {
 			console.log("STEP 2: There was an error adding the new users");
 			console.log(groupUsersOutcome.errors);
@@ -73,7 +81,7 @@ async function createGroup(req, res) {
 			masterSite: "kite",
 			notificationFrom: req.body.currentUser,
 			notificationMessage: req.body.notificationMessage,
-			notificationTo: req.body.groupUsers,
+			notificationTo: newGroupUsers,
 			notificationLink: req.body.notificationLink,
 			notificationType: req.body.notificationType,
 			groupID: groupOutcome.groupID
@@ -81,19 +89,18 @@ async function createGroup(req, res) {
 		
 		Notifications.createGroupNotification(notification);
 
+
 		//STEP 4: Add the Requests
 		console.log("STEP 4: Adding Group Requests");
 		const newRequest = {
 			requestType: "new_group",
 			requestTypeText: "invited you to join a group",
 			sentBy: req.body.currentUser,
-			sentTo: req.body.groupUsers,
+			sentTo: newGroupUsers,
 			groupID: groupOutcome.groupID
 		}
 
 		Requests.newGroupRequest(newRequest) 
-		
-		
 
 	} catch(err) {
 		console.log(err);
@@ -109,14 +116,15 @@ async function createGroup(req, res) {
 
     newGroupOutcome.groupData = {
         groupID: groupOutcome.groupID, 
-        groupMembers: []
+        groupMembers: [req.body.currentUser],
+        pendingGroupMembers: groupUsersOutcome.pendingUsers,
     };
+
     newGroupOutcome.success = true;
     newGroupOutcome.message = "Succesfully created the new group, yay!"
     newGroupOutcome.statusCode = 200;
-
 	res.json(newGroupOutcome)
-
+	
 }
 
 //Function A2: Invite User to a Group 
@@ -124,7 +132,8 @@ async function addGroupUsers(req, res) {
 	const connection = db.getConnection(); 
 	const groupID = req.body.groupID;
 	var invitedUsersRaw = req.body.invitedUsers;
-	var invitedUsersArray = Functions.convertElementsLowercase(invitedUsersRaw) 
+	//var invitedUsersArray = Functions.convertElementsLowercase(invitedUsersRaw) 
+	var invitedUsersArray = Functions.cleanUserNameArray(invitedUsersRaw) 
 	var invitedUsers = Functions.removeArrayDuplicates(invitedUsersArray);
 	
 	//Remove the current user from invitedUsers
@@ -138,12 +147,12 @@ async function addGroupUsers(req, res) {
 	}
 
 	//STEP 1: Check that there is a group that currently exists
-	const groupStatus = await Functions.checkGroupExists(groupID)
+	const groupStatus = await groupFunctions.checkGroupExists(groupID)
 
 	if(groupStatus.groupExists >= 1) {
 
 		//STEP 2: Check the status of the added users to see if they are already in the group
-		const userGroupStatus = await Functions.checkUserGroupStatus(invitedUsers, groupID)
+		const userGroupStatus = await groupFunctions.checkUserGroupStatus(invitedUsers, groupID)
 
 		//STEP 3: Add them to the Group
 		var groupUsersToAdd = userGroupStatus.newUsers;
@@ -179,16 +188,13 @@ async function addGroupUsers(req, res) {
 			groupID: groupID
 		}
 
-		//, "frodo", "Merry", "Pippin", ""
 		Requests.newGroupRequest(newRequest) 
-		console.log(newRequest);
 		addGroupUsersOutcome.success = true;
 		addGroupUsersOutcome.statusCode = 200;
 		addGroupUsersOutcome.message = "You added users to the group";
 		addGroupUsersOutcome.data.addedUsers = addedGroupUsersArray;
 		addGroupUsersOutcome.data.existingUsers = userGroupStatus.existingUsers;
 			
-
 	} else {
 		const message = "No users added because this group does not exist"
 		addGroupUsersOutcome.messages.push(message);
