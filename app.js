@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 var cors = require('cors')
 const app = express()
 const PORT = process.env.PORT || 3003;
+
 app.use(express.json());
 app.use(cookieParser())
 app.use(
@@ -38,18 +39,7 @@ app.get("/", (req, res) => {
     res.end()
 })
 
-/*
-Data 
-  - Post or Comment ID
-Message: ""
-Current User: ""
-Status code: 200
-Errors: [] 
-Outcome Success: true or false
-*/
-
- 
-//
+//APPENDIX
 //const posts = require('./application/routes/postRoutes.js');
 //const user = require('./application/routes/userRoutes.js');
 //const group = require('./application/routes/groupRoutes.js');

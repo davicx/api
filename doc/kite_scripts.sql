@@ -10,11 +10,15 @@ USE shareshare;
 
 #DELETE FROM group_users WHERE user_name = "bilbo";
 #DELETE FROM group_users WHERE group_id > 100;
-#DELETE FROM shareshare.groups WHERE group_id > 100;
+#DELETE FROM notifications
+#DELETE FROM pending_requests
+DELETE FROM shareshare.groups WHERE group_id > 100;
 #SELECT * FROM shareshare.groups
+#SELECT * FROM notifications;
+#SELECT * FROM shareshare.groups
+
 #SELECT * FROM user_profile
 #UPDATE user_login SET user_name = "Frodo" WHERE user_id = 40;
-SELECT * FROM user_login
 
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 

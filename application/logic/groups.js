@@ -27,22 +27,25 @@ async function createGroup(req, res) {
 	var groupType = req.body.groupType; 
 	var groupPrivate = req.body.groupPrivate;
 
+	//New Group Users 
 	var newGroupUsersRaw = req.body.groupUsers;
 	var newGroupUsersClean = Functions.cleanUserNameArray(newGroupUsersRaw)
 	var newGroupUsers = Functions.removeArrayDuplicates(newGroupUsersClean)
 
+	//Response Outcomes 
 	var groupOutcome = {}
 	var groupUsersOutcome = {}
 	var notification = {}
 
     var newGroupOutcome = {
 		groupData: {},
-		success: false,
 		message: "", 
+		success: false,
 		statusCode: 500,
 		errors: [], 
 		currentUser: req.body.currentUser
 	}
+
  
 	try {
 		groupOutcome = await Group.createGroup(currentUser, groupName, groupType, groupPrivate);
@@ -64,7 +67,6 @@ async function createGroup(req, res) {
 		
 		if(groupUsersOutcome.outcome == 1) {
 			console.log("STEP 2: You succesfully added the new users");
-			console.log(groupUsersOutcome)
 		} else {
 			console.log("STEP 2: There was an error adding the new users");
 			console.log(groupUsersOutcome.errors);
@@ -268,11 +270,44 @@ async function acceptGroupInvite(req, res) {
 }
 
 //Function A4: Leave a Group 
-function leaveGroup(req, res) {
+async function leaveGroup(req, res) {
 	const currentUser = req.body.currentUser;
 	const groupID = req.body.groupID;
-	Group.leaveGroup(currentUser, groupID);
-	res.json({leave: "leave"})
+
+	//STEP 1: Check if user is in group
+	var userGroupStatus = await groupFunctions.checkUserInGroup(currentUser, groupID)
+
+	//STEP 2: Remove User
+	if(userGroupStatus.userInGroup == true) {
+		//Group.leaveGroup(currentUser, groupID);
+	} 
+	
+
+
+
+	//CLEAN
+	//ALSO!!! NEED TO HAVE: how should we get user name from the token or local storage when it comes in or the post request
+	//should keep the smae
+	//ALSO: should have way to clean a notification and request for group, friend
+	//const userGroupStatus = await groupFunctions.checkUserGroupStatus(invitedUsers, groupID)
+	//TO DO!! Have function check if user is in group
+	
+
+	//
+	/*
+	if(userGroupStatus.existingUsers < 1) {
+		console.log("Not in the group man!")
+	}
+	    var newGroupOutcome = {
+		groupData: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+	*/
+	res.json(userGroupStatus)
 }
 
 //Function A5: Get All Groups User is In 

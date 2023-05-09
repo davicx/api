@@ -10,18 +10,40 @@ const middlewares = require('../functions/middlewareFunctions')
 
 /*
 FUNCTIONS A: All Functions Related to Getting Notifications 
-	1) Function A1: Get all Notifications to User 
+	1) Function A1: Get all Notifications 
+	2) Function A2: Get all Notifications to Group
+	3) Function A3: Get all Notifications to User 
  
 FUNCTIONS B: All Functions Related to Notification Actions 
-	1) Function B1: Set all Notification as Seen 
+	1) Function B1: Set Notification to Seen 
+	2) Function B2: Set all Notification as Seen 
+	3) Function B3: Delete Notification 
+	4) Function B3: Delete All Notifications 
 
 */
 
 //FUNCTIONS A: All Functions Related to Getting Notifications 
+//Function A1: Get all Notifications 
+notificationRouter.get('/notifications/', function(req, res) {
+    notifications.getAllNotifications(req, res);
+})
+
+//Function A1: Get all Notifications to a Group
+notificationRouter.get('/notifications/group/:group_id', function(req, res) {
+    notifications.getGroupNotifications(req, res);
+})
+
 //Function A1: Get all Notifications to User 
 notificationRouter.get('/notifications/user/:user_id', function(req, res) {
     notifications.getUserNotifications(req, res);
 })
+
+//FUNCTIONS B: All Functions Related to Notification Actions 
+//Function B1: Set Notification to Seen 
+//Function B2: Set all Notification as Seen 
+//Function B3: Delete Notification 
+//Function B4: Delete All Notifications 
+
 
 
 module.exports = notificationRouter;

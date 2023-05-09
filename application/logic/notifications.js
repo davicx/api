@@ -7,38 +7,172 @@ const db = require('../functions/conn');
 //const Functions = require('../functions/functions');
 //const PostFunctions = require('../functions/postFunctions');
 
-//FUNCTIONS A: All Functions Related to Posts
-//Function A1: Post Text
-async function getUserNotifications(req, res) {
-    let currentUser = req.params.user_id;
+/*
+FUNCTIONS A: All Functions Related to Getting Notifications 
+	1) Function A1: Get all Notifications 
+	2) Function A2: Get all Notifications to Group
+	3) Function A3: Get all Notifications to User 
+ 
+FUNCTIONS B: All Functions Related to Notification Actions 
+	1) Function B1: Set Notification to Seen 
+	2) Function B2: Set all Notification as Seen
+	3) Function B3: Delete Notification
+	4) Function B4: Delete All Notifications 
+*/
+
+//FUNCTIONS A: All Functions Related to Getting Notifications 
+//Function A1: Get all Notifications 
+async function getAllNotifications(req, res) {
     const connection = db.getConnection(); 
 
-    const queryString = "SELECT * FROM notifications WHERE notification_to = ? AND notification_deleted = 0";
-    //const queryString = "SELECT * FROM notifications";
+    var notificationResponse = {
+		notificationData: {},
+		message: "", 
+        statusCode: 500,
+		success: false,
+		errors: [], 
+		currentUser: "Global"
+    }
 
-    connection.query(queryString, [currentUser], (err, rows) => {
+    const queryString = "SELECT * FROM notifications WHERE notification_deleted = 0";
+
+    connection.query(queryString, (err, rows) => {
         if (!err) {
             console.log(rows)
-            /*
-			const comments = rows.map((row) => {
+            
+			const notificationArray = rows.map((row) => {
 				return {
-					postID: row.post_id,
-					commentCaption: row.comment,
-					commentFrom: row.from,
-					commentType: row.comment_type,	
-					created: row.created
+					notificationID: row.notification_id,
+					groupID: row.group_id,
+					commentFrom: row.post_id,
+					commentType: row.comment_id,	
+					notificationFrom: row.notification_from,
+					notificationTo: row.notification_to,
+					notificationType: row.notification_type,
+					notificationMessage: row.notification_message,
+					notificationTime: row.notification_time,
+					notificationSeen: row.notification_seen
 				}
 			});
-            */
+            notificationResponse.message = "Sucesfully got your notifications!"
+            notificationResponse.notificationData.notificationCount = notificationArray.length
+            notificationResponse.notificationData.notificationArray = notificationArray
+
+            res.json(notificationResponse)
+            
         } else {
             console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
+            notificationResponse.errors.push(err)
+            res.status(500).json(notificationResponse);
+            //res.sendStatus(500)
             return
 		}
     })
 
-    res.json({hi:"hi", currentUser: currentUser})
+}
+
+//Function A1: Get all Notifications to a Group
+async function getGroupNotifications(req, res) {
+    let groupID = req.params.group_id;
+    console.log(groupID);
+    const connection = db.getConnection(); 
+
+    var notificationResponse = {
+		notificationData: {},
+		message: "", 
+        statusCode: 500,
+		success: false,
+		errors: [], 
+		currentUser: "Global"
+    }
+
+    const queryString = "SELECT * FROM notifications WHERE group_id = ? AND notification_deleted = 0";
+
+    connection.query(queryString, [groupID], (err, rows) => {
+        if (!err) {
+            console.log(rows)
+            
+			const notificationArray = rows.map((row) => {
+				return {
+					notificationID: row.notification_id,
+					groupID: row.group_id,
+					commentFrom: row.post_id,
+					commentType: row.comment_id,	
+					notificationFrom: row.notification_from,
+					notificationTo: row.notification_to,
+					notificationType: row.notification_type,
+					notificationMessage: row.notification_message,
+					notificationTime: row.notification_time,
+					notificationSeen: row.notification_seen
+				}
+			});
+            notificationResponse.message = "Sucesfully got your group notifications!"
+            notificationResponse.notificationData.notificationCount = notificationArray.length
+            notificationResponse.notificationData.notificationArray = notificationArray
+
+            res.json(notificationResponse)
+            
+        } else {
+            console.log("Failed to Select Posts" + err)
+            notificationResponse.errors.push(err)
+            res.status(500).json(notificationResponse);
+            //res.sendStatus(500)
+            return
+		}
+    })
 
 }
 
-module.exports = { getUserNotifications };
+//Function A1: Get all Notifications to User 
+async function getUserNotifications(req, res) {
+    let currentUser = req.params.user_id;
+    console.log(currentUser);
+    const connection = db.getConnection(); 
+
+    var notificationResponse = {
+		notificationData: {},
+		message: "", 
+        statusCode: 500,
+		success: false,
+		errors: [], 
+		currentUser: "Global"
+    }
+
+    const queryString = "SELECT * FROM notifications WHERE notification_to = ? AND notification_deleted = 0";
+
+    connection.query(queryString, [currentUser], (err, rows) => {
+        if (!err) {
+            console.log(rows)
+            
+			const notificationArray = rows.map((row) => {
+				return {
+					notificationID: row.notification_id,
+					groupID: row.group_id,
+					commentFrom: row.post_id,
+					commentType: row.comment_id,	
+					notificationFrom: row.notification_from,
+					notificationTo: row.notification_to,
+					notificationType: row.notification_type,
+					notificationMessage: row.notification_message,
+					notificationTime: row.notification_time,
+					notificationSeen: row.notification_seen
+				}
+			});
+            notificationResponse.message = "Sucesfully got your group notifications!"
+            notificationResponse.notificationData.notificationCount = notificationArray.length
+            notificationResponse.notificationData.notificationArray = notificationArray
+
+            res.json(notificationResponse)
+            
+        } else {
+            console.log("Failed to Select Posts" + err)
+            notificationResponse.errors.push(err)
+            res.status(500).json(notificationResponse);
+            //res.sendStatus(500)
+            return
+		}
+    })
+}
+
+
+module.exports = { getUserNotifications, getGroupNotifications, getAllNotifications };

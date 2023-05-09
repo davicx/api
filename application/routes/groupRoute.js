@@ -42,7 +42,6 @@ groupRouter.get("/groups/user/:user_name", middlewares.verifyUser, (req, res) =>
     groupFunctions.getUserGroups(req, res, currentUser);
 })
 
-//http://localhost:3003/group/users/72
 //Route A5: Get Group Users 
 groupRouter.get("/group/users/:groupID", middlewares.verifyUser, (req, res) => {
     groupFunctions.getGroupUsers(req, res);

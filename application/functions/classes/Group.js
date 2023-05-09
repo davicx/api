@@ -231,8 +231,18 @@ class Group {
     
     
     //Method A6: Leave Group
-    static leaveGroup(currentUser, groupID)  {
+    static async leaveGroup(currentUser, groupID)  {
         console.log("LEAVE " + currentUser + " " + groupID)
+        //Check if User is in Group 
+
+        //Remove from Group
+
+        //Remove All Notifications
+
+        //Remove All Requests
+
+        return "hi"
+
     }
 }
 

@@ -146,16 +146,7 @@ async function userLogin(req, res) {
 		errors: [], 
 		currentUser: userExistsStatus.userName
 	}
-  
-  /*
-  var loginOutcome = {
-		success: true,
-		message: userName + "was succesfully logged in!", 
-		errors: [], 
-	}
-  */
-
-
+ 
   console.log("STEP 7: Login information for user")
   console.log(loginOutcome);
   console.log("STEP 8: The User was succesfully logged in!")

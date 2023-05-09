@@ -2,17 +2,6 @@ const db = require('../conn');
 
 //Need to work on this maybe add more stuff and types of notifications
 class Notification {
-    //Notification Type
-    /*
-    Group
-    Post
-    Comment
-     
-    table
-    group_id, post_id, comment_id
-
-    */
-
     constructor(notificationID) {
         this.notificationID = notificationID;
     }

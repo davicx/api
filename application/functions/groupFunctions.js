@@ -3,7 +3,9 @@ const db = require('./conn');
 /*
 FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Check if users are already in the group
-	2) Function B2: Check if Group exists (by ID)
+	2) Function A2: Check if Group exists (by ID)
+	3) Function A3: Check if a User is in a Group
+
 
 */
 
@@ -49,7 +51,7 @@ async function checkUserGroupStatus(invitedUsers, groupID)  {
 
 }
 
-//Function B2: Check if Group exists (by ID)
+//Function A2: Check if Group exists (by ID)
 async function checkGroupExists(groupID)  {
     const connection = db.getConnection(); 
 
@@ -89,7 +91,44 @@ async function checkGroupExists(groupID)  {
 
 }
 
-module.exports = { checkUserGroupStatus, checkGroupExists}
+//Function A3: Check if a User is in a Group
+async function checkUserInGroup(userName, groupID)  {
+    const connection = db.getConnection(); 
+
+    var groupUserStatus = {
+        outcome: 200,
+		userName: userName
+    }
+
+    return new Promise(async function(resolve, reject) {
+        const existingUsersSet = new Set();
+        try {
+            
+            const queryString = "SELECT user_name, active_member FROM group_users WHERE group_id = ?"			
+            
+            connection.query(queryString, [groupID], (err, rows) => {
+                if (!err) {
+                    if(rows.length > 0) {
+                        groupUserStatus.userInGroup = true
+                    } else {
+                        groupUserStatus.userInGroup = false
+                    }
+
+                    resolve(groupUserStatus); 
+
+                } else {
+                    groupUserStatus.outcome = 500;
+                    resolve(groupUserStatus);
+                }
+            })
+        } catch(err) {
+            groupUserStatus.outcome = 500;
+            reject(groupUserStatus);
+        } 
+    })
+
+}
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup }
 
 
 

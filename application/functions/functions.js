@@ -9,14 +9,6 @@ FUNCTIONS A: Validation Functions
 	1) Function A1: Clean a Username 
 	2) Function A2: Clean a Username Array
 	3) Function A3: Remove duplicate values from array
-
-
-FUNCTIONS D: Login Functions 
-	1) Function D1: Create Access Token  
-	2) Function D2: Verify a refresh token is in the database  
-	3) Function D3: Logout a user 
-	4) Function D4: Check Token Time
-
 */
 
 //FUNCTIONS A: Validation Functions 
@@ -55,10 +47,33 @@ function removeArrayDuplicates(fullArray) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ////
 
 //CLEAN BELOW
 ////
+/*
+FUNCTIONS B: Login Functions 
+	1) Function D1: Create Access Token  
+	2) Function D2: Verify a refresh token is in the database  
+	3) Function D3: Logout a user 
+	4) Function D4: Check Token Time
+*/
 
 //FUNCTIONS D: Login Functions 
 //Function D1: Create Access Token 
