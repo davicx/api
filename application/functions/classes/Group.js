@@ -232,17 +232,37 @@ class Group {
     
     //Method A6: Leave Group
     static async leaveGroup(currentUser, groupID)  {
-        console.log("LEAVE " + currentUser + " " + groupID)
-        //Check if User is in Group 
+        const connection = db.getConnection(); 
 
-        //Remove from Group
+        var leaveGroupStatus = {
+            userName: currentUser,
+            userRemoved: false,
+            errors: []
+        }
 
-        //Remove All Notifications
+        return new Promise(async function(resolve, reject) {
+            try {
+                const activeMember = 0;
+                const queryString = "DELETE FROM group_users WHERE group_id = ? AND user_name = ?"
+    
+                connection.query(queryString, [groupID, currentUser], (err, results) => {
+                    if (!err) {
+                        //console.log(results)
+                        if(results.affectedRows > 0) {
+                            leaveGroupStatus.userRemoved = true;
+                        }
+                        resolve(leaveGroupStatus);
+                    } else {
+                        leaveGroupStatus.error.push(err)
+                        resolve(leaveGroupStatus);
+                    }
+                })  
+            } catch(err) {
+                leaveGroupStatus.error.push(err)
 
-        //Remove All Requests
-
-        return "hi"
-
+                reject(leaveGroupStatus);
+            } 
+        });
     }
 }
 

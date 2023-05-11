@@ -12,7 +12,7 @@ USE shareshare;
 #DELETE FROM group_users WHERE group_id > 100;
 #DELETE FROM notifications
 #DELETE FROM pending_requests
-DELETE FROM shareshare.groups WHERE group_id > 100;
+#DELETE FROM shareshare.groups WHERE group_id > 100;
 #SELECT * FROM shareshare.groups
 #SELECT * FROM notifications;
 #SELECT * FROM shareshare.groups

@@ -104,9 +104,9 @@ async function checkUserInGroup(userName, groupID)  {
         const existingUsersSet = new Set();
         try {
             
-            const queryString = "SELECT user_name, active_member FROM group_users WHERE group_id = ?"			
+            const queryString = "SELECT user_name, active_member FROM group_users WHERE group_id = ? AND user_name = ?"			
             
-            connection.query(queryString, [groupID], (err, rows) => {
+            connection.query(queryString, [groupID, userName], (err, rows) => {
                 if (!err) {
                     if(rows.length > 0) {
                         groupUserStatus.userInGroup = true

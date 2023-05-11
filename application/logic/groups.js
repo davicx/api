@@ -125,8 +125,14 @@ async function createGroup(req, res) {
     newGroupOutcome.success = true;
     newGroupOutcome.message = "Succesfully created the new group, yay!"
     newGroupOutcome.statusCode = 200;
-	res.json(newGroupOutcome)
 	
+	//res.json(newGroupOutcome)
+	//TEMP
+	var tempforMobileGroupOutcome = {
+		groupID: groupOutcome.groupID
+	}
+	res.json(tempforMobileGroupOutcome)
+	//TEMP
 }
 
 //Function A2: Invite User to a Group 
@@ -274,40 +280,46 @@ async function leaveGroup(req, res) {
 	const currentUser = req.body.currentUser;
 	const groupID = req.body.groupID;
 
-	//STEP 1: Check if user is in group
-	var userGroupStatus = await groupFunctions.checkUserInGroup(currentUser, groupID)
 
-	//STEP 2: Remove User
-	if(userGroupStatus.userInGroup == true) {
-		//Group.leaveGroup(currentUser, groupID);
-	} 
-	
-
-
-
-	//CLEAN
-	//ALSO!!! NEED TO HAVE: how should we get user name from the token or local storage when it comes in or the post request
-	//should keep the smae
-	//ALSO: should have way to clean a notification and request for group, friend
-	//const userGroupStatus = await groupFunctions.checkUserGroupStatus(invitedUsers, groupID)
-	//TO DO!! Have function check if user is in group
-	
-
-	//
-	/*
-	if(userGroupStatus.existingUsers < 1) {
-		console.log("Not in the group man!")
-	}
-	    var newGroupOutcome = {
-		groupData: {},
+	var leaveGroupOutcome = {
+		leaveGroupID: groupID,
 		message: "", 
 		success: false,
 		statusCode: 500,
 		errors: [], 
 		currentUser: req.body.currentUser
 	}
-	*/
-	res.json(userGroupStatus)
+
+	//STEP 1: Check if user is in group
+	var userInGroupStatus = await groupFunctions.checkUserInGroup(currentUser, groupID);
+	console.log(userInGroupStatus)
+
+	//STEP 2: Remove User
+	//Step 2A: The User was in the group and removed 
+	if(userInGroupStatus.userInGroup == true) {
+		var leaveGroupStatus = await Group.leaveGroup(currentUser, groupID);
+
+		if(leaveGroupStatus.errors.length == 0) {
+			leaveGroupOutcome.message = currentUser + " was sucesfully removed from the group"
+			leaveGroupOutcome.success = true;
+			leaveGroupOutcome.statusCode = 200;
+		}
+
+	//Step 2B: The user was not in the group so no action was taken 
+	} else {
+		leaveGroupOutcome.message = currentUser + " was not in the group"
+		leaveGroupOutcome.success = true;
+		leaveGroupOutcome.statusCode = 200;
+	}
+	
+	res.json(leaveGroupOutcome)
+
+	//CLEAN
+	//ALSO!!! NEED TO HAVE: how should we get user name from the token or local storage when it comes in or the post request
+	//should keep the smae
+	//ALSO: should have way to clean a notification and request for group, friend
+
+
 }
 
 //Function A5: Get All Groups User is In 

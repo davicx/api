@@ -159,7 +159,8 @@ async function postArticle(req, res) {
 async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
-	const currentUser = "Get from middles"
+	const currentUser = req.currentUser
+	console.log("CURRENT USER: This is from the middleware " + currentUser)
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await PostFunctions.getGroupPostsAll(groupID)
