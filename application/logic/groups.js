@@ -122,17 +122,12 @@ async function createGroup(req, res) {
         pendingGroupMembers: groupUsersOutcome.pendingUsers,
     };
 
-    newGroupOutcome.success = true;
+	newGroupOutcome.success = true;
     newGroupOutcome.message = "Succesfully created the new group, yay!"
     newGroupOutcome.statusCode = 200;
 	
-	//res.json(newGroupOutcome)
-	//TEMP
-	var tempforMobileGroupOutcome = {
-		groupID: groupOutcome.groupID
-	}
-	res.json(tempforMobileGroupOutcome)
-	//TEMP
+	res.json(newGroupOutcome)
+
 }
 
 //Function A2: Invite User to a Group 
@@ -314,17 +309,15 @@ async function leaveGroup(req, res) {
 	
 	res.json(leaveGroupOutcome)
 
-	//CLEAN
-	//ALSO!!! NEED TO HAVE: how should we get user name from the token or local storage when it comes in or the post request
-	//should keep the smae
-	//ALSO: should have way to clean a notification and request for group, friend
-
-
 }
 
 //Function A5: Get All Groups User is In 
-function getUserGroups(req, res, currentUser) {
+function getUserGroups(req, res) {
     const connection = db.getConnection(); 
+	const currentUser = req.authorizationData.currentUser;
+	console.log("authorizationData")
+    console.log(req.currentUser)
+	console.log("authorizationData")
 	//console.log("File: groupFunctions Function: getUserGroups")
 
 	const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 

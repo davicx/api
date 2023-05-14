@@ -14,9 +14,9 @@ FUNCTIONS A: All Functions Related to Groups
 	2) Function A2: Invite User to a Group 
 	3) Function A3: Accept Group Invite
 	4) Function A4: Get All Groups User is In 
-    5) Function A5: Leave a Group 
-	6) Function A6: Get Single Group by ID 
-	7) Function A7: Get Group Users
+    5) Function A5: Get Group Users  
+	6) Function A6: Leave a Group 
+
 */
 
 //GROUP ROUTES
@@ -37,9 +37,7 @@ groupRouter.post('/group/join/', function(req, res) {
 
 //Route A4: Get All Groups User is In 
 groupRouter.get("/groups/user/:user_name", middlewares.verifyUser, (req, res) => {
-    const currentUser = req.authorizationData.currentUser;
-    
-    groupFunctions.getUserGroups(req, res, currentUser);
+    groupFunctions.getUserGroups(req, res);
 })
 
 //Route A5: Get Group Users 
@@ -55,12 +53,5 @@ groupRouter.post('/group/leave/', function(req, res) {
 
 module.exports = groupRouter;
 
-/*
-//Route B2: Get Single Group by ID 
-groupRouter.get("/group/:groupID", (req, res) => {
-    groupFunctions.getGroup(req, res);
-})
-
-*/
 
 

@@ -10,6 +10,7 @@ FUNCTIONS A: All Functions Related to Requests
 */
 
 
+
 //Function A1: Get Single Request (Check if it exists)
 async function getSingleRequest(requestID) {
     const connection = db.getConnection(); 
@@ -51,6 +52,7 @@ async function getSingleRequest(requestID) {
             reject(requestOutcome);
         } 
     })
+
 }
 
 

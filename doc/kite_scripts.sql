@@ -1,8 +1,11 @@
 USE shareshare;
 
 #UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
-#SELECT * FROM shareshare.groups;
-#
+#DELETE FROM group_users WHERE group_id = 483 AND user_name = 'sam';
+#SELECT * FROM group_users WHERE group_id = 483;
+
+#DELETE FROM shareshare.groups WHERE group_id > 100;
+
 #UPDATE posts SET post_to = "davey" WHERE post_id = 371;
 
 #DELETE FROM notifications WHERE notification_id > 0;
@@ -12,9 +15,9 @@ USE shareshare;
 #DELETE FROM group_users WHERE group_id > 100;
 #DELETE FROM notifications
 #DELETE FROM pending_requests
-#DELETE FROM shareshare.groups WHERE group_id > 100;
+
 #SELECT * FROM shareshare.groups
-#SELECT * FROM notifications;
+SELECT * FROM notifications;
 #SELECT * FROM shareshare.groups
 
 #SELECT * FROM user_profile
@@ -24,10 +27,6 @@ USE shareshare;
 #SELECT * FROM pending_requests 
 
 #SELECT * FROM notifications WHERE notification_to = "davey" AND notification_deleted = 0
-
-
-
-
 
 #SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1;
 

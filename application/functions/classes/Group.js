@@ -53,7 +53,6 @@ class Group {
         });
     }
 
-
     //Method A2: Add Single User to Group (Accepts cleaned data they are not in the group already)
     static async addGroupUser(groupID, groupUser)  {
         const connection = db.getConnection(); 
@@ -185,7 +184,6 @@ class Group {
         });
     } 
 
-
     //Method A5: Accept Group Invite
     static acceptGroupInvite(groupID, currentUser, requestID) {
         const connection = db.getConnection(); 
@@ -228,7 +226,6 @@ class Group {
             }
         })  
     }
-    
     
     //Method A6: Leave Group
     static async leaveGroup(currentUser, groupID)  {

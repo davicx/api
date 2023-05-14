@@ -5,7 +5,7 @@ const db = require('../functions/conn');
 //const Comment = require('../functions/classes/Comment')
 //const Requests = require('../functions/classes/Requests');
 //const Functions = require('../functions/functions');
-//const PostFunctions = require('../functions/postFunctions');
+const NotificationFunctions = require('../functions/notificationFunctions');
 
 /*
 FUNCTIONS A: All Functions Related to Getting Notifications 
@@ -71,7 +71,7 @@ async function getAllNotifications(req, res) {
 
 }
 
-//Function A1: Get all Notifications to a Group
+//Function A2: Get all Notifications to a Group
 async function getGroupNotifications(req, res) {
     let groupID = req.params.group_id;
     console.log(groupID);
@@ -123,7 +123,7 @@ async function getGroupNotifications(req, res) {
 
 }
 
-//Function A1: Get all Notifications to User 
+//Function A3: Get all Notifications to User 
 async function getUserNotifications(req, res) {
     let currentUser = req.params.user_id;
     console.log(currentUser);
@@ -174,5 +174,107 @@ async function getUserNotifications(req, res) {
     })
 }
 
+//FUNCTIONS B: All Functions Related to Notification Actions 
+//Function B1: Set Notification to Seen 
+async function setNotificationSeen(req, res) {
+	res.json({hi: "hi"})
+}
 
-module.exports = { getUserNotifications, getGroupNotifications, getAllNotifications };
+//Function B2: Set all Notification as Seen
+async function setAllNotificationsSeen(req, res) {
+	res.json({hi: "hi"})
+}
+
+
+//Function B3: Delete Notification
+async function deleteNotification(req, res) {
+	console.log(req.params)
+	const currentUser = req.params.user_name;
+	const notificationID = req.params.notification_id;
+	//NotificationFunctions.deleteSingleNotification(currentUser, notificationID)
+	NotificationFunctions.deleteSingleNotification(currentUser, notificationID)
+	res.json({hi: "hi"})
+}
+
+//Function C5: Delete a Post
+async function deletePost(req, res) {
+	const connection = db.getConnection(); 
+	const postID = req.body.postID;
+	const currentUser = req.body.currentUser;
+
+	console.log("DELETE POST")
+	console.log(postID)
+
+	var deletePostOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+    const queryString = "UPDATE posts SET post_status = 0 WHERE post_id = ?;";
+
+    connection.query(queryString, [postID], (err, rows) => {
+        if (!err) {
+			var response = {
+				postID: postID,
+				currentUser: currentUser,
+			}
+			deletePostOutcome.data.push(response)
+			deletePostOutcome.message = true;
+			deletePostOutcome.success = "Sucesfully deleted post " + postID;
+
+			res.json(deletePostOutcome);
+
+        } else {
+            console.log("Failed to Delete Posts" + err)
+			deletePostOutcome.statusCode = 500
+			deletePostOutcome.message = "Could not delete post " + postID;
+			deletePostOutcome.errors.push(err);
+			
+			res.status(500).json(deletePostOutcome)
+            return
+		}
+    })
+	
+}
+
+//Function C6:  Edit a Post
+async function editPost(req, res) {
+	const currentUser = req.body.currentUser;
+	const postID = req.body.postID;
+	const newPostCaption = req.body.newPostCaption;
+
+	console.log(req.body)
+
+	var editPostOutcome = {
+		data: [],
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	//STEP 1: Check if Post Exists
+	const postExistsOutcome = await PostFunctions.checkPostExists(postID)
+
+	//STEP 2: Update Caption
+	if(postExistsOutcome.postExists == true) {
+		const updatePostOutcome = await Post.updatePostCaption(postID, newPostCaption, currentUser);
+		editPostOutcome.data.push({postID: postID, newPostCaption: newPostCaption})
+		editPostOutcome.success = true;
+	} else {
+		console.log("else")
+	}
+
+	res.json(editPostOutcome)
+
+}
+
+
+module.exports = { getUserNotifications, getGroupNotifications, getAllNotifications, setNotificationSeen, setAllNotificationsSeen, deleteNotification };
+
+

@@ -28,20 +28,31 @@ notificationRouter.get('/notifications/', function(req, res) {
     notifications.getAllNotifications(req, res);
 })
 
-//Function A1: Get all Notifications to a Group
+//Function A2: Get all Notifications to a Group
 notificationRouter.get('/notifications/group/:group_id', function(req, res) {
     notifications.getGroupNotifications(req, res);
 })
 
-//Function A1: Get all Notifications to User 
+//Function A3: Get all Notifications to User 
 notificationRouter.get('/notifications/user/:user_id', function(req, res) {
     notifications.getUserNotifications(req, res);
 })
 
 //FUNCTIONS B: All Functions Related to Notification Actions 
 //Function B1: Set Notification to Seen 
+notificationRouter.get('/notification/seen/:notification_id', function(req, res) {
+    notifications.setNotificationSeen(req, res);
+})
+
 //Function B2: Set all Notification as Seen 
+notificationRouter.get('/notifications/seen/:user_id', function(req, res) {
+    notifications.setAllNotificationsSeen(req, res);
+})
+
 //Function B3: Delete Notification 
+notificationRouter.get('/notifications/delete/:notification_id/:user_name', function(req, res) {
+    notifications.deleteNotification(req, res);
+})
 //Function B4: Delete All Notifications 
 
 

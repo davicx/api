@@ -21,12 +21,14 @@ const group = require('./application/routes/groupRoute.js');
 const posts = require('./application/routes/postRoutes.js'); 
 const comments = require('./application/routes/commentRoutes.js');
 const notifications = require('./application/routes/notificationRoutes.js');
+const requests = require('./application/routes/requestRoutes.js');
 
 app.use(login);
 app.use(group);
 app.use(posts);
 app.use(comments);
 app.use(notifications);
+app.use(requests);
 
 //Server Login 
 app.listen(3003, () => {

@@ -101,12 +101,11 @@ function verifyUser(req, res, next) {
       if(!err) {
           console.log("STEP 5: The token was a good one!")
           console.log("____________________________________________")
-          //console.log("authorizationData")
+          //console.log("MIDDLEWARE: authorizationData")
           //console.log(authorizationData)
-          //console.log("authorizationData")
+          //console.log("MIDDLEWARE: authorizationData")
+          req.authorizationData = authorizationData
           req.currentUser = authorizationData.currentUser
-          //console.log("authorizationData")
-          //console.log(authorizationData)
           responseMessage.requestNewAccessToken = false;
           req.responseMessage = responseMessage;
           next();
