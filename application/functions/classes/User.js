@@ -1,5 +1,42 @@
 const db = require('./../conn');
 
+
+/*
+FUNCTIONS A: USER RELATED
+	1) Method A1: Get User Info 
+	2) Method A2: Get List of all User Friends 
+	3) Method A3: Get Pending Requests *Not Done 
+	4) Method A4: Request a Friend	
+	5) Method A5: Cancel a Sent Friend Request
+	6) Method A6: Remove a Friend
+	7) Method A7: Update User Info
+	
+FUNCTIONS B: REQUEST RELATED	
+	1) Method B1: Accept Friend Request
+	2) Method B2: Decline Friend Request
+	3) Method B3: Accept Group Request
+	4) Method B4: Decline Group Request
+	5) Method B5: Accept List Request
+	6) Method B6: Decline List Request
+	
+FUNCTIONS C: USER SITE ACTIVITY 
+	1) Method C1: Get New Group Posts
+	2) Method C2: Get New Groups Discussions
+	3) Method C3: Get New File Activity
+	4) Method C4: Update Group Posts to Seen	
+	5) Method C5: Update Group Discussion to Seen
+	6) Method C6: Update New File Activity to Seen		
+
+FUNCTIONS D: USER ACCOUNT	
+	1) Method D1: Register User
+	2) Method D2: Register User API
+	2) Method D3: Register User with Email
+	3) Method D4: Delete User
+	4) Method D5: Request Username *currently this happens in the user.php file 
+	5) Method D6: Request Password Send Email (Part 1) *currently this happens in the user.php file 
+	6) Method D7: Request Password Update to New Password (Part 2) *currently this happens in the user.php file 	
+
+*/
 class User {
     constructor(userName) {
         this.userName = userName;
@@ -8,85 +45,85 @@ class User {
     }
     
 
-  //METHODS A: USER RELATED
-  //Method A1: Register User 
-  static async registerUserLogin(newUser) {
-    const connection = db.getConnection(); 
-    var registerUserOutcome = {
-        outcome: "",
-        userID: 0,
-        errors: []
+    //METHODS A: USER RELATED
+    //Method A1: Register User 
+    static async registerUserLogin(newUser) {
+        const connection = db.getConnection(); 
+        var registerUserOutcome = {
+            outcome: "",
+            userID: 0,
+            errors: []
+        }
+
+        const password = newUser.password
+        const salt = newUser.salt
+
+        //INSERT USER
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "INSERT INTO user_login (user_name, user_email, salt, password) VALUES (?, ?, ?, ?)"
+            connection.query(queryString, [newUser.userName, newUser.userEmail, salt, password], (err, results) => {
+                console.log(err)
+                    if (!err) {
+                        console.log("You created a new User with ID " + results.insertId);    
+                        registerUserOutcome.outcome = 1;       
+                        registerUserOutcome.userID = results.insertId;    
+
+                    } else {    
+                        registerUserOutcome.outcome = "no worky"
+                        registerUserOutcome.errors.push(err);
+                    } 
+                    resolve(registerUserOutcome);
+                }) 
+                
+            } catch(err) {
+                registerUserOutcome.outcome = "rejected";
+                console.log("REJECTED " + err);
+                reject(registerUserOutcome);
+            } 
+        });
     }
 
-    const password = newUser.password
-    const salt = newUser.salt
+    static async registerUserProfile(newUser) {
+        const connection = db.getConnection(); 
+        var registerUserProfileOutcome = {
+            outcome: "",
+            message: "",
+            errors: []
+        }
+    
+        const biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves"
+        const bilboImage = "frodo.jpg"
+        const rootFolder = newUser.userName
+        const firstName = newUser.fullName
+        const lastName = newUser.fullName
+        const university = "osu"
+        const postView = ""
 
-    //INSERT USER
-    return new Promise(async function(resolve, reject) {
-        try {
-            const queryString = "INSERT INTO user_login (user_name, user_email, salt, password) VALUES (?, ?, ?, ?)"
-           connection.query(queryString, [newUser.userName, newUser.userEmail, salt, password], (err, results) => {
-            console.log(err)
-                if (!err) {
-                    console.log("You created a new User with ID " + results.insertId);    
-                    registerUserOutcome.outcome = 1;       
-                    registerUserOutcome.userID = results.insertId;    
+        //INSERT USER PROFILE 
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, university, post_view, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            connection.query(queryString, [newUser.userName, newUser.userID, bilboImage, rootFolder, biography, university, postView, firstName, lastName, newUser.userEmail], (err, results) => {
+                    if (!err) {
+                        console.log("You created a new User with ID " + results.insertId);    
+                        registerUserProfileOutcome.message = "you sucesfully registered " + newUser.userName + "!";       
+                        registerUserProfileOutcome.outcome = 1;       
 
-                } else {    
-                    registerUserOutcome.outcome = "no worky"
-                    registerUserOutcome.errors.push(err);
-                } 
-                resolve(registerUserOutcome);
-            }) 
-            
-        } catch(err) {
-            registerUserOutcome.outcome = "rejected";
-            console.log("REJECTED " + err);
-            reject(registerUserOutcome);
-        } 
-    });
-  }
-
-  static async registerUserProfile(newUser) {
-    const connection = db.getConnection(); 
-    var registerUserProfileOutcome = {
-        outcome: "",
-        message: "",
-        errors: []
+                    } else {    
+                        registerUserProfileOutcome.outcome = "no worky"
+                        registerUserProfileOutcome.errors.push(err);
+                    } 
+                    resolve(registerUserProfileOutcome);
+                }) 
+                
+            } catch(err) {
+                registerUserProfileOutcome.outcome = "rejected";
+                console.log("REJECTED " + err);
+                reject(registerUserProfileOutcome);
+            } 
+        });
     }
- 
-    const biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves"
-    const bilboImage = "frodo.jpg"
-    const rootFolder = newUser.userName
-    const firstName = newUser.fullName
-    const lastName = newUser.fullName
-    const university = "osu"
-    const postView = ""
-
-    //INSERT USER PROFILE 
-    return new Promise(async function(resolve, reject) {
-        try {
-            const queryString = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, university, post_view, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-           connection.query(queryString, [newUser.userName, newUser.userID, bilboImage, rootFolder, biography, university, postView, firstName, lastName, newUser.userEmail], (err, results) => {
-                if (!err) {
-                    console.log("You created a new User with ID " + results.insertId);    
-                    registerUserProfileOutcome.message = "you sucesfully registered " + newUser.userName + "!";       
-                    registerUserProfileOutcome.outcome = 1;       
-
-                } else {    
-                    registerUserProfileOutcome.outcome = "no worky"
-                    registerUserProfileOutcome.errors.push(err);
-                } 
-                resolve(registerUserProfileOutcome);
-            }) 
-            
-        } catch(err) {
-            registerUserProfileOutcome.outcome = "rejected";
-            console.log("REJECTED " + err);
-            reject(registerUserProfileOutcome);
-        } 
-    });
-  }
 
     //Method A4: Get User Friends 
     static async getUserFriends(userName) { 

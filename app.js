@@ -22,6 +22,7 @@ const posts = require('./application/routes/postRoutes.js');
 const comments = require('./application/routes/commentRoutes.js');
 const notifications = require('./application/routes/notificationRoutes.js');
 const requests = require('./application/routes/requestRoutes.js');
+const friends = require('./application/routes/friendRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -29,6 +30,7 @@ app.use(posts);
 app.use(comments);
 app.use(notifications);
 app.use(requests);
+app.use(friends);
 
 //Server Login 
 app.listen(3003, () => {

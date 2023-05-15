@@ -17,8 +17,20 @@ USE shareshare;
 #DELETE FROM pending_requests
 
 #SELECT * FROM shareshare.groups
-SELECT * FROM notifications;
+#SELECT * FROM notifications;
 #SELECT * FROM shareshare.groups
+
+SELECT user_id FROM user_login WHERE user_name = "davey";
+
+/*
+$result_friends = mysqli_query($conn,"SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, 
+			user_login.user_id, user_login.account_deleted
+			FROM user_login INNER JOIN friends
+			ON user_login.user_name = friends.friend_user_name
+			WHERE friends.user_name = '$userName'
+			AND friends.request_pending = 0
+			AND user_login.account_deleted = 0");
+*/
 
 #SELECT * FROM user_profile
 #UPDATE user_login SET user_name = "Frodo" WHERE user_id = 40;
