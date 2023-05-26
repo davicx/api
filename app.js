@@ -43,6 +43,8 @@ app.get("/", (req, res) => {
     res.end()
 })
 
+
+
 //APPENDIX
 //const posts = require('./application/routes/postRoutes.js');
 //const user = require('./application/routes/userRoutes.js');

@@ -1,10 +1,29 @@
 USE shareshare;
 
 #UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
-#DELETE FROM group_users WHERE group_id = 483 AND user_name = 'sam';
-#SELECT * FROM group_users WHERE group_id = 483;
-
+#DELETE FROM group_users WHERE group_id > 100;
 #DELETE FROM shareshare.groups WHERE group_id > 100;
+
+
+
+#UPDATE friends SET request_pending = 1;
+DELETE FROM friends
+#DELETE FROM notifications
+#DELETE FROM pending_requests
+#SELECT * FROM friends;
+#SELECT * FROM notifications;
+SELECT * FROM pending_requests;
+
+
+## ADD NEW FRIEND ##
+#INSERT INTO friends (user_name, user_id, friend_user_name, friend_id, request_pending, friend_key)
+#VALUES ("davey", "1", "sam", "2", 1, "daveysam");
+
+#INSERT INTO friends (user_name, user_id, friend_user_name, friend_id, request_pending, friend_key)
+#VALUES ("sam", "2", "davey", "1", 1, "samdavey");  
+
+#SELECT * FROM friends WHERE friends_ID > 350;
+
 
 #UPDATE posts SET post_to = "davey" WHERE post_id = 371;
 
@@ -17,10 +36,9 @@ USE shareshare;
 #DELETE FROM pending_requests
 
 #SELECT * FROM shareshare.groups
-#SELECT * FROM notifications;
 #SELECT * FROM shareshare.groups
 
-SELECT user_id FROM user_login WHERE user_name = "davey";
+#SELECT user_name, user_id, account_deleted FROM user_login WHERE user_name = "davey";
 
 /*
 $result_friends = mysqli_query($conn,"SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, 
@@ -178,6 +196,19 @@ FROM group_users INNER JOIN shareshare.groups
 ###################################
 #DELETE FROM notifications where notification_id > 0;
 #SELECT * FROM notifications;
+
+###################################
+#FRIENDS
+###################################
+/*
+SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, 
+		user_login.user_id, user_login.account_deleted
+		FROM user_login INNER JOIN friends
+		ON user_login.user_name = friends.friend_user_name
+		WHERE friends.user_name = 'davey'
+		AND friends.request_pending = 0
+		AND user_login.account_deleted = 0
+*/
 
 ###################################
 #REQUESTS

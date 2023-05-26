@@ -8,17 +8,17 @@ class Requests {
     
     //METHODS A: REQUEST RELATED
     //Method A1: Create a Request 
-	static async newGroupRequest(newRequest)  {
+	static async newSingleRequest(newRequest)  {
+		const connection = db.getConnection(); 
 		const masterSite = "kite";
-        const connection = db.getConnection(); 
         const requestType = newRequest.requestType;
         const requestTypeText = newRequest.requestTypeText;
         const requestIsPending = 1;
-        const requestTo = newRequest.requestTo;
-        const requestFrom = newRequest.sentBy;
+		const requestFrom = newRequest.sentBy;
+        const requestTo = newRequest.sentTo;
         const groupID = newRequest.groupID;
 
-        //Create request and Loop over members
+        //Create request 
 		if(requestTo != requestFrom) {
 	
 			//Step 1: Check if there is already a request 

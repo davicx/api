@@ -127,7 +127,7 @@ async function createGroup(req, res) {
     newGroupOutcome.statusCode = 200;
 	
 	res.json(newGroupOutcome)
-
+	//res.status(500).json({no:"oh no!"});
 }
 
 //Function A2: Invite User to a Group 

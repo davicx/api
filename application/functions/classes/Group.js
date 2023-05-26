@@ -38,11 +38,9 @@ class Group {
                         groupOutcome.outcome = 1;
                         groupOutcome.groupID = results.insertId
                         //console.log("You created a new Group with ID " + results.insertId);        
-                        //res.json(groupOutcome);
                     } else {  
                         //console.log(err);
                         groupOutcome.errors.push(err);
-                        //res.json({error: "ERROR MAN!"})  
                     }  
                     resolve(groupOutcome);
                 })   
@@ -268,11 +266,30 @@ module.exports = Group;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//APPENDIX
 //STEP 1: Create New Group 
 //Part 1: Create new group and insert into groups table 
-
-
-
 /*
 
     //Method A3: Add Group Users 

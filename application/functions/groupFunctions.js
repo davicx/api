@@ -6,7 +6,6 @@ FUNCTIONS A: All Functions Related to Groups
 	2) Function A2: Check if Group exists (by ID)
 	3) Function A3: Check if a User is in a Group
 
-
 */
 
 //GROUP FUNCTIONS

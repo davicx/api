@@ -6,6 +6,7 @@ const db = require('./conn');
 /*
 FUNCTIONS A: All Functions Related to User
 	1) Function A1: Get User ID from Username
+	1) Function A2: Get all User Friends
 
 */
 
@@ -17,6 +18,7 @@ async function getUserID(userName) {
 
     var userIdOutcome = {
         userName: userName,
+        userFound: false,
         userID: 0,
         errors: []
     }
@@ -29,7 +31,8 @@ async function getUserID(userName) {
                 if (!err) {
 
                     if(rows.length >= 1){
-						userIdOutcome.userID =  rows[0].user_id;
+						userIdOutcome.userID = rows[0].user_id;
+						userIdOutcome.userFound = true;
                     } else {
 						userIdOutcome.errors.push("We couldn't find a user with the name " + userName);
 					}

@@ -1,11 +1,12 @@
 const db = require('../functions/conn');
 
 const Group = require('../functions/classes/Group');
-const Notifications = require('../functions/classes/Notification')
+const Notification = require('../functions/classes/Notification')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const userFunctions = require('../functions/userFunctions')
-const friendFunctions = require('../functions/friendFunctions')
+const friendFunctions = require('../functions/friendFunctions');
+const Friend = require('../functions/classes/Friend');
 
 
 /*
@@ -24,10 +25,11 @@ FUNCTIONS B: All Functions Related to Friends
 //FUNCTIONS A: All Functions Related to Friends 
 //Function A1: Get User Friends	
 async function getUserFriends(req, res) {
-    const userName = req.params.userName;
+    const userName = req.params.user_name;
 
-    console.log(req.params);
-    res.json({hi:"hi"})
+	var friendsOutcome = await friendFunctions.getUserFriends(userName)
+
+    res.json(friendsOutcome)
 
 }
 
@@ -121,6 +123,13 @@ function temp() {
 
 //Function A1: Create a New Group
 async function addFriend(req, res) {
+	//Status
+	/*
+	1: Currently Friends
+	2: Friendship Pending
+	3: Not Friends
+	4: No Data
+	*/ 
     const connection = db.getConnection(); 
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
@@ -135,19 +144,80 @@ async function addFriend(req, res) {
 		currentUser: req.body.currentUser
 	}
 
-    //STEP 1: Check if they are friends	
-    var currentUserIdFull = await userFunctions.getUserID(currentUser)
-    var friendUserIdFull = await userFunctions.getUserID(friendName) 
+
+	//CHECK HERE NO USER YO DOG CANT BE FRIENDS 
+	var currentUserIdFull = await userFunctions.getUserID(currentUser)
+	var friendUserIdFull = await userFunctions.getUserID(friendName)
+
     var currentUserID = currentUserIdFull.userID
     var friendUserID = friendUserIdFull.userID
 
+	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
+	//STEP 2: Check if they are friends	
     var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
 
-    //STEP 2: Add Friendship to Friends Table 
-    //STEP 3: Add the Notification
-    //STEP 4: Add the Request
+    //STEP 3: Add Friendship to Friends Table 
+	//Status 1: Currently Friends
+	if(friendUserIdFull.userFound == false) {
+		newFriendOutcome.message = "Status: No user found";
 
-    res.json(friendShipStatus)
+	} else if(friendShipStatus.friendshipStatus == 1){
+		newFriendOutcome.message = "Status 1: Currently Friends";
+
+	//Status 2: Friendship Pending	
+	} else if(friendShipStatus.friendshipStatus == 2){
+		newFriendOutcome.message = "Status 2: Friendship Pending";	
+
+	//Status 3: Not currently Friends so add Friend	
+	} else if(friendShipStatus.friendshipStatus == 3) {
+		newFriendOutcome.statusCode = 200;
+		newFriendOutcome.success = true;
+		newFriendOutcome.message = "Status 3: Adding your friend!";	
+
+		//Add Friendship One
+		let friendOutcomeOne = await Friend.inviteFriend(currentUser, currentUserID, friendName, friendUserID);
+		let friendOutcomeTwo = await Friend.inviteFriend(friendName, friendUserID, currentUser, currentUserID);
+
+		//Add Friendship Two
+	 	newFriendOutcome.data = {
+			friendOutcomeOne: friendOutcomeOne,
+			friendOutcomeTwo: friendOutcomeTwo
+		}
+
+		if(friendOutcomeOne.userAdded == true && friendOutcomeTwo.userAdded == true) {
+
+			//STEP 4: Add the Notification
+			notification = {
+				masterSite: "kite",
+				notificationFrom: currentUser,
+				notificationMessage: currentUser + " added you as a friend!",
+				notificationTo: friendName,
+				notificationLink: "req.body.notificationLink",
+				notificationType: "friend_request",
+				groupID: 0
+			}
+	
+			Notification.createSingleNotification(notification);
+	
+			//STEP 5: Add the Request
+			const newRequest = {
+				requestType: "friend_request",
+				requestTypeText: currentUser + " invited you to be friends",
+				sentBy: currentUser,
+				sentTo: friendName,
+				groupID: 0
+			}
+	
+			Requests.newSingleRequest(newRequest) 
+
+		}
+
+	//Status 4: No data or error	
+	} else { 
+		newFriendOutcome.message = "Status 4: Somethin wrong dude!";
+	}
+
+    res.json(newFriendOutcome)
 }
 
 module.exports = { getUserFriends, addFriend};

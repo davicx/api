@@ -4,7 +4,6 @@ const postFunctions = require('../functions/postFunctions')
 const posts = require('../logic/posts')
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
-//const db = require('../functions/conn');
 const db = require('../functions/conn');
 const middlewares = require('../functions/middlewareFunctions')
 
