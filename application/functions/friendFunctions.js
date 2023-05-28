@@ -12,6 +12,49 @@ FUNCTIONS A: All Functions Related to Friends
 
 
 //FUNCTIONS A: All Functions Related to Friends
+
+async function getAllUsers() {
+    const connection = db.getConnection(); 
+    const accountActive = 1
+
+    var allUsersOutcome = {
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT * FROM user_profile WHERE account_active = ?"	
+            
+            connection.query(queryString, [accountActive], (err, rows) => {
+
+                const userArray = rows.map((row) => {
+                    return {
+                        userName: row.user_name,
+                        imageName: row.image_name,
+                        firstName: row.first_name,
+                        lastName: row.last_name,
+                        biography: row.biography
+                    }
+                });
+                
+                allUsersOutcome.userArray = userArray;
+
+                if (!err) {
+                    resolve(allUsersOutcome); 
+
+                } else {
+                    allUsersOutcome.outcome = 500;
+                    resolve(allUsersOutcome);
+                }
+            })
+        } catch(err) {
+            allUsersOutcome.outcome = 500;
+            reject(allUsersOutcome);
+        } 
+    })
+}
+
+
 //Function A1: Get all User Friends
 async function getUserFriends(userName) {
     const connection = db.getConnection(); 
@@ -22,16 +65,15 @@ async function getUserFriends(userName) {
 
 	return new Promise(async function(resolve, reject) {
         try {
-            const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, user_login.user_id, user_login.account_deleted FROM user_login INNER JOIN friends ON user_login.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND user_login.account_deleted = 0"	
-            
+            const queryString = "SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND user_profile.account_active = 1"
             connection.query(queryString, [userName], (err, rows) => {
 
                 const friendsArray = rows.map((row) => {
                     return {
-                        postID: row.user_name,
-                        postType: row.friend_user_name,
-                        groupID: row.friend_id,
-                        listID: row.user_id
+                        friendUserName: row.friend_user_name,
+                        friendID: row.friend_id,
+                        friendUserImage: row.image_name
+                        
                     }
                 });
                 
@@ -50,7 +92,6 @@ async function getUserFriends(userName) {
             reject(userFriendsOutcome);
         } 
     })
-    
 }
 
 
@@ -115,4 +156,4 @@ async function checkFriendshipStatus(currentUser, userFriend) {
 }
 
 
-module.exports = { checkFriendshipStatus, getUserFriends };
+module.exports = { checkFriendshipStatus, getUserFriends, getAllUsers };

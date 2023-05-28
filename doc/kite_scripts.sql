@@ -5,14 +5,19 @@ USE shareshare;
 #DELETE FROM shareshare.groups WHERE group_id > 100;
 
 
-
-#UPDATE friends SET request_pending = 1;
-DELETE FROM friends
+#UPDATE user_profile SET image_name = "sam.jpg" WHERE user_name =  "sam";
+#UPDATE friends SET request_pending = 0;
+#DELETE FROM friends
 #DELETE FROM notifications
 #DELETE FROM pending_requests
+#SELECT * FROM user_profile WHERE account_active = 1;
 #SELECT * FROM friends;
 #SELECT * FROM notifications;
-SELECT * FROM pending_requests;
+#SELECT * FROM pending_requests;
+SELECT * FROM user_profile;
+
+
+            
 
 
 ## ADD NEW FRIEND ##

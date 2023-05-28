@@ -23,6 +23,7 @@ const comments = require('./application/routes/commentRoutes.js');
 const notifications = require('./application/routes/notificationRoutes.js');
 const requests = require('./application/routes/requestRoutes.js');
 const friends = require('./application/routes/friendRoutes.js');
+//const user = require('./application/routes/userRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -31,6 +32,7 @@ app.use(comments);
 app.use(notifications);
 app.use(requests);
 app.use(friends);
+//app.use(user);
 
 //Server Login 
 app.listen(3003, () => {
@@ -47,7 +49,6 @@ app.get("/", (req, res) => {
 
 //APPENDIX
 //const posts = require('./application/routes/postRoutes.js');
-//const user = require('./application/routes/userRoutes.js');
 //const group = require('./application/routes/groupRoutes.js');
 //const groups = require('./application/routes/groupRoute.js');
 //const notification = require('./application/routes/notificationRoutes.js');
@@ -55,10 +56,8 @@ app.get("/", (req, res) => {
 //const upload = require('./application/routes/uploadRoutes.js'); 
 //const learning = require('./application/routes/learningRoutes.js'); 
 
-//
 //app.use(posts);
 //app.use(groups);
-//app.use(user);
 //app.use(postGroup);
 //app.use(notification); 
 //app.use(upload); 
