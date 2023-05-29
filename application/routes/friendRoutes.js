@@ -24,7 +24,6 @@ friendRouter.get('/users/all/', function(req, res) {
     friends.getAllUsers(req, res);
 })
 
-
 //Function A2: Get Your Friends	
 friendRouter.get('/friends/:user_name/', function(req, res) { 
     friends.getYourFriends(req, res);
@@ -36,15 +35,17 @@ friendRouter.get('/friend/:friend_name/user/:user_name/', function(req, res) {
     friends.getUserFriends(req, res);
 })
 
+
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
-
-
-//FUNCTIONS A: All Functions Related to Friends
-//Function A1: Request a Friend
 friendRouter.post('/friend/request/', function(req, res) { 
     friends.addFriend(req, res);
 })
+
+//Function B2: Cancel a Friend	Request
+//Function B3: Accept Friend Request
+//Function B4: Decline Friend Request
+
 
 
 
