@@ -9,15 +9,15 @@ const db = require('../functions/conn');
 
 /*
 FUNCTIONS A: All Functions Related to Getting Requests 
-	1) Function A1: Get all Notifications 
-	2) Function A2: Get all Notifications to Group
-	3) Function A3: Get all Notifications to User 
+	1) Function A1: Get all Requests 
+	2) Function A2: Get all Requests to Group
+	3) Function A3: Get all Requests to User 
  
 FUNCTIONS B: All Functions Related to Requests Actions 
-	1) Function B1: Set Notification to Seen 
-	2) Function B2: Set all Notification as Seen
-	3) Function B3: Delete Notification
-	4) Function B4: Delete All Notifications 
+	1) Function B1: Set Requests to Seen 
+	2) Function B2: Set all Requests as Seen
+	3) Function B3: Delete Requests
+	4) Function B4: Delete All Requests 
 */
 
 //FUNCTIONS A: All Functions Related to Getting Notifications 
@@ -25,7 +25,7 @@ FUNCTIONS B: All Functions Related to Requests Actions
 
 //Function A1: Get Single Request (Check if it exists)
 async function getUserRequests(req, res) {
-    res.json({getUserRequests: "getUserRequests"})
+    //res.json({getUserRequests: "getUserRequests"})
 
 }
 

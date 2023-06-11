@@ -1,11 +1,22 @@
 USE shareshare;
 
+
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_to = "davey"
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey"
+
+
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND sent_to = "merry" AND request_type = "friend_request"
+
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND sent_to = "merry" AND request_type = "friend_request"
+#SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = " AND friends.request_pending = 1 AND user_profile.account_active = 1
+SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_to = "merry" AND sent_by = "davey"
+
 #UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
 #DELETE FROM group_users WHERE group_id > 100;
 #DELETE FROM shareshare.groups WHERE group_id > 100;
 
 
-#UPDATE user_profile SET image_name = "sam.jpg" WHERE user_name =  "sam";
+#UPDATE user_profile SET image_name = "merry.jpg" WHERE user_name =  "merry";
 #UPDATE friends SET request_pending = 0;
 #DELETE FROM friends
 #DELETE FROM notifications
@@ -14,7 +25,7 @@ USE shareshare;
 #SELECT * FROM friends;
 #SELECT * FROM notifications;
 #SELECT * FROM pending_requests;
-SELECT * FROM user_profile;
+#SELECT * FROM user_profile;
 
 
             

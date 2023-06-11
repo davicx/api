@@ -6,6 +6,7 @@ const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const userFunctions = require('../functions/userFunctions')
 const friendFunctions = require('../functions/friendFunctions');
+const requestFunctions = require('../functions/requestFunctions');
 const Friend = require('../functions/classes/Friend');
 
 
@@ -13,6 +14,7 @@ const Friend = require('../functions/classes/Friend');
 FUNCTIONS A: All Functions Related to Friends 
 	1) Function A1: Get All Site Users 	
 	2) Function A2: Get User Friends	
+	3) Function A3: Get Pending User Friends	
 
 FUNCTIONS B: All Functions Related to Friends
 	1) Function B1: Request a Friend	
@@ -51,6 +53,27 @@ async function getYourFriends(req, res) {
 	var friendsOutcome = await friendFunctions.getUserFriends(userName)
 
     res.json(friendsOutcome)
+
+}
+
+//Function A3: Get A list of all the people you have invited to be your friend (They accept)
+async function getYourSentFriendRequests(req, res) {
+    const userName = req.params.user_name;
+
+	var pendingFriendsOutcome = await friendFunctions.getPendingFriendRequests(userName)
+
+    res.json(pendingFriendsOutcome)
+
+}
+
+//Function A4: Get a list of friend invites (You can accept)
+async function getYourPendingFriendInvites(req, res) {
+	const currentUser = req.params.request_to;
+    const requestFrom = req.params.request_from;
+
+	var pendingFriendsOutcome = await friendFunctions.getPendingFriendInvites(currentUser, requestFrom)
+
+    res.json(pendingFriendsOutcome)
 
 }
 
@@ -112,8 +135,8 @@ async function getUserFriends(req, res) {
 
 //FUNCTIONS B: All Functions Related to Friends
 //Function B1: Request a Friend	
-//Function B2: Cancel a Friend	Request
-//Function B3: Accept Friend Request
+//Function B2: Accept Friend Request
+//Function B3: Cancel a Friend	Request
 //Function B4: Decline Friend Request
 
 //Function B1: Request a Friend	
@@ -216,7 +239,115 @@ async function addFriend(req, res) {
     res.json(newFriendOutcome)
 }
 
-module.exports = { getAllUsers, getYourFriends, getUserFriends, addFriend};
+//Function B1: Accept a Friend	
+async function acceptFriendRequest(req, res) {
+    const connection = db.getConnection(); 
+    const masterSite = req.body.masterSite;
+    const currentUser = req.body.userName;
+    const friendName = req.body.friendName;
+
+    var acceptFriendOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+	var currentUserIdFull = await userFunctions.getUserID(currentUser)
+	var friendUserIdFull = await userFunctions.getUserID(friendName)
+
+    var currentUserID = currentUserIdFull.userID
+    var friendUserID = friendUserIdFull.userID
+
+	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
+	//STEP 1: Confirm there is a Pending Request
+	var requestStatus = await requestFunctions.getRequestStatus(currentUser, friendName, "friend_request");
+
+	if(requestStatus == true) {
+
+	} else {
+		acceptFriendOutcome.message = "There is no pending request from " + friendName + " to " + currentUser;
+	}
+
+
+	
+
+	/*
+
+	
+	//STEP 1: Check if they are friends	
+    var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
+
+    //STEP 2: 
+	//Status 1: Currently Friends
+	if(friendUserIdFull.userFound == false) {
+		acceptFriendOutcome.message = "Status: No user found";
+
+	} else if(friendShipStatus.friendshipStatus == 1){
+		acceptFriendOutcome.message = "Status 1: Already Friends";
+
+	//Status 2: Friendship Pending	
+	} else if(friendShipStatus.friendshipStatus == 2){
+		acceptFriendOutcome.message = "Status 2: Friendship Pending";	
+
+	//Status 3: Not currently Friends so add Friend	
+	} else if(friendShipStatus.friendshipStatus == 3) {		
+		acceptFriendOutcome.statusCode = 200;
+		acceptFriendOutcome.success = true;
+		acceptFriendOutcome.message = "Status 3: Adding your friend!";	
+
+
+		/*
+		//Add Friendship One
+		let friendOutcomeOne = await Friend.inviteFriend(currentUser, currentUserID, friendName, friendUserID);
+		let friendOutcomeTwo = await Friend.inviteFriend(friendName, friendUserID, currentUser, currentUserID);
+
+		//Add Friendship Two
+		acceptFriendOutcome.data = {
+			friendOutcomeOne: friendOutcomeOne,
+			friendOutcomeTwo: friendOutcomeTwo
+		}
+
+		if(friendOutcomeOne.userAdded == true && friendOutcomeTwo.userAdded == true) {
+
+			//STEP 4: Add the Notification
+			notification = {
+				masterSite: "kite",
+				notificationFrom: currentUser,
+				notificationMessage: currentUser + " added you as a friend!",
+				notificationTo: friendName,
+				notificationLink: "req.body.notificationLink",
+				notificationType: "friend_request",
+				groupID: 0
+			}
+	
+			Notification.createSingleNotification(notification);
+	
+
+			//STEP 5: Add the Request
+			const newRequest = {
+				requestType: "friend_request",
+				requestTypeText: currentUser + " invited you to be friends",
+				sentBy: currentUser,
+				sentTo: friendName,
+				groupID: 0
+			}
+	
+			Requests.newSingleRequest(newRequest) 
+		
+		}
+	
+	//Status 4: No data or error	
+	} else { 
+		acceptFriendOutcome.message = "Status 4: Somethin wrong dude!";
+	}
+	*/
+    res.json(requestStatus)
+}
+
+module.exports = { getAllUsers, getYourFriends, getYourSentFriendRequests, getYourPendingFriendInvites, getUserFriends, addFriend, acceptFriendRequest};
 
 
 /*

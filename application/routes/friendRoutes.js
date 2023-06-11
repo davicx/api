@@ -6,7 +6,8 @@ const friends = require('../logic/friends')
 FUNCTIONS A: All Functions Related to Friends 
 	1) Function A1: Get All Site Users	
 	2) Function A2: Get Your Friends	
-	3) Function A3: Get a list of someones friends	
+	3) Function A3: Get your Pending Friends
+	4) Function A4: Get a list of someones friends	
 
 
 FUNCTIONS B: All Functions Related to Friends Actions
@@ -29,6 +30,17 @@ friendRouter.get('/friends/:user_name/', function(req, res) {
     friends.getYourFriends(req, res);
 })
 
+//Function A3: Get Your Friend Requests (You invited and are waiting for them)
+friendRouter.get('/friends/pending/invites/:user_name/', function(req, res) { 
+    friends.getYourSentFriendRequests(req, res);
+})
+
+//Function A3: Get Your Friend Requests (You can accept)
+friendRouter.get('/friends/pending/request_to/:user_name/request_from/:request_from', function(req, res) { 
+    friends.getYourPendingFriendInvites(req, res);
+})
+
+
 //Function A3: Get a list of someones friends	
 //http://localhost:3003/friend/sam/user/davey
 friendRouter.get('/friend/:friend_name/user/:user_name/', function(req, res) { 
@@ -42,8 +54,13 @@ friendRouter.post('/friend/request/', function(req, res) {
     friends.addFriend(req, res);
 })
 
-//Function B2: Cancel a Friend	Request
-//Function B3: Accept Friend Request
+//Function B2: Accept Friend Request
+friendRouter.post('/friend/accept/', function(req, res) { 
+    friends.acceptFriendRequest(req, res);
+})
+
+//Function B3: Cancel a Friend	Request
+
 //Function B4: Decline Friend Request
 
 
