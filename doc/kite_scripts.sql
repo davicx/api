@@ -1,6 +1,74 @@
 USE shareshare;
 
 
+
+
+SELECT * FROM friends WHERE request_pending = 1 
+
+
+#SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = "davey") AND (user_name != "davey" ) 
+#SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = "davey") AND (user_name != "davey" ) 
+
+#SELECT friends.sent_by, friends.sent_to, friends.user_name AS request_to_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name 
+
+
+#SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name AS friend_user_name, user_profile.image_name AS friend_image_name, user_profile.account_active
+#FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to 
+#WHERE friends.request_pending = 1 AND (friends.sent_by = "davey") AND (friends.user_name != "davey" ) AND user_profile.account_active = 1
+
+#friends.user_name = ? AND friends.request_pending = 1 AND user_profile.account_active = 1
+#SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = "davey") AND (user_name != "davey" ) 
+
+
+#SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name 
+#FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name 
+#user_profileWHERE friends.user_name = ? AND friends.request_pending = 1 AND user_profile.account_active = 1
+
+
+
+#REQUESTS: Get your pending friend requests 
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND request_type = "friend_request"
+
+
+
+/*
+SELECT * FROM pending_requests
+SELECT * FROM friends 
+SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = "davey") AND (user_name != "davey" ) 
+SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND request_type = "friend_request"
+
+SELECT * FROM friends WHERE request_pending = 1 AND (user_name = "davey" AND friend_user_name = "merry") 
+OR (user_name = "merry" AND friend_user_name = "davey") 
+
+*/
+
+#INVITES: Get your pending friend invites 
+/*
+SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_to = "davey" AND request_type = "friend_request"
+
+SELECT * FROM friends WHERE request_pending = 1 AND (user_name = "davey" AND friend_user_name = "merry") 
+OR (user_name = "merry" AND friend_user_name = "davey") 
+
+SELECT * FROM friends WHERE request_pending = 1 AND (user_name = "davey" AND friend_user_name = "pippin") 
+OR (user_name = "merry" AND friend_user_name = "davey") 
+
+*/
+
+
+/*
+ALTER TABLE friends ADD sent_to varchar(256) NOT NULL DEFAULT "empty" AFTER sent_by
+
+#ALTER TABLE friends ADD sent_by varchar(256) NOT NULL DEFAULT "empty" AFTER friend_id
+#ALTER TABLE friends ADD sent_to varchar(256) NOT NULL DEFAULT "empty" AFTER friend_id
+#ALTER TABLE friends DROP COLUMN sent_by;
+#
+*/
+#SELECT * FROM friends WHERE request_pending = 1 AND (user_name = "davey" OR friend_user_name = "davey")
+
+
+
+
+
 #SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_to = "davey"
 #SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey"
 
@@ -9,7 +77,14 @@ USE shareshare;
 
 #SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND sent_to = "merry" AND request_type = "friend_request"
 #SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = " AND friends.request_pending = 1 AND user_profile.account_active = 1
-SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_to = "merry" AND sent_by = "davey"
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_to = "merry" AND sent_by = "davey"
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey"
+#SELECT * FROM friends WHERE request_pending = 1 AND user_name = "davey"
+#SELECT * FROM friends WHERE request_pending = 1 AND user_name = "davey" OR user_name = "merry" 
+
+
+
+
 
 #UPDATE shareshare.groups SET group_id = 77 WHERE group_id = 423;
 #DELETE FROM group_users WHERE group_id > 100;

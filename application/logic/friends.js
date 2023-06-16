@@ -14,29 +14,20 @@ const Friend = require('../functions/classes/Friend');
 FUNCTIONS A: All Functions Related to Friends 
 	1) Function A1: Get All Site Users 	
 	2) Function A2: Get User Friends	
-	3) Function A3: Get Pending User Friends	
+	3) Function A3: Get a list of someones friends		
+	4) Function A4: Get your Pending Friends Requests (They accept)	
+	5) Function A5: Get your Pending Friends Invites (You can accept)
 
 FUNCTIONS B: All Functions Related to Friends
 	1) Function B1: Request a Friend	
-	2) Function B2: Cancel a Friend	Request
-	3) Function B3: Accept Friend Request
+	2) Function B2: Accept Friend Request 
+	3) Function B3: Cancel a Friend	Request
 	4) Function B4: Decline Friend Request
-
-*/
-/*
-    var newGroupOutcome = {
-		data: {},
-		message: "", 
-		success: false,
-		statusCode: 500,
-		errors: [], 
-		currentUser: req.body.currentUser
-	}
 
 */
 
 //FUNCTIONS A: All Functions Related to Friends 
-//Function A1: Get All Site Users 	
+//Function A1: Get All Site Users
 async function getAllUsers(req, res) {
     const userName = req.params.user_name;
 
@@ -46,7 +37,7 @@ async function getAllUsers(req, res) {
 
 }
 
-//Function A2: Get User Friends
+//Function A2: Get Your Friends	
 async function getYourFriends(req, res) {
     const userName = req.params.user_name;
 
@@ -56,29 +47,7 @@ async function getYourFriends(req, res) {
 
 }
 
-//Function A3: Get A list of all the people you have invited to be your friend (They accept)
-async function getYourSentFriendRequests(req, res) {
-    const userName = req.params.user_name;
-
-	var pendingFriendsOutcome = await friendFunctions.getPendingFriendRequests(userName)
-
-    res.json(pendingFriendsOutcome)
-
-}
-
-//Function A4: Get a list of friend invites (You can accept)
-async function getYourPendingFriendInvites(req, res) {
-	const currentUser = req.params.request_to;
-    const requestFrom = req.params.request_from;
-
-	var pendingFriendsOutcome = await friendFunctions.getPendingFriendInvites(currentUser, requestFrom)
-
-    res.json(pendingFriendsOutcome)
-
-}
-
-//Function A3: Get User Friends
-//http://localhost:3003/user/davey/friend/sam
+//Function A3: Get a list of someones friends	
 async function getUserFriends(req, res) {
     const userName = req.params.user_name;
     const friendName = req.params.friend_name;
@@ -129,16 +98,37 @@ async function getUserFriends(req, res) {
 
 }
 
+//Function A4: Get your Pending Friends Requests (They accept)
+async function getPendingFriendRequests(req, res) {
+	const userName = req.params.user_name;
 
+	var pendingFriendRequestOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
 
+	var pendingFriends = await friendFunctions.getPendingFriendRequests(userName, userName)
+	pendingFriendRequestOutcome.data = pendingFriends
 
+    res.json(pendingFriendRequestOutcome.data = pendingFriends
+)
 
-//FUNCTIONS B: All Functions Related to Friends
-//Function B1: Request a Friend	
-//Function B2: Accept Friend Request
-//Function B3: Cancel a Friend	Request
-//Function B4: Decline Friend Request
+}
 
+//Function A5: Get your Pending Friends Invites (You can accept)
+async function getPendingFriendInvites(req, res) {
+    const userName = req.params.user_name;
+	var pendingFriendsInvites = await friendFunctions.getPendingFriendInvites(userName)
+
+    res.json(pendingFriendsInvites)
+
+}
+
+//FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
 async function addFriend(req, res) {
 	//Status
@@ -152,6 +142,8 @@ async function addFriend(req, res) {
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
     const friendName = req.body.addFriendName;
+    const sentBy = req.body.currentUser;
+    const sentTo = req.body.addFriendName;
 
     var newFriendOutcome = {
 		data: {},
@@ -193,8 +185,8 @@ async function addFriend(req, res) {
 		newFriendOutcome.message = "Status 3: Adding your friend!";	
 
 		//Add Friendship One
-		let friendOutcomeOne = await Friend.inviteFriend(currentUser, currentUserID, friendName, friendUserID);
-		let friendOutcomeTwo = await Friend.inviteFriend(friendName, friendUserID, currentUser, currentUserID);
+		let friendOutcomeOne = await Friend.inviteFriend(sentBy, sentTo, currentUser, currentUserID, friendName, friendUserID);
+		let friendOutcomeTwo = await Friend.inviteFriend(sentBy, sentTo, friendName, friendUserID, currentUser, currentUserID);
 
 		//Add Friendship Two
 	 	newFriendOutcome.data = {
@@ -239,7 +231,7 @@ async function addFriend(req, res) {
     res.json(newFriendOutcome)
 }
 
-//Function B1: Accept a Friend	
+//Function B2: Accept Friend Request 
 async function acceptFriendRequest(req, res) {
     const connection = db.getConnection(); 
     const masterSite = req.body.masterSite;
@@ -262,8 +254,9 @@ async function acceptFriendRequest(req, res) {
     var friendUserID = friendUserIdFull.userID
 
 	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
+
 	//STEP 1: Confirm there is a Pending Request
-	var requestStatus = await requestFunctions.getRequestStatus(currentUser, friendName, "friend_request");
+	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
 
 	if(requestStatus == true) {
 
@@ -347,7 +340,64 @@ async function acceptFriendRequest(req, res) {
     res.json(requestStatus)
 }
 
-module.exports = { getAllUsers, getYourFriends, getYourSentFriendRequests, getYourPendingFriendInvites, getUserFriends, addFriend, acceptFriendRequest};
+
+//Function B3: Cancel a Friend	Request
+//Function B4: Decline Friend Request
+
+
+
+
+
+
+
+
+
+
+//ORGANIZE
+
+//Function A3: Get a list of friend Requests (You can accept)
+
+
+//Function A4: Get A list of all the people you have invited to be your friend (They accept)
+
+
+
+//Function A3: Get User Friends
+//http://localhost:3003/user/davey/friend/sam
+
+
+
+//FUNCTIONS B: All Functions Related to Friends
+//Function B1: Request a Friend	
+//Function B2: Accept Friend Request
+//Function B3: Cancel a Friend	Request
+//Function B4: Decline Friend Request
+
+//Function B1: Request a Friend	
+
+
+//Function B1: Accept a Friend	
+
+
+module.exports = { getAllUsers, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, addFriend, acceptFriendRequest};
+
+
+
+
+
+
+/*
+    var newGroupOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+*/
+
 
 
 /*
