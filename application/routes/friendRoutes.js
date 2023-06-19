@@ -46,11 +46,11 @@ friendRouter.get('/friends/invites/:user_name/', function(req, res) {
     friends.getPendingFriendInvites(req, res);
 })
 
-/*
-friendRouter.get('/friends/invites/request_to/:user_name/request_from/:request_from', function(req, res) { 
-    friends.getYourPendingFriendInvites(req, res);
+//Function A6: Get all Site Users with Friendship Status 
+friendRouter.get('/users/all/:user_name/', function(req, res) { 
+    friends.getAllUsersWithFriendship(req, res);
 })
-*/
+
 
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
@@ -67,3 +67,11 @@ friendRouter.post('/friend/accept/', function(req, res) {
 //Function B4: Decline Friend Request
 
 module.exports = friendRouter;
+
+
+/*
+friendRouter.get('/friends/invites/request_to/:user_name/request_from/:request_from', function(req, res) { 
+    friends.getYourPendingFriendInvites(req, res);
+})
+*/
+

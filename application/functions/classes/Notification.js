@@ -96,10 +96,21 @@ class Notification {
         
 	}
 
-    static async removeNotification(commentID, currentUser, comment_type) {
-
+    static async removeNotification(notificationType, notificationFrom, notificationTo) {
         console.log("Remove Notification!")
         console.log(commentID, currentUser, comment_type);
+      
+		//Get Group Users 
+        if(notificationTo != notificationFrom) {
+            const queryString = "UPDATE notifications SET notification_seen = 1 WHERE notification_type = ? AND notification_from = ? AND notification_to = ?"
+            connection.query(queryString, [notificationFrom, notificationTo, notificationType], (err, results) => {                  
+                if (!err) {
+                    console.log("notification for " + notificationTo + " Worked!")
+                } else {
+                    console.log("Failed to insert new Post: " + err);
+                } 
+            })
+        }
 
     }
 

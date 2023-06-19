@@ -26,16 +26,44 @@ FUNCTIONS B: All Functions Related to Friends
 
 */
 
+/*
+
+var newGroupOutcome = {
+	groupData: {},
+	message: "", 
+	success: false,
+	statusCode: 500,
+	errors: [], 
+	currentUser: req.body.currentUser
+}
+
+{
+    "currentUser": "davey",
+    "friendList": "sam",
+    "message": "davey is looking at sam's list of friends",
+    "friendsArray": [
+        {
+            "friendUserName": "davey",
+            "friendID": 39,
+            "friendUserImage": "frodo.jpg",
+            "friendshipPending": 1,
+            "friendStatusMessage": "This is you",
+            "friendStatus": true
+        }
+    ]
+}
+*/
+
 //FUNCTIONS A: All Functions Related to Friends 
 //Function A1: Get All Site Users
 async function getAllUsers(req, res) {
     const userName = req.params.user_name;
 
 	var usersOutcome = await friendFunctions.getAllUsers()
-
     res.json(usersOutcome)
 
 }
+
 
 //Function A2: Get Your Friends	
 async function getYourFriends(req, res) {
@@ -125,6 +153,69 @@ async function getPendingFriendInvites(req, res) {
 	var pendingFriendsInvites = await friendFunctions.getPendingFriendInvites(userName)
 
     res.json(pendingFriendsInvites)
+
+}
+
+//Function A6: Get all Site Users with Friendship Status 
+async function getAllUsersWithFriendship(req, res) {
+    const userName = req.params.user_name;
+
+	var allUsersOutcome = await friendFunctions.getAllUsers()
+	var yourFriendsOutcome = await friendFunctions.getUserFriends(userName);
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+	var allUsersArray = allUsersOutcome.userArray;
+
+	console.log(yourFriendsArray);
+
+	//STEP 1: Create a Set of your friends
+	var yourFriendsSet = new Set();
+	for (let i = 0; i < yourFriendsArray.length ; i++) {
+		//console.log(yourFriendsArray[i].friendUserName.toLowerCase());
+		yourFriendsSet.add(yourFriendsArray[i].friendUserName.toLowerCase())
+	}	
+
+
+	//STEP 2: Check this set for friend Matches
+	for (let i = 0; i < allUsersArray.length ; i++) {
+		let friendName = allUsersArray[i].userName.toLowerCase();
+		if(yourFriendsSet.has(allUsersArray[i].userName.toLowerCase())) {
+			allUsersArray[i].friendStatusMessage = "friends";
+			allUsersArray[i].friendStatus = true;
+
+			//When they match get their friend status
+			getFriendStatus(friendName, yourFriendsArray);
+			
+
+		} else if(userName.toLowerCase().localeCompare(allUsersArray[i].userName.toLowerCase()) == 0 ) {
+			allUsersArray[i].friendStatusMessage = "This is you";
+			allUsersArray[i].friendStatus = true;
+		}
+		else {
+			allUsersArray[i].friendStatusMessage = "not friends";
+			allUsersArray[i].friendStatus = false;
+		}
+	}
+
+	//console.log(allUsersArray);
+
+
+	res.json(allUsersArray)
+
+}
+
+function getFriendStatus(friendName, yourFriendsArray) {
+	for (let i = 0; i < yourFriendsArray.length ; i++) {
+	
+		//console.log(yourFriendsArray[i].friendUserName + " | " +  friendName)
+		if(yourFriendsArray[i].friendUserName.localeCompare(friendName) == 0) {
+			console.log(" ")
+			console.log("Found! ")
+			console.log(yourFriendsArray[i].friendUserName)
+			console.log(yourFriendsArray[i].friendshipPending)
+			console.log(" ")
+			break;
+		}
+	}
 
 }
 
@@ -246,100 +337,57 @@ async function acceptFriendRequest(req, res) {
 		errors: [], 
 		currentUser: req.body.currentUser
 	}
-
-	var currentUserIdFull = await userFunctions.getUserID(currentUser)
-	var friendUserIdFull = await userFunctions.getUserID(friendName)
-
-    var currentUserID = currentUserIdFull.userID
-    var friendUserID = friendUserIdFull.userID
-
-	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
-
 	//STEP 1: Confirm there is a Pending Request
 	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
+	console.log("STEP 1: Confirm there is a Pending Request")
+	console.log(requestStatus)
 
-	if(requestStatus == true) {
+	//STEP 2: Confirm there is a Friendship Pending
+	var inviteStatus = await friendFunctions.getSingleInvite(currentUser, friendName);
+	console.log("STEP 2: Confirm there is a Friendship Pending")
+	console.log(inviteStatus)
+	
+	//If there is a request 
+	if(inviteStatus.inviteExists == true) {
+
+		//STEP 3: Update Friendship
+		let friendshipAddedOutcome = await Friend.acceptFriendInvite(currentUser, friendName) 
+		console.log("STEP 3: Update Friendship")
+		console.log(friendshipAddedOutcome)
+
+		//STEP 4: Update Request
+		var updateRequestStatus = await requestFunctions.updateRequestStatus("friend_request", friendName, currentUser);
+		console.log("STEP 4: Update Request");
+		console.log(updateRequestStatus);
+
+		//STEP 5: Create a New Notification
+		const notification = {
+			masterSite: "kite",
+			notificationFrom: currentUser,
+			notificationMessage: currentUser + " accepted your friend request!",
+			notificationTo: friendName,
+			notificationLink: "req.body.notificationLink",
+			notificationType: "friend_request",
+			groupID: 0
+		}
+
+		Notification.createSingleNotification(notification);
+
+		//STEP 6: Mark original Notification as Seen
+		Notification.removeNotification("friend_request", currentUser, friendName);
+
+		acceptFriendOutcome.message = currentUser + " accepted a friend request from " + friendName;
+		acceptFriendOutcome.success = true
+		acceptFriendOutcome.statusCode = 200
 
 	} else {
-		acceptFriendOutcome.message = "There is no pending request from " + friendName + " to " + currentUser;
+		acceptFriendOutcome.success = true
+		acceptFriendOutcome.statusCode = 200
+		acceptFriendOutcome.message = "The friendship was already accepted"
 	}
-
-
-	
-
-	/*
-
-	
-	//STEP 1: Check if they are friends	
-    var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
-
-    //STEP 2: 
-	//Status 1: Currently Friends
-	if(friendUserIdFull.userFound == false) {
-		acceptFriendOutcome.message = "Status: No user found";
-
-	} else if(friendShipStatus.friendshipStatus == 1){
-		acceptFriendOutcome.message = "Status 1: Already Friends";
-
-	//Status 2: Friendship Pending	
-	} else if(friendShipStatus.friendshipStatus == 2){
-		acceptFriendOutcome.message = "Status 2: Friendship Pending";	
-
-	//Status 3: Not currently Friends so add Friend	
-	} else if(friendShipStatus.friendshipStatus == 3) {		
-		acceptFriendOutcome.statusCode = 200;
-		acceptFriendOutcome.success = true;
-		acceptFriendOutcome.message = "Status 3: Adding your friend!";	
-
-
-		/*
-		//Add Friendship One
-		let friendOutcomeOne = await Friend.inviteFriend(currentUser, currentUserID, friendName, friendUserID);
-		let friendOutcomeTwo = await Friend.inviteFriend(friendName, friendUserID, currentUser, currentUserID);
-
-		//Add Friendship Two
-		acceptFriendOutcome.data = {
-			friendOutcomeOne: friendOutcomeOne,
-			friendOutcomeTwo: friendOutcomeTwo
-		}
-
-		if(friendOutcomeOne.userAdded == true && friendOutcomeTwo.userAdded == true) {
-
-			//STEP 4: Add the Notification
-			notification = {
-				masterSite: "kite",
-				notificationFrom: currentUser,
-				notificationMessage: currentUser + " added you as a friend!",
-				notificationTo: friendName,
-				notificationLink: "req.body.notificationLink",
-				notificationType: "friend_request",
-				groupID: 0
-			}
-	
-			Notification.createSingleNotification(notification);
-	
-
-			//STEP 5: Add the Request
-			const newRequest = {
-				requestType: "friend_request",
-				requestTypeText: currentUser + " invited you to be friends",
-				sentBy: currentUser,
-				sentTo: friendName,
-				groupID: 0
-			}
-	
-			Requests.newSingleRequest(newRequest) 
-		
-		}
-	
-	//Status 4: No data or error	
-	} else { 
-		acceptFriendOutcome.message = "Status 4: Somethin wrong dude!";
-	}
-	*/
-    res.json(requestStatus)
+	console.log(acceptFriendOutcome)
+    res.json(acceptFriendOutcome)
 }
-
 
 //Function B3: Cancel a Friend	Request
 //Function B4: Decline Friend Request
@@ -379,7 +427,7 @@ async function acceptFriendRequest(req, res) {
 //Function B1: Accept a Friend	
 
 
-module.exports = { getAllUsers, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, addFriend, acceptFriendRequest};
+module.exports = { getAllUsers, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest};
 
 
 
