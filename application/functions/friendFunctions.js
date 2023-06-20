@@ -10,6 +10,8 @@ FUNCTIONS A: All Functions Related to Friends
     2) Function A2: Get a List of Friends You have Requested (They must accept)
     3) Function A3: Get a List of Friend Invites (You can Accept)
     4) Function A4: Get a Single Friend Invite
+    5) Function A5: Get all Users
+    6) Function A6: Check if Users are Friends
 
 */
 
@@ -28,7 +30,7 @@ async function getUserFriends(userName) {
         try {
             //const queryString = "SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND user_profile.account_active = 1"
             //const queryString = "SELECT * FROM friends WHERE user_name = ?"
-            const queryString = "SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
+            const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
 
             connection.query(queryString, [userName], (err, rows) => {
 
@@ -37,8 +39,8 @@ async function getUserFriends(userName) {
                         friendUserName: row.friend_user_name,
                         friendID: row.friend_id,
                         friendUserImage: row.image_name,
-                        friendshipPending: row.request_pending
-                        
+                        friendshipPending: row.request_pending,
+                        sentBy: row.sent_by
                     }
                 });
                 
@@ -174,7 +176,7 @@ async function getSingleInvite(currentUser, friendRequestFrom) {
   
 }
 
-
+//Function A5: Get all Users
 async function getAllUsers() {
     const connection = db.getConnection(); 
     const accountActive = 1
@@ -216,20 +218,15 @@ async function getAllUsers() {
     })
 }
 
-
-
-
-
-
-//Function A1: Check if Users are Friends
-//Status
-/*
-1: Currently Friends
-2: Friendship Pending
-3: Not Friends
-4: No Data
-*/ 
+//Function A6: Check if Users are Friends
 async function checkFriendshipStatus(currentUser, userFriend) {
+    //Status
+    /*
+    1: Currently Friends
+    2: Friendship Pending
+    3: Not Friends
+    4: No Data
+    */ 
     var friendKey = currentUser + "" + userFriend;
     var friendKeyTwo = userFriend + "" + currentUser;
    
@@ -279,6 +276,8 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     })
     
 }
+
+
 
 
 module.exports = { checkFriendshipStatus, getUserFriends, getPendingFriendRequests, getPendingFriendInvites, getSingleInvite, getAllUsers };

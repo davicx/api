@@ -5,10 +5,12 @@ var jwt_decode = require('jwt-decode');
 
 
 /* FUNCTIONS 
-FUNCTIONS A: Validation Functions 
+FUNCTIONS A: Array and Validation Functions 
 	1) Function A1: Clean a Username 
 	2) Function A2: Clean a Username Array
 	3) Function A3: Remove duplicate values from array
+    4) Function A4: Convert an Array to a Set
+
 */
 
 //FUNCTIONS A: Validation Functions 
@@ -39,14 +41,14 @@ function cleanUserNameArray(usernameArray) {
     return newArray;
 }
 
-//Method D3: Remove duplicate values from array
+//Method A3: Remove duplicate values from array
 function removeArrayDuplicates(fullArray) {
     let uniqueSet = [...new Set(fullArray)];
     let uniqueArray = Array.from(uniqueSet);  
     return uniqueArray;
 }
 
-
+//Function A4: Convert an Array to a Set
 
 
 

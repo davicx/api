@@ -162,58 +162,94 @@ async function getAllUsersWithFriendship(req, res) {
 
 	var allUsersOutcome = await friendFunctions.getAllUsers()
 	var yourFriendsOutcome = await friendFunctions.getUserFriends(userName);
-	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+	
 	var allUsersArray = allUsersOutcome.userArray;
-
-	console.log(yourFriendsArray);
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
 
 	//STEP 1: Create a Set of your friends
 	var yourFriendsSet = new Set();
+
 	for (let i = 0; i < yourFriendsArray.length ; i++) {
-		//console.log(yourFriendsArray[i].friendUserName.toLowerCase());
 		yourFriendsSet.add(yourFriendsArray[i].friendUserName.toLowerCase())
 	}	
 
 
 	//STEP 2: Check this set for friend Matches
 	for (let i = 0; i < allUsersArray.length ; i++) {
-		let friendName = allUsersArray[i].userName.toLowerCase();
-		if(yourFriendsSet.has(allUsersArray[i].userName.toLowerCase())) {
+		let tempUser = allUsersArray[i].userName.toLowerCase();
+
+		//TYPE 1: Currently Friends 
+		if(yourFriendsSet.has(tempUser)) { 
+			allUsersArray[i].friendStatusMessage = "friends";
+			allUsersArray[i].friendStatus = 1;
+		
+			//Determine pending status
+
+		//TYPE 4: Not Friends
+		} else {
+			allUsersArray[i].friendStatusMessage = "not friends";
+			allUsersArray[i].friendStatus = 4;
+		}
+
+		//TYPE 1: Currently Friends 
+		//TYPE 2: Friendship Request Pending (them)
+		//TYPE 3: Friendship Invite Pending (you)
+		//TYPE 4: Not Friends
+		//TYPE 5: No Data
+
+	}
+
+
+/*
+		let userName = allUsersArray[i].userName.toLowerCase();
+
+		if(yourFriendsSet.has(userName)) {
 			allUsersArray[i].friendStatusMessage = "friends";
 			allUsersArray[i].friendStatus = true;
 
 			//When they match get their friend status
-			getFriendStatus(friendName, yourFriendsArray);
-			
+			const friendPendingStatus = getFriendStatus(userName, yourFriendsArray);
+
+			//TYPE 1: Friends
+			if(friendPendingStatus.friendshipPending == 0) {
+				allUsersArray[i].friendStatusMessage = "You are friends";
+				allUsersArray[i].friendStatus = "friends";
+
+			} else {
+
+				//TYPE 1: Request Pending (You invited them and it is pending their request)
+				if(friendPendingStatus.sentBy.localeCompare(userName) == 0) {
+					allUsersArray[i].friendStatusMessage = "Request Pending (You invited them and it is pending their request)";
+					allUsersArray[i].friendStatus = "friends_request_pending_them";
+
+				//TYPE 2: Invite Pending (They requested you and you can accept)	
+				} else {
+					allUsersArray[i].friendStatusMessage = "Invite Pending (They requested you and you can accept)";
+					allUsersArray[i].friendStatus = "friends_request_pending_you";
+				}
+
+			}
 
 		} else if(userName.toLowerCase().localeCompare(allUsersArray[i].userName.toLowerCase()) == 0 ) {
 			allUsersArray[i].friendStatusMessage = "This is you";
-			allUsersArray[i].friendStatus = true;
+			allUsersArray[i].friendStatus = "not_friends";
 		}
 		else {
 			allUsersArray[i].friendStatusMessage = "not friends";
-			allUsersArray[i].friendStatus = false;
+			allUsersArray[i].friendStatus = "not_friends";
 		}
 	}
 
-	//console.log(allUsersArray);
-
-
+	*/
 	res.json(allUsersArray)
 
 }
 
 function getFriendStatus(friendName, yourFriendsArray) {
 	for (let i = 0; i < yourFriendsArray.length ; i++) {
-	
-		//console.log(yourFriendsArray[i].friendUserName + " | " +  friendName)
+     	//console.log(yourFriendsArray[i].friendUserName + " | " +  friendName)
 		if(yourFriendsArray[i].friendUserName.localeCompare(friendName) == 0) {
-			console.log(" ")
-			console.log("Found! ")
-			console.log(yourFriendsArray[i].friendUserName)
-			console.log(yourFriendsArray[i].friendshipPending)
-			console.log(" ")
-			break;
+			return yourFriendsArray[i];
 		}
 	}
 
