@@ -1,10 +1,15 @@
 USE shareshare;
 
+SELECT * FROM friends
 
 #UPDATE friends SET request_pending = 1 WHERE (user_name = "pippin" AND friend_user_name = "davey") OR (user_name = "davey" AND friend_user_name = "pippin") 
-
-SELECT * FROM friends 
-
+#DELETE FROM friends WHERE friends_id > 415;
+/*
+SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, 
+user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography   
+FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name 
+WHERE friends.user_name = "davey" AND user_profile.account_active = 1
+*/
 /*
 SELECT friends.user_name, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name 
 FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name 
@@ -60,7 +65,9 @@ WHERE friends.request_pending = 1 AND (friends.sent_to = "davey") AND (friends.u
 
 #UPDATE friends SET request_pending = 1 WHERE (user_name = "pippin" AND friend_user_name = "davey") OR (user_name = "davey" AND friend_user_name = "pippin") 
 
-#SELECT * FROM friends WHERE request_pending = 1 
+#friendsSELECT * FROM friends WHERE request_pending = 1 
+#friendsSELECT * FROM friends WHERE request_pending = 1 
+#friendsSELECT * FROM friends WHERE request_pending = 1 
 #SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = "davey") AND (user_name != "davey" ) 
 #SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = "davey") AND (user_name != "davey" ) 
 

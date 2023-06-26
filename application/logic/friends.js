@@ -76,6 +76,8 @@ async function getYourFriends(req, res) {
 }
 
 //Function A3: Get a list of someones friends	
+//http://localhost:3003/friend/sam/user/davey
+//http://localhost:3003/friend/davey/user/sam
 async function getUserFriends(req, res) {
     const userName = req.params.user_name;
     const friendName = req.params.friend_name;
@@ -86,11 +88,30 @@ async function getUserFriends(req, res) {
 		message: userName + " is looking at " + friendName + "'s list of friends",
 	}
 
-	var yourFriendsOutcome = await friendFunctions.getUserFriends(userName);
 	var userFriendsOutcome = await friendFunctions.getUserFriends(friendName);
-	var yourFriendsOutcomeArray = yourFriendsOutcome.friendsArray;
-	var userFriendsOutcomeArray = userFriendsOutcome.friendsArray;
+	var userFriendsArray = userFriendsOutcome.friendsArray;
+	console.log(userFriendsArray)
 
+	var yourFriendsOutcome = await friendFunctions.getUserFriends(userName);
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+	console.log(yourFriendsArray)
+
+	var usersOutcome = await friendFunctions.compareUsersWithYourFriends(userName, yourFriendsArray, userFriendsArray)
+
+
+
+	/*
+	var yourFriendsOutcome = await friendFunctions.getUserFriends(userName);
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+
+	var userFriendsOutcome = await friendFunctions.getUserFriends(friendName);
+	var userFriendsArray = userFriendsOutcome.friendsArray;
+
+	var userFriendsOutcome = await friendFunctions.compareUsersWithYourFriends(userName, yourFriendsArray, userFriendsArray)
+	*/
+
+
+	/*
 
 	//STEP 1: Create a Set of your friends
 	const yourFriendsSet = new Set();
@@ -118,11 +139,12 @@ async function getUserFriends(req, res) {
 
 	//Also send the current Profile maybe or this could be on being on their page..
 	console.log(friendShipStatus)
+	*/
 
 
-	friendOutcome.friendsArray = userFriendsOutcomeArray;
+	//friendOutcome.friendsArray = userFriendsOutcome;
 
-    res.json(friendOutcome)
+    res.json(userFriendsOutcome)
 
 }
 
@@ -166,94 +188,14 @@ async function getAllUsersWithFriendship(req, res) {
 	var allUsersArray = allUsersOutcome.userArray;
 	var yourFriendsArray = yourFriendsOutcome.friendsArray;
 
-	//STEP 1: Create a Set of your friends
-	var yourFriendsSet = new Set();
+	//var usersOutcome = await friendFunctions.compareUsersWithYourFriends(userName, yourFriendsArray, allUsersArray)
+	var usersOutcome = {}
 
-	for (let i = 0; i < yourFriendsArray.length ; i++) {
-		yourFriendsSet.add(yourFriendsArray[i].friendUserName.toLowerCase())
-	}	
-
-
-	//STEP 2: Check this set for friend Matches
-	for (let i = 0; i < allUsersArray.length ; i++) {
-		let tempUser = allUsersArray[i].userName.toLowerCase();
-
-		//TYPE 1: Currently Friends 
-		if(yourFriendsSet.has(tempUser)) { 
-			allUsersArray[i].friendStatusMessage = "friends";
-			allUsersArray[i].friendStatus = 1;
-		
-			//Determine pending status
-
-		//TYPE 4: Not Friends
-		} else {
-			allUsersArray[i].friendStatusMessage = "not friends";
-			allUsersArray[i].friendStatus = 4;
-		}
-
-		//TYPE 1: Currently Friends 
-		//TYPE 2: Friendship Request Pending (them)
-		//TYPE 3: Friendship Invite Pending (you)
-		//TYPE 4: Not Friends
-		//TYPE 5: No Data
-
-	}
-
-
-/*
-		let userName = allUsersArray[i].userName.toLowerCase();
-
-		if(yourFriendsSet.has(userName)) {
-			allUsersArray[i].friendStatusMessage = "friends";
-			allUsersArray[i].friendStatus = true;
-
-			//When they match get their friend status
-			const friendPendingStatus = getFriendStatus(userName, yourFriendsArray);
-
-			//TYPE 1: Friends
-			if(friendPendingStatus.friendshipPending == 0) {
-				allUsersArray[i].friendStatusMessage = "You are friends";
-				allUsersArray[i].friendStatus = "friends";
-
-			} else {
-
-				//TYPE 1: Request Pending (You invited them and it is pending their request)
-				if(friendPendingStatus.sentBy.localeCompare(userName) == 0) {
-					allUsersArray[i].friendStatusMessage = "Request Pending (You invited them and it is pending their request)";
-					allUsersArray[i].friendStatus = "friends_request_pending_them";
-
-				//TYPE 2: Invite Pending (They requested you and you can accept)	
-				} else {
-					allUsersArray[i].friendStatusMessage = "Invite Pending (They requested you and you can accept)";
-					allUsersArray[i].friendStatus = "friends_request_pending_you";
-				}
-
-			}
-
-		} else if(userName.toLowerCase().localeCompare(allUsersArray[i].userName.toLowerCase()) == 0 ) {
-			allUsersArray[i].friendStatusMessage = "This is you";
-			allUsersArray[i].friendStatus = "not_friends";
-		}
-		else {
-			allUsersArray[i].friendStatusMessage = "not friends";
-			allUsersArray[i].friendStatus = "not_friends";
-		}
-	}
-
-	*/
-	res.json(allUsersArray)
+	res.json(usersOutcome)
 
 }
 
-function getFriendStatus(friendName, yourFriendsArray) {
-	for (let i = 0; i < yourFriendsArray.length ; i++) {
-     	//console.log(yourFriendsArray[i].friendUserName + " | " +  friendName)
-		if(yourFriendsArray[i].friendUserName.localeCompare(friendName) == 0) {
-			return yourFriendsArray[i];
-		}
-	}
 
-}
 
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	

@@ -213,10 +213,10 @@ async function userRegister(req, res) {
     console.log('valid'); 
     }
 */
-  res.json({userName: areEqual})
+  //res.json({userName: areEqual})
 
 
-  /*
+  
   //STEP 1: Validate Information
   var registrationOutcome = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
   registrationOutcome.UserRegistrationMessages = []
@@ -289,7 +289,7 @@ async function userRegister(req, res) {
     res.json(registrationOutcome)
   }
 
-  */
+  
 } 
 
 //Function A4: Login Status 
