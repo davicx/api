@@ -8,11 +8,12 @@ const userFunctions = require('./userFunctions');
 FUNCTIONS A: All Functions Related to Friends
 	1) Function A1: Get all Users
     2) Function A2: Get Your Friends
+    3) Function A3: Get All Your Friends (Active, Pending, Requested)
+	4) Function A4: Get your Pending Friends Requests (They accept)	
+	5) Function A5: Get your Pending Friends Invites (You can accept)
+    6) Function A6: Get a list of a Users friends with Friendship Status
 
-    2) Function A2: Get a List of Friends You have Requested (They must accept)
-    3) Function A3: Get a List of Friend Invites (You can Accept)
-    4) Function A4: Get a Single Friend Invite
-    5) 
+
     6) Function A6: Check if Users are Friends
     7) Function A7: Add Your Friends to a list of People 
 
@@ -72,8 +73,6 @@ async function getUserFriends(currentUser) {
 	return new Promise(async function(resolve, reject) {
         try {
             const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1 AND friends.request_pending = 0"
-          //const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
-          //const queryString = "SELECT * FROM friends"
             connection.query(queryString, [currentUser], (err, rows) => {
                 var friendsArray = []
                 console.log(rows)
@@ -113,14 +112,149 @@ async function getUserFriends(currentUser) {
             reject(userFriendsOutcome);
         } 
     })
-
     
 }
 
+//Function A3: Get All Your Friends (Active, Pending, Requested)
+async function getAllUserFriends(currentUser) {
+    const connection = db.getConnection(); 
+
+    var userFriendsOutcome = {
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
+            connection.query(queryString, [currentUser], (err, rows) => {
+                var friendsArray = []
+                console.log(rows)
+                
+                for (let i = 0; i < rows.length; i++) {
+                    let currentFriend = {}
+                    
+                
+                    currentFriend.friendName = rows[i].user_name;
+                    currentFriend.friendImage = rows[i].image_name;
+                    currentFriend.firstName = rows[i].first_name;
+                    currentFriend.lastName = rows[i].last_name;
+                    currentFriend.friendBiography = rows[i].biography;
+                    currentFriend.requestPending = rows[i].request_pending;
+                    currentFriend.requestSentBy = rows[i].sent_by;
+                 
+                    friendsArray.push(currentFriend)
+                    
 
 
+                  } 
 
-//SORTT!!!
+                userFriendsOutcome.friendsArray = friendsArray;
+
+                if (!err) {
+                    console.log(err)
+                    resolve(userFriendsOutcome); 
+
+                } else {
+                    userFriendsOutcome.outcome = 500;
+                    resolve(userFriendsOutcome);
+                }
+            })
+        } catch(err) {
+            console.log(err)
+            userFriendsOutcome.outcome = 500;
+            reject(userFriendsOutcome);
+        } 
+    })
+}
+
+//Function A4: Get your Pending Friends Requests (They accept)	
+async function getPendingFriendRequests(sentBy, userName) {
+    const connection = db.getConnection(); 
+
+    var friendRequestOutcome = {
+        success: false,
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+           const queryString = "SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name AS friend_user_name, user_profile.image_name AS friend_image_name, user_profile.account_active FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to  WHERE friends.request_pending = 1 AND (friends.sent_by = ?) AND (friends.user_name != ?) AND user_profile.account_active = 1"
+
+            connection.query(queryString, [sentBy, userName], (err, rows) => {
+                const friendsArray = rows.map((row) => {
+                    return {
+                        friendUserName: row.friend_user_name,
+                        friendImage: row.friend_image_name,                        
+                    }
+                });
+                
+                friendRequestOutcome.success = true;
+                friendRequestOutcome.friendsArray = friendsArray;
+
+                if (!err) {
+                    resolve(friendRequestOutcome); 
+
+                } else {
+                    friendRequestOutcome.outcome = 500;
+                    resolve(friendRequestOutcome);
+                }
+            })
+        } catch(err) {
+            friendRequestOutcome.outcome = 500;
+            reject(friendRequestOutcome);
+        } 
+    })
+}
+
+//Function A5: Get your Pending Friends Invites (You can accept)
+async function getPendingFriendInvites(currentUser) {
+    const connection = db.getConnection(); 
+
+    var pendingFriendInvitesOutcome = {
+        success: false,
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.image_name AS friend_image_name, user_profile.account_active FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to WHERE friends.request_pending = 1 AND (friends.sent_to = ?) AND (friends.user_name != ?)AND user_profile.account_active = 1"
+
+            connection.query(queryString, [currentUser, currentUser], (err, rows) => {
+                const friendInvites = rows.map((row) => {
+                    return {
+                        sentTo: row.sent_to,
+                        sentBy: row.sent_by,                        
+                        sentByImage: row.friend_image_name                      
+                    }
+                });
+                
+                pendingFriendInvitesOutcome.success = true;
+                pendingFriendInvitesOutcome.friendInvites = friendInvites;
+
+                if (!err) {
+                    resolve(pendingFriendInvitesOutcome); 
+
+                } else {
+                    pendingFriendInvitesOutcome.outcome = 500;
+                    resolve(pendingFriendInvitesOutcome);
+                }
+            })
+        } catch(err) {
+            pendingFriendInvitesOutcome.outcome = 500;
+            reject(pendingFriendInvitesOutcome);
+        } 
+    })
+}
+
+//Function A6: Get a list of a Users friends with Friendship Status
+
+
+//SORT!!!
+//SORT!!!
+//SORT!!!
+//SORT!!!
+
+
 //FUNCTIONS A: All Functions Related to Friends
 //Function A1: Get all User Friends
 
@@ -173,85 +307,10 @@ async function getUserFriendsOLD(userName) {
 //ALL BELOW FIX
 
 //Function A2: Get a List of Friend You have Requested (They must accept)
-async function getPendingFriendRequests(sentBy, userName) {
-    const connection = db.getConnection(); 
 
-    var userFriendsOutcome = {
-        success: false,
-        errors: []
-    }
-
-	return new Promise(async function(resolve, reject) {
-        try {
-            //const queryString = "SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = ?) AND (user_name != ?)"
-            const queryString = "SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name AS friend_user_name, user_profile.image_name AS friend_image_name, user_profile.account_active FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to  WHERE friends.request_pending = 1 AND (friends.sent_by = ?) AND (friends.user_name != ?) AND user_profile.account_active = 1"
-
-            connection.query(queryString, [sentBy, userName], (err, rows) => {
-                const friendsArray = rows.map((row) => {
-                    return {
-                        friendUserName: row.friend_user_name,
-                        friendImage: row.friend_image_name,                        
-                    }
-                });
-                
-                userFriendsOutcome.success = true;
-                userFriendsOutcome.friendsArray = friendsArray;
-
-                if (!err) {
-                    resolve(userFriendsOutcome); 
-
-                } else {
-                    userFriendsOutcome.outcome = 500;
-                    resolve(userFriendsOutcome);
-                }
-            })
-        } catch(err) {
-            userFriendsOutcome.outcome = 500;
-            reject(userFriendsOutcome);
-        } 
-    })
-}
 
 //Function A3: Get a List of Friend Invites (You can Accept)
-async function getPendingFriendInvites(currentUser) {
-    const connection = db.getConnection(); 
 
-    var userFriendsOutcome = {
-        success: false,
-        errors: []
-    }
-
-	return new Promise(async function(resolve, reject) {
-        try {
-            //const queryString = "SELECT * FROM friends WHERE request_pending = 1 AND (sent_by = ?) AND (user_name != ?)"
-            const queryString = "SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.image_name AS friend_image_name, user_profile.account_active FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to WHERE friends.request_pending = 1 AND (friends.sent_to = ?) AND (friends.user_name != ?)AND user_profile.account_active = 1"
-
-            connection.query(queryString, [currentUser, currentUser], (err, rows) => {
-                const friendInvites = rows.map((row) => {
-                    return {
-                        sentTo: row.sent_to,
-                        sentBy: row.sent_by,                        
-                        sentByImage: row.friend_image_name                      
-                    }
-                });
-                
-                userFriendsOutcome.success = true;
-                userFriendsOutcome.friendInvites = friendInvites;
-
-                if (!err) {
-                    resolve(userFriendsOutcome); 
-
-                } else {
-                    userFriendsOutcome.outcome = 500;
-                    resolve(userFriendsOutcome);
-                }
-            })
-        } catch(err) {
-            userFriendsOutcome.outcome = 500;
-            reject(userFriendsOutcome);
-        } 
-    })
-}
 
 //Function A4: Get a Single Friend Invite (Only used by logged in user? there the only ones who can accept)
 async function getSingleInvite(currentUser, friendRequestFrom) {
@@ -421,4 +480,4 @@ function getFriendStatus(friendName, yourFriendsArray) {
 }
 
 //module.exports = { getAllUsers, getUserFriends, getPendingFriendRequests, getPendingFriendInvites, getSingleInvite, getAllUsers, compareUsersWithYourFriends };
-module.exports = { getAllUsers, getUserFriends };
+module.exports = { getAllUsers, getUserFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites };

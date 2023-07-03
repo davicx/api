@@ -10,7 +10,8 @@ FUNCTIONS A: All Functions Related to Friends
 	4) Function A4: Get your Pending Friends Requests (They accept)	
 	5) Function A5: Get your Pending Friends Invites (You can accept)
 	6) Function A6: Get a list of someones friends 
-	7) Function A7: Get all Site Users with Friendship Status 
+	7) Function A7: Get a list of someones friends with Friendship Status
+	8) Function A8: Get all Site Users with Friendship Status 
 
 FUNCTIONS B: All Functions Related to Friends Actions
 	1) Function B1: Request a Friend	
@@ -37,7 +38,6 @@ friendRouter.get('/friends/all/:user_name/', function(req, res) {
     friends.getAllYourFriends(req, res);
 })
 
-
 //Function A4: Get your Pending Friends Requests (They accept)
 friendRouter.get('/friends/requests/:user_name/', function(req, res) { 
     friends.getPendingFriendRequests(req, res);
@@ -49,11 +49,16 @@ friendRouter.get('/friends/invites/:user_name/', function(req, res) {
 })
 
 //Function A6: Get a list of someones friends 
+friendRouter.get('/friend/:friend_name', function(req, res) { 
+    friends.getBasicUserFriends(req, res);
+})
+
+//Function A7: Get a list of someones friends with Friendship Status
 friendRouter.get('/friend/:friend_name/user/:user_name/', function(req, res) { 
     friends.getUserFriends(req, res);
 })
 
-//Function A7: Get all Site Users with Friendship Status 
+//Function A8: Get all Site Users with Friendship Status 
 friendRouter.get('/users/all/:user_name/', function(req, res) { 
     friends.getAllUsersWithFriendship(req, res);
 })
