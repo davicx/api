@@ -67,7 +67,8 @@ var newGroupOutcome = {
 			"friendStatusMessage": "You are Currently Friends" 
         },
 
-
+*/
+/*
 //TYPE 1: You are Currently Friends - "friends"
 //TYPE 2: Friendship Request Pending (them) - "request_pending"
 //TYPE 3: Friendship Invite Pending (you) - "invite_pending"
@@ -199,6 +200,49 @@ async function getBasicUserFriends(req, res) {
 }
 
 //* WORKING ON THIS!! */
+//CURRENT USER
+/*
+ */
+//USER 
+/*
+ */
+
+/*
+"userName": "vasquezd",
+"imageName": "12.jpg",
+"firstName": "David",
+"lastName": "Vasquez",
+"biography": "My Biography"
+
+"friendName": "Frodo",
+"friendImage": "Frodo.jpg",
+"firstName": "frodo v",
+"lastName": "frodo v",
+"friendBiography": "They are (or were) a little people, about half our height, and smaller than the bearded dwarves",
+"requestPending": 1,
+"requestSentBy": "frodo"
+
+
+"friendName": "pippin",
+"friendImage": "frodo.jpg",
+"firstName": "Pippin Brandybuck",
+"lastName": "Pippin Brandybuck",
+"friendBiography": "They are (or were) a little people, about half our height, and smaller than the bearded dwarves",
+"friendType": 1
+"friendStatus": "friends"
+"friendStatusMessage": "You are Currently Friends" 
+
+
+*/
+/*
+//TYPE 1: You are Currently Friends - "friends"
+//TYPE 2: Friendship Request Pending (them) - "request_pending"
+//TYPE 3: Friendship Invite Pending (you) - "invite_pending"
+//TYPE 4: Not Friends - "not_friends"
+//TYPE 5: This is you - "you"
+*/
+
+
 //Function A7: Get a list of someones friends with Friendship Status
 async function getUserFriends(req, res) {
     const currentUser = req.params.user_name;
@@ -211,8 +255,23 @@ async function getUserFriends(req, res) {
 		success: false,
 		statusCode: 500,
 		errors: [], 
-		currentUser: userName
+		currentUser: currentUser
 	}
+
+	
+
+	//STEP 1: Get your Friends
+	var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
+	var yourFriends = yourFriendsOutcome.friendsArray;
+
+	//STEP 2: Get their Friends
+	var theirFriendsOutcome = await friendFunctions.getUserFriends(friendName)
+	var theirFriends = theirFriendsOutcome.friendsArray;
+
+	//STEP 3: Compare Friends
+	//var compareFriendsOutcome = await friendFunctions.compareUsersWithYourFriends(userName, yourFriendsArray, theirFriendsArray)
+	
+	
 
 	/*
 	var userFriendsOutcome = await friendFunctions.getUserFriends(friendName);
@@ -234,7 +293,7 @@ async function getUserFriends(req, res) {
 	userFriendsOutcome.statusCode = 200
 	
 
-	res.json({currentUser: currentUser, friendName: friendName})
+	res.json({yourFriends: yourFriends, theirFriends: theirFriends})
 
 
 }
@@ -572,7 +631,7 @@ async function acceptFriendRequest(req, res) {
 //Function B4: Decline Friend Request
 
 //module.exports = { getAllUsers, getAllYourFriends, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest};
-module.exports = { getAllUsers, getYourFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getUserFriends};
+module.exports = { getAllUsers, getYourFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getUserFriends, addFriend};
 
 
 

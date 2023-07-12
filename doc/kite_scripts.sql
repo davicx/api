@@ -1,14 +1,18 @@
 USE shareshare;
 
-#SELECT * FROM friends
 
+#UPDATE friends SET request_pending = 1 WHERE sent_by = "pippin"
+
+SELECT * FROM friends WHERE user_name = "davey"
 
 #Get Friend Invites
+/*
 SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.image_name AS friend_image_name, user_profile.account_active 
 FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to 
 WHERE friends.request_pending = 1 AND (friends.sent_to = "davey") AND (friends.user_name != "davey")AND user_profile.account_active = 1
 
 
+*/
 /*
 GET Friend Requests
 SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name 
