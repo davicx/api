@@ -75,8 +75,13 @@ friendRouter.post('/friend/accept/', function(req, res) {
 })
 
 //Function B3: Cancel a Friend Request
+friendRouter.post('/friend/cancel/', function(req, res) { 
+    friends.cancelFriendRequest(req, res);
+})
 
 //Function B4: Decline Friend Request
-
+friendRouter.post('/friend/decline/', function(req, res) { 
+    friends.declineFriendRequest(req, res);
+})
 module.exports = friendRouter;
 

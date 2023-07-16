@@ -1,19 +1,25 @@
 USE shareshare;
 
 
-#UPDATE friends SET request_pending = 1 WHERE sent_by = "pippin"
 
-SELECT * FROM friends WHERE user_name = "davey"
+#UPDATE friends SET request_pending = 0 WHERE sent_by = "sam"
+#DELETE FROM friends WHERE user_name = "sam" AND friend_user_name = "davey";
+#SELECT * FROM friends 
+#SELECT * FROM notifications 
+#SELECT * FROM pending_requests 
+
+#DELETE FROM notifications WHERE notification_type = "friend_request" AND notification_from = "davey" AND notification_to = "bilbo";
+#DELETE FROM notifications
 
 #Get Friend Invites
 /*
 SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.image_name AS friend_image_name, user_profile.account_active 
 FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to 
 WHERE friends.request_pending = 1 AND (friends.sent_to = "davey") AND (friends.user_name != "davey")AND user_profile.account_active = 1
-
-
 */
 /*
+DELETE FROM friends WHERE friends_id > 415;
+
 GET Friend Requests
 SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name 
 AS friend_user_name, user_profile.image_name 

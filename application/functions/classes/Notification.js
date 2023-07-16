@@ -96,8 +96,44 @@ class Notification {
         
 	}
 
-    static async removeNotification(notificationType, notificationFrom, notificationTo) {
-        console.log("Remove Notification!")
+    static async deleteNotification(notificationType, notificationFrom, notificationTo) {
+        const connection = db.getConnection(); 
+
+        var removeNotificationStatus = {
+            notificationRemoved: false,
+            notificationType: notificationType,
+            notificationFrom: notificationFrom,
+            notificationTo: notificationTo,
+            errors: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "DELETE FROM notifications WHERE notification_type = ? AND notification_from = ? AND notification_to = ?"
+
+                connection.query(queryString, [notificationType, notificationFrom, notificationTo], (err) => {
+                    if (!err) {
+                        removeNotificationStatus.notificationRemoved = true;
+
+                        resolve(removeNotificationStatus);
+                    } else {
+                        console.log(err)
+                        removeNotificationStatus.errors.push(err);
+                        resolve(removeNotificationStatus);
+                    }
+                })  
+            } catch(err) {
+                console.log(err)
+                removeNotificationStatus.errors.push(err);
+                reject(removeNotificationStatus);
+            } 
+        });
+
+    }
+
+
+    static async deleteSeen(notificationType, notificationFrom, notificationTo) {
+        console.log("Notification!")
         console.log(commentID, currentUser, comment_type);
       
 		//Get Group Users 
@@ -114,7 +150,25 @@ class Notification {
 
     }
 
-    
+
+    static async setNotificationSeen(notificationType, notificationFrom, notificationTo) {
+        console.log("Notification!")
+        console.log(commentID, currentUser, comment_type);
+      
+		//Get Group Users 
+        if(notificationTo != notificationFrom) {
+            const queryString = "UPDATE notifications SET notification_seen = 1 WHERE notification_type = ? AND notification_from = ? AND notification_to = ?"
+            connection.query(queryString, [notificationFrom, notificationTo, notificationType], (err, results) => {                  
+                if (!err) {
+                    console.log("notification for " + notificationTo + " Worked!")
+                } else {
+                    console.log("Failed to insert new Post: " + err);
+                } 
+            })
+        }
+
+    }
+
     //Method A2: Create Single Notification
 	static async createSingleNotification(notification) {
         const connection = db.getConnection(); 

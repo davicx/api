@@ -54,7 +54,6 @@ class Requests {
 	//Function End
     }
 	
-	
     //Method A2: Create a Group Request 
     static async newGroupRequest(newRequest)  {
 		const masterSite = "kite";
@@ -104,6 +103,45 @@ class Requests {
 		
 	//Function End
     }
+
+	//Method A3: Delete a Request
+	static async deleteSingleRequest(requestType, sentBy, sentTo)  {
+		const connection = db.getConnection(); 
+		//request_type sent_by sent_to  friend_request
+
+        var deleteRequestStatus = {
+            requestRemoved: false,
+            requestType: requestType,
+            currentUser: sentBy,
+            friendName: sentTo,
+            errors: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "DELETE FROM pending_requests WHERE request_type = ? AND sent_by = ? AND sent_to = ?"
+
+                connection.query(queryString, [requestType, sentBy, sentTo], (err) => {
+                    if (!err) {
+                        deleteRequestStatus.requestRemoved = true;
+
+                        resolve(deleteRequestStatus);
+                    } else {
+                        console.log(err)
+                        deleteRequestStatus.errors.push(err);
+                        resolve(deleteRequestStatus);
+                    }
+                })  
+            } catch(err) {
+                console.log(err)
+                deleteRequestStatus.errors.push(err);
+                reject(deleteRequestStatus);
+            } 
+        });
+	
+    }
+
+	
 
 //Class End 
 }

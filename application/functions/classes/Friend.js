@@ -82,38 +82,36 @@ class Friend {
         
     }
 
-    //Method A3: Remove a Friend (NOT DONE)
-    static async removeFriend(currentUser, currentUserID, friendName, friendUserID) {
-        const requestPending = 1;
-        const friendKey = currentUser + "" + friendName;
-        console.log("Add a Friend! " + currentUser, currentUserID, friendName, friendUserID)
-
+    //Method A3: Remove a Friend 
+    static async deleteFriend(currentUser, friendName) {
         const connection = db.getConnection(); 
+
         var removeFriendStatus = {
-            userAdded: false,
-            friendShipKey: "Not Added",
+            friendRemoved: false,
+            currentUser: currentUser,
+            friendName: friendName,
             errors: []
         }
 
         return new Promise(async function(resolve, reject) {
             try {
-                
-                const activeMember = 0;
-                const queryString = "INSERT INTO friends (user_name, user_id, friend_user_name, friend_id, request_pending, friend_key) VALUES (?,?,?,?,?,?)"
+                const queryString = "DELETE FROM friends WHERE user_name = ? AND friend_user_name = ?"
 
-                connection.query(queryString, [currentUser, currentUserID, friendName, friendUserID, requestPending, friendKey], (err, results) => {
+                connection.query(queryString, [currentUser, friendName], (err) => {
                     if (!err) {
-                        addFriendStatus.userAdded = true;
-                        addFriendStatus.friendShipKey = currentUser + "" + friendName;
-                        resolve(addFriendStatus);
+                        removeFriendStatus.friendRemoved = true;
+
+                        resolve(removeFriendStatus);
                     } else {
-                        addFriendStatus.errors.push(err);
-                        resolve(addFriendStatus);
+                        console.log(err)
+                        removeFriendStatus.errors.push(err);
+                        resolve(removeFriendStatus);
                     }
                 })  
             } catch(err) {
-                addFriendStatus.errors.push(err);
-                reject(addFriendStatus);
+                console.log(err)
+                removeFriendStatus.errors.push(err);
+                reject(removeFriendStatus);
             } 
         });
     }

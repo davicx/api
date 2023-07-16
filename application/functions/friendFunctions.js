@@ -1,18 +1,25 @@
 const db = require('./conn');
 const userFunctions = require('./userFunctions');
+const Friend = require('./classes/Friend');
+const Requests = require('./classes/Requests');
+const Notifications = require('./classes/Notification');
+
 //const Requests = require('./classes/Requests');
 //const Functions = require('./functions');
 //app.use(express.json());
 
 /*
-FUNCTIONS A: All Functions Related to Friends
+FUNCTIONS A: All Functions Related to getting Friends 
 	1) Function A1: Get all Users
     2) Function A2: Get Your Friends
     3) Function A3: Get All Your Friends (Active, Pending, Requested)
 	4) Function A4: Get your Pending Friends Requests (They accept)	
 	5) Function A5: Get your Pending Friends Invites (You can accept)
-    6) Function A6: Check if Users are Friends (Used for adding a friend)
 
+FUNCTIONS B: All Functions Related to Friends  
+	1) Function B1: Compare a group of users with your friends 
+	2) Function B2: Get a Single Friend Invite
+	3) Function B3: Get Friendship Status
 
 
 */
@@ -297,20 +304,131 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     
 }
 
-async function compareUsersWithYourFriends(userName, yourFriendsArray, usersArray) {
-    const currentUser = userName.toLowerCase();
-    //console.log(yourFriendsArray)
+//Function B1: Compare a group of users with your friends 
+async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirFriendsArray) {
+    var currentUser = currentUser.toLowerCase();
+
 
     //STEP 1: Create a Set of your friends
 	var yourFriendsSet = new Set();
 
 	for (let i = 0; i < yourFriendsArray.length ; i++) {
         //console.log(yourFriendsArray[i].userName)
-		yourFriendsSet.add(yourFriendsArray[i].userName.toLowerCase())
+		yourFriendsSet.add(yourFriendsArray[i].friendName.toLowerCase())
 	}	
 
+    //STEP 2: Check this set for friend Matches
+	for (let i = 0; i < theirFriendsArray.length ; i++) {
+		let tempUser = theirFriendsArray[i].friendName.toLowerCase();
 
-    /*
+        if(yourFriendsSet.has(tempUser) || currentUser.localeCompare(tempUser) == 0) { 
+            theirFriendsArray[i].alsoYourFriend = true;
+        } else {
+            theirFriendsArray[i].friendStatusMessage = false;
+        }
+        
+    }
+
+    return theirFriendsArray;
+}
+
+//Function B2: Get a Single Friend Invite
+async function getSingleInvite(currentUser, friendRequestFrom) {
+    const connection = db.getConnection(); 
+    //console.log(currentUser, friendRequestFrom)
+    
+    var friendInviteOutcome = {
+        inviteExists: false,
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT * FROM friends WHERE request_pending = 1 AND sent_by = ? AND sent_to = ?"
+            connection.query(queryString, [friendRequestFrom, currentUser], (err, rows) => {
+               if(rows.length > 0) {
+                    friendInviteOutcome.inviteExists = true;
+                }
+
+                if (!err) {
+                    resolve(friendInviteOutcome); 
+                } else {
+                    friendInviteOutcome.errors.push(err)
+                    resolve(friendInviteOutcome);
+                }
+            })
+        } catch(err) {
+            friendInviteOutcome.errors.push(err)
+            reject(friendInviteOutcome);
+        } 
+    })
+
+  
+}
+
+//Function B3: Get Friendship Status
+function getFriendStatus(friendName, yourFriendsArray) {
+	for (let i = 0; i < yourFriendsArray.length ; i++) {
+		if(yourFriendsArray[i].friendUserName.localeCompare(friendName) == 0) {
+			return yourFriendsArray[i];
+		}
+	}
+
+}
+
+//Function B4: Remove a Friend 
+async function removeFriend(currentUser, friendName) {
+    //const connection = db.getConnection(); 
+    requestType = "friend_request"
+    var removeFriendOutcome = {}
+
+    //STEP 1: Remove both friendships
+    let friendRemoveOne = await Friend.deleteFriend(currentUser, friendName)
+    let friendRemoveTwo = await Friend.deleteFriend(friendName, currentUser)
+
+    //STEP 2: Remove any Requests
+    let removeRequest = await Requests.deleteSingleRequest(requestType, currentUser, friendName);
+
+    //STEP 3: Remove any Notifications
+    let removeNotificationRequest = await Notifications.deleteNotification(requestType, currentUser, friendName);
+
+    removeFriendOutcome.friendRemoveOne = friendRemoveOne;
+    removeFriendOutcome.friendRemoveTwo = friendRemoveTwo;
+    removeFriendOutcome.removeRequest = removeRequest;
+    removeFriendOutcome.removeNotificationRequest = removeNotificationRequest;
+
+    return removeFriendOutcome;
+
+
+}
+
+//Function B4: Decline Friend Request
+async function declineFriendRequest(currentUser, friendName) {
+    requestType = "friend_request"
+    var removeFriendOutcome = {}
+
+    //STEP 1: Remove both friendships
+    let friendRemoveOne = await Friend.deleteFriend(currentUser, friendName)
+    let friendRemoveTwo = await Friend.deleteFriend(friendName, currentUser)
+
+    //STEP 2: Remove any Requests
+    let removeRequest = await Requests.deleteSingleRequest(requestType, friendName, currentUser);
+
+    removeFriendOutcome.friendRemoveOne = friendRemoveOne;
+    removeFriendOutcome.friendRemoveTwo = friendRemoveTwo;
+    removeFriendOutcome.removeRequest = removeRequest;
+
+    return removeFriendOutcome;
+
+
+}
+
+module.exports = { getAllUsers, getUserFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites, checkFriendshipStatus, compareUsersWithYourFriends, getSingleInvite, getFriendStatus,removeFriend, declineFriendRequest };
+
+
+//APPENDIX
+/*
+
     //STEP 2: Check this set for friend Matches
 	for (let i = 0; i < usersArray.length ; i++) {
 		let tempUser = usersArray[i].userName.toLowerCase();
@@ -354,75 +472,9 @@ async function compareUsersWithYourFriends(userName, yourFriendsArray, usersArra
     
     */
 
-    return yourFriendsArray;
-}
-
-function getFriendStatus(friendName, yourFriendsArray) {
-	for (let i = 0; i < yourFriendsArray.length ; i++) {
-		if(yourFriendsArray[i].friendUserName.localeCompare(friendName) == 0) {
-			return yourFriendsArray[i];
-		}
-	}
-
-}
-
-
-
-//SORT
-//SORT
-
-
-
-//Function A4: Get a Single Friend Invite (Only used by logged in user? there the only ones who can accept)
-async function getSingleInvite(currentUser, friendRequestFrom) {
-    const connection = db.getConnection(); 
-    //console.log(currentUser, friendRequestFrom)
-    
-    var friendInviteOutcome = {
-        inviteExists: false,
-        errors: []
-    }
-
-	return new Promise(async function(resolve, reject) {
-        try {
-            const queryString = "SELECT * FROM friends WHERE request_pending = 1 AND sent_by = ? AND sent_to = ?"
-            connection.query(queryString, [friendRequestFrom, currentUser], (err, rows) => {
-               if(rows.length > 0) {
-                    friendInviteOutcome.inviteExists = true;
-                }
-
-                if (!err) {
-                    resolve(friendInviteOutcome); 
-                } else {
-                    friendInviteOutcome.errors.push(err)
-                    resolve(friendInviteOutcome);
-                }
-            })
-        } catch(err) {
-            friendInviteOutcome.errors.push(err)
-            reject(friendInviteOutcome);
-        } 
-    })
-
-  
-}
-
-
-
-
-//Function A7: Add Your Friends to a list of Users 
-
-//module.exports = { getAllUsers, getUserFriends, getPendingFriendRequests, getPendingFriendInvites, getSingleInvite, getAllUsers, compareUsersWithYourFriends };
-module.exports = { getAllUsers, getUserFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites, checkFriendshipStatus, compareUsersWithYourFriends };
-
-
-
-
-
 //FUNCTIONS A: All Functions Related to Friends
 //Function A1: Get all User Friends
 
-//new working on 
 //Function A1: Get all User Friends
 /*
 async function getUserFriendsOLD(userName) {
@@ -470,10 +522,47 @@ async function getUserFriendsOLD(userName) {
 }
 */
 
-//ALL BELOW FIX
+ /*
 
-//Function A2: Get a List of Friend You have Requested (They must accept)
+    //STEP 2: Check this set for friend Matches
+	for (let i = 0; i < usersArray.length ; i++) {
+		let tempUser = usersArray[i].userName.toLowerCase();
+    	
+        //STEP 3: Check if a user is friends with you 
+		if(yourFriendsSet.has(tempUser)) { 
+		    const friendPendingStatus = getFriendStatus(tempUser, yourFriendsArray);
+            console.log(friendPendingStatus)
 
+            //TYPE 1: Currently Friends 
+            if(friendPendingStatus.friendshipPending == 0) {
+                usersArray[i].friendStatusMessage = "friends";
+                usersArray[i].friendStatusCode = "friends";
+                usersArray[i].friendStatus = 1;
 
-//Function A3: Get a List of Friend Invites (You can Accept)
+            } else {
+                
+                //TYPE 2: Friendship Request Pending (them)
+                var requestSentBy = friendPendingStatus.requestSentBy.toLowerCase();
 
+                if(requestSentBy.localeCompare(currentUser) == 0) {
+                    usersArray[i].friendStatusMessage = "Friendship Request Pending (them)";
+                    usersArray[i].friendStatusCode = "request_pending";
+                    usersArray[i].friendStatus = 2;
+
+                //TYPE 3: Friendship Invite Pending (you)
+                } else {
+                    usersArray[i].friendStatusMessage = "Friendship Invite Pending (you)";
+                    usersArray[i].friendStatusCode = "invite_pending";
+                    usersArray[i].friendStatus = 3;
+                }
+            }
+
+		//TYPE 4: Not Friends
+		} else {
+			usersArray[i].friendStatusMessage = "not friends";
+            usersArray[i].friendStatusCode = "not_friends";
+			usersArray[i].friendStatus = 4;
+		}
+    }
+    
+    */
