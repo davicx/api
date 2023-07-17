@@ -7,6 +7,7 @@ const Functions = require('../functions/functions');
 const userFunctions = require('../functions/userFunctions')
 const friendFunctions = require('../functions/friendFunctions');
 const requestFunctions = require('../functions/requestFunctions');
+const notifications = require('./notifications');
 const Friend = require('../functions/classes/Friend');
 
 
@@ -358,11 +359,13 @@ async function acceptFriendRequest(req, res) {
 			notificationType: "friend_request",
 			groupID: 0
 		}
-
+		
+		let notificationExists = await notifications.checkNotificationStatus("friend_request", friendName, currentUser);
+		
 		Notification.createSingleNotification(notification);
 
 		//STEP 6: Mark original Notification as Seen
-		Notification.removeNotification("friend_request", currentUser, friendName);
+		Notification.setNotificationSeen("friend_request", friendName, currentUser);
 
 		acceptFriendOutcome.message = currentUser + " accepted a friend request from " + friendName;
 		acceptFriendOutcome.success = true

@@ -16,7 +16,6 @@ class Notification {
 		const notificationLink = notification.notificationLink;
 		const notificationType = notification.notificationType;
 		const groupID = notification.groupID;
-        console.log(groupUsers);
    
 		//Get Group Users 
         for(let i = 0; i < groupUsers.length; i++) {
@@ -35,7 +34,31 @@ class Notification {
     	}
 	}
 
-    //Method A2: Create Post Notification
+    //Method A2: Create Single Notification
+	static async createSingleNotification(notification) {
+        const connection = db.getConnection(); 
+        const masterSite = notification.masterSite;
+		const notificationFrom = notification.notificationFrom;
+		const notificationTo = notification.notificationTo;
+		const notificationMessage = notification.notificationMessage;
+		const notificationLink = notification.notificationLink;
+		const notificationType = notification.notificationType;
+		const groupID = notification.groupID;
+      
+        if(notificationTo != notificationFrom) {
+            const queryString = "INSERT INTO notifications (master_site, group_id, notification_from, notification_to, notification_message, notification_type, notification_link) VALUES (?, ?, ?, ?, ?, ?, ?)"
+
+            connection.query(queryString, [masterSite, groupID, notificationFrom, notificationTo, notificationMessage, notificationType, notificationLink], (err, results) => {                  
+                if (!err) {
+                    console.log("notification for " + notificationTo + " Worked!")
+                } else {
+                    console.log("Failed to insert new Post: " + err);
+                } 
+            })
+        }
+    }
+
+    //Method A3: Create Post Notification (Maybe group under single)
 	static async createPostNotification(notification) {
 		const connection = db.getConnection(); 
         const masterSite = notification.masterSite;
@@ -64,7 +87,7 @@ class Notification {
     	}
 	}
 
-    //Method A2: Create Comment Notification
+    //Method A4: Create Comment Notification (Maybe group under single)
 	static async createCommentNotification(notification) {
 		const connection = db.getConnection(); 
         const masterSite = notification.masterSite;
@@ -96,6 +119,24 @@ class Notification {
         
 	}
 
+    //Method A5: Set a Notification to seen
+    static async setNotificationSeen(notificationType, notificationFrom, notificationTo) {
+        const connection = db.getConnection(); 
+        
+        if(notificationTo != notificationFrom) {
+            const queryString = "UPDATE notifications SET notification_seen = 1 WHERE notification_type = ? AND notification_from = ? AND notification_to = ?"
+            connection.query(queryString, [notificationFrom, notificationTo, notificationType], (err, results) => {                  
+                if (!err) {
+                    console.log("notification for " + notificationTo + " Worked!")
+                } else {
+                    console.log("Failed to insert new Post: " + err);
+                } 
+            })
+        }
+
+    }
+
+    //Method A6: Delete a Notification (Remove from Database) 
     static async deleteNotification(notificationType, notificationFrom, notificationTo) {
         const connection = db.getConnection(); 
 
@@ -132,6 +173,17 @@ class Notification {
     }
 
 
+
+
+
+}
+
+
+module.exports = Notification;
+
+//APPENDIX
+/*
+
     static async deleteSeen(notificationType, notificationFrom, notificationTo) {
         console.log("Notification!")
         console.log(commentID, currentUser, comment_type);
@@ -150,61 +202,7 @@ class Notification {
 
     }
 
-
-    static async setNotificationSeen(notificationType, notificationFrom, notificationTo) {
-        console.log("Notification!")
-        console.log(commentID, currentUser, comment_type);
-      
-		//Get Group Users 
-        if(notificationTo != notificationFrom) {
-            const queryString = "UPDATE notifications SET notification_seen = 1 WHERE notification_type = ? AND notification_from = ? AND notification_to = ?"
-            connection.query(queryString, [notificationFrom, notificationTo, notificationType], (err, results) => {                  
-                if (!err) {
-                    console.log("notification for " + notificationTo + " Worked!")
-                } else {
-                    console.log("Failed to insert new Post: " + err);
-                } 
-            })
-        }
-
-    }
-
-    //Method A2: Create Single Notification
-	static async createSingleNotification(notification) {
-        const connection = db.getConnection(); 
-        const masterSite = notification.masterSite;
-		const notificationFrom = notification.notificationFrom;
-		const notificationTo = notification.notificationTo;
-		const notificationMessage = notification.notificationMessage;
-		const notificationLink = notification.notificationLink;
-		const notificationType = notification.notificationType;
-		const groupID = notification.groupID;
-      
-		//Get Group Users 
-        if(notificationTo != notificationFrom) {
-            const queryString = "INSERT INTO notifications (master_site, group_id, notification_from, notification_to, notification_message, notification_type, notification_link) VALUES (?, ?, ?, ?, ?, ?, ?)"
-
-            connection.query(queryString, [masterSite, groupID, notificationFrom, notificationTo, notificationMessage, notificationType, notificationLink], (err, results) => {                  
-                if (!err) {
-                    console.log("notification for " + notificationTo + " Worked!")
-                } else {
-                    console.log("Failed to insert new Post: " + err);
-                } 
-            })
-        }
-    }
-
-    //Method A3: Temp Method 
-    static newNotification(notification)  {
-        //console.log("worked!!")
-        console.log(notification)
-    }
-
-}
-
-
-module.exports = Notification;
-
+*/
 
     //Method: Example of Simple Promise
     /*

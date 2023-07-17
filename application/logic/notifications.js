@@ -18,6 +18,7 @@ FUNCTIONS B: All Functions Related to Notification Actions
 	2) Function B2: Set all Notification as Seen
 	3) Function B3: Delete Notification
 	4) Function B4: Delete All Notifications 
+	5) Function B5: Check for Existing Notification
 */
 
 //FUNCTIONS A: All Functions Related to Getting Notifications 
@@ -185,7 +186,6 @@ async function setAllNotificationsSeen(req, res) {
 	res.json({hi: "hi"})
 }
 
-
 //Function B3: Delete Notification
 async function deleteNotification(req, res) {
 	console.log(req.params)
@@ -196,85 +196,48 @@ async function deleteNotification(req, res) {
 	res.json({hi: "hi"})
 }
 
-//Function C5: Delete a Post
-async function deletePost(req, res) {
-	const connection = db.getConnection(); 
-	const postID = req.body.postID;
-	const currentUser = req.body.currentUser;
+//Function B4: Delete All Notifications 
 
-	console.log("DELETE POST")
-	console.log(postID)
+//Function B5: Check for Existing Notification
+async function checkNotificationStatus(notificationType, notificationFrom, notificationTo) {
+    const connection = db.getConnection(); 
 
-	var deletePostOutcome = {
-		data: [],
-		success: false,
-		message: "", 
-		statusCode: 200,
+    var notificationResponse = {
+		notificationCount: 0,
+		notificationExists: true,
+		notificationMessage: "",
 		errors: [], 
-		currentUser: currentUser
-	}
+    }
 
-    const queryString = "UPDATE posts SET post_status = 0 WHERE post_id = ?;";
-
-    connection.query(queryString, [postID], (err, rows) => {
-        if (!err) {
-			var response = {
-				postID: postID,
-				currentUser: currentUser,
-			}
-			deletePostOutcome.data.push(response)
-			deletePostOutcome.message = true;
-			deletePostOutcome.success = "Sucesfully deleted post " + postID;
-
-			res.json(deletePostOutcome);
-
-        } else {
-            console.log("Failed to Delete Posts" + err)
-			deletePostOutcome.statusCode = 500
-			deletePostOutcome.message = "Could not delete post " + postID;
-			deletePostOutcome.errors.push(err);
-			
-			res.status(500).json(deletePostOutcome)
-            return
-		}
-    })
-	
-}
-
-//Function C6:  Edit a Post
-async function editPost(req, res) {
-	const currentUser = req.body.currentUser;
-	const postID = req.body.postID;
-	const newPostCaption = req.body.newPostCaption;
-
-	console.log(req.body)
-
-	var editPostOutcome = {
-		data: [],
-		success: false,
-		message: "", 
-		statusCode: 200,
-		errors: [], 
-		currentUser: currentUser
-	}
-
-	//STEP 1: Check if Post Exists
-	const postExistsOutcome = await PostFunctions.checkPostExists(postID)
-
-	//STEP 2: Update Caption
-	if(postExistsOutcome.postExists == true) {
-		const updatePostOutcome = await Post.updatePostCaption(postID, newPostCaption, currentUser);
-		editPostOutcome.data.push({postID: postID, newPostCaption: newPostCaption})
-		editPostOutcome.success = true;
-	} else {
-		console.log("else")
-	}
-
-	res.json(editPostOutcome)
+    const queryString = "SELECT * FROM notifications WHERE notification_type = ? AND notification_from = ? AND notification_to = ? AND notification_deleted = 0";
+ 
+	return new Promise(async function(resolve, reject) {
+		try {
+			connection.query(queryString, [notificationType, notificationFrom, notificationTo], (err, rows) => {
+				if (!err) {
+					
+					notificationResponse.notificationCount = rows.length;
+					if(rows.length < 1) {
+						notificationResponse.notificationExists = false;
+					} else {
+						notificationResponse.notificationExists = true;
+					}
+					
+					resolve(notificationResponse);
+				} else {
+					notificationResponse.errors.push(err);
+					resolve(notificationResponse);
+				}
+			})  
+		} catch(err) {
+			notificationResponse.errors.push(err);
+			reject(notificationResponse);
+		} 
+	});
 
 }
 
 
-module.exports = { getUserNotifications, getGroupNotifications, getAllNotifications, setNotificationSeen, setAllNotificationsSeen, deleteNotification };
+module.exports = { getUserNotifications, getGroupNotifications, getAllNotifications, setNotificationSeen, setAllNotificationsSeen, deleteNotification, checkNotificationStatus };
 
 
