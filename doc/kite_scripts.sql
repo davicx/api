@@ -9,8 +9,16 @@ USE shareshare;
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
 
+SELECT * FROM friends WHERE user_name = "sam"
+
+#SELECT * FROM friends WHERE request_pending = 1 AND sent_by = "merry" AND sent_to = "davey"
+
+
+#UPDATE friends SET request_pending = 0 WHERE user_name = "davey" AND sent_by = "merry"
+#UPDATE friends SET request_pending = 0 WHERE user_name = "sam"
+
 #DELETE FROM notifications WHERE notification_type = "friend_request" AND notification_from = "davey" AND notification_to = "bilbo";
-DELETE FROM pending_email
+#DELETE FROM pending_email
 #DELETE FROM friends
 
 #Get Friend Invites

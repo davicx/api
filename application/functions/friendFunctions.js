@@ -85,6 +85,7 @@ async function getUserFriends(currentUser) {
                     let currentFriend = {}
                     
                 
+                    currentFriend.friendID = rows[i].friend_id;
                     currentFriend.friendName = rows[i].user_name;
                     currentFriend.friendImage = rows[i].image_name;
                     currentFriend.firstName = rows[i].first_name;
@@ -322,9 +323,9 @@ async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirF
 		let tempUser = theirFriendsArray[i].friendName.toLowerCase();
 
         if(yourFriendsSet.has(tempUser) || currentUser.localeCompare(tempUser) == 0) { 
-            theirFriendsArray[i].alsoYourFriend = true;
+            theirFriendsArray[i].alsoYourFriend = 1;
         } else {
-            theirFriendsArray[i].friendStatusMessage = false;
+            theirFriendsArray[i].alsoYourFriend = 0;
         }
         
     }

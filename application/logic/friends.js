@@ -374,7 +374,7 @@ async function acceptFriendRequest(req, res) {
 	} else {
 		acceptFriendOutcome.success = true
 		acceptFriendOutcome.statusCode = 200
-		acceptFriendOutcome.message = "The friendship was already accepted"
+		acceptFriendOutcome.message = "Their is no friendship or it was already accepted"
 	}
 	console.log(acceptFriendOutcome)
     res.json(acceptFriendOutcome)
