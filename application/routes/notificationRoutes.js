@@ -53,6 +53,7 @@ notificationRouter.get('/notifications/seen/:user_id', function(req, res) {
 notificationRouter.get('/notifications/delete/:notification_id/:user_name', function(req, res) {
     notifications.deleteNotification(req, res);
 })
+ 
 //Function B4: Delete All Notifications 
 
 

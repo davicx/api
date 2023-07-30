@@ -86,6 +86,18 @@ async function postText(req, res) {
         created: "2021-12-19T08:14:03.000Z"
 	}
 
+	/*
+	    var newFriendOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+	*/
+
 	postOutcome.newPost = newPost;
 
 	res.json(postOutcome);
