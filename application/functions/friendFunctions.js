@@ -39,9 +39,9 @@ async function getAllUsers() {
             const queryString = "SELECT * FROM user_profile WHERE account_active = ?"	
             
             connection.query(queryString, [accountActive], (err, rows) => {
-
                 const userArray = rows.map((row) => {
                     return {
+                        friendName: row.user_name,
                         userName: row.user_name,
                         imageName: row.image_name,
                         firstName: row.first_name,
@@ -93,6 +93,7 @@ async function getUserFriends(currentUser) {
                     currentFriend.friendBiography = rows[i].biography;
                     currentFriend.requestPending = rows[i].request_pending;
                     currentFriend.requestSentBy = rows[i].sent_by;
+                    currentFriend.alsoYourFriend = 1;
                  
                     friendsArray.push(currentFriend)
                     

@@ -192,6 +192,48 @@ async function getUserFriends(req, res) {
 
 //Function A7: Get all Site Users with Friendship Status 
 async function getAllUsersWithFriendship(req, res) {
+    const currentUser = req.params.user_name;
+    const friendName = "sam";
+
+	var allUsersOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	
+	//STEP 1: Get your Friends
+	var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+
+	//STEP 2: Get their Friends
+	var theirFriendsOutcome = await friendFunctions.getUserFriends(friendName)
+	var theirFriendsArray = theirFriendsOutcome.friendsArray;
+
+	console.log("theirFriendsArray")
+	console.log(theirFriendsArray)
+
+	var AllUsersRaw = await friendFunctions.getAllUsers()
+	var allUsersArray = AllUsersRaw.userArray;
+
+	console.log("allUsersArray")
+	console.log(allUsersArray)
+
+	//STEP 3: Compare Friends
+	var allUsersWithFriendshipStatus = await friendFunctions.compareUsersWithYourFriends(currentUser, yourFriendsArray, allUsersArray);
+	
+	allUsersOutcome.data = allUsersWithFriendshipStatus;
+	allUsersOutcome.message = "We got everyone!!"
+	allUsersOutcome.success = true
+	allUsersOutcome.statusCode = 200
+	
+	//res.json({theirFriends: theirFriends, yourFriends: yourFriends, theirFriends: theirFriends})
+	res.json(allUsersOutcome)
+
+	/*
     const userName = req.params.user_name;
 
 	var allUsersOutcome = await friendFunctions.getAllUsers()
@@ -204,6 +246,7 @@ async function getAllUsersWithFriendship(req, res) {
 	var usersOutcome = {}
 
 	res.json(usersOutcome)
+	*/
 
 }
 
@@ -218,6 +261,8 @@ async function addFriend(req, res) {
 	3: Not Friends
 	4: No Data
 	*/ 
+
+	//NEED TO RETURN THE ADDED FRIEND FOR REACT TO UPDATE 
     const connection = db.getConnection(); 
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
@@ -406,7 +451,7 @@ async function declineFriendRequest(req, res) {
 }
 
 //module.exports = { getAllUsers, getAllYourFriends, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest};
-module.exports = { getAllUsers, getYourFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getUserFriends, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest};
+module.exports = { getAllUsers, getYourFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest};
 
 
 
