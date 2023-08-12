@@ -280,12 +280,15 @@ async function addFriend(req, res) {
 	}
 
 
-	//CHECK HERE NO USER YO DOG CANT BE FRIENDS 
+	//STEP 1: Get user IDs for both Users 
 	var currentUserIdFull = await userFunctions.getUserID(currentUser)
 	var friendUserIdFull = await userFunctions.getUserID(friendName)
 
     var currentUserID = currentUserIdFull.userID
     var friendUserID = friendUserIdFull.userID
+
+	console.log("STEP 1: Get user IDs for both Users")
+	
 
 	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
 	//STEP 2: Check if they are friends	

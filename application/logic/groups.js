@@ -315,9 +315,9 @@ async function leaveGroup(req, res) {
 function getUserGroups(req, res) {
     const connection = db.getConnection(); 
 	const currentUser = req.authorizationData.currentUser;
-	console.log("authorizationData")
+	console.log("getUserGroups: This was the decoded user from the token")
     console.log(req.currentUser)
-	console.log("authorizationData")
+	console.log("getUserGroups")
 	//console.log("File: groupFunctions Function: getUserGroups")
 
 	const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 

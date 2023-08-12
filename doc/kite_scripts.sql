@@ -3,11 +3,20 @@ USE shareshare;
 
 
 #UPDATE friends SET request_pending = 0  WHERE sent_by = "sam"
-#DELETE FROM friends WHERE user_name = "sam" AND friend_user_name = "davey";
-SELECT * FROM friends 
-#DELETE FROM friends
+#DELETE FROM friends WHERE user_name = "davey" AND friend_user_name = "pippin";
+#DELETE FROM friends WHERE request_pending = 1
+#SELECT * FROM pending_requests 
+#SELECT * FROM notifications 
+#SELECT * FROM friends WHERE user_name = "davey"
+DELETE FROM friends WHERE user_name = "davey"
 
 
+/*
+SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography 
+FROM user_profile 
+INNER JOIN friends ON user_profile.user_name = friends.friend_user_name 
+WHERE user_profile.account_active = 1 
+*/
 #SELECT * FROM notifications WHERE notification_type = "friend_request" AND notification_from = "sam" AND notification_to = "davey" AND notification_deleted = 0
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 

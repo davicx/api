@@ -40,12 +40,12 @@ async function getUserID(userName) {
                     resolve(userIdOutcome); 
 
                 } else {
-                    groupUserStatus.outcome = 500;
+                    userIdOutcome.outcome = 500;
                     resolve(userIdOutcome);
                 }
             })
         } catch(err) {
-            groupUserStatus.outcome = 500;
+            userIdOutcome.outcome = 500;
             reject(userIdOutcome);
         } 
     })
