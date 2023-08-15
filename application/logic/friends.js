@@ -265,7 +265,8 @@ async function addFriend(req, res) {
 	//NEED TO RETURN THE ADDED FRIEND FOR REACT TO UPDATE 
     const connection = db.getConnection(); 
     const masterSite = req.body.masterSite;
-    const currentUser = req.body.currentUser;
+    const currentUserBody = req.body.currentUser;
+	const currentUser = req.authorizationData.currentUser;
     const friendName = req.body.addFriendName;
     const sentBy = req.body.currentUser;
     const sentTo = req.body.addFriendName;
@@ -287,8 +288,10 @@ async function addFriend(req, res) {
     var currentUserID = currentUserIdFull.userID
     var friendUserID = friendUserIdFull.userID
 
+	//Check if these match
+	console.log("CURRENT USER FROM POST " + currentUserBody)
+	console.log("CURRENT USER FROM TOKEN " + currentUser)
 	console.log("STEP 1: Get user IDs for both Users")
-	
 
 	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
 	//STEP 2: Check if they are friends	
@@ -318,6 +321,10 @@ async function addFriend(req, res) {
 
 		//Add Friendship Two
 	 	newFriendOutcome.data = {
+			currentUser: currentUser,
+			currentUserID: currentUserID,
+			friendName: friendName,
+			friendUserID: friendUserID,
 			friendOutcomeOne: friendOutcomeOne,
 			friendOutcomeTwo: friendOutcomeTwo
 		}

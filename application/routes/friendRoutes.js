@@ -65,7 +65,7 @@ friendRouter.get('/users/all/:user_name/', function(req, res) {
 
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
-friendRouter.post('/friend/request/', function(req, res) { 
+friendRouter.post('/friend/request/', middlewares.verifyUser, function(req, res) { 
     friends.addFriend(req, res);
 })
 

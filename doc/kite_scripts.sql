@@ -7,9 +7,12 @@ USE shareshare;
 #DELETE FROM friends WHERE request_pending = 1
 #SELECT * FROM pending_requests 
 #SELECT * FROM notifications 
+#SELECT * FROM friends 
 #SELECT * FROM friends WHERE user_name = "davey"
-DELETE FROM friends WHERE user_name = "davey"
-
+#DELETE FROM friends WHERE user_name = "davey"
+DELETE FROM friends
+#DELETE FROM notifications
+#DELETE FROM pending_requests
 
 /*
 SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography 
