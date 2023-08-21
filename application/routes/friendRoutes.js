@@ -30,12 +30,12 @@ friendRouter.get('/users/all/', function(req, res) {
 
 //Function A2: Get Your Friends
 friendRouter.get('/friends/:user_name/', function(req, res) { 
-    friends.getYourFriends(req, res);
+    friends.getActiveFriends(req, res);
 })
 
-//Function A3: Get All Your Friends (Active and Pending)	
+//Function A3: Get All Friends (Active and Pending)	
 friendRouter.get('/friends/all/:user_name/', function(req, res) { 
-    friends.getAllYourFriends(req, res);
+    friends.getAllFriends(req, res);
 })
 
 //Function A4: Get your Pending Friends Requests (They accept)
@@ -48,20 +48,17 @@ friendRouter.get('/friends/invites/:user_name/', function(req, res) {
     friends.getPendingFriendInvites(req, res);
 })
 
-//Function A6: Get a list of someones friends 
-friendRouter.get('/friend/:friend_name', function(req, res) { 
-    friends.getBasicUserFriends(req, res);
-})
-
 //Function A7: Get a list of someones friends with Friendship Status
 friendRouter.get('/friend/:friend_name/user/:user_name/', function(req, res) { 
-    friends.getUserFriends(req, res);
+    friends.getAnotherUsersFriends(req, res);
 })
 
+/*
 //Function A8: Get all Site Users with Friendship Status 
 friendRouter.get('/users/all/:user_name/', function(req, res) { 
     friends.getAllUsersWithFriendship(req, res);
 })
+*/
 
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
@@ -83,5 +80,16 @@ friendRouter.post('/friend/cancel/', function(req, res) {
 friendRouter.post('/friend/decline/', function(req, res) { 
     friends.declineFriendRequest(req, res);
 })
+
 module.exports = friendRouter;
 
+
+
+
+//APPENDIX
+/*
+//Function A6: Get a list of someones friends 
+friendRouter.get('/friend/:friend_name', function(req, res) { 
+    friends.getBasicUserFriends(req, res);
+})
+*/

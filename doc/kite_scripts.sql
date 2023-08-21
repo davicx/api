@@ -1,18 +1,39 @@
 USE shareshare;
 
+#UPDATE friends SET friend_user_name = "matt" WHERE sent_by = "matt"
 
-
-#UPDATE friends SET request_pending = 0  WHERE sent_by = "sam"
-#DELETE FROM friends WHERE user_name = "davey" AND friend_user_name = "pippin";
 #DELETE FROM friends WHERE request_pending = 1
 #SELECT * FROM pending_requests 
 #SELECT * FROM notifications 
 #SELECT * FROM friends 
 #SELECT * FROM friends WHERE user_name = "davey"
 #DELETE FROM friends WHERE user_name = "davey"
-DELETE FROM friends
+
+#DELETE FROM posts WHERE post_id = 41
+
+#UPDATE posts SET group_id = 70  WHERE group_id = 77
+SELECT * FROM posts 
+
+
+#DELETE FROM friends WHERE user_name = "bilbo" AND friend_user_name = "bilbo" 
+#UPDATE friends SET request_pending = 0  WHERE sent_to = "sam"
+#SELECT * FROM friends 
 #DELETE FROM notifications
 #DELETE FROM pending_requests
+/*
+SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name AS friend_user_name, user_profile.image_name AS friend_image_name, user_profile.account_active, user_profile.first_name, user_profile.last_name, user_profile.biography 
+FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to 
+WHERE friends.request_pending = 1 AND (friends.sent_by = ?) AND (friends.user_name != ?) AND user_profile.account_active = 1
+
+SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.image_name AS friend_image_name, user_profile.account_active 
+FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to 
+WHERE friends.request_pending = 1 AND (friends.sent_to = ?) AND (friends.user_name != ?)AND user_profile.account_active = 1"
+*/
+
+#UPDATE user_profile SET image_name = "sarah.jpg" WHERE user_name = "sarah"
+
+#SELECT * FROM user_profile
+
 
 /*
 SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography 

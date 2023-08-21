@@ -18,8 +18,7 @@ FUNCTIONS A: All Functions Related to Friends
 	3) Function A3: Get All Your Friends (Active and Pending)	
 	4) Function A4: Get your Pending Friends Requests (They accept)	
 	5) Function A5: Get your Pending Friends Invites (You can accept)
-	6) Function A6: Get a list of someones friends 
-	7) Function A7: Get a list of someones friends with Friendship Status
+	6) Function A6: Get a list of someones friends with Friendship Status
 	8) Function A8: Get all Site Users with Friendship Status 
 
 FUNCTIONS B: All Functions Related to Friends
@@ -42,7 +41,7 @@ async function getAllUsers(req, res) {
 }
 
 //Function A2: Get Your Friends (Active only)
-async function getYourFriends(req, res) {
+async function getActiveFriends(req, res) {
     const userName = req.params.user_name;
 
 	var currentUserfriendsOutcome = {
@@ -55,7 +54,8 @@ async function getYourFriends(req, res) {
 	}
 
 	//var friendsOutcome = await friendFunctions.getUserFriends(userName)
-	var friendsOutcome = await friendFunctions.getUserFriends(userName)
+	var friendsOutcome = await friendFunctions.getActiveFriends(userName)
+ 
 	currentUserfriendsOutcome.data = friendsOutcome.friendsArray;
 	currentUserfriendsOutcome.message = "We got your friends!"
 	currentUserfriendsOutcome.success = true
@@ -65,8 +65,8 @@ async function getYourFriends(req, res) {
 	
 }
 
-//Function A3: Get All Your friends 
-async function getAllYourFriends(req, res) {
+//Function A3: Get All Your friends (Active and Pending Requests and Pending Invites)
+async function getAllFriends(req, res) {
     const userName = req.params.user_name;
 
 	var currentUserfriendsOutcome = {
@@ -130,34 +130,11 @@ async function getPendingFriendInvites(req, res) {
 
 }
 
-//Function A6: Get a list of someones friends 
-async function getBasicUserFriends(req, res) {
-    const userName = req.params.friend_name;
-
-	var currentUserfriendsOutcome = {
-		data: {},
-		message: "", 
-		success: false,
-		statusCode: 500,
-		errors: [], 
-		currentUser: userName
-	}
-
-	//var friendsOutcome = await friendFunctions.getUserFriends(userName)
-	var friendsOutcome = await friendFunctions.getUserFriends(userName)
-	currentUserfriendsOutcome.data = friendsOutcome.friendsArray;
-	currentUserfriendsOutcome.message = "We got their friends!"
-	currentUserfriendsOutcome.success = true
-	currentUserfriendsOutcome.statusCode = 200
-
-    res.json(currentUserfriendsOutcome)
-	
-}
-
-//Function A7: Get a list of someones friends with Friendship Status
-async function getUserFriends(req, res) {
+//Function A6: Get a list of someones friends with Friendship Status
+async function getAnotherUsersFriends(req, res) {
     const currentUser = req.params.user_name;
     const friendName = req.params.friend_name;
+	console.log(currentUser + " " + friendName)
 
 	var userFriendsOutcome = {
 		data: {},
@@ -167,19 +144,43 @@ async function getUserFriends(req, res) {
 		errors: [], 
 		currentUser: currentUser
 	}
-
 	
+
 	//STEP 1: Get your Friends
 	var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
 	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+	//console.log("yourFriendsArray")
+	//console.log(yourFriendsArray)
+	//console.log("_________________")
 
-	//STEP 2: Get their Friends
-	var theirFriendsOutcome = await friendFunctions.getUserFriends(friendName)
+	//STEP 2: Get their Active Friends
+	var theirFriendsOutcome = await friendFunctions.getActiveFriends(friendName)
 	var theirFriendsArray = theirFriendsOutcome.friendsArray;
+	//console.log("theirFriendsArray")
+	//console.log(theirFriendsArray)
+	//console.log("_________________")
 
-	//STEP 3: Compare Friends
+	//STEP 3: Compare Friends (MAKE THIS FUNCTION WORK FOR ANY TWO LISTS OF USERS)
 	var theirFriends = await friendFunctions.compareUsersWithYourFriends(currentUser, yourFriendsArray, theirFriendsArray);
+	//console.log("theirFriends")
+	//console.log(theirFriends)
+	//console.log("_________________")
 	
+	
+	/*
+
+	//LIKE
+	"postLikeID": 93,
+	"postID": 72,
+	"likedByUserName": "sam",
+	"likedByImage": "sam.jpg",
+	"likedByFirstName": "sam gamgee",
+	"likedByLastName": "sam gamgee",
+	//ADD: "friendshipKey"
+	"timestamp": "2023-02-21T00:42:33.000Z"
+
+	*/	
+
 	userFriendsOutcome.data = theirFriends;
 	userFriendsOutcome.message = "We got their friends!"
 	userFriendsOutcome.success = true
@@ -189,6 +190,12 @@ async function getUserFriends(req, res) {
 	res.json(userFriendsOutcome)
 
 }
+
+
+
+
+
+/*
 
 //Function A7: Get all Site Users with Friendship Status 
 async function getAllUsersWithFriendship(req, res) {
@@ -233,7 +240,7 @@ async function getAllUsersWithFriendship(req, res) {
 	//res.json({theirFriends: theirFriends, yourFriends: yourFriends, theirFriends: theirFriends})
 	res.json(allUsersOutcome)
 
-	/*
+	
     const userName = req.params.user_name;
 
 	var allUsersOutcome = await friendFunctions.getAllUsers()
@@ -246,10 +253,11 @@ async function getAllUsersWithFriendship(req, res) {
 	var usersOutcome = {}
 
 	res.json(usersOutcome)
-	*/
+	
+	
 
 }
-
+*/
 
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
@@ -460,12 +468,47 @@ async function declineFriendRequest(req, res) {
 
 }
 
+
 //module.exports = { getAllUsers, getAllYourFriends, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest};
-module.exports = { getAllUsers, getYourFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest};
+//module.exports = { getAllUsers, getYourActiveFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getAnotherUsersFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest};
+module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest, getAnotherUsersFriends }
+
+
+
+
+
+
+
+
 
 
 
 //APPENDIX
+//Function A6: Get a list of someones friends 
+/*
+async function getBasicUserFriends(req, res) {
+    const userName = req.params.friend_name;
+
+	var currentUserfriendsOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: userName
+	}
+
+	//var friendsOutcome = await friendFunctions.getUserFriends(userName)
+	var friendsOutcome = await friendFunctions.getUserFriends(userName)
+	currentUserfriendsOutcome.data = friendsOutcome.friendsArray;
+	currentUserfriendsOutcome.message = "We got their friends!"
+	currentUserfriendsOutcome.success = true
+	currentUserfriendsOutcome.statusCode = 200
+
+    res.json(currentUserfriendsOutcome)
+	
+}
+*/
 /*
 
 var newGroupOutcome = {
@@ -511,6 +554,7 @@ var newGroupOutcome = {
 //TYPE 3: Friendship Invite Pending (you) - "invite_pending"
 //TYPE 4: Not Friends - "not_friends"
 //TYPE 5: This is you - "you"
+
 */
 /*
 "userName": "vasquezd",
