@@ -30,7 +30,7 @@ FUNCTIONS B: All Functions Related to Friends
 //TYPE 4: Not Friends - "not_friends"
 //TYPE 5: This is you - "you"
 
-//FUNCTIONS A: All Functions Related to Friends
+//FUNCTIONS A: All Functions Related to getting Friends 
 //Function A1: Get all Users
 async function getAllUsers() {
     const connection = db.getConnection(); 
@@ -269,12 +269,6 @@ async function getPendingFriendInvites(currentUser) {
     })
 }
 
-
-
-
-//SORT BELOW
-
-
 //Function A6: Check if Users are Friends (Used for adding a friend)
 async function checkFriendshipStatus(currentUser, userFriend) {
     //Status
@@ -330,6 +324,8 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     
 }
 
+
+//FUNCTIONS B: All Functions Related to Friends  
 //Function B1: Compare a group of users with your friends 
 async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirFriendsArray) {
     //TYPE 1: You are Currently Friends - "friends"
@@ -370,8 +366,6 @@ async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirF
 
     return theirFriendsArray;
 }
-
-
 
 //Function B2: Get a Single Friend Invite
 async function getSingleInvite(currentUser, friendRequestFrom) {

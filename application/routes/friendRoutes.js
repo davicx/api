@@ -53,12 +53,11 @@ friendRouter.get('/friend/:friend_name/user/:user_name/', function(req, res) {
     friends.getAnotherUsersFriends(req, res);
 })
 
-/*
 //Function A8: Get all Site Users with Friendship Status 
 friendRouter.get('/users/all/:user_name/', function(req, res) { 
     friends.getAllUsersWithFriendship(req, res);
 })
-*/
+
 
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	

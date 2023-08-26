@@ -19,7 +19,7 @@ FUNCTIONS A: All Functions Related to Friends
 	4) Function A4: Get your Pending Friends Requests (They accept)	
 	5) Function A5: Get your Pending Friends Invites (You can accept)
 	6) Function A6: Get a list of someones friends with Friendship Status
-	8) Function A8: Get all Site Users with Friendship Status 
+	7) Function A7: Get all Site Users with Friendship Status 
 
 FUNCTIONS B: All Functions Related to Friends
 	1) Function B1: Request a Friend	
@@ -191,9 +191,91 @@ async function getAnotherUsersFriends(req, res) {
 
 }
 
+//Function A7: Get all Site Users with Friendship Status
+async function getAllUsersWithFriendship(req, res) {
+    const currentUser = req.params.user_name;
+	var userFriendsOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+	
+	//STEP 1: Get your Friends
+	var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+	console.log("yourFriendsArray")
+	console.log(yourFriendsArray)
+	console.log("_________________")
+
+	//STEP 2: Get all Users 
+	var usersOutcome = await friendFunctions.getAllUsers()
+	var allUsersArray = usersOutcome.userArray;
+	console.log("allUsersArray")
+	console.log(allUsersArray)
+	console.log("_________________")
+
+	//STEP 3: Compare Friends (MAKE THIS FUNCTION WORK FOR ANY TWO LISTS OF USERS)
+	var allUsersWithFriendStatus = await friendFunctions.compareUsersWithYourFriends(currentUser, yourFriendsArray, allUsersArray);
+	
+	userFriendsOutcome.data = allUsersWithFriendStatus;
+	userFriendsOutcome.message = "We got their friends!"
+	userFriendsOutcome.success = true
+	userFriendsOutcome.statusCode = 200
+
+	res.json(userFriendsOutcome)
+	
 
 
+}
 
+async function temp() {
+	const currentUser = req.params.user_name;
+    const friendName = req.params.friend_name;
+	console.log(currentUser + " " + friendName)
+
+	var userFriendsOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+	
+
+	//STEP 1: Get your Friends
+	var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
+	var yourFriendsArray = yourFriendsOutcome.friendsArray;
+	//console.log("yourFriendsArray")
+	//console.log(yourFriendsArray)
+	//console.log("_________________")
+
+	//STEP 2: Get their Active Friends
+	var theirFriendsOutcome = await friendFunctions.getActiveFriends(friendName)
+	var theirFriendsArray = theirFriendsOutcome.friendsArray;
+	//console.log("theirFriendsArray")
+	//console.log(theirFriendsArray)
+	//console.log("_________________")
+
+	//STEP 3: Compare Friends (MAKE THIS FUNCTION WORK FOR ANY TWO LISTS OF USERS)
+	var allUsersWithFreindStatus = await friendFunctions.compareUsersWithYourFriends(currentUser, yourFriendsArray, theirFriendsArray);
+	//console.log("theirFriends")
+	//console.log(theirFriends)
+	//console.log("_________________")
+	
+
+	userFriendsOutcome.data = allUsersWithFreindStatus;
+	userFriendsOutcome.message = "We got their friends!"
+	userFriendsOutcome.success = true
+	userFriendsOutcome.statusCode = 200
+	
+	//res.json({theirFriends: theirFriends, yourFriends: yourFriends, theirFriends: theirFriends})
+	res.json(userFriendsOutcome)
+
+}
 
 /*
 
@@ -471,7 +553,7 @@ async function declineFriendRequest(req, res) {
 
 //module.exports = { getAllUsers, getAllYourFriends, getYourFriends, getPendingFriendInvites, getPendingFriendRequests, getUserFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest};
 //module.exports = { getAllUsers, getYourActiveFriends, getAllYourFriends, getPendingFriendRequests, getPendingFriendInvites, getBasicUserFriends, getAnotherUsersFriends, getAllUsersWithFriendship, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest};
-module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest, getAnotherUsersFriends }
+module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendRequest, cancelFriendRequest, declineFriendRequest, getAnotherUsersFriends, getAllUsersWithFriendship }
 
 
 
