@@ -344,6 +344,9 @@ async function getAllUsersWithFriendship(req, res) {
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
 async function addFriend(req, res) {
+	console.log("ADD FRIEND")
+	console.log(req.body)
+	console.log("ADD FRIEND")
 	//Status
 	/*
 	1: Currently Friends

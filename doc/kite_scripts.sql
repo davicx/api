@@ -12,12 +12,13 @@ USE shareshare;
 #DELETE FROM posts WHERE post_id = 41
 
 #UPDATE posts SET group_id = 70  WHERE group_id = 77
-SELECT * FROM posts 
+#SELECT * FROM friends WHERE user_name = "davey"
 
 
 #DELETE FROM friends WHERE user_name = "bilbo" AND friend_user_name = "bilbo" 
 #UPDATE friends SET request_pending = 0  WHERE sent_to = "sam"
 #SELECT * FROM friends 
+#DELETE FROM friends
 #DELETE FROM notifications
 #DELETE FROM pending_requests
 /*
