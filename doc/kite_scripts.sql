@@ -18,9 +18,14 @@ USE shareshare;
 #DELETE FROM friends WHERE user_name = "bilbo" AND friend_user_name = "bilbo" 
 #UPDATE friends SET request_pending = 0  WHERE sent_to = "sam"
 #SELECT * FROM friends 
+#SELECT * FROM notifications 
+#SELECT * FROM pending_requests
+ 
 #DELETE FROM friends
 #DELETE FROM notifications
 #DELETE FROM pending_requests
+
+
 /*
 SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name AS friend_user_name, user_profile.image_name AS friend_image_name, user_profile.account_active, user_profile.first_name, user_profile.last_name, user_profile.biography 
 FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.sent_to 

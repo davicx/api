@@ -15,9 +15,9 @@ FUNCTIONS A: All Functions Related to Friends
 
 FUNCTIONS B: All Functions Related to Friends Actions
 	1) Function B1: Request a Friend	
-	2) Function B2: Accept Friend Request 
-	3) Function B3: Cancel a Friend	Request
-	4) Function B4: Decline Friend Request
+	2) Function B2: Cancel a Friend	Request
+	3) Function B3: Accept Friend Invite 
+	4) Function B4: Decline Friend Invite
 
 */
 
@@ -65,19 +65,19 @@ friendRouter.post('/friend/request/', middlewares.verifyUser, function(req, res)
     friends.addFriend(req, res);
 })
 
-//Function B2: Accept Friend Request 
-friendRouter.post('/friend/accept/', function(req, res) { 
-    friends.acceptFriendRequest(req, res);
-})
-
-//Function B3: Cancel a Friend Request
+//Function B2: Cancel a Friend Request
 friendRouter.post('/friend/cancel/', function(req, res) { 
     friends.cancelFriendRequest(req, res);
 })
 
-//Function B4: Decline Friend Request
+//Function B3: Accept Friend Invite 
+friendRouter.post('/friend/accept/', function(req, res) { 
+    friends.acceptFriendInvite(req, res);
+})
+
+//Function B4: Decline Friend Invite
 friendRouter.post('/friend/decline/', function(req, res) { 
-    friends.declineFriendRequest(req, res);
+    friends.declineFriendInvite(req, res);
 })
 
 module.exports = friendRouter;
