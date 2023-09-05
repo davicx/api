@@ -206,16 +206,16 @@ async function getAllUsersWithFriendship(req, res) {
 	//STEP 1: Get your Friends
 	var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
 	var yourFriendsArray = yourFriendsOutcome.friendsArray;
-	console.log("yourFriendsArray")
-	console.log(yourFriendsArray)
-	console.log("_________________")
+	//console.log("yourFriendsArray")
+	//console.log(yourFriendsArray)
+	//console.log("_________________")
 
 	//STEP 2: Get all Users 
 	var usersOutcome = await friendFunctions.getAllUsers()
 	var allUsersArray = usersOutcome.userArray;
-	console.log("allUsersArray")
-	console.log(allUsersArray)
-	console.log("_________________")
+	//console.log("allUsersArray")
+	//console.log(allUsersArray)
+	//console.log("_________________")
 
 	//STEP 3: Compare Friends (MAKE THIS FUNCTION WORK FOR ANY TWO LISTS OF USERS)
 	var allUsersWithFriendStatus = await friendFunctions.compareUsersWithYourFriends(currentUser, yourFriendsArray, allUsersArray);
@@ -235,9 +235,6 @@ async function getAllUsersWithFriendship(req, res) {
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
 async function addFriend(req, res) {
-	console.log("ADD FRIEND")
-	console.log(req.body)
-	console.log("ADD FRIEND")
 	//Status
 	/*
 	1: Currently Friends
@@ -391,6 +388,7 @@ async function acceptFriendInvite(req, res) {
 		errors: [], 
 		currentUser: currentUser
 	}
+
 	//STEP 1: Confirm there is a Pending Request
 	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
 	console.log("STEP 1: Confirm there is a Pending Request")
@@ -432,6 +430,9 @@ async function acceptFriendInvite(req, res) {
 		//STEP 6: Mark original Notification as Seen
 		Notification.setNotificationSeen("friend_request", friendName, currentUser);
 
+		acceptFriendOutcome.data.currentUser = currentUser
+		acceptFriendOutcome.data.friendName = friendName
+
 		acceptFriendOutcome.message = currentUser + " accepted a friend request from " + friendName;
 		acceptFriendOutcome.success = true
 		acceptFriendOutcome.statusCode = 200
@@ -451,11 +452,52 @@ async function declineFriendInvite(req, res) {
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
     const friendName = req.body.friendName;
-	var declineFriendRequest = {}
 
-	var declineFriendRequest = await friendFunctions.declineFriendRequest(currentUser, friendName);
+	var declineFriendRequestOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
 
-	res.json(declineFriendRequest)
+	//STEP 1: Confirm there is a Pending Request
+	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
+	console.log("STEP 1: Confirm there is a Pending Request")
+	//console.log(requestStatus)
+
+	//STEP 2: Confirm there is a Friendship Pending
+	var inviteStatus = await friendFunctions.getSingleInvite(currentUser, friendName);
+	console.log("STEP 2: Confirm there is a Friendship Pending")
+	//console.log(inviteStatus)
+
+		//If there is a request 
+		if(inviteStatus.inviteExists == true) {
+
+			//STEP 3: Decline the Request 
+			var declineFriendRequest = await friendFunctions.declineFriendRequest(currentUser, friendName);
+			declineFriendRequestOutcome.success = true
+			declineFriendRequestOutcome.statusCode = 200
+			declineFriendRequestOutcome.data.currentUser = currentUser
+			declineFriendRequestOutcome.data.friendName = friendName
+			declineFriendRequestOutcome.message = currentUser + " declined the friendship request from " + friendName;
+
+			//console.log("declineFriendRequest")
+			//console.log(declineFriendRequest)
+			//console.log("declineFriendRequest")
+
+		} else {
+			declineFriendRequestOutcome.success = true
+			declineFriendRequestOutcome.statusCode = 200
+			declineFriendRequestOutcome.message = "Their is no friendship to decline"
+			console.log("STEP 2: Their is no friendship to decline")
+		}
+
+	
+	
+	console.log(declineFriendRequestOutcome)
+	res.json(declineFriendRequestOutcome)
 
 }
 

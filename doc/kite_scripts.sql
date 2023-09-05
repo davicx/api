@@ -22,8 +22,8 @@ USE shareshare;
 #SELECT * FROM pending_requests
  
 #DELETE FROM friends
-#DELETE FROM notifications
 #DELETE FROM pending_requests
+#DELETE FROM notifications
 
 
 /*
