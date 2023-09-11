@@ -35,60 +35,9 @@ FUNCTIONS C: All Functions Related to Post Actions
 //Function A1: Post Text
 async function postText(req, res) {
 	//const connection = db.getConnection(); 
-
 	console.log("Make a new Post text")
-	console.log(req.body)
 	const groupID = req.body.groupID;
-	var postOutcome = await Post.createPostText(req);
-
-	console.log(postOutcome)
-	
-	if(postOutcome.outcome == 0) {
-		console.log("Something went wrong making this post!")
-	}
-
-	//STEP 2: Add the Notifications
-	var notification = {}
-	const groupUsersOutcome = await Group.getGroupUsers(groupID);
-	const groupUsers = groupUsersOutcome.groupUsers;
-	
-	if(postOutcome.outcome == 200) {
-		notification = {
-			masterSite: "kite",
-			notificationFrom: req.body.postFrom,
-			notificationMessage: req.body.notificationMessage,
-			notificationTo: groupUsers,
-			notificationLink: req.body.notificationLink,
-			notificationType: req.body.notificationType,
-			groupID: groupID
-		}
-
-		if(groupUsers.length > 0) {
-			Notification.createGroupNotification(notification);
-		}
-	}
-
-	const newPost = {
-        postID: postOutcome.postID,
-        postType: "text",
-        groupID: groupID,
-        listID: 0,
-        postFrom: req.body.postFrom,
-        postTo: req.body.postTo,
-        postCaption: req.body.postCaption,
-        fileName: req.body.fileName,
-        fileNameServer: req.body.fileNameServer,
-        fileUrl: req.body.fileUrl,
-        postLikesArray: [],
-        simpleLikesArray: [],
-        fileUrl: req.body.fileUrl,
-        videoURL: req.body.videoURL,
-        videoCode: req.body.videoCode,
-        created: "2021-12-19T08:14:03.000Z"
-	}
-
-	/*
-	    var newFriendOutcome = {
+	var postOutcome = {
 		data: {},
 		message: "", 
 		success: false,
@@ -97,9 +46,64 @@ async function postText(req, res) {
 		currentUser: req.body.currentUser
 	}
 
-	*/
+	//STEP 1: Make a new post
+	var newPostOutcome = await Post.createPostText(req);
 
-	postOutcome.newPost = newPost;
+	console.log("newPostOutcome")
+	console.log(newPostOutcome)
+	console.log("newPostOutcome")
+	
+	if(newPostOutcome.outcome == 200) {
+
+		//STEP 2: Add the Notifications
+		var notification = {}
+		const groupUsersOutcome = await Group.getGroupUsers(groupID);
+		const groupUsers = groupUsersOutcome.groupUsers;
+		//console.log("groupUsers")
+		//console.log(groupUsers)
+		
+		if(newPostOutcome.outcome == 200) {
+			notification = {
+				masterSite: "kite",
+				notificationFrom: req.body.postFrom,
+				notificationMessage: req.body.notificationMessage,
+				notificationTo: groupUsers,
+				notificationLink: req.body.notificationLink,
+				notificationType: req.body.notificationType,
+				groupID: groupID
+			}
+
+			if(groupUsers.length > 0) {
+				Notification.createGroupNotification(notification);
+			}
+		}
+
+		const newPost = {
+			postID: postOutcome.postID,
+			postType: "text",
+			groupID: groupID,
+			listID: 0,
+			postFrom: req.body.postFrom,
+			postTo: req.body.postTo,
+			postCaption: req.body.postCaption,
+			fileName: req.body.fileName,
+			fileNameServer: req.body.fileNameServer,
+			fileUrl: req.body.fileUrl,
+			postLikesArray: [],
+			simpleLikesArray: [],
+			fileUrl: req.body.fileUrl,
+			videoURL: req.body.videoURL,
+			videoCode: req.body.videoCode,
+			created: "2021-12-19T08:14:03.000Z"
+		}
+
+		postOutcome.message = "A new post was created with the id " + postOutcome.postID;
+		postOutcome.data = newPost;
+	} else {
+		console.log("Something went wrong making this post!")
+		
+	} 
+
 
 	res.json(postOutcome);
 }
@@ -135,6 +139,16 @@ async function postPhoto(req, res, file) {
 //Function A3: Post Video
 async function postVideo(req, res) {
 	const groupID = req.body.groupID;
+
+	var postOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
 	postOutcome = await Post.createPostVideo(req);
 		
 	//STEP 2: Add the Notification
