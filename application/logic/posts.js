@@ -140,7 +140,7 @@ async function postPhoto(req, res, file) {
 async function postVideo(req, res) {
 	const groupID = req.body.groupID;
 
-	var postOutcome = {
+	var postVideoOutcome = {
 		data: {},
 		message: "", 
 		success: false,
@@ -149,14 +149,52 @@ async function postVideo(req, res) {
 		currentUser: req.body.currentUser
 	}
 
-	postOutcome = await Post.createPostVideo(req);
-		
-	//STEP 2: Add the Notification
-	var notification = {}
-	const groupUsersOutcome = await Group.getGroupUsers(groupID);
-	const groupUsers = groupUsersOutcome.groupUsers;
-	
+	//STEP 1: Create the New Post 
+	const postOutcome = await Post.createPostVideo(req);
+
 	if(postOutcome.outcome == 200) {
+
+		//STEP 2: Get new Post Data
+		var postCreated = await PostFunctions.getPostCreated(postOutcome.postID) 
+
+		
+		console.log("DV")
+		var timestampISO = postCreated.created
+		var timestampRaw = timestampISO.toISOString()
+		var timestamp = timestampRaw.slice(0, 19).replace('T', ' ');
+
+		//console.log(timestampISO)
+		//console.log(timestampRaw);
+		//console.log(timestamp);
+		console.log("DV")
+
+
+
+
+		var newPost = {
+			postID: postOutcome.postID,
+			postType: req.body.postType ,
+			groupID: req.body.groupID,
+			listID: req.body.listID,
+			postFrom: req.body.postFrom,
+			postTo: req.body.postTo ,
+			postCaption: req.body.postCaption,
+			postLikesArray: [],
+			simpleLikesArray: [],
+			videoURL: req.body.videoURL,
+			videoCode: req.body.videoCode ,
+			created: postCreated.created
+		}
+
+		postVideoOutcome.data = newPost;
+		postVideoOutcome.message = "You made a new video post!"
+
+		//STEP 3: Add the Notification
+		var notification = {}
+		const groupUsersOutcome = await Group.getGroupUsers(groupID);
+		const groupUsers = groupUsersOutcome.groupUsers;
+
+		//Create Notification 
 		notification = {
 			masterSite: "kite",
 			notificationFrom: req.body.postFrom,
@@ -170,9 +208,11 @@ async function postVideo(req, res) {
 		if(groupUsers.length > 0) {
 			Notification.createGroupNotification(notification);
 		}
+
 	}
 
-	res.json(postOutcome);
+	
+	res.json(postVideoOutcome);
 }
 
 //Function A4: Post Article

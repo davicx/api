@@ -125,7 +125,8 @@ class Post {
     
                 connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, videoURL, videoCode], (err, results, fields) => {
                     if (!err) {
-                        console.log("You created a new Post with ID " + results.insertId);    
+                        console.log("Post.js: You created a new Post with ID " + results.insertId);    
+                        //console.log(results)
                         postOutcome.outcome = 200;       
                         postOutcome.postID = results.insertId;       
                     } else {    

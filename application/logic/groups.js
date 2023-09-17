@@ -361,12 +361,25 @@ async function getGroupUsers(req, res) {
 	const groupID = req.params.groupID;
 	const groupOutcome = await Group.getGroupUsers(groupID);
 	console.log(" You got " +  groupID);
+
+    var groupUsersOutcome = {
+		data: {},
+		message: "", 
+		success: true,
+		statusCode: 200,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
 	const groupUsers = {
+		groupID: groupID,
 		activeGroupUsers: groupOutcome.groupUsers,
 		pendingGroupUsers: groupOutcome.pendingGroupUsers,
 	}
 
-	res.json({groupUsers});
+	groupUsersOutcome.data = groupUsers;
+
+	res.json(groupUsersOutcome);
 
 }
 

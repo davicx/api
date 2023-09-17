@@ -8,9 +8,10 @@ USE shareshare;
 #SELECT * FROM friends 
 #SELECT * FROM friends WHERE user_name = "davey"
 #DELETE FROM friends WHERE user_name = "davey"
-#SELECT * FROM group_users 
 
-#DELETE FROM posts WHERE post_id = 41
+SELECT * FROM posts
+
+#DELETE FROM posts WHERE post_id > 100
 
 #UPDATE group_users SET active_member = 1
 #SELECT * FROM friends WHERE user_name = "davey"
@@ -19,7 +20,7 @@ USE shareshare;
 #DELETE FROM friends WHERE user_name = "bilbo" AND friend_user_name = "bilbo" 
 #UPDATE friends SET request_pending = 0 
 #SELECT * FROM friends 
-SELECT * FROM notifications 
+#SELECT * FROM notifications 
 #SELECT * FROM pending_requests
  
 #DELETE FROM friends
@@ -381,6 +382,7 @@ INSERT INTO `groups` (`group_id`, `group_type`, `created_by`, `group_name`, `gro
 #SELECT * FROM shareshare.groups;           
 #SELECT group_id, user_name, active_member FROM group_users WHERE user_name = 'davey' AND active_member = 1;
 #UPDATE group_users SET group_id = 72  WHERE primary_id = 1013;
+
 #SELECT * FROM group_users;
 #SELECT * FROM shareshare.groups;
 #UPDATE shareshare.groups SET group_name = 'gardening' WHERE group_id = 72;

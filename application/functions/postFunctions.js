@@ -18,6 +18,7 @@ FUNCTIONS B: All Post Helper Functions
 	1) Function B1: Get count of posts in Group
 	2) Function B2: Get count of posts to a User
     3) Function B3: Check if Post Exists 
+    4) Function B4: Get Post Created Timestamp 
 */
 
 //FUNCTIONS A: All Functions Related to getting Posts
@@ -382,5 +383,38 @@ async function checkPostExists(postID)  {
     })
 }
 
+//Function B4: Get Post Created Timestamp 
+async function getPostCreated(postID)  {
+    const connection = db.getConnection(); 
 
-module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, checkPostExists }
+    const queryString = "SELECT * FROM posts WHERE post_id = ?";
+    var postsOutcome = {
+        success: false   
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+                    console.log(rows)
+                    postsOutcome.created = rows[0].created
+                    postsOutcome.success = true
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    console.log(err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            console.log(err)
+            reject(postsOutcome);
+        } 
+    })
+    
+}
+
+
+module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, checkPostExists, getPostCreated }
