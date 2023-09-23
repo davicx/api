@@ -258,6 +258,7 @@ async function getAllGroupPosts(req, res) {
 	
 
 	//STEP 3: Get all Likes for these Posts 
+	//getPostLikes()
 	for (let i = 0; i < posts.length; i++) {
 		let simpleLikesArray = []
 		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
