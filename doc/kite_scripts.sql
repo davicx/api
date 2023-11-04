@@ -9,8 +9,10 @@ USE shareshare;
 #SELECT * FROM friends WHERE user_name = "davey"
 #DELETE FROM friends WHERE user_name = "davey"
 #DELETE FROM posts WHERE group_id = 70 AND post_id < 470
-
+#DELETE FROM posts 
 SELECT * FROM posts WHERE group_id = 70;
+
+#SELECT * FROM posts WHERE group_id = 70;
 
 #SELECT * FROM posts
 #SELECT @@global.time_zone

@@ -35,23 +35,25 @@ FUNCTIONS C: All Functions Related to Post Actions
 //Function A1: Post Text
 async function postText(req, res) {
 	//const connection = db.getConnection(); 
-	console.log("Make a new Post text")
+	console.log("____________________________")
+	console.log("NEW POST: Post Text")
 	const groupID = req.body.groupID;
+	console.log("Post Request Body")
+	console.log(req.body)
+	console.log("Post Request Body")
 	var postOutcome = {
 		data: {},
 		message: "", 
 		success: false,
 		statusCode: 500,
 		errors: [], 
-		currentUser: req.body.currentUser
+		currentUser: req.body.postFrom
 	}
 
 	//STEP 1: Make a new post
 	var newPostOutcome = await Post.createPostText(req);
-
-	console.log("newPostOutcome")
+	console.log("STEP 1: New Post Outcome")
 	console.log(newPostOutcome)
-	console.log("newPostOutcome")
 	
 	if(newPostOutcome.outcome == 200) {
 
@@ -59,8 +61,7 @@ async function postText(req, res) {
 		var notification = {}
 		const groupUsersOutcome = await Group.getGroupUsers(groupID);
 		const groupUsers = groupUsersOutcome.groupUsers;
-		//console.log("groupUsers")
-		//console.log(groupUsers)
+		console.log("STEP 2: Add notifications")
 		
 		if(newPostOutcome.outcome == 200) {
 			notification = {
@@ -77,9 +78,10 @@ async function postText(req, res) {
 				Notification.createGroupNotification(notification);
 			}
 		}
-
+		
+		//STEP 3: New Post Outcome 
 		const newPost = {
-			postID: postOutcome.postID,
+			postID: newPostOutcome.postID,
 			postType: "text",
 			groupID: groupID,
 			listID: 0,
@@ -97,21 +99,34 @@ async function postText(req, res) {
 			created: "2021-12-19T08:14:03.000Z"
 		}
 
-		postOutcome.message = "A new post was created with the id " + postOutcome.postID;
+		postOutcome.message = "A new post was created with the id " + newPostOutcome.postID;
 		postOutcome.data = newPost;
+
+		console.log("STEP 3: New Post Outcome")
+		console.log(postOutcome)
+		console.log("YOU MADE A NEW POST!")
 	} else {
-		console.log("Something went wrong making this post!")
-		
+		console.log("STEP 3: Something went wrong making this post!")
 	} 
 
-
 	res.json(postOutcome);
+	console.log("____________________________")
 }
 
 //Function A2: Post Photo
 async function postPhoto(req, res, file) {
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostPhoto(req, file);
+
+	var postOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
 
 	//STEP 2: Add the Notification
 	var notification = {}
@@ -156,20 +171,6 @@ async function postVideo(req, res) {
 
 		//STEP 2: Get new Post Data
 		var postCreated = await PostFunctions.getPostCreated(postOutcome.postID) 
-
-		
-		console.log("DV")
-		var timestampISO = postCreated.created
-		var timestampRaw = timestampISO.toISOString()
-		var timestamp = timestampRaw.slice(0, 19).replace('T', ' ');
-
-		//console.log(timestampISO)
-		//console.log(timestampRaw);
-		//console.log(timestamp);
-		console.log("DV")
-
-
-
 
 		var newPost = {
 			postID: postOutcome.postID,

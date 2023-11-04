@@ -18,13 +18,13 @@ class Post {
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const postCaption = req.body.postCaption 
+        console.log("Step 1A: Create a new post from Post Class");  
      
         var postOutcome = {
             outcome: 0,
             postID: 0,
             errors: []
         }
-
 
         //INSERT POST
         return new Promise(async function(resolve, reject) {
@@ -33,7 +33,7 @@ class Post {
     
                 connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
                     if (!err) {
-                        console.log("You created a new Post with ID " + results.insertId);    
+                        console.log("Step 1B: You created a new Post with ID " + results.insertId);    
                         postOutcome.outcome = 200;       
                         postOutcome.postID = results.insertId;       
                     } else {    
@@ -45,7 +45,7 @@ class Post {
                 
             } catch(err) {
                 postOutcome.outcome = "rejected";
-                console.log("REJECTED " + err);
+                console.log("Post Class: error in promise " + err);
                 reject(postOutcome);
             } 
         });

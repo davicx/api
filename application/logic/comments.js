@@ -39,6 +39,13 @@ Outcome Success: true or false
 //Function A1: Post a new Comment
 async function postComment(req, res) {
 	const connection = db.getConnection(); 
+	const commentCaption = req.body.commentCaption 
+	const commentType = req.body.commentType 
+	const commentFrom = req.body.commentFrom 
+	const commentTo = req.body.commentTo 
+	const groupID = req.body.groupID 
+	const postID = req.body.postID 
+	const commentStatus = 0;
 	const notificationMessage = req.body.notificationMessage 
 	const notificationType = req.body.notificationType 
 	const notificationLink = req.body.notificationLink 
@@ -46,10 +53,30 @@ async function postComment(req, res) {
 	//STEP 1: Create Comment
 	var commentOutcome = await Comment.newComment(req);
 
-	//console.log(commentOutcome);
-	//STEP 2: Create Notifications to Group 
+	//if comment worked
 
-	
+
+	//STEP 2: Create Notifications to Group Users
+
+	//Need to return this for React
+	/*
+	    {
+        "commentID": 128,
+        "postID": 535,
+        "commentCaption": "Yes lets go hike!",
+        "commentFrom": "davey",
+        "userName": "davey",
+        "imageName": "davey.jpg",
+        "firstName": "davey v",
+        "lastName": "davey v",
+        "commentLikes": [],
+        "created": "2023-11-04T23:42:43.000Z",
+        "commentLikeCount": 0
+    }
+	*/
+
+	console.log("Need notification still")
+	console.log("NEW COMMENT!")
     res.json(commentOutcome);
 
 }
@@ -65,7 +92,6 @@ async function getComments(req, res) {
 	//STEP 1: Get all Comments 
 	var commentsOutcome = await Comment.getPostComments(postID)
 
-	
 	//STEP 2: Get all the likes for these comments
 	if(commentsOutcome.success == true) {
 		var comments = commentsOutcome.comments;

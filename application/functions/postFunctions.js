@@ -1,5 +1,7 @@
 const db = require('./conn');
 const dayjs = require('dayjs')
+var relativeTime = require('dayjs/plugin/relativeTime')
+dayjs.extend(relativeTime)
 dayjs().format()
 const Group = require('./classes/Group');
 const Post = require('./classes/Post');
@@ -94,21 +96,28 @@ async function getGroupPostsAll(groupID)  {
             connection.query(queryString, [groupID], (err, rows) => {
                 if (!err) {
                     const posts = rows.map((row) => {
-                        console.log("Dates")
-                        console.log(row.created)
-                        let date = dayjs(row.created).format('MM/DD/YYYY h:mm A') 
-                        console.log(date)
-
+                        
+                        //TIME 
+                        //Step 1: Create a Post Time Holder 
+                        let postTimeData = {}
+                        let date = dayjs(row.created).format('MM/DD/YYYY')      
                         let minutes = dayjs(row.created).minute()
                         let hour = dayjs(row.created).hour()
-                        console.log(hour + " " + minutes)
+                    
+                        //Step 2: Get the time in hours and minutes
                         if(hour > 12) {
                             hour = hour - 12
                         }
-                        console.log(hour + ":0" + minutes + " pm")
 
+                        let time = hour + ":0" + minutes + " pm";
 
-                        console.log("Dates")
+                        //Step 3: Get the Message 
+                        let timeMessage = dayjs(row.created).fromNow()
+                    
+                        postTimeData.date = date
+                        postTimeData.time = time
+                        postTimeData.timeMessage = timeMessage
+
                         return {
                             postID: row.post_id,
                             postType: row.post_type,
@@ -122,6 +131,9 @@ async function getGroupPostsAll(groupID)  {
                             fileUrl: row.file_url,
                             videoURL: row.video_url,
                             videoCode: row.video_code,
+                            postDate: postTimeData.date,
+                            postTime: postTimeData.time,
+                            timeMessage: postTimeData.timeMessage,
                             created: row.created
                         }
                     });
