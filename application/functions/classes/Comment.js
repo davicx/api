@@ -22,7 +22,7 @@ class Comment {
    
         var commentOutcome = {
             outcome: 0,
-            postID: 0,
+            commentID: 0,
             errors: []
         }
 
@@ -35,7 +35,7 @@ class Comment {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
                         commentOutcome.outcome = 200;       
-                        commentOutcome.postID = results.insertId;       
+                        commentOutcome.commentID = results.insertId;       
                     } else {    
                         commentOutcome.outcome = "no worky"
                         commentOutcome.errors.push(err);

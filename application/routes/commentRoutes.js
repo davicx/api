@@ -27,7 +27,6 @@ commentRouter.post('/comment', function(req, res) {
     comments.postComment(req, res);
 })
 
-
 //FUNCTIONS B: All Functions Related to getting Comments
 //Function B1: Get all Comments to a Post
 commentRouter.get('/comments/:post_id', middlewares.verifyUser, (req, res) => {

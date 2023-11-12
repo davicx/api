@@ -2,7 +2,9 @@ const db = require('../functions/conn');
 const Comment = require('../functions/classes/Comment');
 const Notification = require('../functions/classes/Notification')
 const Functions = require('../functions/functions');
+const TimeFunctions = require('../functions/timeFunctions');
 const CommentFunctions = require('../functions/commentFunctions');
+const UserFunctions = require('../functions/userFunctions');
 
 /*
 FUNCTIONS A: All Functions Related to Comments
@@ -41,42 +43,113 @@ async function postComment(req, res) {
 	const connection = db.getConnection(); 
 	const commentCaption = req.body.commentCaption 
 	const commentType = req.body.commentType 
+	const currentUser = req.body.commentFrom 
 	const commentFrom = req.body.commentFrom 
-	const commentTo = req.body.commentTo 
+	//const commentTo = req.body.commentTo 
 	const groupID = req.body.groupID 
 	const postID = req.body.postID 
 	const commentStatus = 0;
 	const notificationMessage = req.body.notificationMessage 
 	const notificationType = req.body.notificationType 
-	const notificationLink = req.body.notificationLink 
+	//var notificationLink = req.body.notificationLink 
+	var notificationLink = "http://localhost:3003/posts/group/" + groupID	
+
 
 	//STEP 1: Create Comment
-	var commentOutcome = await Comment.newComment(req);
+	var commentOutcome = {
+		data: {},
+		message: "",
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	}
 
-	//if comment worked
+	var newCommentOutcome = await Comment.newComment(req);
+
+	if(newCommentOutcome.outcome == 200) {
+
+		//STEP 2: Create Notifications to Group Users
+		var notification = {
+			masterSite: "kite",
+			notificationFrom: currentUser,
+			notificationMessage: notificationMessage,
+			notificationTo: "Need to get this",
+			notificationLink: notificationLink,
+			notificationType: notificationType,
+			groupID: groupID,
+			postID: postID,
+			commentID: newCommentOutcome.commentID 
+		}
+
+		/*
+		"postTo": "frodo",
+		"groupID": 70,
+		if postTo is same as groupID then its a post in a group not a person
+
+		//STEP 2: Add the Notifications
+		var notification = {}
+		const groupUsersOutcome = await Group.getGroupUsers(groupID);
+		const groupUsers = groupUsersOutcome.groupUsers;
+		console.log("STEP 2: Add notifications")
+		
+		if(newPostOutcome.outcome == 200) {
+			notification = {
+				masterSite: "kite",
+				notificationFrom: req.body.postFrom,
+				notificationMessage: req.body.notificationMessage,
+				notificationTo: groupUsers,
+				notificationLink: req.body.notificationLink,
+				notificationType: req.body.notificationType,
+				groupID: groupID
+			}
+
+			if(groupUsers.length > 0) {
+				Notification.createGroupNotification(notification);
+			}
+		}
+		
+		*/
+
+		//Notification.createCommentNotification(notification);
+
+		//STEP 3: Create Posted Time
+		let timeMessage = TimeFunctions.getCurrentTime()
+
+		//STEP 4: Create Return Comment
+		var userOutcome = await UserFunctions.getUserInformation(currentUser);
+		console.log("userOutcome")
+		console.log(userOutcome)
+		console.log("userOutcome")
+		
+
+		commentOutcome.message = "You created a new comment with the ID " + newCommentOutcome.commentID;
+		commentOutcome.success = true
+		commentOutcome.statusCode = 200
+		
+		let newComment = {
+			commentID: newCommentOutcome.commentID,
+			postID: postID,
+			commentCaption: commentCaption,
+			commentFrom: commentFrom,
+			userName: currentUser,
+			imageName: userOutcome.imageName,
+			firstName: userOutcome.firstName,
+			lastName: userOutcome.lastName,
+			commentLikes: [],
+			postDate: timeMessage.postDate,
+			postTime: timeMessage.postTime,
+			timeMessage: timeMessage.timeMessage,
+			created: timeMessage.now,
+			commentLikeCount: 0
+
+		}
+
+		commentOutcome.data = newComment;
+
+	}
 
 
-	//STEP 2: Create Notifications to Group Users
-
-	//Need to return this for React
-	/*
-	    {
-        "commentID": 128,
-        "postID": 535,
-        "commentCaption": "Yes lets go hike!",
-        "commentFrom": "davey",
-        "userName": "davey",
-        "imageName": "davey.jpg",
-        "firstName": "davey v",
-        "lastName": "davey v",
-        "commentLikes": [],
-        "created": "2023-11-04T23:42:43.000Z",
-        "commentLikeCount": 0
-    }
-	*/
-
-	console.log("Need notification still")
-	console.log("NEW COMMENT!")
     res.json(commentOutcome);
 
 }

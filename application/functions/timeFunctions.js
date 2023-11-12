@@ -63,6 +63,35 @@ function formatTimestamp(timestamp) {
 	
 }
 
+//Function A1: Format a Timestamp
+function getCurrentTime() {
+    let formattedTime = {}
+    var now = dayjs()
+ 
+    //Format Date
+    let date = dayjs(now).format('MM/DD/YYYY')  
+
+    //Format Time 
+    let minutes = dayjs(now).minute()
+    let hour = dayjs(now).hour()
+
+    if(hour > 12) {
+        hour = hour - 12
+    }
+    let time = hour + ":" + minutes + " pm"
+ 
+    //Get a Message to Display 
+    let timeMessage = dayjs(now).fromNow()
+   
+    formattedTime.now = now
+    formattedTime.postDate = date
+    formattedTime.postTime = time
+    formattedTime.timeMessage = timeMessage
+
+    return formattedTime;
+
+}
+
 //Async
 /*
 async function formatTimestamp(timestamp) {
@@ -100,7 +129,7 @@ async function formatTimestamp(timestamp) {
     })
 */
 
-module.exports = { formatTimestamp };
+module.exports = { formatTimestamp, getCurrentTime };
 
 
 
