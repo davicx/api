@@ -31,6 +31,40 @@ FUNCTIONS C: All Functions Related to Post Actions
 
 */
 
+//NEED TO SYNC POSTS WITH NEW DATA
+         /*
+		{
+			"commentID": 179,
+			"postID": 537,
+			"commentCaption": "Yes lets go hike!",
+			"commentFrom": "davey",
+			"userName": "davey",
+			"imageName": "davey.jpg",
+			"firstName": "davey v",
+			"lastName": "davey v",
+			"commentLikes": [],
+			"postDate": "11/12/2023",
+			"postTime": "4:47 pm",
+			"timeMessage": "a few seconds ago",
+			"created": "2023-11-13T00:47:48.620Z",
+			"commentLikeCount": 0
+			}
+			{
+			"commentID": 178,
+			"postID": 537,
+			"commentCaption": "Yes lets go hike!",
+			"commentFrom": "davey",
+			"userName": "davey",
+			"imageName": "davey.jpg",
+			"firstName": "davey v",
+			"lastName": "davey v",
+			"commentLikes": [],
+			"created": "2023-11-13T00:47:30.000Z",
+			"commentLikeCount": 0
+			}
+			
+		}
+*/
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Text
 async function postText(req, res) {

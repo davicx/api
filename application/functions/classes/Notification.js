@@ -16,6 +16,7 @@ class Notification {
 		const notificationLink = notification.notificationLink;
 		const notificationType = notification.notificationType;
 		const groupID = notification.groupID;
+        console.log("New Group Notification")
    
 		//Get Group Users 
         for(let i = 0; i < groupUsers.length; i++) {
@@ -44,6 +45,7 @@ class Notification {
 		const notificationLink = notification.notificationLink;
 		const notificationType = notification.notificationType;
 		const groupID = notification.groupID;
+        console.log("New Single Notification")
       
         if(notificationTo != notificationFrom) {
             const queryString = "INSERT INTO notifications (master_site, group_id, notification_from, notification_to, notification_message, notification_type, notification_link) VALUES (?, ?, ?, ?, ?, ?, ?)"

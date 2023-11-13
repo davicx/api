@@ -11,6 +11,10 @@ FUNCTIONS A: Array and Validation Functions
 	3) Function A3: Remove duplicate values from array
     4) Function A4: Convert an Array to a Set
 
+//FUNCTIONS B: String Functions
+    1) Function B1: Compare two Strings
+
+
 */
 
 //FUNCTIONS A: Validation Functions 
@@ -50,9 +54,18 @@ function removeArrayDuplicates(fullArray) {
 
 //Function A4: Convert an Array to a Set
 
+//FUNCTIONS B: String Functions
+//Function B1: Compare two Strings
+function compareStrings(stringOneRaw, stringTwoRaw) {
+    let stringOne = String(stringOneRaw);
+    let stringTwo = String(stringTwoRaw);
 
-
-
+    if(stringOne.toUpperCase().localeCompare(stringTwo.toUpperCase()) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 
 
@@ -404,7 +417,7 @@ async function makeUserNotActiveInLoginTable(userName)  {
 
 
 
-module.exports = { cleanUserName, cleanUserNameArray, removeArrayDuplicates, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
+module.exports = { cleanUserName, cleanUserNameArray, removeArrayDuplicates, compareStrings, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
 
 
 //APPENDIX
