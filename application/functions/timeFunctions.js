@@ -42,8 +42,8 @@ function formatTimestamp(timestamp) {
     let date = dayjs(timestamp).format('MM/DD/YYYY')      
     
     //Format Time 
-    let minutes = dayjs(row.created).minute()
-    let hour = dayjs(row.created).hour()
+    let minutes = dayjs(timestamp).minute()
+    let hour = dayjs(timestamp).hour()
 
     if(hour > 12) {
         hour = hour - 12
@@ -51,15 +51,13 @@ function formatTimestamp(timestamp) {
     let time = hour + ":0" + minutes + " pm"
 
     //Get a Message to Display 
-    let timeMessage = dayjs(row.created).fromNow()
+    let timeMessage = dayjs(timestamp).fromNow()
 
     formattedTime.date = date
     formattedTime.time = time
     formattedTime.timeMessage = timeMessage
 
-    console.log(timeMessage)
-
-    return timeMessage;
+    return formattedTime;
 	
 }
 

@@ -29,7 +29,7 @@ commentRouter.post('/comment', function(req, res) {
 
 //FUNCTIONS B: All Functions Related to getting Comments
 //Function B1: Get all Comments to a Post
-commentRouter.get('/comments/:post_id', middlewares.verifyUser, (req, res) => {
+commentRouter.get('/comments/:post_id/:user_name', middlewares.verifyUser, (req, res) => {
 //commentRouter.get('/comments/:post_id', (req, res) => {
     comments.getComments(req, res);
 })

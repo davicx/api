@@ -67,32 +67,60 @@
 
 
 //COMMENTS
-
+//New Comment
 /*
 {
-    "commentID": 128,
-    "postID": 535,
-    "commentCaption": "Yes lets go hike!",
-    "commentFrom": "davey",
-    "userName": "davey",
-    "imageName": "davey.jpg",
-    "firstName": "davey v",
-    "lastName": "davey v",
-    "commentLikes": [
-        {
-            "commentLikeID": 79,
-            "commentID": 128,
-            "likedByUserName": "davey",
-            "likedByImage": "davey.jpg",
-            "likedByFirstName": "davey v",
-            "likedByLastName": "davey v",
-            "commentCreated": "2023-11-11T23:52:39.000Z"
-        }
-    ],
-    "postTime": "4:042 pm",
-    "postDate": "10/05/2023",
-    "timeMessage": "7 days ago",
-    "created": "2023-11-04T23:42:43.000Z",
-    "commentLikeCount": 1
+    "data": {
+        "commentID": 186,
+        "postID": 534,
+        "commentCaption": "OHHHH Hiya Frodo!! The weather is perfect! wanna hike or we could garden!",
+        "commentFrom": "davey",
+        "userName": "davey",
+        "imageName": "davey.jpg",
+        "firstName": "davey v",
+        "lastName": "davey v",
+        "commentLikes": [],
+        "commentDate": "11/18/2023",
+        "commentTime": "3:32 pm",
+        "timeMessage": "a few seconds ago",
+        "created": "2023-11-18T23:32:53.763Z",
+        "commentLikeCount": 0
+    },
+    "message": "You created a new comment with the ID 186",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
 }
+*/
+/*
+//Get Comments
+[
+    {
+        "commentID": 128,
+        "postID": 535,
+        "commentCaption": "Yes lets go hike!",
+        "commentFrom": "davey",
+        "userName": "davey",
+        "imageName": "davey.jpg",
+        "firstName": "davey v",
+        "lastName": "davey v",
+        "commentLikes": [
+            {
+                "commentLikeID": 79,
+                "commentID": 128,
+                "likedByUserName": "davey",
+                "likedByImage": "davey.jpg",
+                "likedByFirstName": "davey v",
+                "likedByLastName": "davey v",
+                "commentCreated": "2023-11-11T23:52:39.000Z"
+            }
+        ],
+        "postTime": "4:042 pm",
+        "postDate": "10/05/2023",
+        "timeMessage": "7 days ago",
+        "created": "2023-11-04T23:42:43.000Z",
+        "commentLikeCount": 1
+    }
+]
 */

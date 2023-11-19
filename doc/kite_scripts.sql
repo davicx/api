@@ -12,6 +12,7 @@ USE shareshare;
 
 #SELECT * FROM posts WHERE post_id = 534;
 #SELECT * FROM comments;
+#DELETE FROM notifications 
 DELETE FROM comments 
 #SELECT * FROM notifications;
 #SELECT * FROM posts WHERE group_id = 70;

@@ -84,10 +84,15 @@ class Comment {
                                 created: row.created
                             }
                         });
+
+                        /*
+                        "commentLikes": [],
+                        "commentDate": "11/18/2023",
+                        "commentTime": "3:32 pm",
+                        */
                         
                         commentsOutcome.success = true;
                         commentsOutcome.comments = commentsArray;
-                        
                         
                         resolve(commentsOutcome);
             

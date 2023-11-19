@@ -19,23 +19,6 @@ FUNCTIONS C: All Functions Related to Comment Actions
 	1) Function C1: Like a Comment
 	2) Function C2: Unlike a Comment 
 
-Data 
-- Current User
-- Post or Comment ID
-Message: ""
-Status code: 200
-Errors: [] 
-Outcome Success: true or false
-
-		posts: posts,
-		postCount: "get me 10",
-		success: true,
-		message: "Need to add error and stuff in this always works!", 
-		statusCode: 200,
-		errors: [], 
-		currentUser: currentUser
-	}
-	
 */
 
 //FUNCTIONS A: All Functions Related to Comments
@@ -141,28 +124,49 @@ async function postComment(req, res) {
 async function getComments(req, res) {
 	const connection = db.getConnection(); 
     const postID = req.params.post_id;
+    const currentUser = req.params.user_name;
 	console.log("Trying to get all the comments! for post " + postID)
+
+	var commentOutcome = {
+		data: {},
+		message: "",
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	}
 
 
 	//STEP 1: Get all Comments 
-	var commentsOutcome = await Comment.getPostComments(postID)
+	var postComments = await Comment.getPostComments(postID)
 
-	//STEP 2: Get all the likes for these comments
-	if(commentsOutcome.success == true) {
-		var comments = commentsOutcome.comments;
 
+	if(postComments.success == true) {
+		commentOutcome.message = "We got the comments for post " + postID;
+		commentOutcome.success = true;
+		commentOutcome.statusCode = 200;
+
+		var comments = postComments.comments;
+		
 		for (let i = 0; i < comments.length; i++) {
+
+			//STEP 2: Get all the likes for these comments
 			let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
 			comments[i].commentLikes = currentCommentLikes.commentLikes;
 			comments[i].commentLikeCount = currentCommentLikes.commentLikes.length
-			
+
+			//STEP 2: Get all the time information for these comments
+			let timeMessage = TimeFunctions.formatTimestamp(comments[i].created)
+			comments[i].commentDate = timeMessage.date;
+			comments[i].commentTime = timeMessage.commentTime;
+			comments[i].timeMessage = timeMessage.timeMessage
+		
 		}
 
-		res.json(comments)
+		commentOutcome.data = comments
 
-	} else {
-		res.json(comments)
-	}
+	} 
+	res.json(commentOutcome)
 
 }
 
@@ -311,6 +315,27 @@ async function unlikeComment(req, res) {
 
 module.exports = { postComment, getComments, getAllComments, likeComment, unlikeComment };
 
+//APPENDIX
+/*
+ 
+Data 
+- Current User
+- Post or Comment ID
+Message: ""
+Status code: 200
+Errors: [] 
+Outcome Success: true or false
+
+		posts: posts,
+		postCount: "get me 10",
+		success: true,
+		message: "Need to add error and stuff in this always works!", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+	
+ 
 
 /*
 async function likeCommentWORKS(req, res) {
