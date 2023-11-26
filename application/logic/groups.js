@@ -38,7 +38,6 @@ async function createGroup(req, res) {
 	var notification = {}
 
     var newGroupOutcome = {
-		groupData: {},
 		message: "", 
 		success: false,
 		statusCode: 500,
@@ -116,7 +115,8 @@ async function createGroup(req, res) {
 	//STEP 5: Succesfully created the new group
 	console.log("STEP 5: Succesfully created the new group, yay!");
 
-    newGroupOutcome.groupData = {
+    newGroupOutcome.data = {
+        groupName: groupName, 
         groupID: groupOutcome.groupID, 
         groupMembers: [req.body.currentUser],
         pendingGroupMembers: groupUsersOutcome.pendingUsers,
