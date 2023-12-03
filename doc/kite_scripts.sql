@@ -12,9 +12,38 @@ USE shareshare;
 
 #SELECT * FROM posts WHERE post_id = 534;
 #SELECT * FROM comments;
-#DELETE FROM notifications 
-#DELETE FROM comments 
-SELECT * FROM notifications;
+#DELETE FROM notificationgroup_ids 
+
+#GROUPS
+#DELETE FROM shareshare.groups WHERE group_id > 100
+
+#UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 531
+#SELECT * FROM shareshare.groups;
+#UPDATE group_users SET active_member = 1
+#UPDATE group_users SET group_id = 72 WHERE primary_id = 1511 
+#SELECT * FROM group_users;
+#DELETE FROM group_users WHERE primary_id > 1513
+
+#USERS
+#SELECT * FROM user_profile;
+#SELECT * FROM user_profile WHERE user_name LIKE "f%";
+
+#FRIENDS
+#SELECT friends.user_name, friends.friend_user_name,  friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name 
+#FROM user_profile 
+#INNER JOIN friends ON user_profile.user_name = friends.friend_user_name 
+#WHERE friends.user_name = "davey" AND friends.request_pending = 0 AND friends.friend_user_name LIKE "s%" ;
+#UPDATE friends SET request_pending = 0 
+
+#SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = "davey" AND friends.request_pending = 0
+
+
+
+#SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
+SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
+
+
+#POSTS
 #SELECT * FROM posts WHERE group_id = 70;
 
 #SELECT * FROM posts WHERE group_id = 70
@@ -37,6 +66,10 @@ SELECT * FROM notifications;
 #DELETE FROM pending_requests
 #DELETE FROM notifications
 
+#SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
+
+#SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users 
+#INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1
 
 /*
 SELECT friends.sent_by, friends.sent_to, friends.request_pending, user_profile.user_name AS friend_user_name, user_profile.image_name AS friend_image_name, user_profile.account_active, user_profile.first_name, user_profile.last_name, user_profile.biography 

@@ -23,6 +23,7 @@ const comments = require('./application/routes/commentRoutes.js');
 const notifications = require('./application/routes/notificationRoutes.js');
 const requests = require('./application/routes/requestRoutes.js');
 const friends = require('./application/routes/friendRoutes.js');
+const search = require('./application/routes/searchRoutes.js');
 //const user = require('./application/routes/userRoutes.js');
 
 app.use(login);
@@ -32,6 +33,7 @@ app.use(comments);
 app.use(notifications);
 app.use(requests);
 app.use(friends);
+app.use(search);
 //app.use(user);
 
 //Server Login 

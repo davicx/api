@@ -33,6 +33,19 @@ friendRouter.get('/friends/:user_name/', function(req, res) {
     friends.getActiveFriends(req, res);
 })
 
+
+//NEW
+//Maybe this should be a search file
+//Friends like
+//Group Name like 
+friendRouter.get('/search/friends/:search_string/', function(req, res) { 
+    friends.getActiveFriends(req, res);
+})
+
+//SELECT * FROM user_profile WHERE user_name LIKE "f%";
+//NEW
+
+
 //Function A3: Get All Friends (Active and Pending)	
 friendRouter.get('/friends/all/:user_name/', function(req, res) { 
     friends.getAllFriends(req, res);
