@@ -12,7 +12,103 @@ FUNCTIONS A: All Functions Related to Groups
 
 
 */
+//POST: Routes
 
+//POSTS
+//Single Post 
+simpleRouter.get("/simple/post", (req, res) => {
+    var post = {
+      postID: 1, 
+      postFrom: "david",
+      postTo: "sam",
+      postCaption: "hiya wanna hike!"
+    }
+  
+    res.json(post)
+  })
+  
+  
+  //Simple Posts
+  simpleRouter.get("/simple/posts", (req, res) => {
+    var post = {
+      postID: 5, 
+      postFrom: "david",
+      postTo: "sam",
+      postCaption: "hiya wanna hike!"
+    }
+  
+    var post2 = {
+      postID: 6, 
+      postFrom: "david",
+      postTo: "sam",
+      postCaption: "hiya wanna hike!"
+    }
+  
+    var post3 = {
+      postID: 7, 
+      postFrom: "david",
+      postTo: "sam",
+      postCaption: "hiya wanna hike!"
+    }
+  
+    res.json([post, post2, post3])
+  })
+  
+//USERS
+//Get Friends for a user
+simpleRouter.get("/simple/users/:current_name", (req, res) => {
+  let currentUser = req.params.current_name
+  console.log(currentUser)
+  var user = {
+    userID: 1, 
+    userName: "david",
+    biography: "hiya!"
+  }
+
+  var user2 = {
+    userID: 2, 
+    userName: "frodo",
+    biography: "hiya!"
+  }
+
+  var user3 = {
+    userID: 3, 
+    userName: "sam",
+    biography: "hiya!"
+  }
+
+  res.json([user, user2, user3])
+}) 
+//user/:user_name",
+  simpleRouter.get("/simple/users", (req, res) => {
+    var user = {
+      userID: 1, 
+      userName: "david",
+      biography: "hiya!"
+    }
+  
+    var user2 = {
+      userID: 1, 
+      userName: "david",
+      biography: "hiya!"
+    }
+  
+    var user3 = {
+      userID: 1, 
+      userName: "david",
+      biography: "hiya!"
+    }
+  
+    res.json([user, user2, user3])
+  }) 
+
+
+module.exports = simpleRouter;
+
+
+  
+
+/*
 //GROUP ROUTES
 //Route A1: 
 simpleRouter.post('/simple/', middlewares.verifyUser, (req, res) => { 
@@ -23,6 +119,4 @@ simpleRouter.post('/simple/', middlewares.verifyUser, (req, res) => {
 simpleRouter.get("/simple/:user_name", middlewares.verifyUser, (req, res) => {
     res.json({hi: "hi"})
 })
-
-
-module.exports = groupRouter;
+*/
