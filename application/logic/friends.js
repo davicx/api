@@ -26,6 +26,7 @@ FUNCTIONS B: All Functions Related to Friends
 	2) Function B2: Cancel a Friend	Request	
 	3) Function B3: Accept Friend Request 
 	4) Function B4: Decline Friend Request
+	5) Function B4: Remove a Friend
 
 */
 
@@ -165,7 +166,6 @@ async function getAnotherUsersFriends(req, res) {
 	//console.log("theirFriends")
 	//console.log(theirFriends)
 	//console.log("_________________")
-	
 	
 	/*
 
@@ -483,9 +483,6 @@ async function declineFriendInvite(req, res) {
 			declineFriendRequestOutcome.data.friendName = friendName
 			declineFriendRequestOutcome.message = currentUser + " declined the friendship request from " + friendName;
 
-			//console.log("declineFriendRequest")
-			//console.log(declineFriendRequest)
-			//console.log("declineFriendRequest")
 
 		} else {
 			declineFriendRequestOutcome.success = true
@@ -493,15 +490,69 @@ async function declineFriendInvite(req, res) {
 			declineFriendRequestOutcome.message = "Their is no friendship to decline"
 			console.log("STEP 2: Their is no friendship to decline")
 		}
-
-	
 	
 	console.log(declineFriendRequestOutcome)
 	res.json(declineFriendRequestOutcome)
 
 }
+    //Status
+    /*
+    1: Currently Friends
+    2: Friendship Pending
+    3: Not Friends
+    4: No Data
+    */ 
 
-module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendInvite, cancelFriendRequest, declineFriendInvite, getAnotherUsersFriends, getAllUsersWithFriendship }
+//Function B4: Decline Friend Invite (They sent this but you declined)
+async function removeFriend(req, res) {
+    const masterSite = req.body.masterSite;
+    const currentUser = req.body.currentUser;
+    const friendName = req.body.removeFriendName;
+
+	var removeFriendRequestOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+	
+	//STEP 1: Confirm there is a Friendship
+	let friendStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
+
+	//Friendship Found
+	if(friendStatus.friendshipStatus == 1 || friendStatus.friendshipStatus == 2) {
+		let removeFriendOutcomeOne = await Friend.deleteFriend(currentUser, friendName)
+		let removeFriendOutcomeTwo = await Friend.deleteFriend(friendName, currentUser)
+
+		//Success
+		if(removeFriendOutcomeOne.friendRemoved == true && removeFriendOutcomeTwo.friendRemoved == true) {
+			let friendship = {
+				currentUser: currentUser,
+				friendName: friendName
+			}
+			removeFriendRequestOutcome.data = friendship;
+			removeFriendRequestOutcome.success = true;
+			removeFriendRequestOutcome.statusCode = 200;
+			removeFriendRequestOutcome.message = "Friendship removed for " + currentUser + " and " + friendName;
+		//Error
+		} else {
+			removeFriendRequestOutcome.message = "Friendship found for " + currentUser + " and " + friendName + " but error removing";
+			removeFriendRequestOutcome.errors = removeFriendOutcomeOne.errors;
+		}
+ 
+	//No Friendship
+	} else {
+		removeFriendRequestOutcome.message = "No friends found for " + currentUser + " and " + friendName;
+	}
+	
+	res.json(removeFriendRequestOutcome)
+
+}
+
+
+module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendInvite, cancelFriendRequest, declineFriendInvite, removeFriend, getAnotherUsersFriends, getAllUsersWithFriendship }
 
 
 

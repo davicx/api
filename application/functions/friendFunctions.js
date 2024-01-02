@@ -280,6 +280,9 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     */ 
     var friendKey = currentUser + "" + userFriend;
     var friendKeyTwo = userFriend + "" + currentUser;
+
+    console.log(friendKey)
+    console.log(friendKeyTwo)
    
     //var friendKey = "vasquezdmatt";
     //var friendKeyTwo = "vasquezdmat";
@@ -323,7 +326,6 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     })
     
 }
-
 
 //FUNCTIONS B: All Functions Related to Friends  
 //Function B1: Compare a group of users with your friends 

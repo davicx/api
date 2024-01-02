@@ -15,6 +15,7 @@ const Friend = require('../functions/classes/Friend');
 /*
 FUNCTIONS A: All Functions Related to Searching for Friends 
 	1) Function A1: Search for your Active Friends 
+	2) Function A2: Search for a Group
 
 */
 
@@ -46,4 +47,23 @@ async function searchActiveFriends(req, res) {
 
 }
 
-module.exports = { searchActiveFriends }
+//Function A2: Search for a Group
+async function searchGroups(req, res) {
+    const currentUser = req.params.user_name;
+    const searchString = req.params.search_string;
+    
+    var searchGroupsOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+    
+    res.json(searchGroupsOutcome)
+
+}
+
+module.exports = { searchActiveFriends, searchGroups }

@@ -33,14 +33,16 @@ USE shareshare;
 #FROM user_profile 
 #INNER JOIN friends ON user_profile.user_name = friends.friend_user_name 
 #WHERE friends.user_name = "davey" AND friends.request_pending = 0 AND friends.friend_user_name LIKE "s%" ;
-#UPDATE friends SET request_pending = 0 
+
 
 #SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = "davey" AND friends.request_pending = 0
 
 
 
 #SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
-SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
+#SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
+#UPDATE friends SET request_pending = 0 
+SELECT * FROM friends 
 
 
 #POSTS

@@ -18,6 +18,7 @@ FUNCTIONS B: All Functions Related to Friends Actions
 	2) Function B2: Cancel a Friend	Request
 	3) Function B3: Accept Friend Invite 
 	4) Function B4: Decline Friend Invite
+    5) Function B4: Remove a Friend
 
 */
 
@@ -32,19 +33,6 @@ friendRouter.get('/users/all/', function(req, res) {
 friendRouter.get('/friends/:user_name/', function(req, res) { 
     friends.getActiveFriends(req, res);
 })
-
-
-//NEW
-//Maybe this should be a search file
-//Friends like
-//Group Name like 
-friendRouter.get('/search/friends/:search_string/', function(req, res) { 
-    friends.getActiveFriends(req, res);
-})
-
-//SELECT * FROM user_profile WHERE user_name LIKE "f%";
-//NEW
-
 
 //Function A3: Get All Friends (Active and Pending)	
 friendRouter.get('/friends/all/:user_name/', function(req, res) { 
@@ -71,7 +59,6 @@ friendRouter.get('/users/all/:user_name/', function(req, res) {
     friends.getAllUsersWithFriendship(req, res);
 })
 
-
 //FUNCTIONS B: All Functions Related to Friends Actions
 //Function B1: Request a Friend	
 friendRouter.post('/friend/request/', middlewares.verifyUser, function(req, res) { 
@@ -93,12 +80,32 @@ friendRouter.post('/friend/decline/', function(req, res) {
     friends.declineFriendInvite(req, res);
 })
 
+//Function B5: Remove a Friend
+friendRouter.post('/friend/remove/', function(req, res) { 
+    friends.removeFriend(req, res);
+})
+
+
 module.exports = friendRouter;
 
 
 
 
 //APPENDIX
+/*
+
+//NEW
+//Maybe this should be a search file
+//Friends like
+//Group Name like 
+friendRouter.get('/search/friends/:search_string/', function(req, res) { 
+    friends.getActiveFriends(req, res);
+})
+
+//SELECT * FROM user_profile WHERE user_name LIKE "f%";
+
+
+*/
 /*
 //Function A6: Get a list of someones friends 
 friendRouter.get('/friend/:friend_name', function(req, res) { 
