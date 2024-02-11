@@ -42,7 +42,11 @@ USE shareshare;
 #SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
 #SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
 #UPDATE friends SET request_pending = 0 
-SELECT * FROM friends 
+
+SELECT * FROM shareshare.groups 
+#DELETE FROM shareshare.groups WHERE group_id > 100
+#SELECT * FROM group_users
+#DELETE FROM group_users WHERE group_id > 100
 
 
 #POSTS
