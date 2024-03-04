@@ -2,20 +2,23 @@ const db = require('./../conn');
 
 
 /*
-FUNCTIONS A: USER RELATED
-	1) Method A1: Get User Info 
+FUNCTIONS A: USER ACCOUNT	
+	1) Method D1: Register User
+	2) Method D2: Register User API
+	2) Method D3: Register User with Email
+	3) Method D4: Delete User
+	4) Method D5: Request Username *currently this happens in the user.php file 
+	5) Method D6: Request Password Send Email (Part 1) *currently this happens in the user.php file 
+	6) Method D7: Request Password Update to New Password (Part 2) *currently this happens in the user.php file 	
 
-	
-
-	
-FUNCTIONS C: USER SITE ACTIVITY 
-	1) Method C1: Get New Group Posts
-	2) Method C2: Get New Groups Discussions
-	3) Method C3: Get New File Activity
-	4) Method C4: Update Group Posts to Seen	
-	5) Method C5: Update Group Discussion to Seen
-	6) Method C6: Update New File Activity to Seen		
-
+FUNCTIONS D: USER ACCOUNT	
+	1) Method D1: Register User
+	2) Method D2: Register User API
+	2) Method D3: Register User with Email
+	3) Method D4: Delete User
+	4) Method D5: Request Username *currently this happens in the user.php file 
+	5) Method D6: Request Password Send Email (Part 1) *currently this happens in the user.php file 
+	6) Method D7: Request Password Update to New Password (Part 2) *currently this happens in the user.php file 	
 
 */
 class User {
@@ -105,140 +108,7 @@ class User {
             } 
         });
     }
-
-    //Method A4: Get User Friends 
-    static async getUserFriends(userName) { 
-        const connection = db.getConnection(); 
-        const queryString = "SELECT user_id, image_name, first_name, last_name FROM user_profile WHERE user_name = ?";
-
-        var userProfileOutcome = {
-            status: 500,
-            errors: [],
-        }   
-        
-        return new Promise(async function(resolve, reject) {
-            try {
-                
-                connection.query(queryString, [userName], (err, rows) => {
-                    
-                    if (!err) {
-                        rows.map((row) => {
-                            console.log(row)
-                        }); 
-
-                        const userProfile = {
-                            userName: userName,
-                            userID: rows[0].user_id,
-                            userImage: rows[0].image_name,
-                            firstName: rows[0].first_name,
-                            lastName: rows[0].last_name
-                        }
-
-                        userProfileOutcome.userProfile = userProfile;
-                        userProfileOutcome.status = 200; 
  
-                    } else {
-                        console.log("error getting user profile")    
-                        userProfileOutcome.errors.push("no worky")
-                        userProfileOutcome.errors.push(err);
-                    } 
-                    
-                    resolve(userProfileOutcome);
-                }) 
-                
-            } catch(err) {
-                console.log("catch error getting group users")    
-                userProfileOutcome.errors.push("no worky")
-                userProfileOutcome.errors.push(err);
-                reject(userProfileOutcome);
-            } 
-        });
-        
-        /*
-        ADD THIS CODE TO THE ABOVE 
-	const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.friend_id, friends.request_pending, user_login.user_name, user_login.user_id, user_login.account_deleted FROM user_login INNER JOIN friends ON user_login.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND user_login.account_deleted = 0"
-
-	connection.query(queryString, [userName], (err, rows) => {
-		if (!err) {
-			var friendsArray = [];
-			var friendCount = 0;
-
-			rows.map((row) => {
-                let currentUser = {
-                    friendUserName: row.friend_user_name,
-                    friendID: row.friend_id,
-					friendCount: friendCount
-                }
-				friendCount = friendCount + 1;
-
-				friendsArray.push(currentUser);
-			});
-
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			res.json(friendsArray);
-		} else {
-			console.log("Failed to Select User: " + err);
-		}
-	  
-	})
-        */
-    }
-
-    //Method A1: Get User Info 
-    static async getUserInfo(userName) { 
-        const connection = db.getConnection(); 
-        console.log("Hiya!!" + userName)
-    }
-    
-    //Method A1: Get User Profile Info 
-    static async getUserProfile(userName){ 
-        const connection = db.getConnection(); 
-        const queryString = "SELECT user_id, image_name, first_name, last_name FROM user_profile WHERE user_name = ?";
-
-        var userProfileOutcome = {
-            status: 500,
-            errors: [],
-        }   
-        
-        return new Promise(async function(resolve, reject) {
-            try {
-                
-                connection.query(queryString, [userName], (err, rows) => {
-                    
-                    if (!err) {
-                        rows.map((row) => {
-                            console.log(row)
-                        }); 
-
-                        const userProfile = {
-                            userName: userName,
-                            userID: rows[0].user_id,
-                            userImage: rows[0].image_name,
-                            firstName: rows[0].first_name,
-                            lastName: rows[0].last_name
-                        }
-
-                        userProfileOutcome.userProfile = userProfile;
-                        userProfileOutcome.status = 200; 
- 
-                    } else {
-                        console.log("error getting user profile")    
-                        userProfileOutcome.errors.push("no worky")
-                        userProfileOutcome.errors.push(err);
-                    } 
-                    
-                    resolve(userProfileOutcome);
-                }) 
-                
-            } catch(err) {
-                console.log("catch error getting group users")    
-                userProfileOutcome.errors.push("no worky")
-                userProfileOutcome.errors.push(err);
-                reject(userProfileOutcome);
-            } 
-        });
-    }
-     
     //Method A2: Get User Login Info 
     static async getUserLoginInfo(userName) {  
         const connection = db.getConnection(); 

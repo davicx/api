@@ -1,3 +1,9 @@
+const db = require('../functions/conn');
+
+
+
+
+//APPENDIX
 /*
 FUNCTIONS A: All User Related Functions
 	1) Function A1: Add a Friend

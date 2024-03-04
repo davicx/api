@@ -1,5 +1,15 @@
 const db = require('./../conn');
 
+/*
+FUNCTIONS B: REQUEST RELATED	
+	1) Method B1: Accept Friend Request
+	2) Method B2: Decline Friend Request
+	3) Method B3: Accept Group Request
+	4) Method B4: Decline Group Request
+	5) Method B5: Accept List Request
+	6) Method B6: Decline List Request
+*/
+
 //Need a method to clean requests find all unaccepted invites and add to that user in case there was a mistake
 class Requests {
     constructor(requestID) {

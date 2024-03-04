@@ -57,8 +57,6 @@ async function getUserInformation(userName) {
 
 }
 
-
-
 //Function A2: Get User ID from Username
 async function getUserID(userName) {
     const connection = db.getConnection(); 

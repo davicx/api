@@ -15,13 +15,13 @@ USE shareshare;
 #DELETE FROM notificationgroup_ids 
 
 #GROUPS
-#DELETE FROM shareshare.groups WHERE group_id > 100
-
-#UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 531
 #SELECT * FROM shareshare.groups;
+#DELETE FROM shareshare.groups WHERE group_id > 100
+#UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 531
+
+#SELECT * FROM group_users;
 #UPDATE group_users SET active_member = 1
 #UPDATE group_users SET group_id = 72 WHERE primary_id = 1511 
-#SELECT * FROM group_users;
 #DELETE FROM group_users WHERE primary_id > 1513
 
 #USERS
@@ -43,7 +43,7 @@ USE shareshare;
 #SELECT * FROM friends WHERE user_name = "davey" AND friend_user_name LIKE "fro%";
 #UPDATE friends SET request_pending = 0 
 
-SELECT * FROM shareshare.groups 
+#SELECT * FROM shareshare.groups 
 #DELETE FROM shareshare.groups WHERE group_id > 100
 #SELECT * FROM group_users
 #DELETE FROM group_users WHERE group_id > 100
@@ -59,11 +59,12 @@ SELECT * FROM shareshare.groups
 #DELETE FROM posts WHERE post_id > 100
 
 #UPDATE group_users SET active_member = 1
+#UPDATE friends SET request_pending = 0 
 #SELECT * FROM friends WHERE user_name = "davey"
 
 
 #DELETE FROM friends WHERE user_name = "bilbo" AND friend_user_name = "bilbo" 
-#UPDATE friends SET request_pending = 0 
+
 #SELECT * FROM friends 
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests

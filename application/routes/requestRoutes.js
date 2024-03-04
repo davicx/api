@@ -11,7 +11,7 @@ FUNCTIONS A: All Functions Related to Requests
 	1) Function A1: Get all Notifications 
 	2) Function A2: Get all Notifications to Group
 	3) Function A3: Get all Notifications to User 
- 
+*do not accept here
 
 */
 

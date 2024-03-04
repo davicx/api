@@ -9,6 +9,16 @@ METHODS A: Friend RELATED
     3) Method A3: Remove a Friend
 */
 
+/*
+2) Method A2: Get List of all User Friends 
+3) Method A3: Get Pending Requests *Not Done 
+4) Method A4: Request a Friend	
+5) Method A5: Cancel a Sent Friend Request
+6) Method A6: Remove a Friend
+7) Method A7: Update User Info
+*/
+
+
 class Friend {
     constructor(groupID) {
         this.groupID = groupID;
