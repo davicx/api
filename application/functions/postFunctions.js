@@ -5,8 +5,8 @@ dayjs.extend(relativeTime)
 dayjs().format()
 const Group = require('./classes/Group');
 const Post = require('./classes/Post');
-const Notification = require('./classes/Notification')
-const Requests = require('./classes/Requests');
+//const Notification = require('./classes/Notification')
+//const Requests = require('./classes/Requests');
 const Functions = require('./functions');
 
 

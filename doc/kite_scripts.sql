@@ -25,7 +25,7 @@ USE shareshare;
 #DELETE FROM group_users WHERE primary_id > 1513
 
 #USERS
-#SELECT * FROM user_profile;
+SELECT * FROM user_profile;
 #SELECT * FROM user_profile WHERE user_name LIKE "f%";
 
 #FRIENDS

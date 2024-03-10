@@ -45,7 +45,6 @@ async function createGroup(req, res) {
 		currentUser: req.body.currentUser
 	}
 
- 
 	try {
 		groupOutcome = await Group.createGroup(currentUser, groupName, groupType, groupPrivate);
 

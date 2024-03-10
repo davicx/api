@@ -99,7 +99,6 @@ class Post {
         });
     }
 
-
     //Method A3: Make a Video Post
     static async createPostVideo(req)  {
         const connection = db.getConnection(); 
