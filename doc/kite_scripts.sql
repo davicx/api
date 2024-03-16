@@ -11,6 +11,7 @@ USE shareshare;
 #DELETE FROM posts WHERE group_id = 70 AND post_id < 470
 
 #SELECT * FROM posts WHERE post_id = 534;
+SELECT * FROM posts;
 #SELECT * FROM comments;
 #DELETE FROM notificationgroup_ids 
 
@@ -25,7 +26,9 @@ USE shareshare;
 #DELETE FROM group_users WHERE primary_id > 1513
 
 #USERS
-SELECT * FROM user_profile;
+#SELECT * FROM user_profile WHERE user_name = "davey";
+
+
 #SELECT * FROM user_profile WHERE user_name LIKE "f%";
 
 #FRIENDS

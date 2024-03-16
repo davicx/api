@@ -25,7 +25,8 @@ const requests = require('./application/routes/requestRoutes.js');
 const friends = require('./application/routes/friendRoutes.js');
 const search = require('./application/routes/searchRoutes.js');
 const simple = require('./application/routes/simpleRoutes.js');
-const profile = require('./application/routes/profileRoutes.js');
+//const profile = require('./application/routes/profileRoutes.js');
+const upload = require('./application/routes/uploadRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -35,8 +36,8 @@ app.use(notifications);
 app.use(requests);
 app.use(friends);
 app.use(search);
-app.use(search);
-app.use(profile);
+app.use(upload);
+//app.use(profile);
 
 //Server Login 
 app.listen(3003, () => {

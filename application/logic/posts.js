@@ -161,7 +161,6 @@ async function postPhoto(req, res, file) {
 		currentUser: req.body.currentUser
 	}
 
-
 	//STEP 2: Add the Notification
 	var notification = {}
 	const groupUsersOutcome = await Group.getGroupUsers(groupID);
