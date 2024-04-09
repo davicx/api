@@ -1,0 +1,33 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# Site
+/uploads
+/functions/random
+
+# Conn
+/functions/conn.js
+conn.js
+
+# Ignore File
+hiya.jpg
+
+# Ignore File in Folder
+/ignore/hiya.jpg
+
+# Ignore Folder 
+/ignore
+
+.env
+
+
+
+# misc
+.DS_Store
+
+# Log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
