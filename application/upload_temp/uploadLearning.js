@@ -27,44 +27,190 @@ const posts = require('../logic/posts')
 
 /*
 FUNCTIONS A: All Functions Related to Posts
-	1) Function A1: Post Text
+	1) Function A1: Upload Local 
+*/
+
+//Response 
+/*
+{
+    "yay": "yay!",
+    "file": {
+        "fieldname": "image",
+        "originalname": "stars.jpg",
+        "encoding": "7bit",
+        "mimetype": "image/jpeg",
+        "destination": "./application/upload_temp/uploads",
+        "filename": "image-1713049389482-619663503-stars.jpg",
+        "path": "application/upload_temp/uploads/image-1713049389482-619663503-stars.jpg",
+        "size": 3039415
+    },
+    "caption": "hiya there!",
+    "currentUser": "davey",
+    "fileExtension": "jpeg"
+}
 */
 
 
+//Route A1: Upload Local
+uploadRouter.post('/upload/learning/local', async function(req, res) {
+  //Can we move all below to this
+  //postFunctions.postPhoto(req, res, file);
 
+  uploadFunctions.uploadLocal(req, res, function (err) {
 
-//Route A1: Post Photo (Move to postRoutes)
-uploadRouter.post('/post/photo/local', uploadFunctions.uploadLocal.single('image'), async function(req, res) {
+    //Catch Errors
+    if (err instanceof multer.MulterError) {
+      // A Multer error occurred when uploading.
+      res.json({errorMulterType:'MulterError', err: err});
+    } else if (err) {
+      // An unknown error occurred when uploading.
+      res.json({error:'error', err: err.message});
+    } else {
+      let file = req.file
+      let caption = req.body.caption;
+      let currentUser = req.body.currentUser
+
+      if(file !== undefined) {
+        //postFunctions.postPhoto(req, res, file);
+        let fileExtension = mime.extension(file.mimetype);
+        res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, fileExtension: fileExtension})
+      
+      } else {
+        res.json({postType:'please choose an image file'});
+      } 
+    }
+
+  })
+})
+
+uploadRouter.post('/profile', function (req, res) {
+  upload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      // A Multer error occurred when uploading.
+      res.json({errorMulterType:'MulterError'});
+    } else if (err) {
+      // An unknown error occurred when uploading.
+      res.json({error:'error'});
+    } else {
+      //res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, fileExtension: fileExtension})
+      res.send({yay: "yay!"})
+ 
+    }
+
+    // Everything went fine.
+  })
+})
+
+/*
   let file = req.file
-  let description = req.body.description
+  let caption = req.body.caption;
+  let currentUser = req.body.currentUser
   console.log("UPLOAD!!")
-  uploadFunctions.sayHi()
 
   if(file !== undefined) {
     //postFunctions.postPhoto(req, res, file);
     let fileExtension = mime.extension(file.mimetype);
-    res.send({yay: "yay!", file: file, description: description, fileExtension: fileExtension})
+    res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, fileExtension: fileExtension})
+  
+  } else {
+    res.json({error:'error'});
+    res.json({postType:'please choose an image file'});
+  } 
+*/
+
+//WORKS
+
+/*
+
+
+//Route A1: Upload Local
+uploadRouter.post('/upload/learning/local', uploadFunctions.uploadLocal, async function(req, res) {
+
+  let file = req.file
+  let caption = req.body.caption;
+  let currentUser = req.body.currentUser
+  console.log("UPLOAD!!")
+
+  if(file !== undefined) {
+    //postFunctions.postPhoto(req, res, file);
+    let fileExtension = mime.extension(file.mimetype);
+    res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, fileExtension: fileExtension})
   
   } else {
     res.json({postType:'please choose an image file'});
-  }  
+  } 
+
 })
 
+/*
+uploadRouter.post('/upload/learning/local', async function(req, res) {
+    uploadFunctions.uploadLocal(req, res, function (err) {
+      let file = req.file
 
+      if(file !== undefined) {
+        let fileExtension = mime.extension(file.mimetype);
+        
+        let caption = req.body.caption;
+        let currentUser = req.body.currentUser
+    
+        if (err instanceof multer.MulterError) {
+          // A Multer error occurred when uploading.
+          res.json({errorMulter:"errorMulter"});
+        } else if (err) {
+          // An unknown error occurred when uploading.
+          res.json({error:"error"});
+        } else {
+          res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, fileExtension: fileExtension})
+        }
+    
+        // Everything went fine.
+      } else {
+        res.json({postType:'please choose an image file'});
+      }  
+    })
+})
 
+*/
 
+/*
 
-//Part 2: Photo Filter
-var photoFilter = (req, file, cb) => {
-    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-      console.log("File is good!")
-      cb(null, true);
-    } else {
-        console.log("Please choose an image")
-        cb(null, false);
-    } 
-  }
+app.post('/profile', function (req, res) {
+  upload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      // A Multer error occurred when uploading.
+    } else if (err) {
+      // An unknown error occurred when uploading.
+    }
+
+    // Everything went fine.
+  })
+})
+
+'
+
   
+
+    if(file !== undefined) {
+      //postFunctions.postPhoto(req, res, file);
+      let fileExtension = mime.extension(file.mimetype);
+      res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, fileExtension: fileExtension})
+    
+    } else {
+      res.json({postType:'please choose an image file'});
+    }  
+*/
+
+//WORKS
+/*
+
+*/
+
+
+
+module.exports = uploadRouter;
+
+
+
 
 //Local
 /*
@@ -222,10 +368,6 @@ function getFileStream(fileKey) {
   return s3.getObject(downloadParams).createReadStream()
 }
 */
-
-module.exports = uploadRouter;
-
-
 
 
 //APPENDIX
