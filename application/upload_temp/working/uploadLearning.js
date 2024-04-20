@@ -20,9 +20,9 @@ var mime = require('mime-types')
 var cors = require('cors')
 uploadRouter.use(cors())
 
-const postFunctions = require('../functions/postFunctions')
+const postFunctions = require('../../functions/postFunctions')
 const uploadFunctions = require('./uploadFunctionsLearning')
-const posts = require('../logic/posts')
+const posts = require('../../logic/posts')
 
 
 /*
@@ -60,10 +60,12 @@ uploadRouter.post('/upload/learning/local', async function(req, res) {
 
     //Catch Errors
     if (err instanceof multer.MulterError) {
+      console.log(err.code)
       // A Multer error occurred when uploading.
-      res.json({errorMulterType:'MulterError', err: err});
+      res.json({errorMulterType:'MulterError', err: err, code: err.code});
     } else if (err) {
       // An unknown error occurred when uploading.
+      console.log(err.code)
       res.json({error:'error', err: err.message});
     } else {
       let file = req.file
@@ -100,6 +102,10 @@ uploadRouter.post('/profile', function (req, res) {
     // Everything went fine.
   })
 })
+
+module.exports = uploadRouter;
+
+
 
 /*
   let file = req.file
@@ -206,8 +212,6 @@ app.post('/profile', function (req, res) {
 */
 
 
-
-module.exports = uploadRouter;
 
 
 

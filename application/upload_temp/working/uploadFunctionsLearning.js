@@ -11,7 +11,7 @@ const upload = multer({ dest: './uploads' })
 
 
 //Part 1: File Destination
-var fileLimit = 1024 * 1024 * 20; 
+var fileLimit = 1024 * 1024; 
 const uploadFolder = "./application/upload_temp/uploads";
 
 const localStorage = multer.diskStorage({
@@ -45,7 +45,7 @@ const uploadLocal = multer({
       console.log("File type is good!")
       cb(null, true);
     } else {
-      console.log("Please choose an image")
+      console.log("Please choose an image type file like jpeg or something ya know?")
       cb(new Error('Please choose an image'))
     } 
     console.log("_________________")
