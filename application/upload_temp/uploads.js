@@ -26,21 +26,75 @@ FUNCTIONS A: All Functions Related to Posts
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Photo
 async function postPhoto(req, res) {
+
+  
   uploadFunctions.uploadLocal(req, res, function (err) {
+
+    //STEP 1: Upload Photo
     var postOutcome = {
       data: {},
       message: "", 
       success: false,
       statusCode: 500,
       errors: [], 
-      currentUser: ""
+      currentUser: "davey"
     }
-  
 
-    //Catch Errors
+    //Step 1A: File too large
     if (err instanceof multer.MulterError) {
-      console.log(err.code)
-      /*
+      console.log("Step 1A: File too large")
+      postOutcome.message = "Step 1A: File too large"
+      postOutcome.errors.push(err)
+      postOutcome.data = {failureCode: 1}
+
+    //Step 1B: Not Valid Image File
+    } else if (err) {
+      console.log("Step 1B: Not Valid Image File")
+      postOutcome.message = err.message
+      postOutcome.data = {failureCode: 2}
+      postOutcome.errors.push("Step 1B: Not Valid Image File")
+
+    //Step 1C:
+    } else {
+      let file = req.file
+      let caption = req.body.caption;
+      let currentUser = req.body.currentUser
+
+      //Step 1D: Success Upload File
+      if(file !== undefined) {
+        let fileExtension = mime.extension(file.mimetype);
+        postOutcome.message = "Your file was uploaded!"
+        postOutcome.statusCode = 200
+        postOutcome.success = true
+        postOutcome.currentUser = currentUser
+        postOutcome.data = {
+          file: file,
+          caption: caption,
+          fileExtension: fileExtension
+        }
+
+      //STEP 2: Upload File
+   
+        
+      } else {
+        console.log("No File")
+        postOutcome.data = {failureCode: 3}
+        postOutcome.message = "Please choose an image file"
+        
+      } 
+    }
+
+    res.json(postOutcome)
+
+  })
+
+}
+
+module.exports = { postPhoto };
+
+
+/*
+      
       {
         "errorMulterType": "MulterError",
         "err": {
@@ -52,47 +106,24 @@ async function postPhoto(req, res) {
         },
         "code": "LIMIT_FILE_SIZE"
       }
-      */
-      res.json({errorMulterType:'MulterError', err: err, code: err.code});
-    } else if (err) {
-      // An unknown error occurred when uploading.
-      console.log(err.code)
 
-      //res.json({error:'error', err: err.message});
-      postOutcome.message = err.message
-      res.json(postOutcome);
-    } else {
-      let file = req.file
-      let caption = req.body.caption;
-      let currentUser = req.body.currentUser
-
-      if(file !== undefined) {
-        let fileExtension = mime.extension(file.mimetype);
-        //res.send({yay: "yay!", file: file, caption: caption, currentUser: currentUser, c})
-        postOutcome.message = "Your file was uploaded!"
-        postOutcome.statusCode = 200
-        postOutcome.success = true
-        postOutcome.currentUser = currentUser
-        postOutcome.data = {
-          file: file,
-          caption: caption,
-          file: file, caption: caption
+      {
+    "data": {},
+    "message": "LIMIT_FILE_SIZE",
+    "success": false,
+    "statusCode": 500,
+    "errors": [
+        {
+            "name": "MulterError",
+            "message": "File too large",
+            "code": "LIMIT_FILE_SIZE",
+            "field": "image",
+            "storageErrors": []
         }
-        res.json(postOutcome)
-
-      } else {
-        res.json({postType:'please choose an image file'});
-      } 
-    }
-
-  })
-
-
+    ],
+    "currentUser": ""
 }
-
-module.exports = { postPhoto };
-
-
+      */
 
 
 /*

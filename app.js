@@ -27,7 +27,7 @@ const search = require('./application/routes/searchRoutes.js');
 const simple = require('./application/routes/simpleRoutes.js');
 //const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
-const uploadLearning = require('./application/upload_temp/uploadLearning.js');
+const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
 
 app.use(login);
 app.use(group);
