@@ -8,6 +8,39 @@ const Functions = require('../functions/functions');
 const friendFunctions = require('../functions/friendFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const timeFunctions = require('../functions/timeFunctions');
+const uploadFunctions = require('../functions/uploadFunctions');
+
+//Upload imports
+const multerS3 = require('multer-s3');
+const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs') 
+const multer = require('multer')
+var mime = require('mime-types')
+
+//Might Need
+/*
+require('dotenv').config()
+const express = require('express')
+const app = express()
+const uploadRouter = express.Router();
+
+//const cookieParser = require('cookie-parser');
+//const morgan = require('morgan')
+const multerS3 = require('multer-s3');
+const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs') 
+const multer = require('multer')
+var mime = require('mime-types')
+var cors = require('cors')
+uploadRouter.use(cors())
+
+const bucketName = process.env.AWS_BUCKET_NAME
+const region = process.env.AWS_BUCKET_REGION
+const accessKeyId = process.env.AWS_ACCESS_KEY
+const secretAccessKey = process.env.AWS_SECRET_KEY
+const upload = multer({ dest: './uploads' })
+const uploadFunctions = require('./uploadFunctions')
+*/
 
 /*
 FUNCTIONS A: All Functions Related to Posts
@@ -40,9 +73,6 @@ async function postText(req, res) {
 	console.log("____________________________")
 	console.log("NEW POST: Post Text")
 	const groupID = req.body.groupID;
-	console.log("Post Request Body")
-	console.log(req.body)
-	console.log("Post Request Body")
 	var postOutcome = {
 		data: {},
 		message: "", 
@@ -135,18 +165,87 @@ async function postText(req, res) {
 }
 
 //Function A2: Post Photo
+async function postPhoto(req, res) {
+	uploadFunctions.uploadLocal(req, res, async function (err) {
+  
+	  //STEP 1: Upload Photo
+	  var uploadSuccess = false
+	  var file = null;
+  
+	  var postOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	  }
+  
+	  //Step 1A: File too large
+	  if (err instanceof multer.MulterError) {
+		postOutcome.message = err.message
+		postOutcome.errors.push(err)
+		postOutcome.data = {failureCode: 1}
+  
+	  //Step 1B: Not Valid Image File
+	  } else if (err) {
+		postOutcome.message = err.message
+		postOutcome.data = {failureCode: 2}
+		postOutcome.errors.push("Step 1B: Not Valid Image File")
+  
+	  //Step 1C:
+	  } else {
+		file = req.file
+		let caption = req.body.caption;
+		let currentUser = req.body.currentUser
+  
+		//Step 1D: Success Upload File
+		if(file !== undefined) {
+			postOutcome.message = "Your photo was posted!"
+			postOutcome.statusCode = 200
+			postOutcome.success = true
+			/*
+			postOutcome.data = {
+				file: file,
+				caption: caption,
+				fileExtension: fileExtension
+			}
+			*/
+
+		uploadSuccess = true
+	   
+		} else {
+		  console.log("No File")
+		  postOutcome.data = {failureCode: 3}
+		  postOutcome.message = "Please choose an image file"
+		  
+		} 
+	  }
 
 
+	  //CREATE POST
+	  if(uploadSuccess == true) {
+		let fileExtension = mime.extension(file.mimetype);
+		console.log("Make your post!")
+		console.log(req.body)
+		console.log(file)
+		console.log(fileExtension)
 
-//Function A3: Post Video
-//Function A4: Post Article
+		
+		
+		postOutcome = await Post.createPostPhoto(req, file);
 
-
-
+	  
+	  } 
+  
+	  res.json(postOutcome)
+  
+	})
+  }
 
 //SORT BELOW
 //Function A2: Post Photo
-async function postPhoto(req, res, file) {
+async function postPhotoPULLFROM(req, res, file) {
 	const groupID = req.body.groupID;
 	postOutcome = await Post.createPostPhoto(req, file);
 
@@ -181,6 +280,9 @@ async function postPhoto(req, res, file) {
 	}
 	res.json({postOutcome});
 }
+
+
+
 
 //Function A3: Post Video
 async function postVideo(req, res) {
@@ -726,3 +828,46 @@ async function editPost(req, res) {
 
 
 module.exports = { postText, postPhoto, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
+
+
+//APPENDIX
+/*
+
+//Function A2: Post Photo
+async function postPhoto(req, res, file) {
+	const groupID = req.body.groupID;
+	postOutcome = await Post.createPostPhoto(req, file);
+
+	var postOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+	//STEP 2: Add the Notification
+	var notification = {}
+	const groupUsersOutcome = await Group.getGroupUsers(groupID);
+	const groupUsers = groupUsersOutcome.groupUsers;
+	
+	if(postOutcome.outcome == 200) {
+		notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.postFrom,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupID
+		}
+ 
+		if(groupUsers.length > 0) {
+			Notification.createGroupNotification(notification);
+		}
+	}
+	res.json({postOutcome});
+}
+
+*/

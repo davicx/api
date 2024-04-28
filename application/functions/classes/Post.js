@@ -62,13 +62,27 @@ class Post {
         const postCaption = req.body.postCaption 
         const fileName = file.originalname
         const fileNameServer = file.filename
-        let fileURL = ""
-        if(file.destination) {
-            fileURL = file.destination
+        const fileURL = file.path
+        //if(file.destination?) {
+        /*
+        {
+            fieldname: 'postImage',
+            originalname: 'stars.jpg',
+            encoding: '7bit',
+            mimetype: 'image/jpeg',
+            destination: './application/upload_temp/uploads',
+            filename: 'postImage-1714348333423-535580151-stars.jpg',
+            path: 'application/upload_temp/uploads/postImage-1714348333423-535580151-stars.jpg',
+            size: 3039415
+            }
+                 if(file.path) {
+            fileURL = file.path
         } else {
-            fileURL = file.location
+            fileURL = file.path
         }
 
+        */
+   
         var postOutcome = {
             outcome: 0,
             postID: 0,
@@ -78,9 +92,9 @@ class Post {
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption, file_name, file_name_server, file_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     
-                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
+                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, fileNameServer, fileURL], (err, results, fields) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
                         postOutcome.outcome = 200;       
