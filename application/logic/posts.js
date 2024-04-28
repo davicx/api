@@ -134,9 +134,10 @@ async function postText(req, res) {
 	console.log("____________________________")
 }
 
-
-//Function A1: Post Text
 //Function A2: Post Photo
+
+
+
 //Function A3: Post Video
 //Function A4: Post Article
 

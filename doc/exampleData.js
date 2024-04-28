@@ -25,9 +25,6 @@
 //Currently is 
 /*
 {
-    "fileName": "",
-    "fileNameServer": "hiya.jpg",
-    "fileUrl": "empty",
     "postDate": "04/27/2024",
     "postTime": "4:06 pm",
     "timeMessage": "a day ago",
