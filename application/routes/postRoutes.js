@@ -42,17 +42,17 @@ postRouter.post('/post/photo/local', function(req, res) {
     posts.postPhoto(req, res);
 })
 */
-//Route A3: Post Photo to AWS
+//Route A3: Post Photo Local to AWS
 
-//Route A4: Post Photo all AWS
+//Route A4: Post Photo AWS to AWS
 
 
-//Route A3: Post Video
+//Route A5: Post Video
 postRouter.post('/post/video', function(req, res) {
     posts.postVideo(req, res);
 })
 
-//Route A4: Post Article
+//Route A6: Post Article
 postRouter.post('/post/article', function(req, res) {
     posts.postArticle(req, res);
 })

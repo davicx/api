@@ -7,12 +7,13 @@ const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const friendFunctions = require('../functions/friendFunctions');
 const PostFunctions = require('../functions/postFunctions');
+const timeFunctions = require('../functions/timeFunctions');
 
 /*
 FUNCTIONS A: All Functions Related to Posts
 	1) Function A1: Post Text
-	2) Function A2: Post Video
-	3) Function A3: Post Photo
+	2) Function A2: Post Photo
+	3) Function A3: Post Video
 	4) Function A4: Post Article
  
 FUNCTIONS B: All Functions Related to getting Posts
@@ -81,6 +82,22 @@ async function postText(req, res) {
 		}
 		
 		//STEP 3: New Post Outcome 
+		let fileName = "empty"
+		let fileNameServer = "empty"
+		let fileUrl = "empty"
+
+		if(req.body.fileNameServer != undefined) {
+			fileNameServer = req.body.fileNameServer;
+		} 
+
+		if(req.body.fileName != undefined) {
+			fileName = req.body.fileName;
+		} 
+
+		if(req.body.fileUrl != undefined) {
+			fileUrl = req.body.fileUrl;
+		} 
+
 		const newPost = {
 			postID: newPostOutcome.postID,
 			postType: "text",
@@ -89,12 +106,15 @@ async function postText(req, res) {
 			postFrom: req.body.postFrom,
 			postTo: req.body.postTo,
 			postCaption: req.body.postCaption,
-			fileName: req.body.fileName,
-			fileNameServer: req.body.fileNameServer,
-			fileUrl: req.body.fileUrl,
+			fileName: fileName,
+			fileNameServer: fileNameServer,
+			fileUrl: fileUrl,
+			commentsArray: [],
 			postLikesArray: [],
 			simpleLikesArray: [],
-			fileUrl: req.body.fileUrl,
+			postDate: timeFunctions.getCurrentTime().postDate,
+			postTime: timeFunctions.getCurrentTime().postTime,
+			timeMessage: timeFunctions.getCurrentTime().timeMessage,
 			videoURL: req.body.videoURL,
 			videoCode: req.body.videoCode,
 			created: "2021-12-19T08:14:03.000Z"
@@ -115,58 +135,15 @@ async function postText(req, res) {
 }
 
 
+//Function A1: Post Text
+//Function A2: Post Photo
+//Function A3: Post Video
+//Function A4: Post Article
 
 
 
 
 //SORT BELOW
-//NEED TO SYNC POSTS WITH NEW DATA
-/*
-//New Post Returned
-{
-	"postID": 545,
-	"postType": "text",
-	"groupID": 70,
-	"listID": 0,
-	"postFrom": "davey",
-	"postTo": "frodo",
-	"postCaption": "Hiya!! Wanna go on a Hike!",
-	"videoURL": "",
-	"videoCode": "",
-	"postLikesArray": [],
-	"simpleLikesArray": [],
-	"created": "2021-12-19T08:14:03.000Z"
-	"created": "2024-04-27T23:56:07.000Z",
-}
-
-//Get Group Posts
-{
-	"postID": 545,
-	"postType": "text",
-	"groupID": 70,
-	"listID": 0,
-	"postFrom": "davey",
-	"postTo": "frodo",
-	"postCaption": "Hiya!! Wanna go on a Hike!",
-	"videoURL": "empty",
-	"videoCode": "empty",
-	"postLikesArray": [],
-	"simpleLikesArray": []
-
-
-	"fileName": "",
-	"fileNameServer": "hiya.jpg",
-	"fileUrl": "empty",
-	"postDate": "04/27/2024",
-	"postTime": "4:056 pm",
-	"timeMessage": "a minute ago",
-	"commentsArray": [],
-
-}
-
-*/
-
-
 //Function A2: Post Photo
 async function postPhoto(req, res, file) {
 	const groupID = req.body.groupID;
