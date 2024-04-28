@@ -10,12 +10,10 @@ const multer = require('multer')
 const upload = multer({ dest: './uploads' })
 
 /*
- 
 FUNCTIONS A: All Functions Related to Local Uploads
 	1) Function A1: Create local upload and filename for uploads folder
 	2) Function A2: Function A2: Image Upload for Local Upload 
 */
-
 
 //SETUP: Set File Destination and Size
 var fileLimit = 1024 * 1024 * 20; 

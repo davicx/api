@@ -26,11 +26,11 @@ FUNCTIONS A: All Functions Related to Posts
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Photo
 async function postPhoto(req, res) {
-
-  
   uploadFunctions.uploadLocal(req, res, function (err) {
 
     //STEP 1: Upload Photo
+    var uploadSuccess = false
+
     var postOutcome = {
       data: {},
       message: "", 
@@ -42,14 +42,12 @@ async function postPhoto(req, res) {
 
     //Step 1A: File too large
     if (err instanceof multer.MulterError) {
-      console.log("Step 1A: File too large")
       postOutcome.message = "Step 1A: File too large"
       postOutcome.errors.push(err)
       postOutcome.data = {failureCode: 1}
 
     //Step 1B: Not Valid Image File
     } else if (err) {
-      console.log("Step 1B: Not Valid Image File")
       postOutcome.message = err.message
       postOutcome.data = {failureCode: 2}
       postOutcome.errors.push("Step 1B: Not Valid Image File")
@@ -73,7 +71,8 @@ async function postPhoto(req, res) {
           fileExtension: fileExtension
         }
 
-      //STEP 2: Upload File
+      //STEP 2: Create New Post
+      uploadSuccess = true
    
         
       } else {
@@ -83,11 +82,17 @@ async function postPhoto(req, res) {
         
       } 
     }
+    if(uploadSuccess == true) {
+      console.log("create Post")
+
+    } else {
+      console.log("oh no don't create Post")
+
+    }
 
     res.json(postOutcome)
 
   })
-
 }
 
 module.exports = { postPhoto };

@@ -31,40 +31,7 @@ FUNCTIONS C: All Functions Related to Post Actions
 
 */
 
-//NEED TO SYNC POSTS WITH NEW DATA
-         /*
-		{
-			"commentID": 179,
-			"postID": 537,
-			"commentCaption": "Yes lets go hike!",
-			"commentFrom": "davey",
-			"userName": "davey",
-			"imageName": "davey.jpg",
-			"firstName": "davey v",
-			"lastName": "davey v",
-			"commentLikes": [],
-			"postDate": "11/12/2023",
-			"postTime": "4:47 pm",
-			"timeMessage": "a few seconds ago",
-			"created": "2023-11-13T00:47:48.620Z",
-			"commentLikeCount": 0
-			}
-			{
-			"commentID": 178,
-			"postID": 537,
-			"commentCaption": "Yes lets go hike!",
-			"commentFrom": "davey",
-			"userName": "davey",
-			"imageName": "davey.jpg",
-			"firstName": "davey v",
-			"lastName": "davey v",
-			"commentLikes": [],
-			"created": "2023-11-13T00:47:30.000Z",
-			"commentLikeCount": 0
-			}
-			
-		}
-*/
+//TO DO: Make output the same Add a template
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Text
 async function postText(req, res) {
@@ -146,6 +113,59 @@ async function postText(req, res) {
 	res.json(postOutcome);
 	console.log("____________________________")
 }
+
+
+
+
+
+
+//SORT BELOW
+//NEED TO SYNC POSTS WITH NEW DATA
+/*
+//New Post Returned
+{
+	"postID": 545,
+	"postType": "text",
+	"groupID": 70,
+	"listID": 0,
+	"postFrom": "davey",
+	"postTo": "frodo",
+	"postCaption": "Hiya!! Wanna go on a Hike!",
+	"videoURL": "",
+	"videoCode": "",
+	"postLikesArray": [],
+	"simpleLikesArray": [],
+	"created": "2021-12-19T08:14:03.000Z"
+	"created": "2024-04-27T23:56:07.000Z",
+}
+
+//Get Group Posts
+{
+	"postID": 545,
+	"postType": "text",
+	"groupID": 70,
+	"listID": 0,
+	"postFrom": "davey",
+	"postTo": "frodo",
+	"postCaption": "Hiya!! Wanna go on a Hike!",
+	"videoURL": "empty",
+	"videoCode": "empty",
+	"postLikesArray": [],
+	"simpleLikesArray": []
+
+
+	"fileName": "",
+	"fileNameServer": "hiya.jpg",
+	"fileUrl": "empty",
+	"postDate": "04/27/2024",
+	"postTime": "4:056 pm",
+	"timeMessage": "a minute ago",
+	"commentsArray": [],
+
+}
+
+*/
+
 
 //Function A2: Post Photo
 async function postPhoto(req, res, file) {

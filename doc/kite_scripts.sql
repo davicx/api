@@ -13,7 +13,7 @@ USE shareshare;
 #SELECT * FROM posts WHERE post_id = 534;
 SELECT * FROM posts;
 #SELECT * FROM comments;
-#DELETE FROM notificationgroup_ids 
+#DELETE FROM posts
 
 #GROUPS
 #SELECT * FROM shareshare.groups;
