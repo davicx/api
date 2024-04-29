@@ -232,7 +232,6 @@ async function postPhoto(req, res) {
 		console.log(fileExtension)
 
 		
-		
 		postOutcome = await Post.createPostPhoto(req, file);
 
 	  
