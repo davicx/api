@@ -166,7 +166,7 @@ async function postText(req, res) {
 }
 
 //Function A2: Post Photo
-async function postPhoto(req, res) {
+async function postPhotoLocal(req, res) {
 	uploadFunctions.uploadLocal(req, res, async function (err) {
 
 	var uploadSuccess = false
@@ -229,8 +229,10 @@ async function postPhoto(req, res) {
 			const groupUsersOutcome = await Group.getGroupUsers(groupID);
 			const groupUsers = groupUsersOutcome.groupUsers;
 			console.log("STEP 3: Add notifications")
-			
-			//TO DO: Add post id to this!
+			var postID = 0
+			if (newPostOutcome.newPost.postID) {
+				postID = newPostOutcome.newPost.postID
+			}
 			if(newPostOutcome.outcome == 200) {
 				notification = {
 					masterSite: "kite",
@@ -239,8 +241,11 @@ async function postPhoto(req, res) {
 					notificationTo: groupUsers,
 					notificationLink: req.body.notificationLink,
 					notificationType: req.body.notificationType,
-					groupID: groupID
+					groupID: groupID,
+					postID: postID
 				}
+
+				console.log(notification)
 
 				if(groupUsers.length > 0) {
 					Notification.createGroupNotification(notification);
@@ -255,6 +260,13 @@ async function postPhoto(req, res) {
 
   })
 }
+
+//Post Photo
+async function postPhoto(req, res) {
+
+}
+
+
 /*
 async function postPhoto(req, res) {
 	uploadFunctions.uploadLocal(req, res, async function (err) {
@@ -914,7 +926,7 @@ async function editPost(req, res) {
 
 
 
-module.exports = { postText, postPhoto, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
+module.exports = { postText, postPhoto, postPhotoLocal, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
 
 
 //APPENDIX

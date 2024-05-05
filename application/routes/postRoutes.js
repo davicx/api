@@ -37,8 +37,12 @@ postRouter.post('/post/text', function(req, res) {
 })
 
 //Route A2: Post Photo
-postRouter.post('/post/photo/local', async function(req, res) {
+postRouter.post('/post/photo', async function(req, res) {
 	posts.postPhoto(req, res)
+})
+
+postRouter.post('/post/photo/local', async function(req, res) {
+	posts.postPhotoLocal(req, res)
 
 })
   
