@@ -18,10 +18,50 @@ class Post {
         const postFrom = req.body.postFrom 
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
+        const listID = req.body.listID 
         const postCaption = req.body.postCaption 
-        console.log("Step 1A: Create a new post from Post Class");  
+        const fileName = "";
+        const fileNameServer = "";
+        const fileURL = "";
+
+		if(req.body.fileNameServer != undefined) {
+			fileNameServer = req.body.fileNameServer;
+		} 
+
+		if(req.body.fileName != undefined) {
+			fileName = req.body.fileName;
+		} 
+
+		if(req.body.fileUrl != undefined) {
+			fileUrl = req.body.fileUrl;
+		} 
+
+        console.log("CLASS Post: Step 1A: Create a new post from Post Class");  
      
+        var createdPost = {
+            postID: 0,
+            postType: postType,
+            groupID: groupID,
+            listID: listID,
+            postFrom: postFrom,
+            postTo: postTo,
+            postCaption: postCaption,
+            fileName: fileName,
+            fileNameServer: fileNameServer,
+            fileUrl: fileURL,
+            videoURL: "",
+            videoCode: "",
+			postDate: timeFunctions.getCurrentTime().postDate,
+			postTime: timeFunctions.getCurrentTime().postTime,
+			timeMessage: timeFunctions.getCurrentTime().timeMessage,
+            created: "",
+            commentsArray: [],
+            postLikesArray: [],
+            simpleLikesArray: []
+        }    
+
         var postOutcome = {
+            newPost: createdPost,
             outcome: 0,
             postID: 0,
             errors: []
@@ -36,7 +76,8 @@ class Post {
                     if (!err) {
                         console.log("Step 1B: You created a new Post with ID " + results.insertId);    
                         postOutcome.outcome = 200;       
-                        postOutcome.postID = results.insertId;       
+                        postOutcome.postID = results.insertId;   
+                        postOutcome.newPost.postID = results.insertId;    
                     } else {    
                         postOutcome.outcome = "no worky"
                         postOutcome.errors.push(err);
@@ -129,12 +170,36 @@ class Post {
         const postFrom = req.body.postFrom 
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
+        const listID = req.body.listID 
         const postCaption = req.body.postCaption 
         const videoURL = req.body.videoURL 
         const videoCode = req.body.videoCode 
 
+        var createdPost = {
+            postID: 0,
+            postType: postType,
+            groupID: groupID,
+            listID: listID,
+            postFrom: postFrom,
+            postTo: postTo,
+            postCaption: postCaption,
+            fileName: "fileName",
+            fileNameServer: "fileNameServer",
+            fileUrl: "fileURL",
+            videoURL: videoURL,
+            videoCode: videoCode,
+			postDate: timeFunctions.getCurrentTime().postDate,
+			postTime: timeFunctions.getCurrentTime().postTime,
+			timeMessage: timeFunctions.getCurrentTime().timeMessage,
+            created: "",
+            commentsArray: [],
+            postLikesArray: [],
+            simpleLikesArray: []
+        }    
+
         var postOutcome = {
-            outcome: 500,
+            newPost: createdPost,
+            outcome: 0,
             postID: 0,
             errors: []
         }
@@ -149,7 +214,8 @@ class Post {
                         console.log("Post.js: You created a new Post with ID " + results.insertId);    
                         //console.log(results)
                         postOutcome.outcome = 200;       
-                        postOutcome.postID = results.insertId;       
+                        postOutcome.postID = results.insertId;   
+                        postOutcome.newPost.postID = results.insertId;       
                     } else {    
                         postOutcome.outcome = "no worky"
                         postOutcome.errors.push(err);

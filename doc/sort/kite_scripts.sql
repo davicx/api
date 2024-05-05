@@ -12,9 +12,10 @@ SELECT * FROM notifications
 #DELETE FROM posts WHERE group_id = 70 AND post_id < 470
 
 #SELECT * FROM posts WHERE post_id = 534;
+#DELETE FROM posts
 #SELECT * FROM posts;
 #SELECT * FROM comments;
-#DELETE FROM posts
+
 
 #GROUPS
 #SELECT * FROM shareshare.groups;

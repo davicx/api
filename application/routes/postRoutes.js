@@ -41,6 +41,11 @@ postRouter.post('/post/photo', async function(req, res) {
 	posts.postPhoto(req, res)
 })
 
+postRouter.post('/post/photo/local/aws', async function(req, res) {
+	posts.postPhotoLocalAWS(req, res)
+})
+
+//http://localhost:3003/upload/photo/local/aws
 postRouter.post('/post/photo/local', async function(req, res) {
 	posts.postPhotoLocal(req, res)
 

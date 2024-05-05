@@ -17,6 +17,31 @@ const fs = require('fs')
 const multer = require('multer')
 var mime = require('mime-types')
 
+//Might Need
+/*
+require('dotenv').config()
+const express = require('express')
+const app = express()
+const uploadRouter = express.Router();
+
+//const cookieParser = require('cookie-parser');
+//const morgan = require('morgan')
+const multerS3 = require('multer-s3');
+const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs') 
+const multer = require('multer')
+var mime = require('mime-types')
+var cors = require('cors')
+uploadRouter.use(cors())
+
+const bucketName = process.env.AWS_BUCKET_NAME
+const region = process.env.AWS_BUCKET_REGION
+const accessKeyId = process.env.AWS_ACCESS_KEY
+const secretAccessKey = process.env.AWS_SECRET_KEY
+const upload = multer({ dest: './uploads' })
+const uploadFunctions = require('./uploadFunctions')
+*/
+
 /*
 FUNCTIONS A: All Functions Related to Posts
 	1) Function A1: Post Text
@@ -44,6 +69,7 @@ FUNCTIONS C: All Functions Related to Post Actions
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Text
 async function postText(req, res) {
+	//const connection = db.getConnection(); 
 	console.log("____________________________")
 	console.log("NEW POST: Post Text")
 	const groupID = req.body.groupID;
@@ -57,25 +83,18 @@ async function postText(req, res) {
 	}
 
 	//STEP 1: Make a new post
-	console.log("STEP 1: Make a new post")
 	var newPostOutcome = await Post.createPostText(req);
+	console.log("STEP 1: New Post Outcome")
+	console.log(newPostOutcome)
 	
 	if(newPostOutcome.outcome == 200) {
-		postOutcome.data = newPostOutcome.newPost;
-		postOutcome.message = "You made a Text post!"
-		postOutcome.statusCode = 200
-		postOutcome.success = true
-		var postID = 0
-		if (newPostOutcome.newPost.postID) {
-			postID = newPostOutcome.newPost.postID
-		}
 
 		//STEP 2: Add the Notifications
-		console.log("STEP 2: Add notifications")
 		var notification = {}
 		const groupUsersOutcome = await Group.getGroupUsers(groupID);
 		const groupUsers = groupUsersOutcome.groupUsers;
-
+		console.log("STEP 2: Add notifications")
+		
 		if(newPostOutcome.outcome == 200) {
 			notification = {
 				masterSite: "kite",
@@ -84,8 +103,7 @@ async function postText(req, res) {
 				notificationTo: groupUsers,
 				notificationLink: req.body.notificationLink,
 				notificationType: req.body.notificationType,
-				groupID: groupID,
-				postID: postID
+				groupID: groupID
 			}
 
 			if(groupUsers.length > 0) {
@@ -94,13 +112,52 @@ async function postText(req, res) {
 		}
 		
 		//STEP 3: New Post Outcome 
+		//MOVE TO POST CLASS!!!
+		let fileName = "empty"
+		let fileNameServer = "empty"
+		let fileUrl = "empty"
+
+		if(req.body.fileNameServer != undefined) {
+			fileNameServer = req.body.fileNameServer;
+		} 
+
+		if(req.body.fileName != undefined) {
+			fileName = req.body.fileName;
+		} 
+
+		if(req.body.fileUrl != undefined) {
+			fileUrl = req.body.fileUrl;
+		} 
+
+		const newPost = {
+			postID: newPostOutcome.postID,
+			postType: "text",
+			groupID: groupID,
+			listID: 0,
+			postFrom: req.body.postFrom,
+			postTo: req.body.postTo,
+			postCaption: req.body.postCaption,
+			fileName: fileName,
+			fileNameServer: fileNameServer,
+			fileUrl: fileUrl,
+			commentsArray: [],
+			postLikesArray: [],
+			simpleLikesArray: [],
+			postDate: timeFunctions.getCurrentTime().postDate,
+			postTime: timeFunctions.getCurrentTime().postTime,
+			timeMessage: timeFunctions.getCurrentTime().timeMessage,
+			videoURL: req.body.videoURL,
+			videoCode: req.body.videoCode,
+			created: "2021-12-19T08:14:03.000Z"
+		}
+
+		postOutcome.message = "A new post was created with the id " + newPostOutcome.postID;
+		postOutcome.data = newPost;
+
 		console.log("STEP 3: New Post Outcome")
 		console.log(postOutcome)
 		console.log("YOU MADE A NEW POST!")
 	} else {
-		postOutcome.message = "There was a problem making your post!"
-		postOutcome.statusCode = 500
-		postOutcome.success = false
 		console.log("STEP 3: Something went wrong making this post!")
 	} 
 
@@ -108,102 +165,7 @@ async function postText(req, res) {
 	console.log("____________________________")
 }
 
-//Function A2: Post Photo (Cloud)
-async function postPhoto(req, res) {
-	uploadFunctions.uploadLocal(req, res, async function (err) {
-
-	var uploadSuccess = false
-	var groupID = req.body.groupID;
-
-	var postOutcome = {
-		data: {},
-		message: "hi", 
-		success: true,
-		statusCode: 200,
-		errors: [], 
-		currentUser: req.body.currentUser
-	}
-
-	//STEP 1: Upload Post to API
-	console.log("STEP 1: Upload Post to API")
-	//Error 1A: File too large
-	if (err instanceof multer.MulterError) {
-		console.log("Error 1A: File too large")
-		postOutcome.message = "Error 1A: File too large"
-  
-	//Error 1B: Not Valid Image File
-	} else if (err) {
-		console.log("Error 1B: Not Valid Image File")
-		postOutcome.message = "Error 1B: Not Valid Image File"
-
-	//Success 1A: No Multer Errors
-	} else {
-		let file = req.file
-		console.log("Success 1A: No Multer Errors")
-
-
-		//Success 1B: Success Upload File
-		if(file !== undefined) {
-			console.log("Success 1B: Success Upload File")
-			uploadSuccess = true   
-
-		//Error 1C: No File 	
-		} else {
-		  console.log("Error 1C: No File mah dude!")
-		  postOutcome.message = "Error 1C: No File mah dude!"
- 
-		} 
-	}
-
-	//STEP 2: Add Post to Database
-	if(uploadSuccess == true) {
-		console.log("STEP 2: Add Post to Database")
-		let file = req.file
-		let newPostOutcome = await Post.createPostPhoto(req, file);
-		postOutcome.data = newPostOutcome.newPost;
-		postOutcome.message = "Your photo was posted!"
-		postOutcome.statusCode = 200
-		postOutcome.success = true
-
-		//STEP 3: Add the Notifications
-		if(newPostOutcome.outcome == 200) {
-			var notification = {}
-			const groupUsersOutcome = await Group.getGroupUsers(groupID);
-			const groupUsers = groupUsersOutcome.groupUsers;
-			console.log("STEP 3: Add notifications")
-
-			var postID = 0
-			if (newPostOutcome.newPost.postID) {
-				postID = newPostOutcome.newPost.postID
-			}
-
-			if(newPostOutcome.outcome == 200) {
-				notification = {
-					masterSite: "kite",
-					notificationFrom: req.body.postFrom,
-					notificationMessage: req.body.notificationMessage,
-					notificationTo: groupUsers,
-					notificationLink: req.body.notificationLink,
-					notificationType: req.body.notificationType,
-					groupID: groupID,
-					postID: postID
-				}
-
-				console.log(notification)
-
-				if(groupUsers.length > 0) {
-					Notification.createGroupNotification(notification);
-				}
-			}
-		}
-	
-	}
-
-    res.json(postOutcome)
-
-  })
-}
-
+//Function A2: Post Photo
 async function postPhotoLocal(req, res) {
 	uploadFunctions.uploadLocal(req, res, async function (err) {
 
@@ -266,12 +228,10 @@ async function postPhotoLocal(req, res) {
 			const groupUsersOutcome = await Group.getGroupUsers(groupID);
 			const groupUsers = groupUsersOutcome.groupUsers;
 			console.log("STEP 3: Add notifications")
-
 			var postID = 0
 			if (newPostOutcome.newPost.postID) {
 				postID = newPostOutcome.newPost.postID
 			}
-
 			if(newPostOutcome.outcome == 200) {
 				notification = {
 					masterSite: "kite",
@@ -291,7 +251,8 @@ async function postPhotoLocal(req, res) {
 				}
 			}
 		}
-	
+		
+
 	}
 
     res.json(postOutcome)
@@ -299,104 +260,17 @@ async function postPhotoLocal(req, res) {
   })
 }
 
-async function postPhotoLocalAWS(req, res) {
-	uploadFunctions.uploadLocal(req, res, async function (err) {
+//Post Photo
+async function postPhoto(req, res) {
 
-		var uploadSuccess = false
-		var groupID = req.body.groupID;
-	
-		var postOutcome = {
-			data: {},
-			message: "hi", 
-			success: true,
-			statusCode: 200,
-			errors: [], 
-			currentUser: req.body.currentUser
-		}
-	
-		//STEP 1: Upload Post to API
-		console.log("STEP 1: Upload Post to API")
-		//Error 1A: File too large
-		if (err instanceof multer.MulterError) {
-			console.log("Error 1A: File too large")
-			postOutcome.message = "Error 1A: File too large"
-	  
-		//Error 1B: Not Valid Image File
-		} else if (err) {
-			console.log("Error 1B: Not Valid Image File")
-			postOutcome.message = "Error 1B: Not Valid Image File"
-	
-		//Success 1A: No Multer Errors
-		} else {
-			let file = req.file
-			console.log("Success 1A: No Multer Errors")
-	
-	
-			//Success 1B: Success Upload File
-			if(file !== undefined) {
-				console.log("Success 1B: Success Upload File")
-				uploadSuccess = true   
-	
-			//Error 1C: No File 	
-			} else {
-			  console.log("Error 1C: No File mah dude!")
-			  postOutcome.message = "Error 1C: No File mah dude!"
-	 
-			} 
-		}
-	
-		//STEP 2: Add Post to Database
-		if(uploadSuccess == true) {
-			console.log("STEP 2: Add Post to Database")
-			let file = req.file
-			let newPostOutcome = await Post.createPostPhoto(req, file);
-			postOutcome.data = newPostOutcome.newPost;
-			postOutcome.message = "Your photo was posted!"
-			postOutcome.statusCode = 200
-			postOutcome.success = true
-	
-			//STEP 3: Add the Notifications
-			if(newPostOutcome.outcome == 200) {
-				var notification = {}
-				const groupUsersOutcome = await Group.getGroupUsers(groupID);
-				const groupUsers = groupUsersOutcome.groupUsers;
-				console.log("STEP 3: Add notifications")
-	
-				var postID = 0
-				if (newPostOutcome.newPost.postID) {
-					postID = newPostOutcome.newPost.postID
-				}
-	
-				if(newPostOutcome.outcome == 200) {
-					notification = {
-						masterSite: "kite",
-						notificationFrom: req.body.postFrom,
-						notificationMessage: req.body.notificationMessage,
-						notificationTo: groupUsers,
-						notificationLink: req.body.notificationLink,
-						notificationType: req.body.notificationType,
-						groupID: groupID,
-						postID: postID
-					}
-	
-					console.log(notification)
-	
-					if(groupUsers.length > 0) {
-						Notification.createGroupNotification(notification);
-					}
-				}
-			}
-		
-		}
-	
-		res.json(postOutcome)
-	
-	  })
 }
 
-//Function A3: Post Video
-async function postVideo(req, res) {
+
+//SORT BELOW
+//Function A2: Post Photo
+async function postPhotoPULLFROM(req, res, file) {
 	const groupID = req.body.groupID;
+	postOutcome = await Post.createPostPhoto(req, file);
 
 	var postOutcome = {
 		data: {},
@@ -407,21 +281,72 @@ async function postVideo(req, res) {
 		currentUser: req.body.currentUser
 	}
 
-	//STEP 1: Create the New Post 
-	console.log("STEP 1: Make a new post")	
-	var newPostOutcome = await Post.createPostVideo(req);
+	//STEP 2: Add the Notification
+	var notification = {}
+	const groupUsersOutcome = await Group.getGroupUsers(groupID);
+	const groupUsers = groupUsersOutcome.groupUsers;
+	
+	if(postOutcome.outcome == 200) {
+		notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.postFrom,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupID
+		}
+ 
+		if(groupUsers.length > 0) {
+			Notification.createGroupNotification(notification);
+		}
+	}
+	res.json({postOutcome});
+}
 
-	if(newPostOutcome.outcome == 200) {
-		postOutcome.data = newPostOutcome.newPost;
-		postOutcome.message = "You posted a Video!"
-		postOutcome.statusCode = 200
-		postOutcome.success = true
-		var postID = 0
-		if (newPostOutcome.newPost.postID) {
-			postID = newPostOutcome.newPost.postID
+
+
+
+//Function A3: Post Video
+async function postVideo(req, res) {
+	const groupID = req.body.groupID;
+
+	var postVideoOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+	//STEP 1: Create the New Post 
+	const postOutcome = await Post.createPostVideo(req);
+
+	if(postOutcome.outcome == 200) {
+
+		//STEP 2: Get new Post Data
+		var postCreated = await PostFunctions.getPostCreated(postOutcome.postID) 
+
+		var newPost = {
+			postID: postOutcome.postID,
+			postType: req.body.postType ,
+			groupID: req.body.groupID,
+			listID: req.body.listID,
+			postFrom: req.body.postFrom,
+			postTo: req.body.postTo ,
+			postCaption: req.body.postCaption,
+			postLikesArray: [],
+			simpleLikesArray: [],
+			videoURL: req.body.videoURL,
+			videoCode: req.body.videoCode ,
+			created: postCreated.created
 		}
 
-		//STEP 2: Add the Notification
+		postVideoOutcome.data = newPost;
+		postVideoOutcome.message = "You made a new video post!"
+
+		//STEP 3: Add the Notification
 		var notification = {}
 		const groupUsersOutcome = await Group.getGroupUsers(groupID);
 		const groupUsers = groupUsersOutcome.groupUsers;
@@ -434,8 +359,7 @@ async function postVideo(req, res) {
 			notificationTo: groupUsers,
 			notificationLink: req.body.notificationLink,
 			notificationType: req.body.notificationType,
-			groupID: groupID,
-			postID: postID
+			groupID: groupID
 		}
 
 		if(groupUsers.length > 0) {
@@ -444,7 +368,8 @@ async function postVideo(req, res) {
 
 	}
 
-	res.json(postOutcome);
+	
+	res.json(postVideoOutcome);
 }
 
 //Function A4: Post Article
@@ -924,5 +849,126 @@ async function editPost(req, res) {
 }
 
 
-module.exports = { postText, postPhoto, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
 
+module.exports = { postText, postPhoto, postPhotoLocal, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
+
+
+//APPENDIX
+/*
+
+//Function A2: Post Photo
+async function postPhoto(req, res, file) {
+	const groupID = req.body.groupID;
+	postOutcome = await Post.createPostPhoto(req, file);
+
+	var postOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+	//STEP 2: Add the Notification
+	var notification = {}
+	const groupUsersOutcome = await Group.getGroupUsers(groupID);
+	const groupUsers = groupUsersOutcome.groupUsers;
+	
+	if(postOutcome.outcome == 200) {
+		notification = {
+			masterSite: "kite",
+			notificationFrom: req.body.postFrom,
+			notificationMessage: req.body.notificationMessage,
+			notificationTo: groupUsers,
+			notificationLink: req.body.notificationLink,
+			notificationType: req.body.notificationType,
+			groupID: groupID
+		}
+ 
+		if(groupUsers.length > 0) {
+			Notification.createGroupNotification(notification);
+		}
+	}
+	res.json({postOutcome});
+}
+
+*/
+
+
+
+
+/*
+async function postPhoto(req, res) {
+	uploadFunctions.uploadLocal(req, res, async function (err) {
+  
+	  //STEP 1: Upload Photo
+	  var uploadSuccess = false
+	  var file = null;
+  
+	  var postOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.currentUser
+	  }
+  
+	  //Step 1A: File too large
+	  if (err instanceof multer.MulterError) {
+		postOutcome.message = err.message
+		postOutcome.errors.push(err)
+		postOutcome.data = {failureCode: 1}
+  
+	  //Step 1B: Not Valid Image File
+	  } else if (err) {
+		postOutcome.message = err.message
+		postOutcome.data = {failureCode: 2}
+		postOutcome.errors.push("Step 1B: Not Valid Image File")
+  
+	  //Step 1C: No Multer Errors
+	  } else {
+
+		//Step 1D: Success Upload File
+		if(file !== undefined) {
+			console.log("There is a file!")
+			//var file = req.file
+			//var fileExtension = mime.extension(file.mimetype);
+		
+			uploadSuccess = true   
+		} else {
+		  console.log("No File")
+		  postOutcome.data = {failureCode: 3}
+		  postOutcome.message = "Please choose an image file"
+		  
+		} 
+	  }
+
+
+	  //STEP 2: Create New Post
+	  if(uploadSuccess == true) {
+		let newPostOutcome = await Post.createPostPhoto(req, file);
+		postOutcome.message = "Your photo was posted!"
+		postOutcome.statusCode = 200
+		postOutcome.success = true
+		
+		postOutcome.data.file = {
+			file: file,
+			caption: req.body.caption,
+			fileExtension: fileExtension,
+			newPostOutcome: newPostOutcome
+		}
+		
+		console.log("Made your post!")
+		console.log(req.body)
+		console.log(file)
+		console.log(fileExtension)
+		
+	  } 
+  
+	  res.json(postOutcome)
+  
+	})
+}
+*/
