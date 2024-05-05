@@ -17,7 +17,8 @@ FUNCTIONS A: All Functions Related to Local Uploads
 
 //SETUP: Set File Destination and Size
 var fileLimit = 1024 * 1024 * 20; 
-var uploadFolder = "./application/upload_temp/uploads";
+//var uploadFolder = "./application/upload_temp/uploads";
+var uploadFolder = "./uploads";
 
 //Function A1: Create local upload and filename for Local Storage
 const localStorage = multer.diskStorage({
@@ -40,6 +41,8 @@ const uploadLocal = multer({
 
   fileFilter: function (req, file, cb) {
     let size = +req.rawHeaders.slice(-1)[0]
+
+    console.log("Davey lets upload!!");
 
     //Create image and size filter
     if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {

@@ -112,6 +112,7 @@ async function postText(req, res) {
 		}
 		
 		//STEP 3: New Post Outcome 
+		//MOVE TO POST CLASS!!!
 		let fileName = "empty"
 		let fileNameServer = "empty"
 		let fileUrl = "empty"
@@ -167,6 +168,96 @@ async function postText(req, res) {
 //Function A2: Post Photo
 async function postPhoto(req, res) {
 	uploadFunctions.uploadLocal(req, res, async function (err) {
+
+	var uploadSuccess = false
+	var groupID = req.body.groupID;
+
+	var postOutcome = {
+		data: {},
+		message: "hi", 
+		success: true,
+		statusCode: 200,
+		errors: [], 
+		currentUser: req.body.currentUser
+	}
+
+	//STEP 1: Upload Post to API
+	console.log("STEP 1: Upload Post to API")
+	//Error 1A: File too large
+	if (err instanceof multer.MulterError) {
+		console.log("Error 1A: File too large")
+		postOutcome.message = "Error 1A: File too large"
+  
+	//Error 1B: Not Valid Image File
+	} else if (err) {
+		console.log("Error 1B: Not Valid Image File")
+		postOutcome.message = "Error 1B: Not Valid Image File"
+
+	//Success 1A: No Multer Errors
+	} else {
+		let file = req.file
+		console.log("Success 1A: No Multer Errors")
+
+
+		//Success 1B: Success Upload File
+		if(file !== undefined) {
+			console.log("Success 1B: Success Upload File")
+			uploadSuccess = true   
+
+		//Error 1C: No File 	
+		} else {
+		  console.log("Error 1C: No File mah dude!")
+		  postOutcome.message = "Error 1C: No File mah dude!"
+ 
+		} 
+	}
+
+
+	//STEP 2: Add Post to Database
+	if(uploadSuccess == true) {
+		console.log("STEP 2: Add Post to Database")
+		let file = req.file
+		let newPostOutcome = await Post.createPostPhoto(req, file);
+		postOutcome.data = newPostOutcome.newPost;
+		postOutcome.message = "Your photo was posted!"
+		postOutcome.statusCode = 200
+		postOutcome.success = true
+
+		//STEP 3: Add the Notifications
+		if(newPostOutcome.outcome == 200) {
+			var notification = {}
+			const groupUsersOutcome = await Group.getGroupUsers(groupID);
+			const groupUsers = groupUsersOutcome.groupUsers;
+			console.log("STEP 3: Add notifications")
+			
+			//TO DO: Add post id to this!
+			if(newPostOutcome.outcome == 200) {
+				notification = {
+					masterSite: "kite",
+					notificationFrom: req.body.postFrom,
+					notificationMessage: req.body.notificationMessage,
+					notificationTo: groupUsers,
+					notificationLink: req.body.notificationLink,
+					notificationType: req.body.notificationType,
+					groupID: groupID
+				}
+
+				if(groupUsers.length > 0) {
+					Notification.createGroupNotification(notification);
+				}
+			}
+		}
+		
+
+	}
+
+    res.json(postOutcome)
+
+  })
+}
+/*
+async function postPhoto(req, res) {
+	uploadFunctions.uploadLocal(req, res, async function (err) {
   
 	  //STEP 1: Upload Photo
 	  var uploadSuccess = false
@@ -193,27 +284,16 @@ async function postPhoto(req, res) {
 		postOutcome.data = {failureCode: 2}
 		postOutcome.errors.push("Step 1B: Not Valid Image File")
   
-	  //Step 1C:
+	  //Step 1C: No Multer Errors
 	  } else {
-		file = req.file
-		let caption = req.body.caption;
-		let currentUser = req.body.currentUser
-  
+
 		//Step 1D: Success Upload File
 		if(file !== undefined) {
-			postOutcome.message = "Your photo was posted!"
-			postOutcome.statusCode = 200
-			postOutcome.success = true
-			/*
-			postOutcome.data = {
-				file: file,
-				caption: caption,
-				fileExtension: fileExtension
-			}
-			*/
-
-		uploadSuccess = true
-	   
+			console.log("There is a file!")
+			//var file = req.file
+			//var fileExtension = mime.extension(file.mimetype);
+		
+			uploadSuccess = true   
 		} else {
 		  console.log("No File")
 		  postOutcome.data = {failureCode: 3}
@@ -223,24 +303,32 @@ async function postPhoto(req, res) {
 	  }
 
 
-	  //CREATE POST
+	  //STEP 2: Create New Post
 	  if(uploadSuccess == true) {
-		let fileExtension = mime.extension(file.mimetype);
-		console.log("Make your post!")
+		let newPostOutcome = await Post.createPostPhoto(req, file);
+		postOutcome.message = "Your photo was posted!"
+		postOutcome.statusCode = 200
+		postOutcome.success = true
+		
+		postOutcome.data.file = {
+			file: file,
+			caption: req.body.caption,
+			fileExtension: fileExtension,
+			newPostOutcome: newPostOutcome
+		}
+		
+		console.log("Made your post!")
 		console.log(req.body)
 		console.log(file)
 		console.log(fileExtension)
-
 		
-		postOutcome = await Post.createPostPhoto(req, file);
-
-	  
 	  } 
   
 	  res.json(postOutcome)
   
 	})
-  }
+}
+*/
 
 //SORT BELOW
 //Function A2: Post Photo

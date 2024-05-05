@@ -22,16 +22,6 @@
     "simpleLikesArray": []
 }
 
-//Currently is 
-/*
-{
-    "postDate": "04/27/2024",
-    "postTime": "4:06 pm",
-    "timeMessage": "a day ago",
-    "commentsArray": [],
-}
-*/
-
 //LIKE (in postLikesArray)
 /*
 {

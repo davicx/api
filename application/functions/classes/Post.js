@@ -1,4 +1,5 @@
 const db = require('./../conn');
+const timeFunctions = require('../timeFunctions');
 
 class Post {
     constructor(postID) {
@@ -59,31 +60,36 @@ class Post {
         const postFrom = req.body.postFrom 
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
+        const listID = req.body.listID 
         const postCaption = req.body.postCaption 
-        const fileName = file.originalname
-        const fileNameServer = file.filename
-        const fileURL = file.path
-        //if(file.destination?) {
-        /*
-        {
-            fieldname: 'postImage',
-            originalname: 'stars.jpg',
-            encoding: '7bit',
-            mimetype: 'image/jpeg',
-            destination: './application/upload_temp/uploads',
-            filename: 'postImage-1714348333423-535580151-stars.jpg',
-            path: 'application/upload_temp/uploads/postImage-1714348333423-535580151-stars.jpg',
-            size: 3039415
-            }
-                 if(file.path) {
-            fileURL = file.path
-        } else {
-            fileURL = file.path
-        }
+        const fileName = file.originalname;
+        const fileNameServer = file.filename;
+        const fileURL = file.path;
+        
+        var createdPost = {
+            postID: 0,
+            postType: postType,
+            groupID: groupID,
+            listID: listID,
+            postFrom: postFrom,
+            postTo: postTo,
+            postCaption: postCaption,
+            fileName: fileName,
+            fileNameServer: fileNameServer,
+            fileUrl: fileURL,
+            videoURL: "empty",
+            videoCode: "empty",
+			postDate: timeFunctions.getCurrentTime().postDate,
+			postTime: timeFunctions.getCurrentTime().postTime,
+			timeMessage: timeFunctions.getCurrentTime().timeMessage,
+            created: "",
+            commentsArray: [],
+            postLikesArray: [],
+            simpleLikesArray: []
+        }    
 
-        */
-   
         var postOutcome = {
+            newPost: createdPost,
             outcome: 0,
             postID: 0,
             errors: []
@@ -97,8 +103,9 @@ class Post {
                 connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, fileNameServer, fileURL], (err, results, fields) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
-                        postOutcome.outcome = 200;       
-                        postOutcome.postID = results.insertId;       
+                        postOutcome.postID = results.insertId; 
+                        postOutcome.outcome = 200; 
+                        postOutcome.newPost.postID = results.insertId;
                     } else {    
                         postOutcome.outcome = "no worky"
                         postOutcome.errors.push(err);

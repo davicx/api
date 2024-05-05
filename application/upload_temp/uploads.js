@@ -78,7 +78,7 @@ async function postPhoto(req, res) {
       } else {
         console.log("No File")
         postOutcome.data = {failureCode: 3}
-        postOutcome.message = "Please choose an image file"
+        postOutcome.message = "Yo dude, Please choose an image file"
         
       } 
     }

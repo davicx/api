@@ -4,14 +4,15 @@ USE shareshare;
 
 #DELETE FROM friends WHERE request_pending = 1
 #SELECT * FROM pending_requests 
-#SELECT * FROM notifications 
+#DELETE FROM notifications 
+SELECT * FROM notifications 
 #SELECT * FROM friends 
 #SELECT * FROM friends WHERE user_name = "davey"
 #DELETE FROM friends WHERE user_name = "davey"
 #DELETE FROM posts WHERE group_id = 70 AND post_id < 470
 
 #SELECT * FROM posts WHERE post_id = 534;
-SELECT * FROM posts;
+#SELECT * FROM posts;
 #SELECT * FROM comments;
 #DELETE FROM posts
 
