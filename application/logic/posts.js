@@ -396,11 +396,25 @@ async function postPhotoLocalAWS(req, res) {
 				fileExtension
 				jpeg
 			AWS
+
+			newFile = {
+				type: "local | aws",
+				file: file,
+				result: result
+			}
 			*/
+
 		
 			////
 
 
+			/*
+			newFile = {
+				type: "local | aws",
+				file: file,
+				result: result
+			}
+			*/
 
 			let newPostOutcome = await Post.createPostPhoto(req, file);
 			postOutcome.data = newPostOutcome.newPost;

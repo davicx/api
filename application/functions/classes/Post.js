@@ -103,6 +103,8 @@ class Post {
         const groupID = req.body.groupID 
         const listID = req.body.listID 
         const postCaption = req.body.postCaption 
+
+        //This will come from the newFile object we need
         const fileName = file.originalname;
         const fileNameServer = file.filename;
         const fileURL = file.path;
