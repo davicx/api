@@ -9,6 +9,7 @@ const friendFunctions = require('../functions/friendFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const timeFunctions = require('../functions/timeFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
+const awsStorage = require('../functions/aws/awsStorage');
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -349,6 +350,58 @@ async function postPhotoLocalAWS(req, res) {
 		if(uploadSuccess == true) {
 			console.log("STEP 2: Add Post to Database")
 			let file = req.file
+			
+			//STEP 3: Upload to AWS
+			////
+			const result = await awsStorage.uploadFile(file)
+			const fullKey = "/images/" + result.key;
+		  
+			let fileExtension = mime.extension(file.mimetype) 
+		  
+			console.log("AWS")
+			console.log("result")
+			console.log(result)
+			console.log("file")
+			console.log(file)
+			console.log("fullKey")
+			console.log(fullKey)
+			console.log("fileExtension")
+			console.log(fileExtension)
+			console.log("AWS")
+
+			/*
+			AWS
+				result
+				{
+					ETag: '"6e30f517fa86d50c8abd8e5579866be1"',
+					ServerSideEncryption: 'AES256',
+					Location: 'https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1714952919699-277959186-stars.jpg',
+					key: 'images/postImage-1714952919699-277959186-stars.jpg',
+					Key: 'images/postImage-1714952919699-277959186-stars.jpg',
+					Bucket: 'insta-app-bucket-tutorial'
+				}
+				file
+				{
+					fieldname: 'postImage',
+					originalname: 'stars.jpg',
+					encoding: '7bit',
+					mimetype: 'image/jpeg',
+					destination: './uploads',
+					filename: 'postImage-1714952919699-277959186-stars.jpg',
+					path: 'uploads/postImage-1714952919699-277959186-stars.jpg',
+					size: 3039415
+				}
+				fullKey
+				/images/images/postImage-1714952919699-277959186-stars.jpg
+				fileExtension
+				jpeg
+			AWS
+			*/
+		
+			////
+
+
+
 			let newPostOutcome = await Post.createPostPhoto(req, file);
 			postOutcome.data = newPostOutcome.newPost;
 			postOutcome.message = "Your photo was posted!"
@@ -926,3 +979,86 @@ async function editPost(req, res) {
 
 module.exports = { postText, postPhoto, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
 
+
+/*
+const express = require('express')
+const app = express()
+const cookieParser = require('cookie-parser');
+var cors = require('cors')
+const morgan = require('morgan')
+const multer = require('multer')
+const upload = multer({ dest: 'uploads/' })
+const { uploadFile, getFileStream } = require('./s3')
+var mime = require('mime-types')
+
+var bodyParser = require('body-parser');
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+
+app.use(express.json());
+app.use(cors())
+app.use(cookieParser())
+//app.use(morgan('short'));
+
+app.listen(3003, () => {
+  console.log("Server is up and listening on 3003...")
+})
+
+app.get("/", (req, res) => {
+  console.log("Hello!");
+  res.json({hi: "hiya!"})
+})
+
+app.post("/images", (req, res) => {
+  console.log("Hello! got your image!");
+  console.log(req.body)
+  res.json({hello: "hello!"})
+})
+
+
+//UPLOAD Local
+app.post("/sam/images/local", upload.single('image'), (req, res) => {
+  let description = req.body.description
+  let file = req.file
+
+  console.log(file)
+  res.json({hello: "Hello! got your image!", description: description, file: file})
+})
+
+//UPLOAD AWS
+app.post('/sam/images', upload.single('image'), async (req, res) => {
+  const file = req.file
+  const description = req.body.description
+
+  //add error handling
+  const result = await uploadFile(file)
+  const fullKey = "/images/" + result.key;
+
+  let fileExtension = mime.extension(file.mimetype) 
+
+  console.log("result")
+  console.log(result)
+  console.log("file")
+  console.log(file)
+
+  res.send({yay: "yay!", result: result, imagePath: fullKey, file: file, description: description, fileExtension: fileExtension})
+
+})
+
+//images/4e0e3dcad36549f198eb751de1c03679
+//GET IMAGE
+app.get('/sam/images/:key', (req, res) => {
+  console.log(req.params)
+  const key = req.params.key
+
+  const fullKey = "images/" + key;
+  console.log("You got the image with full key")
+  console.log(fullKey)
+  const readStream = getFileStream(fullKey)
+
+  readStream.pipe(res)
+  //res.json({hi:key})
+})
+
+*/
