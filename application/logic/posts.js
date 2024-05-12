@@ -255,7 +255,26 @@ async function postPhotoLocal(req, res) {
 	if(uploadSuccess == true) {
 		console.log("STEP 2: Add Post to Database")
 		let file = req.file
-		let newPostOutcome = await Post.createPostPhoto(req, file);
+
+		//File Information
+		var uploadFile = {}
+		uploadFile.fileMimetype = file.mimetype; 
+		uploadFile.originalname = file.originalname; //file_name
+		uploadFile.fileNameServer = file.filename; //file_name_server
+		uploadFile.storageType = "aws"; //storage_type
+
+		//Uncomment for Local 
+		uploadFile.fileURL = file.path; //file_url
+		uploadFile.cloudKey = file.path; //cloud_key
+		uploadFile.bucket = file.destination; //cloud_bucket	
+		
+		//Comment for Cloud
+		//uploadFile.fileURL = result.Location; // file_url
+		//uploadFile.cloudKey = result.Key; //cloud_key 
+		//uploadFile.bucket = result.Bucket; // cloud_bucket 			
+
+
+		let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 		postOutcome.data = newPostOutcome.newPost;
 		postOutcome.message = "Your photo was posted!"
 		postOutcome.statusCode = 200
@@ -317,6 +336,7 @@ async function postPhotoLocalAWS(req, res) {
 	
 		//STEP 1: Upload Post to API
 		console.log("STEP 1: Upload Post to API")
+
 		//Error 1A: File too large
 		if (err instanceof multer.MulterError) {
 			console.log("Error 1A: File too large")
@@ -332,7 +352,6 @@ async function postPhotoLocalAWS(req, res) {
 			let file = req.file
 			console.log("Success 1A: No Multer Errors")
 	
-	
 			//Success 1B: Success Upload File
 			if(file !== undefined) {
 				console.log("Success 1B: Success Upload File")
@@ -346,83 +365,44 @@ async function postPhotoLocalAWS(req, res) {
 			} 
 		}
 	
-		//STEP 2: Add Post to Database
+		//STEP 2: Upload to AWS
 		if(uploadSuccess == true) {
 			console.log("STEP 2: Add Post to Database")
 			let file = req.file
 			
-			//STEP 3: Upload to AWS
-			////
+			const fileExtension = mime.extension(file.mimetype) 
 			const result = await awsStorage.uploadFile(file)
-			const fullKey = "/images/" + result.key;
-		  
-			let fileExtension = mime.extension(file.mimetype) 
-		  
-			console.log("AWS")
+
+			//File Information
+			var uploadFile = {}
+			uploadFile.fileMimetype = file.mimetype; 
+			uploadFile.originalname = file.originalname; //file_name
+			uploadFile.fileNameServer = file.filename; //file_name_server
+			uploadFile.storageType = "aws"; //storage_type
+
+			//Uncomment for Local 
+			//uploadFile.fileURL = file.path; //file_url
+			//uploadFile.cloudKey = file.path; //cloud_key
+			//uploadFile.bucket = file.destination; //cloud_bucket	
+			
+			//Comment for Cloud
+			uploadFile.fileURL = result.Location; // file_url
+			uploadFile.cloudKey = result.Key; //cloud_key 
+			uploadFile.bucket = result.Bucket; // cloud_bucket 			
+
 			console.log("result")
 			console.log(result)
 			console.log("file")
 			console.log(file)
-			console.log("fullKey")
-			console.log(fullKey)
-			console.log("fileExtension")
-			console.log(fileExtension)
-			console.log("AWS")
-
-			/*
-			AWS
-				result
-				{
-					ETag: '"6e30f517fa86d50c8abd8e5579866be1"',
-					ServerSideEncryption: 'AES256',
-					Location: 'https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1714952919699-277959186-stars.jpg',
-					key: 'images/postImage-1714952919699-277959186-stars.jpg',
-					Key: 'images/postImage-1714952919699-277959186-stars.jpg',
-					Bucket: 'insta-app-bucket-tutorial'
-				}
-				file
-				{
-					fieldname: 'postImage',
-					originalname: 'stars.jpg',
-					encoding: '7bit',
-					mimetype: 'image/jpeg',
-					destination: './uploads',
-					filename: 'postImage-1714952919699-277959186-stars.jpg',
-					path: 'uploads/postImage-1714952919699-277959186-stars.jpg',
-					size: 3039415
-				}
-				fullKey
-				/images/images/postImage-1714952919699-277959186-stars.jpg
-				fileExtension
-				jpeg
-			AWS
-
-			newFile = {
-				type: "local | aws",
-				file: file,
-				result: result
-			}
-			*/
-
-		
-			////
-
-
-			/*
-			newFile = {
-				type: "local | aws",
-				file: file,
-				result: result
-			}
-			*/
-
-			let newPostOutcome = await Post.createPostPhoto(req, file);
+	
+			//STEP 3: Add Post to Database
+			let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 			postOutcome.data = newPostOutcome.newPost;
 			postOutcome.message = "Your photo was posted!"
 			postOutcome.statusCode = 200
 			postOutcome.success = true
 	
-			//STEP 3: Add the Notifications
+			//STEP 4: Add the Notifications
 			if(newPostOutcome.outcome == 200) {
 				var notification = {}
 				const groupUsersOutcome = await Group.getGroupUsers(groupID);
@@ -1076,3 +1056,93 @@ app.get('/sam/images/:key', (req, res) => {
 })
 
 */
+
+
+			/*
+			AWS
+				result
+				{
+					ETag: '"6e30f517fa86d50c8abd8e5579866be1"',
+					ServerSideEncryption: 'AES256',
+					Location: 'https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1714952919699-277959186-stars.jpg',
+					key: 'images/postImage-1714952919699-277959186-stars.jpg',
+					Key: 'images/postImage-1714952919699-277959186-stars.jpg',
+					Bucket: 'insta-app-bucket-tutorial'
+				}
+				file
+				{
+					fieldname: 'postImage',
+					originalname: 'stars.jpg',
+					encoding: '7bit',
+					mimetype: 'image/jpeg',
+					destination: './uploads',
+					filename: 'postImage-1714952919699-277959186-stars.jpg',
+					path: 'uploads/postImage-1714952919699-277959186-stars.jpg',
+					size: 3039415
+				}
+				fullKey
+				/images/images/postImage-1714952919699-277959186-stars.jpg
+				fileExtension
+				jpeg
+			AWS
+
+			newFile = {
+				type: "local | aws",
+				file: file,
+				result: result
+			}
+			*/
+
+
+
+
+
+			//AWS
+			/*
+			result
+{
+  ETag: '"6e30f517fa86d50c8abd8e5579866be1"',
+  ServerSideEncryption: 'AES256',
+  Location: 'https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1715552334522-432267929-stars.jpg',
+  key: 'images/postImage-1715552334522-432267929-stars.jpg',
+  Key: 'images/postImage-1715552334522-432267929-stars.jpg',
+  Bucket: 'insta-app-bucket-tutorial'
+}
+file
+{
+  fieldname: 'postImage',
+  originalname: 'stars.jpg',
+  encoding: '7bit',
+  mimetype: 'image/jpeg',
+  destination: './uploads',
+  filename: 'postImage-1715552334522-432267929-stars.jpg',
+  path: 'uploads/postImage-1715552334522-432267929-stars.jpg',
+  size: 3039415
+}
+fullKey
+/images/images/postImage-1715552334522-432267929-stars.jpg
+fileExtension
+jpeg
+AWS
+You created a new Post with ID 592
+CLASS GROUP 70
+STEP 3: Add notifications
+{
+  masterSite: 'kite',
+  notificationFrom: 'davey',
+  notificationMessage: 'Posted a Photo',
+  notificationTo: [ 'sam', 'davey', 'frodo' ],
+  notificationLink: 'http://localhost:3003/posts/group/77',
+  notificationType: 'new_post_photo',
+  groupID: '70',
+  postID: 592
+}
+			*/
+
+			/*
+			newFile = {
+				type: "local | aws",
+				file: file,
+				result: result
+			}
+			*/

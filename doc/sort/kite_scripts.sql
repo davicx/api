@@ -1,5 +1,24 @@
 USE shareshare;
 
+
+
+#POSTS
+SELECT * FROM posts WHERE group_id = 70;
+
+#SELECT * FROM posts WHERE group_id = 70
+#SELECT @@global.time_zone
+#SELECT NOW()
+
+#DELETE FROM posts WHERE post_id > 100
+
+#ALTER TABLE posts ADD cloud_key varchar(255) DEFAULT 'no_cloud_key';
+#ALTER TABLE posts ADD storage_type varchar(255) DEFAULT 'local';
+
+
+#const location = result.location; // cloud_location File URL
+#const bucket = result.bucket; // cloud_bucket AWS Bucket 
+#const storageLocation = "aws"; //storage_type
+            
 #UPDATE friends SET friend_user_name = "matt" WHERE sent_by = "matt"
 
 #DELETE FROM friends WHERE request_pending = 1
@@ -15,6 +34,11 @@ USE shareshare;
 #DELETE FROM posts
 #SELECT * FROM posts;
 #SELECT * FROM comments;
+
+
+#UPDATE group_users SET active_member = 1
+#UPDATE friends SET request_pending = 0 
+#SELECT * FROM friends WHERE user_name = "davey"
 
 
 #GROUPS
@@ -54,18 +78,6 @@ USE shareshare;
 #DELETE FROM group_users WHERE group_id > 100
 
 
-#POSTS
-#SELECT * FROM posts WHERE group_id = 70;
-
-#SELECT * FROM posts WHERE group_id = 70
-#SELECT @@global.time_zone
-#SELECT NOW()
-
-#DELETE FROM posts WHERE post_id > 100
-
-#UPDATE group_users SET active_member = 1
-#UPDATE friends SET request_pending = 0 
-#SELECT * FROM friends WHERE user_name = "davey"
 
 
 #DELETE FROM friends WHERE user_name = "bilbo" AND friend_user_name = "bilbo" 
