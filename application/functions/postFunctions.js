@@ -13,6 +13,7 @@ const Functions = require('./functions');
 /*
  
 FUNCTIONS A: All Functions Related to getting Posts
+NEW compare friends
 	1) Function A1: Get Group Posts
 	2) Function A2: Get all Group Posts
 	3) Function A3: Get User Posts

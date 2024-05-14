@@ -1,5 +1,6 @@
 const db = require('./conn');
 const userFunctions = require('./userFunctions');
+const functions = require('./functions');
 const Friend = require('./classes/Friend');
 const Requests = require('./classes/Requests');
 const Notifications = require('./classes/Notification');
@@ -270,7 +271,13 @@ async function getPendingFriendInvites(currentUser) {
 }
 
 //Function A6: Check if Users are Friends (Used for adding a friend)
+//NEEDS FIX
 async function checkFriendshipStatus(currentUser, userFriend) {
+    //TYPE 1: You are Currently Friends - "friends"
+    //TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+    //TYPE 3: Friendship Request Pending (them) - "request_pending"
+    //TYPE 4: Not Friends - "not_friends"
+    //TYPE 5: This is you - "you"
     //Status
     /*
     1: Currently Friends
@@ -294,25 +301,33 @@ async function checkFriendshipStatus(currentUser, userFriend) {
 		errors: []
     }
 
-
 	return new Promise(async function(resolve, reject) {
         try {
             
             const queryString = "SELECT * FROM friends WHERE friend_key = ? OR friend_key = ?"			
             
             connection.query(queryString, [friendKey, friendKeyTwo], (err, rows) => {
-                if (!err) {           
+                if (!err) {  
+                    
+                    //Determine friendship status
+                    console.log(rows[0].sent_by)
                     if(rows.length >= 1){
                         if(rows[0].request_pending > 0) {
-                            friendshipOutcome.friendshipStatus = 2
+                            if(functions.compareStrings(currentUser,rows[0].sent_by) == true){
+                                friendshipOutcome.friendshipStatus = "invite_pending"
+                            } else {
+                                friendshipOutcome.friendshipStatus = "request_pending"
+                            }
                         } else {
-                            friendshipOutcome.friendshipStatus = 1
+                            //friendshipOutcome.friendshipStatus = 1
+                            friendshipOutcome.friendshipStatus = "friends"
                         }
 
                     } else {
-                        friendshipOutcome.friendshipStatus = 3
-						//friendshipOutcome.errors.push("We couldn't find anything " + requestID);
+                        friendshipOutcome.friendshipStatus = "not_friends"
 					}
+
+
                     resolve(friendshipOutcome); 
                 } else {
                     friendshipOutcome.errors.push(err)
@@ -335,9 +350,7 @@ async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirF
     //TYPE 3: Friendship Request Pending (them) - "request_pending"
     //TYPE 4: Not Friends - "not_friends"
     //TYPE 5: This is you - "you"
-
-    var currentUser = currentUser.toLowerCase();
-
+    
     //STEP 1: Create a Set of your friends
 	var yourFriendsSet = new Set();
 
@@ -418,54 +431,7 @@ function getFriendStatus(currentUser, friendName, yourFriendsArray) {
 
 }
 
-//Function B4: Remove a Friend 
-async function removeFriend(currentUser, friendName) {
-    //const connection = db.getConnection(); 
-    requestType = "friend_request"
-    var removeFriendOutcome = {}
-
-    //STEP 1: Remove both friendships
-    let friendRemoveOne = await Friend.deleteFriend(currentUser, friendName)
-    let friendRemoveTwo = await Friend.deleteFriend(friendName, currentUser)
-
-    //STEP 2: Remove any Requests
-    let removeRequest = await Requests.deleteSingleRequest(requestType, currentUser, friendName);
-
-    //STEP 3: Remove any Notifications
-    let removeNotificationRequest = await Notifications.deleteNotification(requestType, currentUser, friendName);
-
-    removeFriendOutcome.friendRemoveOne = friendRemoveOne;
-    removeFriendOutcome.friendRemoveTwo = friendRemoveTwo;
-    removeFriendOutcome.removeRequest = removeRequest;
-    removeFriendOutcome.removeNotificationRequest = removeNotificationRequest;
-
-    return removeFriendOutcome;
-
-
-}
-
-//Function B5: Decline Friend Request
-async function declineFriendRequest(currentUser, friendName) {
-    requestType = "friend_request"
-    var removeFriendOutcome = {}
-
-    //STEP 1: Remove both friendships
-    let friendRemoveOne = await Friend.deleteFriend(currentUser, friendName)
-    let friendRemoveTwo = await Friend.deleteFriend(friendName, currentUser)
-
-    //STEP 2: Remove any Requests
-    let removeRequest = await Requests.deleteSingleRequest(requestType, friendName, currentUser);
-
-    removeFriendOutcome.friendRemoveOne = friendRemoveOne;
-    removeFriendOutcome.friendRemoveTwo = friendRemoveTwo;
-    removeFriendOutcome.removeRequest = removeRequest;
-
-    return removeFriendOutcome;
-
-
-}
-
-//Function B6: Get Friendship Key
+//Function B4: Get Friendship Key
 function getFriendshipKey(currentUser, requestSentBy, requestPending, friendName) {
     var friendKey = "not_friends"
     //TYPE 1: You are Currently Friends - "friends"
@@ -499,6 +465,54 @@ function getFriendshipKey(currentUser, requestSentBy, requestPending, friendName
     } 
 
     return friendKey;
+
+
+}
+
+
+//Function B5: Remove a Friend 
+async function removeFriend(currentUser, friendName) {
+    //const connection = db.getConnection(); 
+    requestType = "friend_request"
+    var removeFriendOutcome = {}
+
+    //STEP 1: Remove both friendships
+    let friendRemoveOne = await Friend.deleteFriend(currentUser, friendName)
+    let friendRemoveTwo = await Friend.deleteFriend(friendName, currentUser)
+
+    //STEP 2: Remove any Requests
+    let removeRequest = await Requests.deleteSingleRequest(requestType, currentUser, friendName);
+
+    //STEP 3: Remove any Notifications
+    let removeNotificationRequest = await Notifications.deleteNotification(requestType, currentUser, friendName);
+
+    removeFriendOutcome.friendRemoveOne = friendRemoveOne;
+    removeFriendOutcome.friendRemoveTwo = friendRemoveTwo;
+    removeFriendOutcome.removeRequest = removeRequest;
+    removeFriendOutcome.removeNotificationRequest = removeNotificationRequest;
+
+    return removeFriendOutcome;
+
+
+}
+
+//Function B6: Decline Friend Request
+async function declineFriendRequest(currentUser, friendName) {
+    requestType = "friend_request"
+    var removeFriendOutcome = {}
+
+    //STEP 1: Remove both friendships
+    let friendRemoveOne = await Friend.deleteFriend(currentUser, friendName)
+    let friendRemoveTwo = await Friend.deleteFriend(friendName, currentUser)
+
+    //STEP 2: Remove any Requests
+    let removeRequest = await Requests.deleteSingleRequest(requestType, friendName, currentUser);
+
+    removeFriendOutcome.friendRemoveOne = friendRemoveOne;
+    removeFriendOutcome.friendRemoveTwo = friendRemoveTwo;
+    removeFriendOutcome.removeRequest = removeRequest;
+
+    return removeFriendOutcome;
 
 
 }

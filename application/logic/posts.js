@@ -261,17 +261,19 @@ async function postPhotoLocal(req, res) {
 		uploadFile.fileMimetype = file.mimetype; 
 		uploadFile.originalname = file.originalname; //file_name
 		uploadFile.fileNameServer = file.filename; //file_name_server
-		uploadFile.storageType = "aws"; //storage_type
-
-		//Uncomment for Local 
-		uploadFile.fileURL = file.path; //file_url
-		uploadFile.cloudKey = file.path; //cloud_key
-		uploadFile.bucket = file.destination; //cloud_bucket	
 		
-		//Comment for Cloud
+
+		//Settings: Local 
+		uploadFile.fileURL = file.path; //file_url
+		uploadFile.cloudKey = "local_cloud_key"; //cloud_key
+		uploadFile.bucket = "local_bucket"; //cloud_bucket	
+		uploadFile.storageType = "local"; //storage_type
+		
+		//Settings: Cloud
 		//uploadFile.fileURL = result.Location; // file_url
 		//uploadFile.cloudKey = result.Key; //cloud_key 
-		//uploadFile.bucket = result.Bucket; // cloud_bucket 			
+		//uploadFile.bucket = result.Bucket; // cloud_bucket 	
+		//uploadFile.storageType = "aws"; //storage_type		
 
 
 		let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
@@ -311,7 +313,6 @@ async function postPhotoLocal(req, res) {
 				}
 			}
 		}
-	
 	}
 
     res.json(postOutcome)
@@ -378,17 +379,19 @@ async function postPhotoLocalAWS(req, res) {
 			uploadFile.fileMimetype = file.mimetype; 
 			uploadFile.originalname = file.originalname; //file_name
 			uploadFile.fileNameServer = file.filename; //file_name_server
-			uploadFile.storageType = "aws"; //storage_type
+			
 
-			//Uncomment for Local 
+			//Settings: Local 
 			//uploadFile.fileURL = file.path; //file_url
 			//uploadFile.cloudKey = file.path; //cloud_key
 			//uploadFile.bucket = file.destination; //cloud_bucket	
+			//uploadFile.storageType = "aws"; //storage_type
 			
-			//Comment for Cloud
+			//Settings: Cloud
 			uploadFile.fileURL = result.Location; // file_url
 			uploadFile.cloudKey = result.Key; //cloud_key 
-			uploadFile.bucket = result.Bucket; // cloud_bucket 			
+			uploadFile.bucket = result.Bucket; // cloud_bucket 	
+			uploadFile.storageType = "aws"; //storage_type		
 
 			console.log("result")
 			console.log(result)
@@ -507,7 +510,9 @@ async function getAllGroupPosts(req, res) {
     const groupID = req.params.group_id;
 	const currentUser = req.currentUser
 
-	console.log("CURRENT USER: This is from the middleware " + currentUser)
+	let friendshipStatus = await friendFunctions.checkFriendshipStatus(currentUser,"frodo");
+	console.log(friendshipStatus)
+
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await PostFunctions.getGroupPostsAll(groupID)
@@ -517,7 +522,7 @@ async function getAllGroupPosts(req, res) {
 	//Step 2A: Get All Comments for these Posts 
 	for (let i = 0; i < posts.length; i++) {
 		let postID = posts[i].postID	
-		console.log("Get Comments for " + postID)
+		//console.log("Get Comments for " + postID)
 
 		var commentsOutcome = await Comment.getPostComments(postID)
 
@@ -537,7 +542,6 @@ async function getAllGroupPosts(req, res) {
 	
 
 	//STEP 3: Get all Likes for these Posts 
-	//getPostLikes()
 	for (let i = 0; i < posts.length; i++) {
 		let simpleLikesArray = []
 		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
@@ -553,7 +557,7 @@ async function getAllGroupPosts(req, res) {
 	}
 	var postResponse = {
 		posts: posts,
-		postCount: "get me 10 and add both "
+		postCount: posts.length
 	}
 
 	var postsResponse = {
@@ -572,6 +576,9 @@ async function getAllGroupPosts(req, res) {
 //Route B2: Get Group Posts Pagination
 //http://localhost:3003/posts/group/72/page/1/
 async function getGroupPosts(req, res) {
+
+	//FRIENDSHIP compare is in friendFunctions!!
+
 	//THE ABOVE HAS COMMENTS TOO!!
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
@@ -579,6 +586,8 @@ async function getGroupPosts(req, res) {
 	const currentUser = req.authorizationData.currentUser;
 	
 	//STEP 1: Get All Posts
+	//TO DO 
+	//Move PostFunctions.getGroupPosts to Class 
 	var postsOutcome = await PostFunctions.getGroupPosts(groupID, currentPage)
 	var posts = postsOutcome.posts;
 

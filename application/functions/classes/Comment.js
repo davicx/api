@@ -55,8 +55,7 @@ class Comment {
     static async getPostComments(postID)  {
         const connection = db.getConnection(); 
         var commentsArray = []
-        console.log("getPostComments")
-    
+
         const queryString = "SELECT comments.comment_id, comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
         var commentsOutcome = {
             success: false,

@@ -9,7 +9,7 @@ class Post {
         this.postCaption = "";
     }
     
-    //METHODS A: POST RELATED
+    //METHODS A: CREATE POST RELATED
     //Method A1: Make a Text Post
     static async createPostText(req)  {
         const connection = db.getConnection(); 
@@ -111,10 +111,7 @@ class Post {
         const cloudKey = uploadFile.cloudKey;
         const fileStorageType = uploadFile.storageType; //local | aws | other
         const bucket = uploadFile.bucket;
-
-        console.log("POST: uploadFile");
-        console.log(uploadFile);
-        
+ 
         var createdPost = {
             postID: 0,
             postType: postType,
@@ -147,9 +144,9 @@ class Post {
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption, file_name, file_name_server, file_url, cloud_key, cloud_bucket) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption, file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     
-                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, fileNameServer, fileURL, cloudKey, bucket], (err, results, fields) => {
+                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, fileNameServer, fileURL, cloudKey, bucket, fileStorageType], (err, results, fields) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
                         postOutcome.postID = results.insertId; 

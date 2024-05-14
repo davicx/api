@@ -3,7 +3,7 @@ USE shareshare;
 
 
 #POSTS
-SELECT * FROM posts WHERE group_id = 70;
+#SELECT * FROM posts WHERE group_id = 70;
 
 #SELECT * FROM posts WHERE group_id = 70
 #SELECT @@global.time_zone
@@ -18,8 +18,10 @@ SELECT * FROM posts WHERE group_id = 70;
 #const location = result.location; // cloud_location File URL
 #const bucket = result.bucket; // cloud_bucket AWS Bucket 
 #const storageLocation = "aws"; //storage_type
-            
-#UPDATE friends SET friend_user_name = "matt" WHERE sent_by = "matt"
+  
+#Friends
+SELECT * FROM friends WHERE friend_key = "daveyfrodo" OR friend_key = "frododavey"
+#UPDATE friends SET request_pending = 1 WHERE friend_key = "daveyfrodo" OR friend_key = "frododavey"
 
 #DELETE FROM friends WHERE request_pending = 1
 #SELECT * FROM pending_requests 
