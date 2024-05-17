@@ -20,8 +20,8 @@ USE shareshare;
 #const storageLocation = "aws"; //storage_type
   
 #Friends
-SELECT * FROM friends WHERE friend_key = "daveyfrodo" OR friend_key = "frododavey"
-#UPDATE friends SET request_pending = 1 WHERE friend_key = "daveyfrodo" OR friend_key = "frododavey"
+#SELECT * FROM friends WHERE friend_key = "daveyfrodo" OR friend_key = "frododavey"
+#UPDATE friends SET request_pending = 0 WHERE friend_key = "daveyfrodo" OR friend_key = "frododavey"
 
 #DELETE FROM friends WHERE request_pending = 1
 #SELECT * FROM pending_requests 

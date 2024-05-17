@@ -4,10 +4,13 @@ var relativeTime = require('dayjs/plugin/relativeTime')
 dayjs.extend(relativeTime)
 dayjs().format()
 const Group = require('./classes/Group');
+const Comment = require('./classes/Comment')
 const Post = require('./classes/Post');
 //const Notification = require('./classes/Notification')
 //const Requests = require('./classes/Requests');
+//const Requests = require('./classes/Requests');
 const Functions = require('./functions');
+const friendFunctions = require('./friendFunctions');
 
 
 /*
@@ -19,6 +22,7 @@ NEW compare friends
 	3) Function A3: Get User Posts
 	4) Function A4: Get all Posts
 	5) Function A5: Get all Post Likes 
+	6) Function A5: Get Post Comments
 
 FUNCTIONS B: All Post Helper Functions	
 	1) Function B1: Get count of posts in Group
@@ -306,6 +310,35 @@ async function getPostLikes(postID)  {
     })
 }
 
+//Function A6: Get Post Comments
+async function addPostComments(currentUser, posts)  {
+
+	for (let i = 0; i < posts.length; i++) {
+		let postID = posts[i].postID	
+		//console.log("Get Comments for " + postID)
+
+		var commentsOutcome = await Comment.getPostComments(postID)
+
+		//Step 2B: Get all the likes for these comments
+		if(commentsOutcome.success == true) {
+			var comments = commentsOutcome.comments;
+
+			for (let i = 0; i < comments.length; i++) {
+				let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
+				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, comments[i].commentFrom);
+				comments[i].friendshipStatus = friendshipCheck.friendshipStatus;
+				comments[i].commentLikes = currentCommentLikes.commentLikes;
+				comments[i].commentLikeCount = currentCommentLikes.commentLikes.length;
+			}
+
+		} 
+
+		posts[i].commentsArray = comments;
+	}
+
+    return posts;
+}
+
 //FUNCTIONS B: All Post Helper Functions	
 //Function B1: Get count of posts in Group
 async function getGroupPostCount(groupID)  {
@@ -448,4 +481,4 @@ async function getPostCreated(postID)  {
 }
 
 
-module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, checkPostExists, getPostCreated }
+module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, addPostComments, checkPostExists, getPostCreated }

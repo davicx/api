@@ -287,9 +287,6 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     */ 
     var friendKey = currentUser + "" + userFriend;
     var friendKeyTwo = userFriend + "" + currentUser;
-
-    console.log(friendKey)
-    console.log(friendKeyTwo)
    
     //var friendKey = "vasquezdmatt";
     //var friendKeyTwo = "vasquezdmat";
@@ -303,16 +300,15 @@ async function checkFriendshipStatus(currentUser, userFriend) {
 
 	return new Promise(async function(resolve, reject) {
         try {
-            
             const queryString = "SELECT * FROM friends WHERE friend_key = ? OR friend_key = ?"			
             
             connection.query(queryString, [friendKey, friendKeyTwo], (err, rows) => {
                 if (!err) {  
                     
                     //Determine friendship status
-                    console.log(rows[0].sent_by)
                     if(rows.length >= 1){
                         if(rows[0].request_pending > 0) {
+                            //A Request or an Invite is Pending
                             if(functions.compareStrings(currentUser,rows[0].sent_by) == true){
                                 friendshipOutcome.friendshipStatus = "invite_pending"
                             } else {
@@ -323,11 +319,16 @@ async function checkFriendshipStatus(currentUser, userFriend) {
                             friendshipOutcome.friendshipStatus = "friends"
                         }
 
+                    //No friendship found in database
                     } else {
                         friendshipOutcome.friendshipStatus = "not_friends"
 					}
 
-
+                    //Check if this is you
+                    if(functions.compareStrings(currentUser,userFriend) == true){
+                        friendshipOutcome.friendshipStatus = "you"
+                    }
+                
                     resolve(friendshipOutcome); 
                 } else {
                     friendshipOutcome.errors.push(err)

@@ -1,4 +1,5 @@
 const db = require('./../conn');
+const timeFunctions = require('../timeFunctions');
 
 class Comment {
     constructor(commentID) {
@@ -74,22 +75,19 @@ class Comment {
                                 postID: row.post_id,
                                 commentCaption: row.comment,
                                 commentFrom: row.comment_from,
-                                commentType: row.comment_type,	
+                                commentType: "post",	
                                 userName: row.user_name,	
                                 imageName: row.image_name,	
                                 firstName: row.first_name,	
                                 lastName: row.last_name,	
+                                commentDate: timeFunctions.formatTimestamp(row.created).date,
+                                commentTime: timeFunctions.formatTimestamp(row.created).time,
+                                timeMessage: timeFunctions.formatTimestamp(row.created).timeMessage,
                                 commentLikes: [],
                                 created: row.created
                             }
                         });
 
-                        /*
-                        "commentLikes": [],
-                        "commentDate": "11/18/2023",
-                        "commentTime": "3:32 pm",
-                        */
-                        
                         commentsOutcome.success = true;
                         commentsOutcome.comments = commentsArray;
                         

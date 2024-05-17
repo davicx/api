@@ -48,7 +48,7 @@ function formatTimestamp(timestamp) {
     if(hour > 12) {
         hour = hour - 12
     }
-    let time = hour + ":0" + minutes + " pm"
+    let time = hour + ":" + minutes + " pm"
 
     //Get a Message to Display 
     let timeMessage = dayjs(timestamp).fromNow()

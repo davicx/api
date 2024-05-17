@@ -510,42 +510,32 @@ async function getAllGroupPosts(req, res) {
     const groupID = req.params.group_id;
 	const currentUser = req.currentUser
 
-	let friendshipStatus = await friendFunctions.checkFriendshipStatus(currentUser,"frodo");
-	console.log(friendshipStatus)
-
+	console.log("CALLED: getAllGroupPosts")
 
 	//STEP 1: Get All Posts
+	//Move to Class
 	var postsOutcome = await PostFunctions.getGroupPostsAll(groupID)
-	var posts = postsOutcome.posts;
+	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
-	//Step 2A: Get All Comments for these Posts 
-	for (let i = 0; i < posts.length; i++) {
-		let postID = posts[i].postID	
-		//console.log("Get Comments for " + postID)
-
-		var commentsOutcome = await Comment.getPostComments(postID)
-
-		//Step 2B: Get all the likes for these comments
-		if(commentsOutcome.success == true) {
-			var comments = commentsOutcome.comments;
-
-			for (let i = 0; i < comments.length; i++) {
-				let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
-				comments[i].commentLikes = currentCommentLikes.commentLikes;
-				comments[i].commentLikeCount = currentCommentLikes.commentLikes.length
-			}
-		} 
-
-		posts[i].commentsArray = comments;
-	}
-	
+	var posts = await PostFunctions.addPostComments(currentUser, postsRaw)
 
 	//STEP 3: Get all Likes for these Posts 
+	//var posts = await PostFunctions.addPostComments(currentUser, postsComments)
 	for (let i = 0; i < posts.length; i++) {
 		let simpleLikesArray = []
 		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
 		posts[i].postLikesArray = currentPostLikes.postLikes;
+		
+		//TO DO: Lots of Database calls
+		//Get Friendship status for each like
+		if(posts[i].postLikesArray.length > 0) {
+			for (let j = 0; j < posts[i].postLikesArray.length; j++) {
+				currentLikeUserName = posts[i].postLikesArray[j].likedByUserName
+				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, currentLikeUserName);
+				posts[i].postLikesArray[j].friendshipStatus = friendshipCheck.friendshipStatus;
+			}
+		}
 
 		//Create an Array of just post user names
 		posts[i].postLikesArray.map((postLike) => (
