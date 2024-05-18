@@ -22,7 +22,8 @@ NEW compare friends
 	3) Function A3: Get User Posts
 	4) Function A4: Get all Posts
 	5) Function A5: Get all Post Likes 
-	6) Function A5: Get Post Comments
+	6) Function A6: Get Post Comments
+	7) Function A7: Get Post Comments
 
 FUNCTIONS B: All Post Helper Functions	
 	1) Function B1: Get count of posts in Group
@@ -310,7 +311,7 @@ async function getPostLikes(postID)  {
     })
 }
 
-//Function A6: Get Post Comments
+//Function A6: Add Post Comments to an Array of Posts
 async function addPostComments(currentUser, posts)  {
 
 	for (let i = 0; i < posts.length; i++) {
@@ -334,6 +335,37 @@ async function addPostComments(currentUser, posts)  {
 		} 
 
 		posts[i].commentsArray = comments;
+	}
+
+    return posts;
+}
+
+//Function A6: Add Post Likes to an Array of Posts
+async function addPostLikes(currentUser, posts)  {
+
+	//var posts = await PostFunctions.addPostComments(currentUser, postsComments)
+	for (let i = 0; i < posts.length; i++) {
+		let simpleLikesArray = []
+		var currentPostLikes = await getPostLikes(posts[i].postID) 
+		posts[i].postLikesArray = currentPostLikes.postLikes;
+		
+		//TO DO: Lots of Database calls
+		//Get Friendship status for each like
+		if(posts[i].postLikesArray.length > 0) {
+			for (let j = 0; j < posts[i].postLikesArray.length; j++) {
+				currentLikeUserName = posts[i].postLikesArray[j].likedByUserName
+				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, currentLikeUserName);
+				posts[i].postLikesArray[j].friendshipStatus = friendshipCheck.friendshipStatus;
+			}
+		}
+
+		//Create an Array of just post user names
+		posts[i].postLikesArray.map((postLike) => (
+			simpleLikesArray.push(postLike.likedByUserName)
+		))
+
+		posts[i].simpleLikesArray = simpleLikesArray;
+
 	}
 
     return posts;
@@ -481,4 +513,4 @@ async function getPostCreated(postID)  {
 }
 
 
-module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, addPostComments, checkPostExists, getPostCreated }
+module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, addPostComments, addPostLikes, checkPostExists, getPostCreated }

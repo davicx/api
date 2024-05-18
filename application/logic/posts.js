@@ -518,33 +518,11 @@ async function getAllGroupPosts(req, res) {
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
-	var posts = await PostFunctions.addPostComments(currentUser, postsRaw)
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
 
-	//STEP 3: Get all Likes for these Posts 
-	//var posts = await PostFunctions.addPostComments(currentUser, postsComments)
-	for (let i = 0; i < posts.length; i++) {
-		let simpleLikesArray = []
-		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
-		posts[i].postLikesArray = currentPostLikes.postLikes;
-		
-		//TO DO: Lots of Database calls
-		//Get Friendship status for each like
-		if(posts[i].postLikesArray.length > 0) {
-			for (let j = 0; j < posts[i].postLikesArray.length; j++) {
-				currentLikeUserName = posts[i].postLikesArray[j].likedByUserName
-				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, currentLikeUserName);
-				posts[i].postLikesArray[j].friendshipStatus = friendshipCheck.friendshipStatus;
-			}
-		}
+	//STEP 3: Get all Likes for these Posts
+	var posts = await PostFunctions.addPostLikes(currentUser, postsComments)
 
-		//Create an Array of just post user names
-		posts[i].postLikesArray.map((postLike) => (
-			simpleLikesArray.push(postLike.likedByUserName)
-		))
-
-		posts[i].simpleLikesArray = simpleLikesArray;
-
-	}
 	var postResponse = {
 		posts: posts,
 		postCount: posts.length
@@ -566,91 +544,36 @@ async function getAllGroupPosts(req, res) {
 //Route B2: Get Group Posts Pagination
 //http://localhost:3003/posts/group/72/page/1/
 async function getGroupPosts(req, res) {
-
-	//FRIENDSHIP compare is in friendFunctions!!
-
-	//THE ABOVE HAS COMMENTS TOO!!
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
 	const currentPage = req.params.page;
 	const currentUser = req.authorizationData.currentUser;
 	
 	//STEP 1: Get All Posts
-	//TO DO 
-	//Move PostFunctions.getGroupPosts to Class 
 	var postsOutcome = await PostFunctions.getGroupPosts(groupID, currentPage)
-	var posts = postsOutcome.posts;
+	var postsRaw = postsOutcome.posts;
 
-	//STEP 2: Add Post Likes 
-	for (let i = 0; i < posts.length; i++) {
-		let simpleLikesArray = []
-		var currentPostLikes = await PostFunctions.getPostLikes(posts[i].postID) 
-		
-		posts[i].postLikesArray = currentPostLikes.postLikes;
+	//STEP 2: Get All Comments for these Posts 
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
 
-		//ADD FRIENDSHIP STATUS TO A USER LIKE Pass into SOMETHING LIKE THIS
-		//Step 2A: Get your friends 
-		var yourFriendsOutcome = await friendFunctions.getAllUserFriends(currentUser)
-		var yourFriendsArray = yourFriendsOutcome.friendsArray;
-		console.log(currentPostLikes)
-		console.log(yourFriendsArray)
-		/*
-		async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirFriendsArray) {
-			//TYPE 1: You are Currently Friends - "friends"
-			//TYPE 2: Friendship Invite Pending (you) - "invite_pending"
-			//TYPE 3: Friendship Request Pending (them) - "request_pending"
-			//TYPE 4: Not Friends - "not_friends"
-			//TYPE 5: This is you - "you"
+	//STEP 3: Get all Likes for these Posts
+	var posts = await PostFunctions.addPostLikes(currentUser, postsComments)
 
-			var currentUser = currentUser.toLowerCase();
-
-			//STEP 1: Create a Set of your friends
-			var yourFriendsSet = new Set();
-
-			for (let i = 0; i < yourFriendsArray.length ; i++) {
-				//console.log(yourFriendsArray[i].userName)
-				yourFriendsSet.add(yourFriendsArray[i].friendName.toLowerCase())
-			}	
-
-			//STEP 2: Check this set for friend Matches
-			for (let i = 0; i < theirFriendsArray.length ; i++) {
-				let tempUser = theirFriendsArray[i].friendName.toLowerCase();
-
-				//This will find friend overlap
-				if(yourFriendsSet.has(tempUser) || currentUser.localeCompare(tempUser) == 0) { 
-					theirFriendsArray[i].alsoYourFriend = 1;
-					//theirFriendsArray[i].friendshipKey = "friends";
-					console.log("Trying to find friendship status for " + currentUser + " with the user " + tempUser)
-					let friendStatus = getFriendStatus(currentUser, tempUser, yourFriendsArray)
-					theirFriendsArray[i].friendshipKey = friendStatus;
-					console.log(friendStatus)
-
-				} else {
-					theirFriendsArray[i].alsoYourFriend = 0;
-					theirFriendsArray[i].friendshipKey = "not_friends";
-				}
-				
-			}
-
-			return theirFriendsArray;
-		}
-
-		*/
-
-		//Create an Array of just post user names
-		posts[i].postLikesArray.map((postLike) => (
-			simpleLikesArray.push(postLike.likedByUserName)
-		))
-
-		posts[i].simpleLikesArray = simpleLikesArray;
-
+	var postResponse = {
+		posts: posts,
+		postCount: posts.length
 	}
 
-	//STEP 3: Add Post Comments 
-	//THE ABOVE HAS COMMENTS TOO!!
-	//console.log(postsOutcome);
+	var postsResponse = {
+		data: postResponse,
+		message: "Need to add error and stuff in this always works!", 
+		success: true,
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
 
-	res.json(posts)
+	res.json(postsResponse)
 
 }
 
