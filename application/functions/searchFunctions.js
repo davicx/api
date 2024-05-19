@@ -19,8 +19,8 @@ FUNCTIONS A: All Functions Related to Search
 async function searchActiveFriendList(currentUser, searchStringRaw) {
     const connection = db.getConnection(); 
     let searchString = searchStringRaw + "%";
-    console.log(currentUser)
-    console.log(searchString)
+    //console.log(currentUser)
+    //console.log(searchString)
 
     var activeFriendsListOutcome = {
         success: false,
@@ -32,7 +32,7 @@ async function searchActiveFriendList(currentUser, searchStringRaw) {
             const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND friends.friend_user_name LIKE ?";
             //const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0";
             connection.query(queryString, [currentUser, searchString], (err, rows) => {
-                console.log(rows)
+                //console.log(rows)
                 var friendsArray = []
              
                 for (let i = 0; i < rows.length; i++) {

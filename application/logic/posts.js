@@ -197,7 +197,6 @@ async function postPhoto(req, res) {
 				}
 			}
 		}
-	
 	}
 
     res.json(postOutcome)
@@ -510,11 +509,9 @@ async function getAllGroupPosts(req, res) {
     const groupID = req.params.group_id;
 	const currentUser = req.currentUser
 
-	console.log("CALLED: getAllGroupPosts")
-
 	//STEP 1: Get All Posts
 	//Move to Class
-	var postsOutcome = await PostFunctions.getGroupPostsAll(groupID)
+	var postsOutcome = await Post.getGroupPostsAll(groupID)
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
@@ -523,13 +520,8 @@ async function getAllGroupPosts(req, res) {
 	//STEP 3: Get all Likes for these Posts
 	var posts = await PostFunctions.addPostLikes(currentUser, postsComments)
 
-	var postResponse = {
-		posts: posts,
-		postCount: posts.length
-	}
-
 	var postsResponse = {
-		data: postResponse,
+		data: posts,
 		message: "Need to add error and stuff in this always works!", 
 		success: true,
 		statusCode: 200,
@@ -550,7 +542,9 @@ async function getGroupPosts(req, res) {
 	const currentUser = req.authorizationData.currentUser;
 	
 	//STEP 1: Get All Posts
-	var postsOutcome = await PostFunctions.getGroupPosts(groupID, currentPage)
+	var postsCountOutcome = await PostFunctions.getGroupPostCount(groupID)
+	console.log(postsCountOutcome)
+	var postsOutcome = await Post.getGroupPosts(groupID, currentPage, postsCountOutcome.groupPostCount)
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
@@ -559,13 +553,19 @@ async function getGroupPosts(req, res) {
 	//STEP 3: Get all Likes for these Posts
 	var posts = await PostFunctions.addPostLikes(currentUser, postsComments)
 
-	var postResponse = {
+	//STEP 4: Get Count of All Posts
+	var groupPostCountOutcome = await PostFunctions.getGroupPostCount(groupID) 
+
+	var postData = {
 		posts: posts,
-		postCount: posts.length
+		postCount: groupPostCountOutcome.groupPostCount,
+		currentPage: parseInt(currentPage),
+		nextPage: parseInt(currentPage) + 1,
+		previousPage: parseInt(currentPage) - 1
 	}
 
 	var postsResponse = {
-		data: postResponse,
+		data: postData,
 		message: "Need to add error and stuff in this always works!", 
 		success: true,
 		statusCode: 200,
@@ -607,42 +607,34 @@ async function getAllUserPosts(req, res) {
 }
 
 //Function B3: Get Single Post by ID 
-function getSinglePost(req, res) {
+async function getSinglePost(req, res) {
 	const connection = db.getConnection(); 
     const postID = req.params.post_id;
-    const queryString = "SELECT * FROM posts WHERE post_id = ?";
+	const currentUser = req.currentUser
 
-    connection.query(queryString, [postID], (err, rows) => {
-        if (!err) {
-			const posts = rows.map((row) => {
-				return {
-					postID: row.post_id,
-					postType: row.post_type,
-					groupID: row.group_id,
-					listID: row.list_id,
-					postFrom: row.post_from,
-					postTo: row.post_to,
-					postCaption: row.post_caption,
-					fileName: row.file_name,
-					fileNameServer: row.file_name_server,
-					fileUrl: row.file_url,
-					videoURL: row.video_url,
-					videoCode: row.video_code,
-					created: row.created
-				}
-			});
+	//STEP 1: Get All Posts
+	//Move to Class
+	var postsOutcome = await Post.getSingleGroupPost(postID)
+	var postsRaw = postsOutcome.posts;
+	console.log(postsRaw)
 
-			//res.setHeader('Access-Control-Allow-Origin', '*');
-			//res.json({posts:posts});
-			console.log(typeof(posts))
-			res.json(posts);
+	//STEP 2: Get All Comments for these Posts 
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
 
-        } else {
-            console.log("Failed to Select Posts" + err)
-            res.sendStatus(500)
-            return
-		}
-    })
+	//STEP 3: Get all Likes for these Posts
+	var posts = await PostFunctions.addPostLikes(currentUser, postsComments)
+
+	var postsResponse = {
+		data: posts,
+		message: "Need to add error and stuff in this always works!", 
+		success: true,
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	res.json(postsResponse)
+
 }
 
 //Function B4: Get All Posts

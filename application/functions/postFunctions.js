@@ -34,6 +34,7 @@ FUNCTIONS B: All Post Helper Functions
 
 //FUNCTIONS A: All Functions Related to getting Posts
 //Function A1: Get Group Posts
+/*
 async function getGroupPosts(groupID, currentPage)  {
     const connection = db.getConnection(); 
     const limit = 2;
@@ -159,7 +160,7 @@ async function getGroupPostsAll(groupID)  {
     })
     
 }
-
+*/
 //Function A3: Get User Posts
 async function getUserPosts(userName, currentPage)  {
     const connection = db.getConnection(); 
@@ -316,7 +317,7 @@ async function addPostComments(currentUser, posts)  {
 
 	for (let i = 0; i < posts.length; i++) {
 		let postID = posts[i].postID	
-		//console.log("Get Comments for " + postID)
+		console.log("Get Comments for " + postID)
 
 		var commentsOutcome = await Comment.getPostComments(postID)
 
@@ -513,4 +514,4 @@ async function getPostCreated(postID)  {
 }
 
 
-module.exports = { getGroupPosts, getAllPosts, getGroupPostsAll, getUserPosts, getPostLikes, addPostComments, addPostLikes, checkPostExists, getPostCreated }
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, checkPostExists, getPostCreated }

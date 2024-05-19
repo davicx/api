@@ -24,7 +24,15 @@ FUNCTIONS A: All Functions Related to Searching for Friends
 async function searchActiveFriends(req, res) {
     const currentUser = req.params.user_name;
     const searchString = req.params.search_string;
+
+	if(searchString == "") {
+		console.log("no search")
+	} else {
+		console.log("ok search")
+	}
     
+	console.log(searchString)
+
     var activeFriendListOutcome = {
 		data: {},
 		message: "", 
