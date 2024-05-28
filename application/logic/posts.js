@@ -8,6 +8,7 @@ const Functions = require('../functions/functions');
 const friendFunctions = require('../functions/friendFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const timeFunctions = require('../functions/timeFunctions');
+const cloudFunctions = require('../functions/cloudFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 
@@ -260,7 +261,6 @@ async function postPhotoLocal(req, res) {
 		uploadFile.fileMimetype = file.mimetype; 
 		uploadFile.originalname = file.originalname; //file_name
 		uploadFile.fileNameServer = file.filename; //file_name_server
-		
 
 		//Settings: Local 
 		uploadFile.fileURL = file.path; //file_url
@@ -273,7 +273,6 @@ async function postPhotoLocal(req, res) {
 		//uploadFile.cloudKey = result.Key; //cloud_key 
 		//uploadFile.bucket = result.Bucket; // cloud_bucket 	
 		//uploadFile.storageType = "aws"; //storage_type		
-
 
 		let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 		postOutcome.data = newPostOutcome.newPost;
@@ -378,7 +377,6 @@ async function postPhotoLocalAWS(req, res) {
 			uploadFile.fileMimetype = file.mimetype; 
 			uploadFile.originalname = file.originalname; //file_name
 			uploadFile.fileNameServer = file.filename; //file_name_server
-			
 
 			//Settings: Local 
 			//uploadFile.fileURL = file.path; //file_url
@@ -394,6 +392,7 @@ async function postPhotoLocalAWS(req, res) {
 
 			console.log("result")
 			console.log(result)
+			console.log(result.Key)
 			console.log("file")
 			console.log(file)
 	
@@ -510,7 +509,6 @@ async function getAllGroupPosts(req, res) {
 	const currentUser = req.currentUser
 
 	//STEP 1: Get All Posts
-	//Move to Class
 	var postsOutcome = await Post.getGroupPostsAll(groupID)
 	var postsRaw = postsOutcome.posts;
 
@@ -518,7 +516,15 @@ async function getAllGroupPosts(req, res) {
 	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
 
 	//STEP 3: Get all Likes for these Posts
-	var posts = await PostFunctions.addPostLikes(currentUser, postsComments)
+	var postsLikes = await PostFunctions.addPostLikes(currentUser, postsComments)
+	
+	//STEP 4: Get Image URL
+	var posts = await PostFunctions.addSignedURL(postsLikes);
+
+
+	//console.log(posts)
+	//let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
+	//console.log(signedURL)
 
 	var postsResponse = {
 		data: posts,

@@ -11,6 +11,7 @@ const Post = require('./classes/Post');
 //const Requests = require('./classes/Requests');
 const Functions = require('./functions');
 const friendFunctions = require('./friendFunctions');
+const cloudFunctions = require('./cloudFunctions');
 
 
 /*
@@ -33,134 +34,6 @@ FUNCTIONS B: All Post Helper Functions
 */
 
 //FUNCTIONS A: All Functions Related to getting Posts
-//Function A1: Get Group Posts
-/*
-async function getGroupPosts(groupID, currentPage)  {
-    const connection = db.getConnection(); 
-    const limit = 2;
-    const currentOffset = limit * (currentPage - 1);
-
-    var postsCountOutcome = await getGroupPostCount(groupID)
-
-    const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?";
-    
-    var postsOutcome = {
-        success: false,
-        totalGroupPosts: postsCountOutcome.groupPostCount,
-        posts: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [groupID, limit, currentOffset], (err, rows) => {
-                if (!err) {
-                    const posts = rows.map((row) => {
-                        return {
-                            postID: row.post_id,
-                            postType: row.post_type,
-                            groupID: row.group_id,
-                            listID: row.list_id,
-                            postFrom: row.post_from,
-                            postTo: row.post_to,
-                            postCaption: row.post_caption,
-                            fileName: row.file_name,
-                            fileNameServer: row.file_name_server,
-                            fileUrl: row.file_url,
-                            videoURL: row.video_url,
-                            videoCode: row.video_code,
-                            created: row.created
-                        }
-                    });
-                    postsOutcome.posts = posts;
-
-                    resolve(postsOutcome)
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postsOutcome);
-                }
-           })
-            
-        } catch(err) { 
-            reject(postsOutcome);
-        } 
-    })
-    
-}
-
-//Function A2: Get all Group Posts
-async function getGroupPostsAll(groupID)  {
-    const connection = db.getConnection(); 
-
-    const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC";
-    var postsOutcome = {
-        success: false,
-        posts: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            connection.query(queryString, [groupID], (err, rows) => {
-                if (!err) {
-                    const posts = rows.map((row) => {
-                        
-                        //TIME 
-                        //Step 1: Create a Post Time Holder 
-                        let postTimeData = {}
-                        let date = dayjs(row.created).format('MM/DD/YYYY')      
-                        let minutes = dayjs(row.created).minute()
-                        let hour = dayjs(row.created).hour()
-                    
-                        //Step 2: Get the time in hours and minutes
-                        if(hour > 12) {
-                            hour = hour - 12
-                        }
-
-                        let time = hour + ":0" + minutes + " pm";
-
-                        //Step 3: Get the Message 
-                        let timeMessage = dayjs(row.created).fromNow()
-                    
-                        postTimeData.date = date
-                        postTimeData.time = time
-                        postTimeData.timeMessage = timeMessage
-
-                        return {
-                            postID: row.post_id,
-                            postType: row.post_type,
-                            groupID: row.group_id,
-                            listID: row.list_id,
-                            postFrom: row.post_from,
-                            postTo: row.post_to,
-                            postCaption: row.post_caption,
-                            fileName: row.file_name,
-                            fileNameServer: row.file_name_server,
-                            fileUrl: row.file_url,
-                            videoURL: row.video_url,
-                            videoCode: row.video_code,
-                            postDate: postTimeData.date,
-                            postTime: postTimeData.time,
-                            timeMessage: postTimeData.timeMessage,
-                            created: row.created
-                        }
-                    });
-                    postsOutcome.posts = posts;
-
-                    resolve(postsOutcome)
-        
-                } else {
-                    console.log("Failed to Select Posts" + err)
-                    reject(postsOutcome);
-                }
-           })
-            
-        } catch(err) { 
-            reject(postsOutcome);
-        } 
-    })
-    
-}
-*/
 //Function A3: Get User Posts
 async function getUserPosts(userName, currentPage)  {
     const connection = db.getConnection(); 
@@ -168,7 +41,8 @@ async function getUserPosts(userName, currentPage)  {
     const currentOffset = limit * (currentPage - 1);
 
     var postsCountOutcome = await getUserPostCount(userName)
-    console.log(postsCountOutcome);
+    //console.log(postsCountOutcome);
+    console.log("Getting user posts for " + userName)
 
     //SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1;
     //const queryString = "SELECT * FROM posts WHERE group_id = ? ORDER BY post_id DESC LIMIT ? OFFSET ?";
@@ -372,6 +246,28 @@ async function addPostLikes(currentUser, posts)  {
     return posts;
 }
 
+//Function A7: Add Post Likes to an Array of Posts
+async function addSignedURL(posts)  {
+
+
+	//console.log(posts)
+	//let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
+	//console.log(signedURL)
+    //cloudKey: 'local_cloud_key',
+
+    for (let i = 0; i < posts.length; i++) {
+        console.log(posts[i].cloudKey)
+        if(Functions.compareStrings(posts[i].cloudKey, "local_cloud_key") == false) {
+            let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
+            posts[i].fileUrl = signedURL;
+        } else {
+            posts[i].fileUrl = "#"
+        }
+    }
+
+    return posts;
+}
+
 //FUNCTIONS B: All Post Helper Functions	
 //Function B1: Get count of posts in Group
 async function getGroupPostCount(groupID)  {
@@ -514,4 +410,135 @@ async function getPostCreated(postID)  {
 }
 
 
-module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, checkPostExists, getPostCreated }
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURL, checkPostExists, getPostCreated }
+
+
+/*
+//Function A1: Get Group Posts
+/*
+async function getGroupPosts(groupID, currentPage)  {
+    const connection = db.getConnection(); 
+    const limit = 2;
+    const currentOffset = limit * (currentPage - 1);
+
+    var postsCountOutcome = await getGroupPostCount(groupID)
+
+    const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?";
+    
+    var postsOutcome = {
+        success: false,
+        totalGroupPosts: postsCountOutcome.groupPostCount,
+        posts: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [groupID, limit, currentOffset], (err, rows) => {
+                if (!err) {
+                    const posts = rows.map((row) => {
+                        return {
+                            postID: row.post_id,
+                            postType: row.post_type,
+                            groupID: row.group_id,
+                            listID: row.list_id,
+                            postFrom: row.post_from,
+                            postTo: row.post_to,
+                            postCaption: row.post_caption,
+                            fileName: row.file_name,
+                            fileNameServer: row.file_name_server,
+                            fileUrl: row.file_url,
+                            videoURL: row.video_url,
+                            videoCode: row.video_code,
+                            created: row.created
+                        }
+                    });
+                    postsOutcome.posts = posts;
+
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            reject(postsOutcome);
+        } 
+    })
+    
+}
+
+//Function A2: Get all Group Posts
+async function getGroupPostsAll(groupID)  {
+    const connection = db.getConnection(); 
+
+    const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC";
+    var postsOutcome = {
+        success: false,
+        posts: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [groupID], (err, rows) => {
+                if (!err) {
+                    const posts = rows.map((row) => {
+                        
+                        //TIME 
+                        //Step 1: Create a Post Time Holder 
+                        let postTimeData = {}
+                        let date = dayjs(row.created).format('MM/DD/YYYY')      
+                        let minutes = dayjs(row.created).minute()
+                        let hour = dayjs(row.created).hour()
+                    
+                        //Step 2: Get the time in hours and minutes
+                        if(hour > 12) {
+                            hour = hour - 12
+                        }
+
+                        let time = hour + ":0" + minutes + " pm";
+
+                        //Step 3: Get the Message 
+                        let timeMessage = dayjs(row.created).fromNow()
+                    
+                        postTimeData.date = date
+                        postTimeData.time = time
+                        postTimeData.timeMessage = timeMessage
+
+                        return {
+                            postID: row.post_id,
+                            postType: row.post_type,
+                            groupID: row.group_id,
+                            listID: row.list_id,
+                            postFrom: row.post_from,
+                            postTo: row.post_to,
+                            postCaption: row.post_caption,
+                            fileName: row.file_name,
+                            fileNameServer: row.file_name_server,
+                            fileUrl: row.file_url,
+                            videoURL: row.video_url,
+                            videoCode: row.video_code,
+                            postDate: postTimeData.date,
+                            postTime: postTimeData.time,
+                            timeMessage: postTimeData.timeMessage,
+                            created: row.created
+                        }
+                    });
+                    postsOutcome.posts = posts;
+
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            reject(postsOutcome);
+        } 
+    })
+    
+}
+*/

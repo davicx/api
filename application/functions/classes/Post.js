@@ -248,8 +248,7 @@ class Post {
         const connection = db.getConnection(); 
         const limit = 2;
         const currentOffset = limit * (currentPage - 1);
-    
-    
+
         const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?";
         
         var postsOutcome = {
@@ -344,6 +343,7 @@ class Post {
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
                                 fileUrl: row.file_url,
+                                cloudKey: row.cloud_key,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,
                                 postDate: postTimeData.date,
@@ -368,7 +368,7 @@ class Post {
         })
     }
         
-    //Method B2: Get All Group Posts 
+    //Method B3: Get Single Group Post
     static async getSingleGroupPost(postID)  {
         const connection = db.getConnection(); 
 
@@ -416,6 +416,7 @@ class Post {
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
                                 fileUrl: row.file_url,
+                                cloudKey: row.cloud_key,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,
                                 postDate: postTimeData.date,
@@ -440,7 +441,78 @@ class Post {
         })
     }
     
-    
+    static async getUserPostsAll(postID)  {
+        const connection = db.getConnection(); 
+
+        const queryString = "SELECT * FROM posts WHERE post_id = ? AND post_status = 1 ORDER BY post_id DESC";
+        var postsOutcome = {
+            success: false,
+            posts: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                connection.query(queryString, [postID], (err, rows) => {
+                    if (!err) {
+                        const posts = rows.map((row) => {
+                            
+                            //TIME 
+                            //Step 1: Create a Post Time Holder 
+                            let postTimeData = {}
+                            let date = dayjs(row.created).format('MM/DD/YYYY')      
+                            let minutes = dayjs(row.created).minute()
+                            let hour = dayjs(row.created).hour()
+                        
+                            //Step 2: Get the time in hours and minutes
+                            if(hour > 12) {
+                                hour = hour - 12
+                            }
+
+                            let time = hour + ":0" + minutes + " pm";
+
+                            //Step 3: Get the Message 
+                            let timeMessage = dayjs(row.created).fromNow()
+                        
+                            postTimeData.date = date
+                            postTimeData.time = time
+                            postTimeData.timeMessage = timeMessage
+
+                            return {
+                                postID: row.post_id,
+                                postType: row.post_type,
+                                groupID: row.group_id,
+                                listID: row.list_id,
+                                postFrom: row.post_from,
+                                postTo: row.post_to,
+                                postCaption: row.post_caption,
+                                fileName: row.file_name,
+                                fileNameServer: row.file_name_server,
+                                fileUrl: row.file_url,
+                                cloudKey: row.cloud_key,
+                                videoURL: row.video_url,
+                                videoCode: row.video_code,
+                                postDate: postTimeData.date,
+                                postTime: postTimeData.time,
+                                timeMessage: postTimeData.timeMessage,
+                                created: row.created
+                            }
+                        });
+                        postsOutcome.posts = posts;
+
+                        resolve(postsOutcome)
+            
+                    } else {
+                        console.log("Failed to Select Posts" + err)
+                        reject(postsOutcome);
+                    }
+            })
+                
+            } catch(err) { 
+                reject(postsOutcome);
+            } 
+        })
+    }
+     
     
     //METHODS C: UPDATING POST
     static async updatePostCaption(postID, newPostCaption, currentUser)  {

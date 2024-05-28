@@ -36,21 +36,28 @@ postRouter.post('/post/text', function(req, res) {
     posts.postText(req, res);
 })
 
-//Route A2: Post Photo
-//Post Photo Local 
+
+//Route A2: Post Photo Local
 postRouter.post('/post/photo', async function(req, res) {
 	posts.postPhoto(req, res)
 })
 
-//Route A3: Post Photo Local to AWS
+//Route A3: Post Photo Local
+postRouter.post('/post/photo/local', async function(req, res) {
+	posts.postPhotoLocal(req, res)
+})
+
+//Route A4: Post Photo Local to AWS
 postRouter.post('/post/photo/local/aws', async function(req, res) {
 	posts.postPhotoLocalAWS(req, res)
 })
 
-//Route A4: Post Photo AWS to AWS
-postRouter.post('/post/photo/local', async function(req, res) {
-	posts.postPhotoLocal(req, res)
+//Route A5: Post Photo AWS to AWS
+postRouter.post('/post/photo/aws', async function(req, res) {
+	//posts.postPhotoLocal(req, res)
+	res.json({need:"Set this up"})
 })
+
 
 //Route A5: Post Video
 postRouter.post('/post/video', function(req, res) {

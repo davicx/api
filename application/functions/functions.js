@@ -225,8 +225,6 @@ function checkRemainingTokenTime(token) {
     return tokenTimeRemaining;
 }
 
-
-
 //Method A1: Check if User Exists
 async function checkIfUserExists(userName) {
     const connection = db.getConnection(); 
