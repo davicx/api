@@ -332,7 +332,7 @@ async function postPhotoLocalAWS(req, res) {
 			errors: [], 
 			currentUser: req.body.currentUser
 		}
-	
+
 		//STEP 1: Upload Post to API
 		console.log("STEP 1: Upload Post to API")
 
@@ -364,13 +364,17 @@ async function postPhotoLocalAWS(req, res) {
 			} 
 		}
 	
+
 		//STEP 2: Upload to AWS
 		if(uploadSuccess == true) {
 			console.log("STEP 2: Add Post to Database")
 			let file = req.file
+			console.log(file)
 			
 			const fileExtension = mime.extension(file.mimetype) 
 			const result = await awsStorage.uploadFile(file)
+
+			console.log(result)
 
 			//File Information
 			var uploadFile = {}
@@ -390,25 +394,29 @@ async function postPhotoLocalAWS(req, res) {
 			uploadFile.bucket = result.Bucket; // cloud_bucket 	
 			uploadFile.storageType = "aws"; //storage_type		
 
-			console.log("result")
-			console.log(result)
-			console.log(result.Key)
-			console.log("file")
-			console.log(file)
+			//console.log("result")
+			//console.log(result)
+			//console.log(result.Key)
+			//console.log("file")
+			//console.log(file)
 	
 			//STEP 3: Add Post to Database
 			let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
+
+			//THIS NEEDS THE SIGNED URL TO BE USED BY FRONT END!!!
+			
 			postOutcome.data = newPostOutcome.newPost;
 			postOutcome.message = "Your photo was posted!"
 			postOutcome.statusCode = 200
 			postOutcome.success = true
-	
+			console.log("STEP 3: Post was added to the Database")
+
 			//STEP 4: Add the Notifications
 			if(newPostOutcome.outcome == 200) {
 				var notification = {}
 				const groupUsersOutcome = await Group.getGroupUsers(groupID);
 				const groupUsers = groupUsersOutcome.groupUsers;
-				console.log("STEP 3: Add notifications")
+				console.log("STEP 4: Add notifications")
 	
 				var postID = 0
 				if (newPostOutcome.newPost.postID) {
@@ -427,15 +435,18 @@ async function postPhotoLocalAWS(req, res) {
 						postID: postID
 					}
 	
-					console.log(notification)
+					//console.log(notification)
 	
 					if(groupUsers.length > 0) {
 						Notification.createGroupNotification(notification);
 					}
 				}
 			}
-		
+			
 		}
+		
+		console.log(" ")
+		console.log("________________________________")
 	
 		res.json(postOutcome)
 	
@@ -524,7 +535,7 @@ async function getAllGroupPosts(req, res) {
 
 	//console.log(posts)
 	//let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
-	//console.log(signedURL)
+	//console.log(posts)
 
 	var postsResponse = {
 		data: posts,

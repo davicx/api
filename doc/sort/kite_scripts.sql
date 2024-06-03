@@ -3,7 +3,8 @@ USE shareshare;
 
 
 #POSTS
-SELECT * FROM posts WHERE group_id = 70;
+#SELECT * FROM posts WHERE group_id = 70;
+SELECT * FROM posts;
 #SELECT * FROM posts WHERE post_to = "davey" AND post_status = 1 ORDER BY post_id DESC LIMIT 5 OFFSET 1
 #SELECT * FROM posts WHERE group_id = 70
 #SELECT @@global.time_zone
@@ -33,7 +34,7 @@ SELECT * FROM posts WHERE group_id = 70;
 #DELETE FROM posts WHERE group_id = 70 AND post_id < 470
 
 #SELECT * FROM posts WHERE post_id = 534;
-#DELETE FROM posts
+#DELETE FROM likes
 #SELECT * FROM posts;
 #SELECT * FROM comments;
 

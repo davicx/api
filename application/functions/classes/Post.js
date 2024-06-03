@@ -139,6 +139,9 @@ class Post {
             simpleLikesArray: []
         }    
 
+        console.log("Created Post")
+        console.log(createdPost)
+
         var postOutcome = {
             newPost: createdPost,
             outcome: 0,
@@ -153,12 +156,12 @@ class Post {
     
                 connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, fileNameServer, fileURL, cloudKey, bucket, fileStorageType], (err, results, fields) => {
                     if (!err) {
-                        console.log("You created a new Post with ID " + results.insertId);    
+                        console.log("DATABASE: You created a new Post with ID " + results.insertId);    
                         postOutcome.postID = results.insertId; 
                         postOutcome.outcome = 200; 
                         postOutcome.newPost.postID = results.insertId;
                     } else {    
-                        postOutcome.outcome = "no worky"
+                        postOutcome.outcome = "DATABASE: no worky"
                         postOutcome.errors.push(err);
                     } 
                     resolve(postOutcome);

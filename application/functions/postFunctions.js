@@ -191,7 +191,7 @@ async function addPostComments(currentUser, posts)  {
 
 	for (let i = 0; i < posts.length; i++) {
 		let postID = posts[i].postID	
-		console.log("Get Comments for " + postID)
+		//console.log("Get Comments for " + postID)
 
 		var commentsOutcome = await Comment.getPostComments(postID)
 
@@ -248,17 +248,10 @@ async function addPostLikes(currentUser, posts)  {
 
 //Function A7: Add Post Likes to an Array of Posts
 async function addSignedURL(posts)  {
-
-
-	//console.log(posts)
-	//let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
-	//console.log(signedURL)
-    //cloudKey: 'local_cloud_key',
-
     for (let i = 0; i < posts.length; i++) {
-        console.log(posts[i].cloudKey)
+        //console.log(posts[i].cloudKey)
         if(Functions.compareStrings(posts[i].cloudKey, "local_cloud_key") == false) {
-            let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
+            let signedURL = await cloudFunctions.getSignedURL(posts[i].cloudKey)
             posts[i].fileUrl = signedURL;
         } else {
             posts[i].fileUrl = "#"
