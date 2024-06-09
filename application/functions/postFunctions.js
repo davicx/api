@@ -246,7 +246,20 @@ async function addPostLikes(currentUser, posts)  {
     return posts;
 }
 
-//Function A7: Add Post Likes to an Array of Posts
+//Function A7: Add Signed URLS to a Single Post
+async function getSignedURL(post) {
+
+    if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
+        let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
+        post.fileUrl = signedURL;
+    } else {
+        post.fileUrl = "#"
+    }
+
+    return post;
+}
+
+//Function A8: Add Signed URLS to an Array of Posts
 async function addSignedURL(posts)  {
     for (let i = 0; i < posts.length; i++) {
         //console.log(posts[i].cloudKey)
@@ -403,7 +416,7 @@ async function getPostCreated(postID)  {
 }
 
 
-module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURL, checkPostExists, getPostCreated }
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURL, getSignedURL, checkPostExists, getPostCreated }
 
 
 /*

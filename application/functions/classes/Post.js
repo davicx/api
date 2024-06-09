@@ -128,6 +128,7 @@ class Post {
             fileName: fileName,
             fileNameServer: fileNameServer,
             fileUrl: fileURL,
+            cloudKey: cloudKey,
             videoURL: "empty",
             videoCode: "empty",
 			postDate: timeFunctions.getCurrentTime().postDate,

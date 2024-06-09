@@ -333,7 +333,7 @@ async function postPhotoLocalAWS(req, res) {
 			currentUser: req.body.currentUser
 		}
 
-		//STEP 1: Upload Post to API
+		//STEP 1: Check for a valid file
 		console.log("STEP 1: Upload Post to API")
 
 		//Error 1A: File too large
@@ -393,19 +393,15 @@ async function postPhotoLocalAWS(req, res) {
 			uploadFile.cloudKey = result.Key; //cloud_key 
 			uploadFile.bucket = result.Bucket; // cloud_bucket 	
 			uploadFile.storageType = "aws"; //storage_type		
-
-			//console.log("result")
-			//console.log(result)
-			//console.log(result.Key)
-			//console.log("file")
-			//console.log(file)
 	
+
 			//STEP 3: Add Post to Database
 			let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 
-			//THIS NEEDS THE SIGNED URL TO BE USED BY FRONT END!!!
+			//STEP 4: Get a Signed URL so we can display this new post
+			var newPost = await PostFunctions.getSignedURL(newPostOutcome.newPost);
 			
-			postOutcome.data = newPostOutcome.newPost;
+			postOutcome.data = newPost;
 			postOutcome.message = "Your photo was posted!"
 			postOutcome.statusCode = 200
 			postOutcome.success = true
@@ -418,6 +414,7 @@ async function postPhotoLocalAWS(req, res) {
 				const groupUsers = groupUsersOutcome.groupUsers;
 				console.log("STEP 4: Add notifications")
 	
+				//Set the Post ID for the new post in notifications
 				var postID = 0
 				if (newPostOutcome.newPost.postID) {
 					postID = newPostOutcome.newPost.postID
