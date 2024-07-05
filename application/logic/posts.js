@@ -514,7 +514,9 @@ async function postArticle(req, res) {
 async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
-	const currentUser = req.currentUser
+	//const currentUser = req.currentUser
+	const currentUser = "daveyChangeBack"
+	console.log("Get all Group Posts for Group: " + groupID)
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await Post.getGroupPostsAll(groupID)

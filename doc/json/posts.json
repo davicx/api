@@ -1,4 +1,57 @@
 {
+    "data": [
+        {
+            "postID": 678,
+            "postType": "photo",
+            "groupID": 70,
+            "listID": 0,
+            "postFrom": "davey",
+            "postTo": "photo",
+            "postCaption": "Hiya sam! wanna go on a hike today the weather is perfect!",
+            "fileName": "stars.jpg",
+            "fileNameServer": "postImage-1717975421510-619391449-stars.jpg",
+            "fileUrl": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1717975421510-619391449-stars.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAXZAOI335HZSDKHVN%2F20240620%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20240620T002549Z&X-Amz-Expires=3600&X-Amz-Signature=471c35826ea493a764ea92a36de3ac09204bed2b0c6ae6e16437e6f5f3f764bd&X-Amz-SignedHeaders=host&x-id=GetObject",
+            "cloudKey": "images/postImage-1717975421510-619391449-stars.jpg",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "06/09/2024",
+            "postTime": "4:023 pm",
+            "timeMessage": "10 days ago",
+            "created": "2024-06-09T23:23:41.000Z",
+            "commentsArray": [],
+            "postLikesArray": [],
+            "simpleLikesArray": []
+        },
+        {
+            "postID": 677,
+            "postType": "photo",
+            "groupID": 70,
+            "listID": 0,
+            "postFrom": "davey",
+            "postTo": "photo",
+            "postCaption": "Hiya sam! wanna go on a hike today the weather is perfect!",
+            "fileName": "city.jpg",
+            "fileNameServer": "postImage-1717975390703-820924480-city.jpg",
+            "fileUrl": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1717975390703-820924480-city.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAXZAOI335HZSDKHVN%2F20240620%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20240620T002549Z&X-Amz-Expires=3600&X-Amz-Signature=fad53afe40b81fe8ed3924173493e22c0cfd264457ed45ad456aec1cc502a78d&X-Amz-SignedHeaders=host&x-id=GetObject",
+            "cloudKey": "images/postImage-1717975390703-820924480-city.jpg",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "06/09/2024",
+            "postTime": "4:023 pm",
+            "timeMessage": "10 days ago",
+            "created": "2024-06-09T23:23:11.000Z",
+            "commentsArray": [],
+            "postLikesArray": [],
+            "simpleLikesArray": []
+        }
+    ],
+    "message": "Need to add error and stuff in this always works!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}
+{
     "data": [],
     "message": "Need to add error and stuff in this always works!",
     "success": true,

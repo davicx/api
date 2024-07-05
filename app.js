@@ -39,7 +39,7 @@ app.use(friends);
 app.use(search);
 app.use(upload);
 app.use(uploadLearning);
-//app.use(profile);
+app.use(simple);
 
 //Server Login 
 app.listen(3003, () => {

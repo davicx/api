@@ -30,7 +30,7 @@ async function getSignedURL(fileKey) {
     }
   
     const command = new GetObjectCommand(getObjectParams);
-    const awsSignedURL = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    const awsSignedURL = await getSignedUrl(s3Client, command, { expiresIn: 259200 });
 
     return awsSignedURL;
 

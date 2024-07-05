@@ -103,6 +103,32 @@ simpleRouter.get("/simple/users/:current_name", (req, res) => {
   }) 
 
 
+simpleRouter.get("/simple/hero", (req, res) => {
+  var user = {
+    localized_name: "wizard",
+    primary_attr: "magic",
+    attack_type: "magic and weapons",
+    img: "wizard.png",
+    legs: 2,
+  }
+    var user2 = {
+    localized_name: "dwarf",
+    primary_attr: "ax",
+    attack_type: "ax and warrrior type",
+    img: "dwarf.png",
+    legs: 2,
+  }
+    var user3 = {
+    localized_name: "elf",
+    primary_attr: "bow",
+    attack_type: "bow and shooting",
+    img: "elf.png",
+    legs: 4,
+  }
+    res.json([user, user2, user3])
+})
+
+  
 module.exports = simpleRouter;
 
 
