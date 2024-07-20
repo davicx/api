@@ -673,6 +673,7 @@ async function getAllPosts(req, res) {
 //FUNCTIONS C: All Functions Related to Post Actions
 //Function C1: Like a Post
 async function likePost(req, res) {
+	/*
 	const connection = db.getConnection(); 
 	var currentUser = req.body.currentUser
 	var postID = req.body.postID
@@ -741,6 +742,7 @@ async function likePost(req, res) {
 			res.json({totalLikes: "error"})
 		}
 	})
+		*/
 }
 
 //Function C2: Unlike a Post 
