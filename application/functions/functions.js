@@ -15,6 +15,10 @@ FUNCTIONS A: Array and Validation Functions
     1) Function B1: Compare two Strings
 
 
+//FUNCTIONS C: Cloud Functions
+    1) Function C1: Get Environments
+
+
 */
 
 //FUNCTIONS A: Validation Functions 
@@ -68,6 +72,33 @@ function compareStrings(stringOneRaw, stringTwoRaw) {
 }
 
 
+
+//FUNCTIONS C: Cloud Functions
+//Function C1: Get Environments
+function getCloudEnvironments(appLocation, fileLocation) {
+    let cloud_type = "local_local"
+
+    //Type 1: Local to Local 
+	if(compareStrings(appLocation, "local") && compareStrings(fileLocation, "local")) {
+		console.log("Post Router: Type 1: Local to Local")
+        cloud_type = "local_local"
+
+	//Type 2: Local to AWS 	
+	} else if (compareStrings(appLocation, "local") && compareStrings(fileLocation, "aws")) {
+		console.log("Post Router: Type 2: Local to AWS")
+        cloud_type = "local_aws"
+
+	//Type 3: AWS to AWS	
+	} else if(compareStrings(appLocation, "aws") && compareStrings(fileLocation, "aws")) {
+		console.log("Post Router: Type 3: AWS to AWS")
+        cloud_type = "aws_aws"
+	} else {
+		cloud_type = "local_local"
+	}
+
+    return cloud_type
+    
+}
 
 
 
@@ -232,26 +263,37 @@ async function checkIfUserExists(userName) {
     var userExistsStatus = {
         outcome: 500,
 		userExists: 1,
+		userName: userName,
         userID: 0,
         messages: [],
 		errors: []
     }
 
     console.log("INSIDE FUNCTION checkIfUserExists " + userName)
-
+    console.log("INSIDE FUNCTION checkIfUserExists " + userName)
     return new Promise(async function(resolve, reject) {
         try {
             
             const queryString = "SELECT user_id, user_name FROM user_login WHERE user_name = ?"			
             
             connection.query(queryString, [userName], (err, rows) => {
-                console.log(err)
+                //console.log(err)
 
                 if (!err) {
                     if(rows.length < 1){
+                        console.log("IF")
+                        console.log("IF")
+                        console.log("IF")
                         userExistsStatus.outcome = 200;
                         userExistsStatus.userExists = 0;
                     } else {
+                        console.log("ELSE")
+                        console.log("ELSE")
+                        console.log("ELSE")
+                        console.log("rows[0].user_name")
+                        console.log(userName)
+                        console.log(rows[0].user_name)
+                        console.log("rows[0].user_name")
                         userExistsStatus.outcome = 200;
                         userExistsStatus.userName = rows[0].user_name; 
                         userExistsStatus.userID = rows[0].user_id; 
@@ -262,11 +304,15 @@ async function checkIfUserExists(userName) {
                     resolve(userExistsStatus); 
 
                 } else {
+                    console.log("ERROR")
+                    console.log(err)
                     userExistsStatus.outcome = 500;
                     resolve(userExistsStatus);
                 }
             })
         } catch(err) {
+            console.log("ERROR CATCH")
+            console.log(err)
             userExistsStatus.outcome = 500;
             reject(userExistsStatus);
         } 
@@ -413,7 +459,7 @@ async function makeUserNotActiveInLoginTable(userName)  {
 }
 
 
-module.exports = { cleanUserName, cleanUserNameArray, removeArrayDuplicates, compareStrings, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
+module.exports = { cleanUserName, cleanUserNameArray, getCloudEnvironments, removeArrayDuplicates, compareStrings, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
 
 
 //APPENDIX

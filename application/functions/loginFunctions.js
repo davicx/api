@@ -5,8 +5,9 @@ var jwt_decode = require('jwt-decode');
 
 const Functions = require('./functions');
 const validationFunctions = require('./validationFunctions');
+const timeFunctions = require('./timeFunctions');
+const Login = require('./classes/Login')
 const User = require('./classes/User')
-const Notifications = require('./classes/Notification')
 
 /*
 FUNCTIONS A: All Functions Related to User Login
@@ -45,6 +46,15 @@ async function userLogin(req, res) {
   var refreshToken = "myRefreshToken";
   var accessToken = "myAccessToken";
 
+  var loginOutcome = {
+		data: {},
+		success: false,
+		message: "No login Message", 
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.userName
+	}
+
   //STEP 1: Check if user Exists 
   const userExistsStatus = await Functions.checkIfUserExists(userName);
   console.log("THIS IS THE USERNAME TO USER " + userExistsStatus.userName)
@@ -63,13 +73,17 @@ async function userLogin(req, res) {
         console.log("STEP 2: Valid Password PASS ");
       } else {
         console.log("STEP 2: Not a Valid Password");
+        loginOutcome.message = "STEP 2: Not a Valid Password";
       }
     } catch {
       console.log("CATCH error")
+      loginOutcome.message = "STEP 2: An Unknown error occured logging you in";
     }
   } else {
     console.log("STEP 1: Could not find user");
+    loginOutcome.message = "STEP 1: Could not find user";
   }
+
 
   //STEP 3: Check for Valid User and Set Tokens 
   if(userExists == true && passwordCorrect == true) {
@@ -92,6 +106,7 @@ async function userLogin(req, res) {
             console.log("Removed old refresh tokens " + userName);      
         } else {    
             console.log("Error Problem with the Database!")
+            loginOutcome.message = "STEP 5: Error Problem with the Database!";
             loginSuccess = false;
             console.log(err)
         } 
@@ -103,6 +118,7 @@ async function userLogin(req, res) {
         if (!err) {
             console.log("STEP 5: Added a refresh token to the database with ID " + results.insertId);      
         } else {    
+            loginOutcome.message = "STEP 5: Error Problem with the Database!";
             console.log("STEP 5: Error Problem with the Database!")
             loginSuccess = false;
             console.log(err)
@@ -111,6 +127,9 @@ async function userLogin(req, res) {
 
     //STEP 6: Set Cookies 
     loginSuccess = true;
+    loginOutcome.message = "Succesfully logged " + req.body.userName + " in!";
+    loginOutcome.success = true
+    loginOutcome.statusCode = 200
     res.cookie('accessToken', accessToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
     res.cookie('refreshToken', refreshToken, {maxAge: 100 * 60 * 60 * 1000, path: '/refresh', httpOnly: true})
     res.cookie('loggedInUser', userName,{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
@@ -123,7 +142,9 @@ async function userLogin(req, res) {
     //res.cookie('refreshToken', "notLoggedIn", {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
     res.cookie('refreshToken', "notLoggedIn", {maxAge: 60 * 1000 * 525600  , path: '/refresh', httpOnly: true})
     res.cookie('loggedInUser', "notLoggedIn",{maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
+    //loginOutcome.message = "STEP 6: Information was not correct and cookies are invalidated";
     console.log("STEP 6: Information was not correct and cookies are invalidated")
+    
   }
 
   //STEP 7: Send login information 
@@ -136,21 +157,19 @@ async function userLogin(req, res) {
     refreshToken, refreshToken
   }
 
-
-  //USE Temp change for swift below
-  var loginOutcome = {
-		data: loginObject,
-		success: true,
-		message: userName + "was succesfully logged in!", 
-		statusCode: 200,
-		errors: [], 
-		currentUser: userExistsStatus.userName
-	}
+  loginOutcome.data = loginObject
  
   console.log("STEP 7: Login information for user")
   console.log(loginOutcome);
-  console.log("STEP 8: The User was succesfully logged in!")
+  if(loginSuccess == true) {
+    console.log("STEP 8: The User was succesfully logged in!")
 
+  } else {
+    console.log("STEP 8: Sorry dude The User was NOT logged in!")
+ 
+  }
+  
+  //res.json(loginOutcome)
   res.json(loginOutcome)
 }
 
@@ -159,25 +178,40 @@ async function userLogout(req, res) {
   const connection = db.getConnection(); 
   const userName = req.body.userName;
 
-  //STEP 1: Remove all Access Tokens for User 
-  const queryString = "DELETE FROM refresh_tokens WHERE user_name= ?;"			
-            
-  connection.query(queryString, [userName], (err, rows) => {
-      if (!err) {
-        //console.log(rows)
-      } else {
-        console.log(err)
+  console.log("API logout userName " + userName)
 
-      }
-  })
+  var logoutOutcome = {
+		success: false,
+		message: "", 
+		statusCode: 200,
+		errors: [], 
+		currentUser: req.body.userName
+	}
+
+  //STEP 1: Remove all Access Tokens for User 
+  const logoutClassResult = await Login.logoutUser(userName)
+  logoutOutcome.data = {
+    logoutSuccess: logoutClassResult.success
+  }
+
+  if(logoutClassResult.success == true) {
+    logoutOutcome.success = true
+    logoutOutcome.message = "API logout userName " + userName
+    
+  } else {
+    logoutOutcome.success = false
+    logoutOutcome.message = "Had an error logging out" + userName
+    
+  }
 
   //STEP 2: Remove Access Tokens
   res.cookie('accessToken', "noAccessToken", {maxAge: 1, httpOnly: true})
   res.cookie('loggedInUser', "notLoggedIn",{maxAge: 1, httpOnly: true})
   res.cookie('refreshToken', "notLoggedIn", {maxAge: 1, path: '/refresh', httpOnly: true})
 
-  res.json({logout: userName})
+  res.json(logoutOutcome)
 }
+
 
 //Function A3: Register new User 
 async function userRegister(req, res) {
@@ -188,108 +222,171 @@ async function userRegister(req, res) {
   const rawPassword = req.body.password
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(req.body.password, salt)
-  var registerUserLoginOutcome = {}
-  var registerUserProfileOutcome = {}
+  var masterValidationSuccess = false
+  var masterUsernameAvailable = false
+  var masterSuccess = false
 
-	const newUser = {
-		userName: userName,
+  var registrationOutcome = {
+		data: {},
+		success: false,
+		message: "No Register Message", 
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.body.userName
+	}
+
+  //This is internal new user
+  var newUser = {
+    userName: userName,
 		fullName: fullName,
+    userID: 0,
 		userEmail: userEmail,
     password: hashedPassword,
     salt: salt
-	}
-
-  let userName2 = "DA_Vid_"
-  let userName3 = "david_"
-
-  var areEqual = userName2.toUpperCase() === userName3.toUpperCase();
-  /*
-  var regexp = /^[a-zA-Z0-9-_-]+$/;
-  var check = "checkme";
-
-  if (userName.search(regexp) === -1)
-      { console.log('invalid'); }
-  else { 
-    console.log('valid'); 
-    }
-*/
-  //res.json({userName: areEqual})
-
-
-  
-  //STEP 1: Validate Information
-  var registrationOutcome = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
-  registrationOutcome.UserRegistrationMessages = []
-  registrationOutcome.userName = ""
-  registrationOutcome.userID = 0
-
-  //STEP 2: Check if Username is taken 
-  const userExistsStatus = await Functions.checkIfUserExists(userName)
-  console.log(userExistsStatus)
-
-  //Step 1A: User Provided valid Information
-  if(registrationOutcome.validUserRegistration == 1) {
-
-      //Step 2A: Username is available 
-      if(userExistsStatus.userExists == 0) {
-        console.log("user name is good!")
-        
-
-        //STEP 3: Register the New User 
-        registerUserLoginOutcome = await User.registerUserLogin(newUser)
-        console.log("STEP 3A: registerUserLoginOutcome")
-        console.log(registerUserLoginOutcome)
-    
-        const userID = registerUserLoginOutcome.userID
-        newUser.userID = userID
-        console.log("your new ID " + userID)
-
-        registerUserProfileOutcome = await User.registerUserProfile(newUser)
-        console.log("STEP 3B: registerUserProfileOutcome")
-        console.log(registerUserProfileOutcome)     
-        
-        //Step 3A: User was sucesfully registered 
-        if(registerUserLoginOutcome.outcome + registerUserProfileOutcome.outcome == 2) {
-          console.log("EVERYTHING GOOD IN DATABSE")
-          registrationOutcome.userName = userName
-          registrationOutcome.userID = userID
-          registrationOutcome.validUserRegistration = 1
-          registrationOutcome.UserRegistrationMessages.push("you succesfully registered " + userName + " with the ID " + userID)
-        } else {
-          console.log("nope!")
-        }
-        
-        res.json(registrationOutcome);
-
-      //Step 2B: Username is taken 
-      } else {
-        console.log("user name is taken!")
-        registrationOutcome.usernameStatus = 0
-        registrationOutcome.usernameMessages = []
-        registrationOutcome.usernameMessages.push("user name is taken")
-        registrationOutcome.UserRegistrationMessages.push("user name is taken")
-        registrationOutcome.validUserRegistration = 0
-        res.json(registrationOutcome)
-      }
-
-  } else {
-
-    //UserName is taken
-    if(userExistsStatus.userExists == 1) {
-      registrationOutcome.usernameStatus = 0
-      registrationOutcome.usernameMessages = []
-      registrationOutcome.usernameMessages.push("user name is taken")
-      registrationOutcome.UserRegistrationMessages.push("user name is taken")
-      registrationOutcome.validUserRegistration = 0
-    }
-
-    console.log("User needs to provide better name and stuff")
-    registrationOutcome.UserRegistrationMessages.push("User needs to provide better name and stuff")
-    registrationOutcome.validUserRegistration = 0
-    res.json(registrationOutcome)
   }
 
+  //This is returned in response
+  var registeredUser = {
+    userName: "",
+    fullName: "",
+    userID: 0,
+    userEmail: "",
+  }
+
+  var registrationValidation = {
+    masterSuccess: false,
+    validationSuccess: false,
+    emailStatus: 0,
+    emailMessage: "",
+    usernameStatus: 0,
+    usernameMessage: "",
+    passwordStatus: 0,
+    passwordMessage: "",
+    usernameAvailableStatus: 0,
+    usernameAvailableMessage: "",
+  }
+
+  registrationOutcome.data.newUser = registeredUser
+
+  //STEP 1: Validate Information
+  var registrationValidationOutcome = validationFunctions.validateRegisterUser(userEmail, userName, fullName, rawPassword);
+  console.log("STEP 1: Validate Information")
   
+  registrationValidation.emailStatus = registrationValidationOutcome.emailStatus
+  registrationValidation.emailMessage = registrationValidationOutcome.emailMessages[0]
+
+  registrationValidation.usernameStatus = registrationValidationOutcome.usernameStatus
+  registrationValidation.usernameMessage = registrationValidationOutcome.usernameMessages[0]
+
+  registrationValidation.passwordStatus = registrationValidationOutcome.passwordStatus
+  registrationValidation.passwordMessage = registrationValidationOutcome.passwordMessages[0]
+  
+
+  //Step 1A: User Provided valid Information
+  if(registrationValidationOutcome.validUserRegistration == 1) {
+    masterValidationSuccess = true
+    registrationValidation.validationSuccess = true
+
+    console.log("Step 1A: User Provided valid Information")
+
+  //Step 1B: User Did not provid valid Information
+  } else {
+    masterValidationSuccess = false
+    registrationOutcome.data.registrationValidation = registrationValidation
+
+    console.log("Step 1B: User Did not provid valid Information")
+
+  }
+
+
+  //STEP 2: Check if Username is taken 
+  if(registrationValidationOutcome.validUserRegistration) {
+    const userExistsStatus = await Functions.checkIfUserExists(userName)
+
+    //Step 2A: Username is available 
+    if(userExistsStatus.userExists == 0) {
+      registrationValidation.usernameAvailableStatus = 1
+      registrationValidation.usernameAvailableMessage = "The username " + userName + " is available."
+      masterUsernameAvailable = true
+
+      console.log("Step 2A: user name is good!")
+            
+    //Step 2B: Username is taken   
+    } else {
+      registrationValidation.usernameAvailableStatus = 0
+      registrationValidation.usernameAvailableMessage = "The username " + userName + " is NOT available."
+      masterUsernameAvailable = false
+      registrationOutcome.message = "NEED MORE registrationOutcome.messageUser name " + userName + "  is taken!"
+      console.log("The user name is taken!")
+    }
+  }
+
+  //STEP 3: Register the New User 
+  if(masterValidationSuccess == true && masterUsernameAvailable == true) {
+    console.log("STEP 3: YAY!! REgister")
+    
+    //STEP 3A: Register the New User in User Login
+    let registerUserLoginOutcome = await User.registerUserLogin(newUser)
+    //console.log(registerUserLoginOutcome)
+    console.log("newUser")
+    console.log(newUser)
+    console.log("newUser")
+
+    //Create the user ID
+    const userID = registerUserLoginOutcome.userID
+    newUser.userID = userID
+    console.log("STEP 3A: Register the New User in User Login with the user id " + userID)
+    console.log("your new ID " + userID)
+
+    //STEP 3B: Register the New User in User Profile
+    let registerUserProfileOutcome = await User.registerUserProfile(newUser)
+    console.log("3B: Register the New User in User Profile")
+    //console.log(registerUserProfileOutcome)     
+    
+    //STEP 4: Success
+    if(registerUserLoginOutcome.outcome + registerUserProfileOutcome.outcome == 2) {
+      console.log("EVERYTHING GOOD IN DATABSE")
+
+      //Update Validation 
+      registrationValidation.masterSuccess = true
+
+      //Update API response
+      registrationOutcome.success = true
+      registrationOutcome.statusCode = 200
+      registrationOutcome.message = " NEED TO FIX You successfully Registered " + userName + "!"
+
+      //Add new User to API Response
+      registeredUser.userName = newUser.userName
+      registeredUser.fullName = newUser.fullName
+      registeredUser.userID = newUser.userID
+      registeredUser.userEmail = newUser.userEmail
+
+      registrationOutcome.data.newUser = registeredUser
+      console.log("STEP 4: Success it worked!!!")
+
+    } else {
+      //TO DO: Roll back any inserted data that failed 
+      console.log("STEP 4: nope!")
+      registrationOutcome.message = "NEED TO FIX There was an error with registering " + userName + "!"
+    }
+    
+  } else {
+    console.log("STEP 3: ohh no dont REgister")
+
+  }
+
+
+  console.log(" ")
+  console.log("________________________________________________ ")
+  console.log("userName " + userName + " fullName " + fullName + " userEmail " + userEmail + " rawPassword " + rawPassword )
+  console.log("Time was " + timeFunctions.getCurrentTime().postTime)
+  console.log("________________________________________________ ")
+  console.log(" ")
+
+  registrationOutcome.data.registrationValidation = registrationValidation
+  
+  res.json(registrationOutcome)
+
 } 
 
 //Function A4: Login Status 
@@ -299,6 +396,7 @@ async function loginStatus(req, res) {
   console.log("loginFunctions: Function A4: Login Status ")
   const connection = db.getConnection(); 
   const userName = req.body.userName;
+
   var refreshToken = "";
   var accessToken = ""
   var validAccessToken = false;
@@ -306,15 +404,17 @@ async function loginStatus(req, res) {
   var refreshTokenMatches = false;
 
   var loginStatus = {
-      userName: userName,
-      userLoggedIn: false,
-      accessToken: accessToken,
-      validAccessToken: false,
-      validRefreshToken: false
-  }
+    data: {},
+    success: false,
+    messages: [],
+    statusCode: 500,
+    errors: [],
+    currentUser: "Not Verified"
+}
 
   //STEP 1: Determine Auth Type for Access Token (probably need for refresh if we use header)
   refreshToken = req.cookies.refreshToken;
+  console.log("refreshToken " + refreshToken)
   cookieToken = req.cookies.accessToken;
   const authHeader = req.headers['authorization'];
   var headerToken = authHeader && authHeader.split(' ')[1]
@@ -334,61 +434,90 @@ async function loginStatus(req, res) {
       console.log("STEP 1: no token");
   }
 
+  loginStatus.data.tokenType = tokenType
+
   console.log("STEP 1: the token is from " + tokenType)
 
   //STEP 2: Verify Token 
   jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
       if(!err) {
           console.log("STEP 2: The token was a good one! " + userName + " is logged in")
+          console.log("Step 2: Authorization Data ")
           console.log(authorizationData)
-          validAccessToken = true;
           loginStatus.accessToken = req.cookies.accessToken
+          loginStatus.currentUser = authorizationData.currentUser
+          validAccessToken = true
+          loginStatus.data.userNameFromToken = authorizationData.currentUser
+          //loginStatus.data.currentUser = req.cookies.accessToken
+
       } else {
           console.log("STEP 2: The token was no good no one is logged in")
+          loginStatus.messages.push("STEP 2: The token was no good no one is logged in")
           validAccessToken = false;
+          loginStatus.data.accessToken = "No Token"
       }
   })
-  
+    
   //STEP 3: Check if the user has a refresh token and verify it
   if(refreshToken == null || refreshToken == "noRefreshToken") {
       validRefreshToken = false;
+      loginStatus.messages.push( "STEP 3: The refresh token was not found")
+      console.log("STEP 3: The refresh token was not found");
   } else {
       jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, authData) => {
           currentUserFromToken = authData.currentUser;
           if(err) {
-              validRefreshToken = false;
-              console.log("STEP 3: The refresh token could not be verified");
+            validRefreshToken = false;
+            loginStatus.messages.push("STEP 3: The refresh token could not be verified")
+            console.log("STEP 3: The refresh token could not be verified");
           } else {
-              validRefreshToken = true;
+            validRefreshToken = true;
               console.log("STEP 3: The refresh token is verified");
           }
       })
   }
-  
+
   //STEP 4: Verify that the database has a matching Refresh Token for the user 
   var refreshTokenDatabaseStatus = await Functions.verifyRefreshTokenInDatabse(refreshToken, userName)
   if(refreshTokenDatabaseStatus.validRefreshToken == true ) {
       refreshTokenMatches = true;
-      loginStatus.validRefreshToken = true
+      validRefreshToken = true
       console.log("STEP 4: The refresh token was matched in the database ")
   } else {
       refreshTokenMatches = false;
-      loginStatus.validRefreshToken = false
+      validRefreshToken = false
+      loginStatus.messages.push("STEP 4: The refresh token was NOT found in the database")
       console.log("STEP 4: The refresh token was NOT found in the database ")
   }
   
   //STEP 5: Determine Logged in Status 
   if(validAccessToken == true && refreshTokenMatches == true && validRefreshToken == true) {
       console.log("STEP 5: " + userName + " is currently logged in!");
-      loginStatus.validAccessToken = true;
-      loginStatus.validRefreshToken = true;
-      loginStatus.userLoggedIn = true;
-  } else {
+      validAccessToken = true;
+      validRefreshToken = true;
+      userLoggedIn = true;
+
+      loginStatus.data.accessToken = accessToken;
+      loginStatus.data.refreshToken = refreshToken;
+      loginStatus.data.validAccessToken = validAccessToken;
+      loginStatus.data.validRefreshToken = validRefreshToken;
+      loginStatus.data.refreshTokenMatches = refreshTokenMatches;
+
+      loginStatus.success = true
+      loginStatus.statusCode = 200
+      loginStatus.messages.push(userName + " is currently logged in!")
+      
+  } else {  
       console.log("STEP 5: " + userName + " is currently not logged in!");
+      loginStatus.messages.push("STEP 5: " + userName + " is currently not logged in!")
+      loginStatus.userLoggedInMessage = userName + " is currently NOT logged in!"
       loginStatus.userLoggedIn = false;
   }
+
+
   res.json(loginStatus)
 }
+
 
 //Function A5: Delete a User 
 async function userDelete(req, res) {
@@ -543,7 +672,6 @@ async function getRefreshToken(req, res) {
     })
 
 }
-
 
 //Function B2: Check remaining token time (maybe don't need)
 async function checkTokenTime(req, res) {
@@ -796,3 +924,136 @@ function verifyUser(req, res, next) {
   //cookies.set('accessToken', {expires: Date.now()});
   //cookies.set('refreshToken', {expires: Date.now()});
 */
+
+
+    
+
+
+
+  /*
+  STEP 1: Validate Information
+
+  STEP 2: Check if Username is taken (if they gave good information )
+  
+  STEP 3: Register the New User
+  Step 3A: Register User Login 
+  Step 3A: Register User Profile 
+        registerUserLoginOutcome = await User.registerUserLogin(newUser)
+        registerUserProfileOutcome = await User.registerUserProfile(newUser)
+  */
+
+  /*
+
+  //SORT BELOW
+  var registerUserLoginOutcome = {}
+  var registerUserProfileOutcome = {}
+
+	var newUser = {
+		userName: userName,
+		fullName: fullName,
+		userEmail: userEmail,
+    password: hashedPassword,
+    salt: salt
+	}
+
+  var registeredUser = {
+    userName: "",
+		fullName: "",
+    userID: 0,
+		userEmail: "",
+  }
+
+
+  //STEP 2: Check if Username is taken 
+  const userExistsStatus = await Functions.checkIfUserExists(userName)
+  console.log(userExistsStatus)
+
+  //Step 1A: User Provided valid Information
+  if(registrationValidationOutcome.validUserRegistration == 1) {
+
+      //Step 2A: Username is available 
+      if(userExistsStatus.userExists == 0) {
+        console.log("user name is good!")
+        
+        //STEP 3: Register the New User 
+        registerUserLoginOutcome = await User.registerUserLogin(newUser)
+        console.log("STEP 3A: registerUserLoginOutcome")
+        console.log(registerUserLoginOutcome)
+    
+        const userID = registerUserLoginOutcome.userID
+        newUser.userID = userID
+        registeredUser.userID = userID
+        console.log("your new ID " + userID)
+
+        registerUserProfileOutcome = await User.registerUserProfile(newUser)
+        console.log("STEP 3B: registerUserProfileOutcome")
+        console.log(registerUserProfileOutcome)     
+        
+        //SUCCESS
+        //Step 3A: User was sucesfully registered 
+        if(registerUserLoginOutcome.outcome + registerUserProfileOutcome.outcome == 2) {
+          console.log("EVERYTHING GOOD IN DATABSE")
+          registrationOutcome.success = true
+          registrationOutcome.statusCode = 200
+          registrationOutcome.message = "You successfully Registered " + userName + "!"
+     
+          var registrationOutcome = {
+            data: {},
+            success: false,
+            message: "No Register Message", 
+            statusCode: 500,
+            errors: [], 
+            currentUser: req.body.userName
+          }
+
+          registeredUser.userName = userName
+          registeredUser.fullName = fullName
+          registeredUser.userEmail = userEmail
+
+          registrationValidationOutcome.UserRegistrationMessages.push("you succesfully registered " + userName + " with the ID " + userID)
+
+
+        } else {
+          console.log("nope!")
+          registrationOutcome.message = "There was an error with registering " + userName + "!"
+     
+        }
+        
+        //res.json(registrationValidationOutcome);
+
+      //Step 2B: Username is taken 
+      } else {
+        console.log("user name is taken!")
+        registrationOutcome.message = userName + " user name is taken!"
+        registrationValidationOutcome.usernameStatus = 0
+        registrationValidationOutcome.usernameMessages = []
+        registrationValidationOutcome.usernameMessages.push("user name is taken")
+        registrationValidationOutcome.UserRegistrationMessages.push("user name is taken")
+        registrationValidationOutcome.validUserRegistration = 0
+        //res.json(registrationValidationOutcome)
+      }
+
+  } else {
+
+    //UserName is taken
+    if(userExistsStatus.userExists == 1) {
+      registrationOutcome.message = userName + "user name is taken!"
+      registrationValidationOutcome.usernameStatus = 0
+      registrationValidationOutcome.usernameMessages = []
+      registrationValidationOutcome.usernameMessages.push("user name is taken")
+      registrationValidationOutcome.UserRegistrationMessages.push("user name is taken")
+      registrationValidationOutcome.validUserRegistration = 0
+    }
+
+    console.log("User needs to provide better name and stuff")
+    registrationValidationOutcome.UserRegistrationMessages.push("User needs to provide better name and stuff")
+    registrationValidationOutcome.validUserRegistration = 0
+    //res.json(registrationValidationOutcome)
+  }
+
+  registrationOutcome.data.registrationMessages = registrationValidationOutcome
+  registrationOutcome.data.registeredUser = registeredUser
+
+
+  res.json(registrationOutcome)
+  */

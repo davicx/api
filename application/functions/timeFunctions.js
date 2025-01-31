@@ -76,7 +76,13 @@ function getCurrentTime() {
     if(hour > 12) {
         hour = hour - 12
     }
-    let time = hour + ":" + minutes + " pm"
+    var time = ""
+
+    if(minutes < 10) {
+        time = hour + ":0" + minutes + " pm"
+    } else {
+        time = hour + ":" + minutes + " pm"
+    }
  
     //Get a Message to Display 
     let timeMessage = dayjs(now).fromNow()

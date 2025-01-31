@@ -182,7 +182,80 @@ class Group {
         });
     } 
 
-    //Method A5: Accept Group Invite
+    //Method A5:: Get All Groups User is In 
+    static async getGroupsUserIsIn(userName) {
+        const connection = db.getConnection(); 
+        const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 
+
+        var userGroupsResponse = {
+            status: 500,
+            groupIDs: [],
+            errors: [],
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                
+                connection.query(queryString, [userName], (err, rows) => {
+                    
+                    if (!err) {
+                        rows.map((row) => {
+                            userGroupsResponse.groupIDs.push(row.group_id) 
+                        }); 
+                        userGroupsResponse.status = 200; 
+                    } else {
+                        console.log("error getting group users")    
+                        userGroupsResponse.outcome = "no worky"
+                        userGroupsResponse.errors.push(err);
+                    } 
+                    
+                    resolve(userGroupsResponse);
+                }) 
+                
+            } catch(err) {
+                userGroupsResponse.outcome = "rejected";
+                console.log("REJECTED ");
+                reject(userGroupsResponse);
+            } 
+        });
+
+        //NEW
+        /*
+
+        //Move to Groups Class
+        connection.query(queryString, [currentUser], (err, rows) => {
+            if (!err) {
+                var groupList = [];
+                rows.map((row) => {
+                    let currentGroup = {
+                        groupID: row.group_id,
+                        groupName: row.group_name
+                    }
+
+                    groupList.push(currentGroup);
+                });
+
+                res.json({groups: groupList} );
+
+            } else {
+                console.log("Failed to Select Post")
+                console.log(err)
+                res.sendStatus(500)
+                return
+            }
+        })
+
+        */
+        //ORIGINAL
+        /*
+
+        
+
+
+        */
+    } 
+
+    //Method A6: Accept Group Invite
     static acceptGroupInvite(groupID, currentUser, requestID) {
         const connection = db.getConnection(); 
         console.log("Yay! " + groupID + " " + currentUser + " " + requestID)
@@ -225,7 +298,7 @@ class Group {
         })  
     }
     
-    //Method A6: Leave Group
+    //Method A7: Leave Group
     static async leaveGroup(currentUser, groupID)  {
         const connection = db.getConnection(); 
 

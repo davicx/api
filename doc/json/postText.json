@@ -1,0 +1,29 @@
+{
+    "data": {
+        "postID": 618,
+        "postType": "text",
+        "groupID": 72,
+        "listID": 0,
+        "postFrom": "davey",
+        "postTo": "frodo",
+        "postCaption": "Hiya!! Wanna go on a Hike!",
+        "fileName": "no_file.jpg",
+        "fileNameServer": "no_file.jpg",
+        "fileURL": "no_file.jpg",
+        "cloudKey": "no_cloud_key",
+        "videoURL": "no_video_url",
+        "videoCode": "no_video_code",
+        "postDate": "11/22/2024",
+        "postTime": "4:20 pm",
+        "timeMessage": "a few seconds ago",
+        "created": "",
+        "commentsArray": [],
+        "postLikesArray": [],
+        "simpleLikesArray": []
+    },
+    "message": "You made a Text post!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}

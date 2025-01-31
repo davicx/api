@@ -16,9 +16,13 @@ FUNCTIONS A: All Functions Related to Local Uploads
 */
 
 //SETUP: Set File Destination and Size
+//var fileLimit = 1024 * 1024 * 40; 
 var fileLimit = 1024 * 1024 * 40; 
+//var fileLimit = 1; 
 //var uploadFolder = "./application/upload_temp/uploads";
 var uploadFolder = "./uploads";
+//var profileUploadFolder = "./public/profile";
+var profileUploadFolder = "./public/kite-profile-us-west-two";
 
 //Function A1: Create local upload and filename for Local Storage
 const localStorage = multer.diskStorage({
@@ -39,15 +43,17 @@ const uploadLocal = multer({
   storage: localStorage,
   limits: { fileSize: fileLimit},
 
+
   fileFilter: function (req, file, cb) {
     let size = req.rawHeaders.slice(-1)[0]
 
     console.log("Davey lets upload!!");
-    console.log("File Limit: " + fileLimit);
+    console.log("File Limit: " + fileLimit + " File Size: " + size);
 
     //Create image and size filter
-    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {
-      console.log("File type is good!")
+    //if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+      console.log("File type is good!!!!!!!")
       cb(null, true);
     } else {
       console.log("Please choose an image type file like jpeg or something ya know?")
@@ -58,10 +64,66 @@ const uploadLocal = multer({
 }).single('postImage')
 
 
+//Function A3: Image Upload for User Photo
+const localProfileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, profileUploadFolder)
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    const newFilename = file.fieldname + '-' + uniqueSuffix + "-" + file.originalname
 
-module.exports = { uploadLocal }
+    cb(null, newFilename)
+  }
+})
+
+const uploadProfilePhotoLocal = multer({ 
+  //Part 1: File Destination
+  storage: localProfileStorage,
+  limits: { fileSize: fileLimit},
 
 
+  fileFilter: function (req, file, cb) {
+    let size = req.rawHeaders.slice(-1)[0]
+
+    console.log("Davey lets upload!!");
+    console.log("File Limit: " + fileLimit + " File Size: " + size);
+
+    //Create image and size filter
+    //if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+      console.log("File type is good!!!!!!!")
+      cb(null, true);
+    } else {
+      console.log("Please choose an image type file like jpeg or something ya know?")
+      cb(new Error('This is not a valid image file'))
+    } 
+  }
+  
+}).single('profileImage')
+
+
+
+
+
+
+
+module.exports = { uploadLocal, uploadProfilePhotoLocal }
+
+/*
+
+var uploadLocal = multer({
+  storage: localStorage,
+  limits: { fileSize: 1024 * 1024 * 20},
+  photoFilter: photoFilter
+})
+
+var uploadPostPhoto = multer({
+  storage: postPhotoStorage,
+  limits: { fileSize: 1024 * 1024 * 20},
+  photoFilter: photoFilter
+});
+*/
 
 /*
 require('dotenv').config()

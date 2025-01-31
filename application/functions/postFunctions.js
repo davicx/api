@@ -31,6 +31,8 @@ FUNCTIONS B: All Post Helper Functions
 	2) Function B2: Get count of posts to a User
     3) Function B3: Check if Post Exists 
     4) Function B4: Get Post Created Timestamp 
+    5) Function B5: Get Post From
+ 
 */
 
 //FUNCTIONS A: All Functions Related to getting Posts
@@ -251,8 +253,11 @@ async function getSignedURL(post) {
 
     if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
         let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
+        console.log("getSignedURL: IF");
+        console.log(signedURL);
         post.fileUrl = signedURL;
     } else {
+        console.log("getSignedURL: ELSE");
         post.fileUrl = "#"
     }
 
@@ -260,14 +265,18 @@ async function getSignedURL(post) {
 }
 
 //Function A8: Add Signed URLS to an Array of Posts
+
+//FIX NEED A BETTER KEY local_cloud_key or 
 async function addSignedURL(posts)  {
     for (let i = 0; i < posts.length; i++) {
         //console.log(posts[i].cloudKey)
-        if(Functions.compareStrings(posts[i].cloudKey, "local_cloud_key") == false) {
+        if(Functions.compareStrings(posts[i].cloudKey, "no_cloud_key") == false) {
+            console.log("GETTING SIGNED URL cloudKEY is local_cloud_key")
             let signedURL = await cloudFunctions.getSignedURL(posts[i].cloudKey)
-            posts[i].fileUrl = signedURL;
+            posts[i].fileURL = signedURL;
         } else {
-            posts[i].fileUrl = "#"
+            console.log("WE ARE NOT GETTING SIGNED URL cloudKEY is local_cloud_key")
+            posts[i].fileURL = "#"
         }
     }
 
@@ -415,8 +424,40 @@ async function getPostCreated(postID)  {
     
 }
 
+//Function B5: Get Post From
+async function getPostFrom(postID)  {
+    const connection = db.getConnection(); 
 
-module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURL, getSignedURL, checkPostExists, getPostCreated }
+    const queryString = "SELECT post_from FROM posts WHERE post_id = ?";
+    var postsOutcome = {
+        success: false   
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            connection.query(queryString, [postID], (err, rows) => {
+                if (!err) {
+                    console.log(rows)
+                    postsOutcome.postFrom = rows[0].post_from
+                    postsOutcome.success = true
+                    resolve(postsOutcome)
+        
+                } else {
+                    console.log("Failed to Select Posts" + err)
+                    console.log(err)
+                    reject(postsOutcome);
+                }
+           })
+            
+        } catch(err) { 
+            console.log(err)
+            reject(postsOutcome);
+        } 
+    })
+    
+}
+
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURL, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
 
 
 /*

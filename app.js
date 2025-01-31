@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3003;
 
 app.use(express.json());
 app.use(cookieParser())
+app.use(express.static('public'));
 app.use(
   cors({
       credentials: true,
@@ -25,7 +26,7 @@ const requests = require('./application/routes/requestRoutes.js');
 const friends = require('./application/routes/friendRoutes.js');
 const search = require('./application/routes/searchRoutes.js');
 const simple = require('./application/routes/simpleRoutes.js');
-//const profile = require('./application/routes/profileRoutes.js');
+const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
 const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
 
@@ -39,6 +40,7 @@ app.use(friends);
 app.use(search);
 app.use(upload);
 app.use(uploadLearning);
+app.use(profile);
 app.use(simple);
 
 //Server Login 

@@ -22,12 +22,13 @@ class Post {
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
         const postTo = req.body.postTo 
-        const groupID = req.body.groupID 
-        const listID = req.body.listID 
+        const groupID = Number(req.body.groupID)
+        const listID = Number(req.body.listID)
         const postCaption = req.body.postCaption 
-        const fileName = "";
-        const fileNameServer = "";
-        const fileURL = "";
+        const fileName = "no_file.jpg";
+        const fileNameServer = "no_file.jpg";
+        const fileURL = "no_file.jpg";
+        const cloudKey = "no_cloud_key"
 
 		if(req.body.fileNameServer != undefined) {
 			fileNameServer = req.body.fileNameServer;
@@ -46,16 +47,17 @@ class Post {
         var createdPost = {
             postID: 0,
             postType: postType,
-            groupID: groupID,
-            listID: listID,
+            groupID: Number(groupID),
+            listID: Number(listID),
             postFrom: postFrom,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
             fileNameServer: fileNameServer,
-            fileUrl: fileURL,
-            videoURL: "",
-            videoCode: "",
+            fileURL: fileURL,
+            cloudKey: "no_cloud_key",
+            videoURL: "no_video_url",
+            videoCode: "no_video_code",
 			postDate: timeFunctions.getCurrentTime().postDate,
 			postTime: timeFunctions.getCurrentTime().postTime,
 			timeMessage: timeFunctions.getCurrentTime().timeMessage,
@@ -75,9 +77,9 @@ class Post {
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption) VALUES (?, ?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption, file_name, cloud_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     
-                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption], (err, results, fields) => {
+                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, cloudKey], (err, results, fields) => {
                     if (!err) {
                         console.log("Step 1B: You created a new Post with ID " + results.insertId);    
                         postOutcome.outcome = 200;       
@@ -117,28 +119,31 @@ class Post {
         const fileStorageType = uploadFile.storageType; //local | aws | other
         const bucket = uploadFile.bucket;
  
+        let tempTIME = timeFunctions.getCurrentTime().postTime 
+        console.log(tempTIME)
+
         var createdPost = {
             postID: 0,
             postType: postType,
-            groupID: groupID,
-            listID: listID,
+            groupID: Number(groupID),
+            listID: Number(listID),
             postFrom: postFrom,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
             fileNameServer: fileNameServer,
-            fileUrl: fileURL,
+            fileURL: fileURL,
             cloudKey: cloudKey,
             videoURL: "empty",
             videoCode: "empty",
-			postDate: timeFunctions.getCurrentTime().postDate,
+            postDate: timeFunctions.getCurrentTime().postDate,
 			postTime: timeFunctions.getCurrentTime().postTime,
 			timeMessage: timeFunctions.getCurrentTime().timeMessage,
             created: "",
             commentsArray: [],
             postLikesArray: [],
             simpleLikesArray: []
-        }    
+        }  
 
         console.log("Created Post")
         console.log(createdPost)
@@ -199,7 +204,7 @@ class Post {
             postCaption: postCaption,
             fileName: "fileName",
             fileNameServer: "fileNameServer",
-            fileUrl: "fileURL",
+            fileURL: "fileURL",
             videoURL: videoURL,
             videoCode: videoCode,
 			postDate: timeFunctions.getCurrentTime().postDate,
@@ -276,7 +281,7 @@ class Post {
                                 postCaption: row.post_caption,
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
-                                fileUrl: row.file_url,
+                                fileURL: row.file_url,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,
                                 created: row.created
@@ -346,7 +351,7 @@ class Post {
                                 postCaption: row.post_caption,
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
-                                fileUrl: row.file_url,
+                                fileURL: row.file_url,
                                 cloudKey: row.cloud_key,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,

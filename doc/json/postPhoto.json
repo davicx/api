@@ -1,0 +1,29 @@
+{
+    "data": {
+        "postID": 619,
+        "postType": "photo",
+        "groupID": "72",
+        "listID": "0",
+        "postFrom": "davey",
+        "postTo": "sam",
+        "postCaption": "Hiya wanna garden! ",
+        "fileName": "david.jpg",
+        "fileNameServer": "postImage-1732321244305-999049565-david.jpg",
+        "fileURL": "uploads/postImage-1732321244305-999049565-david.jpg",
+        "cloudKey": "no_cloud_key",
+        "videoURL": "empty",
+        "videoCode": "empty",
+        "postDate": "11/22/2024",
+        "postTime": "4:20 pm",
+        "timeMessage": "a few seconds ago",
+        "created": "",
+        "commentsArray": [],
+        "postLikesArray": [],
+        "simpleLikesArray": []
+    },
+    "message": "Your photo was posted!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}

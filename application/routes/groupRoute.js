@@ -36,7 +36,8 @@ groupRouter.post('/group/join/', function(req, res) {
 })
 
 //Route A4: Get All Groups User is In 
-groupRouter.get("/groups/user/:user_name", middlewares.verifyUser, (req, res) => {
+//groupRouter.get("/groups/user/:user_name", middlewares.verifyUser, (req, res) => {
+groupRouter.get("/groups/user/:user_name/", (req, res) => {
     groupFunctions.getUserGroups(req, res);
 })
 

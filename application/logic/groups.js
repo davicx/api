@@ -311,38 +311,34 @@ async function leaveGroup(req, res) {
 }
 
 //Function A5: Get All Groups User is In 
-function getUserGroups(req, res) {
+async function getUserGroups(req, res) {
     const connection = db.getConnection(); 
-	const currentUser = req.authorizationData.currentUser;
-	console.log("getUserGroups: This was the decoded user from the token")
-    console.log(req.currentUser)
+	const currentUser = req.params.user_name;
+	const groupID = req.params.group_id;
+
+	var groupsOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	//console.log("getUserGroups: This was the decoded user from the token")
+
 	console.log("getUserGroups")
-	//console.log("File: groupFunctions Function: getUserGroups")
 
-	const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 
+	const groupUsersOutcome = await Group.getGroupsUserIsIn(currentUser);
+	
+	if(groupUsersOutcome.status == 200) {
+		groupsOutcome.data = groupUsersOutcome.groupIDs
+		groupsOutcome.message = "We got the groups!"
+		groupsOutcome.success = true
+		groupsOutcome.statusCode = 200
+	}
 
-    connection.query(queryString, [currentUser], (err, rows) => {
-        if (!err) {
-			var groupList = [];
-			rows.map((row) => {
-                let currentGroup = {
-                    groupID: row.group_id,
-                    groupName: row.group_name
-                }
-
-				groupList.push(currentGroup);
-			});
-
-			res.json({groups: groupList} );
-
-        } else {
-            console.log("Failed to Select Post")
-            console.log(err)
-            res.sendStatus(500)
-            return
-		}
-    })
-
+	res.json(groupsOutcome)
 }
 
 //Function A6: Get Single Group by ID 

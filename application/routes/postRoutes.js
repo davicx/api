@@ -1,6 +1,7 @@
 const express = require('express')
 const postRouter = express.Router();
 const postFunctions = require('../functions/postFunctions')
+const functions = require('../functions/functions')
 const posts = require('../logic/posts')
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
@@ -36,26 +37,29 @@ postRouter.post('/post/text', function(req, res) {
     posts.postText(req, res);
 })
 
-
 //Route A2: Post Photo Local
 postRouter.post('/post/photo', async function(req, res) {
-	posts.postPhoto(req, res)
-})
+	//posts.postPhoto(req, res)
+	const appLocation = process.env.APP_LOCATION
+	const fileLocation = process.env.FILE_LOCATION
 
-//Route A3: Post Photo Local
-postRouter.post('/post/photo/local', async function(req, res) {
-	posts.postPhotoLocal(req, res)
-})
+	console.log("appLocation " + appLocation + " fileLocation " +fileLocation );
 
-//Route A4: Post Photo Local to AWS
-postRouter.post('/post/photo/local/aws', async function(req, res) {
-	posts.postPhotoLocalAWS(req, res)
-})
-
-//Route A5: Post Photo AWS to AWS
-postRouter.post('/post/photo/aws', async function(req, res) {
-	//posts.postPhotoLocal(req, res)
-	res.json({need:"Set this up"})
+	//Type 1: Local to Local 
+	if(functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "local")) {
+		console.log("Post Router: Type 1: Local to Local")
+		posts.postPhotoLocal(req, res)
+	//Type 2: Local to AWS 	
+	} else if (functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "aws")) {
+		console.log("Post Router: Type 2: Local to AWS")
+		posts.postPhotoLocalAWS(req, res)
+	//Type 3: AWS to AWS	
+	} else if(functions.compareStrings(appLocation, "aws") && functions.compareStrings(fileLocation, "aws")) {
+		console.log("Post Router: Type 3: AWS to AWS")
+		res.json({need:"Set this up"})
+	} else {
+		res.json({outcome:"uhh whats up dude", appLocation: appLocation, fileLocation:fileLocation})
+	}
 })
 
 
@@ -138,6 +142,24 @@ module.exports = postRouter;
 
 
 
+
+/*
+//Route A3: Post Photo Local
+postRouter.post('/post/photo/local', async function(req, res) {
+	posts.postPhotoLocal(req, res)
+})
+
+//Route A4: Post Photo Local to AWS
+postRouter.post('/post/photo/local/aws', async function(req, res) {
+	posts.postPhotoLocalAWS(req, res)
+})
+
+//Route A5: Post Photo AWS to AWS
+postRouter.post('/post/photo/aws', async function(req, res) {
+	//posts.postPhotoLocal(req, res)
+	res.json({need:"Set this up"})
+})
+*/
 
 
 

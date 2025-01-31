@@ -18,7 +18,7 @@ class Profile {
     //Method A1: Get User Profile Info 
     static async getUserProfile(userName){ 
         const connection = db.getConnection(); 
-        const queryString = "SELECT user_id, user_name, image_name, first_name, last_name FROM user_profile WHERE user_name = ?";
+        const queryString = "SELECT * FROM user_profile WHERE user_name = ?";
 
         var userProfileOutcome = {
             success: false,
@@ -36,13 +36,18 @@ class Profile {
                         }); 
 
                         const userProfile = {
-                            userName: userName,
-                            userID: rows[0].user_id,
                             userName: rows[0].user_name,
-                            userImage: rows[0].image_name,
+                            userID: rows[0].user_id,
+                            userImage: rows[0].image_url,
+                            biography: rows[0].biography,
+                            storageLocation: rows[0].storage_location,
+                            cloudBucket: rows[0].cloud_bucket,
+                            cloudKey: rows[0].cloud_key,
                             firstName: rows[0].first_name,
-                            lastName: rows[0].last_name
-                        }
+                            lastName: rows[0].last_name,
+                            fileName: rows[0].file_name,
+                            fileNameServer: rows[0].file_name_server
+                        };
 
                         userProfileOutcome.userProfile = userProfile;
                         userProfileOutcome.success = true; 
@@ -124,18 +129,22 @@ class Profile {
             success: false,
             errors: []
         }
-    
+
         return new Promise(async function(resolve, reject) {
             try {	
-                const queryString = "UPDATE user_profile SET image_name = ?, first_name = ?, last_name = ?, biography = ? WHERE user_name = ?";	
+                const queryString = "UPDATE user_profile SET first_name = ?, last_name = ?, biography = ?, storage_location = ?, cloud_bucket = ?, cloud_key = ?, image_url = ?, file_name = ?, file_name_server = ? WHERE user_name = ?";	
         
-                connection.query(queryString, [updatedUser.imageName, updatedUser.firstName, updatedUser.lastName, updatedUser.biography, updatedUser.currentUser], (err, rows) => {
+                connection.query(queryString, [updatedUser.firstName, updatedUser.lastName, updatedUser.biography, 
+                    updatedUser.storageLocation, updatedUser.cloudBucket, updatedUser.cloudKey, updatedUser.imageURL, updatedUser.fileName, updatedUser.fileNameServer, 
+                    updatedUser.currentUser], (err, rows) => {
+
                     if (!err) {
                         console.log("CLASS: Profile Status: Success")
                         updateUserProfileStatus.success = true;
                         resolve(updateUserProfileStatus); 
                     } else {
                         console.log("CLASS: Profile Status: Error")
+                        console.log(err)
                         updateUserProfileStatus.errors.push(err);
                         resolve(updateUserProfileStatus);
                     }
@@ -148,6 +157,8 @@ class Profile {
         })
     }
 
+    /*
+    */
 }
 
 module.exports = Profile;
