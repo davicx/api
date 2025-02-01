@@ -14,10 +14,12 @@ FUNCTIONS A: All Middleware Functions
 function verifyUser(req, res, next) {
   console.log("____________________________________________")
   console.log("MIDDLEWARE: verifyUser")
+  const currentUser = req.currentUser
 
   var token = null;
   var tokenType = ""
 
+  /*
   var responseMessage = {
       messageFrom: "MIDDLEWARE: verifyUser to access route",
       validateToken: "Access token validation",
@@ -26,8 +28,27 @@ function verifyUser(req, res, next) {
       tokenExpired: false,
       validToken: false,
       requestNewAccessToken: false,
-      message: []
+
   }
+  */
+    var middleWareData = {
+        validateToken: "Access token validation",
+        tokenType: "",
+        noAccessToken: false,
+        tokenExpired: false,
+        validToken: false,
+        requestNewAccessToken: false,
+    }
+
+
+    var responseMessage = {
+        data: {},
+        success: false,
+        message: "MIDDLEWARE: verifyUser to access route", 
+        statusCode: 500,
+        errors: [], 
+        currentUser: currentUser
+    }
   
   //STEP 1: Determine if the auth is from a cookie or header 
   cookieToken = req.cookies.accessToken;
@@ -45,20 +66,24 @@ function verifyUser(req, res, next) {
   if(tokenType == "cookie") {
       console.log("STEP 1: the access token is from a cookie")
       token = req.cookies.accessToken;
-      responseMessage.tokenType = "cookie"
+      //responseMessage.tokenType = "cookie"
+      middleWareData.tokenType = "cookie";
   } else if(tokenType == "header") {
       console.log("STEP 1: the access token is from a header")
-      responseMessage.tokenType = "header"
+      //responseMessage.tokenType = "header"
+      middleWareData.tokenType = "header";
       token = authHeader && authHeader.split(' ')[1]
   } else {
       console.log("STEP 1: There is no access token or it is null")
-      responseMessage.tokenType = "empty"
+      //responseMessage.tokenType = "empty"
+      middleWareData.tokenType = "empty";    
       tokenType = null;
   }
 
+
   //STEP 2: Verify there is an access token we can use to validate 
   if(token == null || undefined) {
-      console.log("STEP 2: There is no access token send a 401 and request a new access token with a refresh token")
+      console.log("STEP 2: There is no access token send a 498 and request a new access token with a refresh token")
       responseMessage.noAccessToken = true
       responseMessage.requestNewAccessToken = true
       console.log(responseMessage)
@@ -96,6 +121,10 @@ function verifyUser(req, res, next) {
 
   //console.log(tokenTimeResponse);
 
+  //TEMP Maybe?
+  responseMessage.data = middleWareData;
+
+  //TEMP Maybe?
   //STEP 5: Verify Token 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
       if(!err) {

@@ -117,6 +117,7 @@ async function getSimpleUserProfile(req, res) {
 //Function A3: Update User Profile
 async function updateUserProfile(req, res) {
     const connection = db.getConnection(); 
+    //const currentUser = req.currentUser
 
     console.log(req.body)
 
@@ -129,7 +130,7 @@ async function updateUserProfile(req, res) {
 	}
 
     //STEP 1: Create updated user Information
-    let currentUser = req.body.currentUser
+    let currentUser = req.body.currentUser //Need from Token
     let imageName = req.body.imageName
     let firstName = req.body.firstName
     let lastName = req.body.lastName
@@ -187,7 +188,6 @@ async function updateFullUserProfileLocal(req, res) {
       
     let file = req.file
     console.log(file)
-
 
 	//STEP 1: Check for Valid File
 	console.log("STEP 1: Upload Post to API")
@@ -349,6 +349,13 @@ async function updateFullUserProfileLocalAWS(req, res) {
 	if(uploadSuccess == true) {
 		console.log("STEP 2: Add Post to Database")
 		let file = req.file
+
+        let currentUser = req.body.currentUser
+        let firstName = req.body.firstName
+        let lastName = req.body.lastName
+        let biography = req.body.biography
+        let imageURL = "aws_request"
+
         
         //STEP 3: Upload to AWS
         const fileExtension = mime.extension(file.mimetype) 

@@ -19,7 +19,7 @@ FUNCTIONS A: All Routes Related to User Profile
 
 //FUNCTIONS A: All Routes Related to User Profile
 //Function A1: Get User Profile
-profileRouter.get("/profile/:user_name", (req, res) => {
+profileRouter.get("/profile/:user_name", middlewares.verifyUser, (req, res) => {
     profile.getUserProfile(req, res);
 })
 
@@ -31,7 +31,7 @@ profileRouter.post("/profile/update", (req, res) => {
 
 
 //Function A3: Update Full User Profile
-profileRouter.post("/profile/full/update", (req, res) => {
+profileRouter.post("/profile/full/update", middlewares.verifyUser, (req, res) => {
 	//profile.updateUserProfile(req, res);
 	const appLocation = process.env.APP_LOCATION
 	const fileLocation = process.env.FILE_LOCATION

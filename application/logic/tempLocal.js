@@ -22,6 +22,7 @@ async function updateFullUserProfileLocal(req, res) {
         }
       
     let file = req.file
+    console.log(file)
 
 	//STEP 1: Check for Valid File
 	console.log("STEP 1: Upload Post to API")
