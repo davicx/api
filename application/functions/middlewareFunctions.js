@@ -32,7 +32,7 @@ function verifyUser(req, res, next) {
   }
   */
     var middleWareData = {
-        validateToken: "Access token validation",
+        //validateToken: "Access token validation",
         tokenType: "",
         noAccessToken: false,
         tokenExpired: false,
@@ -81,12 +81,15 @@ function verifyUser(req, res, next) {
   }
 
 
-  //STEP 2: Verify there is an access token we can use to validate 
+  //STEP 2: Verify there is an Access Token we can use to validate 
   if(token == null || undefined) {
       console.log("STEP 2: There is no access token send a 498 and request a new access token with a refresh token")
-      responseMessage.noAccessToken = true
-      responseMessage.requestNewAccessToken = true
+      middleWareData.noAccessToken = true
+      middleWareData.requestNewAccessToken = true
+      responseMessage.message = "The request was sent without an Access Token so we will try to get one with a Refresh Token. Don't do more then once?!"
+      
       console.log(responseMessage)
+      
       res.status(498).json(responseMessage)
       var token = null;
       return
@@ -94,11 +97,34 @@ function verifyUser(req, res, next) {
   } else {
       //var tokenSmall = token.substring(0,5);
       var tokenSmall = token.substring(0,8);
-      console.log("STEP 2: The token " + tokenSmall)
+      console.log("STEP 2: Their is an Access Token " + tokenSmall)
   }
 
+  //NOT DONE
 
-  //STEP 3: Verify the Token 
+  /*
+      var middleWareData = {
+        validateToken: "Access token validation",
+        tokenType: "",
+        noAccessToken: false,
+        tokenExpired: false,
+        validToken: false,
+        requestNewAccessToken: false,
+    }
+
+
+    var responseMessage = {
+        data: {},
+        success: false,
+        message: "MIDDLEWARE: verifyUser to access route", 
+        statusCode: 500,
+        errors: [], 
+        currentUser: currentUser
+    }
+  */
+
+
+  //STEP 3: Verify the Token (IS THIS DUPLICSTE OF STEP 2?)
   if (token == null) {
       console.log("STEP 3: You didn't present an access token, no beuno gotta try to get a new one with a refresh token!")
       responseMessage.noToken = true
