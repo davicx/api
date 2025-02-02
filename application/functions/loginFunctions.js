@@ -539,6 +539,50 @@ async function userDelete(req, res) {
 
 //FUNCTIONS B: All Helper Functions Related to User Login
 //Function B1: Get New Access Token 
+//Function B1: Get New Access Token 
+async function getRefreshTokenNEW(req, res) {
+  console.log("____________________________________________")
+  console.log("LOGIN FUNCTIONS: Get a Refresh Token")
+  const connection = db.getConnection(); 
+  const userName = req.body.userName;
+  var currentUserFromToken = ""
+  var accessToken = await Functions.generateAccessToken(userName, tokenLength)
+  var refreshToken = "noRefreshToken"
+
+  var refreshTokenOutcome = {
+    data: {},
+    success: false,
+    message: "", 
+    statusCode: 401,
+    errors: [], 
+    currentUser: userName
+  }
+
+  var tokenData = {
+    accessToken: "",
+    refreshTokenFound: false,
+    refreshTokenValid: false,
+    refreshTokenMatch: false,
+    tokenTime: 0,
+  }
+
+  
+
+  //STEP 1: Verify a refresh token was sent
+  if(req.cookies.refreshToken) {
+    refreshToken = req.cookies.refreshToken;
+  } 
+
+
+
+  if(refreshToken == null || refreshToken == "noRefreshToken") {
+    res.json({refreshToken: refreshToken})
+  } else {
+    res.json({refreshToken: "no find!"})
+  }
+
+}
+
 async function getRefreshToken(req, res) {
   console.log("____________________________________________")
   console.log("LOGIN FUNCTIONS: Get a Refresh Token")
@@ -563,11 +607,20 @@ async function getRefreshToken(req, res) {
 
   var refreshToken = "noRefreshToken"
 
+  console.log("req.cookies.refreshToken")
+  console.log(req.cookies.refreshToken)
+  console.log("req.cookies.refreshToken")
+
   //STEP 1: Verify there is a refresh token 
   if(req.cookies.refreshToken) {
     refreshToken = req.cookies.refreshToken;
+
   } 
 
+
+
+
+  //CLEAN BELOW
   if(refreshToken == null || refreshToken == "noRefreshToken") {
 
     //LOGOUT: No Token 
@@ -672,6 +725,7 @@ async function getRefreshToken(req, res) {
     })
 
 }
+
 
 //Function B2: Check remaining token time (maybe don't need)
 async function checkTokenTime(req, res) {
