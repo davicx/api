@@ -539,50 +539,6 @@ async function userDelete(req, res) {
 
 //FUNCTIONS B: All Helper Functions Related to User Login
 //Function B1: Get New Access Token 
-//Function B1: Get New Access Token 
-async function getRefreshTokenNEW(req, res) {
-  console.log("____________________________________________")
-  console.log("LOGIN FUNCTIONS: Get a Refresh Token")
-  const connection = db.getConnection(); 
-  const userName = req.body.userName;
-  var currentUserFromToken = ""
-  var accessToken = await Functions.generateAccessToken(userName, tokenLength)
-  var refreshToken = "noRefreshToken"
-
-  var refreshTokenOutcome = {
-    data: {},
-    success: false,
-    message: "", 
-    statusCode: 401,
-    errors: [], 
-    currentUser: userName
-  }
-
-  var tokenData = {
-    accessToken: "",
-    refreshTokenFound: false,
-    refreshTokenValid: false,
-    refreshTokenMatch: false,
-    tokenTime: 0,
-  }
-
-  
-
-  //STEP 1: Verify a refresh token was sent
-  if(req.cookies.refreshToken) {
-    refreshToken = req.cookies.refreshToken;
-  } 
-
-
-
-  if(refreshToken == null || refreshToken == "noRefreshToken") {
-    res.json({refreshToken: refreshToken})
-  } else {
-    res.json({refreshToken: "no find!"})
-  }
-
-}
-
 async function getRefreshToken(req, res) {
   console.log("____________________________________________")
   console.log("LOGIN FUNCTIONS: Get a Refresh Token")
@@ -591,6 +547,7 @@ async function getRefreshToken(req, res) {
   var currentUserFromToken = ""
   var accessToken = await Functions.generateAccessToken(userName, tokenLength)
 
+  //OLD
   //This may be too much maybe make a smaller response and log this to the server
   var refreshTokenResponse = {
     messageFrom: "LOGIN FUNCTIONS: Requesting a new Access Token from an existing Refresh Token",
@@ -604,8 +561,23 @@ async function getRefreshToken(req, res) {
     messages: [],
     errorMessages: []
   }
-
+//OLD
   var refreshToken = "noRefreshToken"
+
+  var refreshTokenOutcome = {
+    data: {},
+    success: false,
+    message: "", 
+    statusCode: 500,
+    errors: [], 
+    currentUser: userName
+  }
+
+  var refeshTokenData = {
+    refreshTokenSent: false,
+    refreshTokenValid: false,
+    refreshTokenDatabseMatch: false
+  }
 
   console.log("req.cookies.refreshToken")
   console.log(req.cookies.refreshToken)
@@ -614,34 +586,37 @@ async function getRefreshToken(req, res) {
   //STEP 1: Verify there is a refresh token 
   if(req.cookies.refreshToken) {
     refreshToken = req.cookies.refreshToken;
-
   } 
 
-
-
-
-  //CLEAN BELOW
+  //Token was not found log the user out
   if(refreshToken == null || refreshToken == "noRefreshToken") {
-
-    //LOGOUT: No Token 
     console.log("STEP 1: No refresh token was sent so logout " + userName)
+    
+    //OLD
     refreshTokenResponse.refreshTokenFound = false;
     refreshTokenResponse.masterRefreshSuccess = false;
     refreshTokenResponse.logUserOut = true;
     refreshTokenResponse.messages.push("No refresh token was sent so logout")
-  
+    //OLD
+
+    refreshTokenOutcome.message = "We did not find a refresh token and are logging the user out"
+    refreshTokenOutcome.statusCode = 401
+    refreshTokenOutcome.data = refeshTokenData;
+
     res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
     res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
     res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
-    console.log(refreshTokenResponse)
-    res.status(440).json(refreshTokenResponse)
+    console.log(refreshTokenOutcome)
+    res.status(401).json(refreshTokenOutcome)
     return 
+  
+  //VALID: Token Found 
   } else {
-
-    //VALID: Token Found 
     console.log("STEP 1: A refresh token was found for " + userName)
     refreshTokenResponse.refreshTokenFound = true;
   }
+
+
 
   //STEP 2: Verify refresh token 
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, authData) => {
@@ -649,24 +624,40 @@ async function getRefreshToken(req, res) {
 
       //LOGOUT: Not a valid token 
       console.log("STEP 2: The refresh token could not be verified")
+
+      //OLD
       refreshTokenResponse.refreshTokenValid = false;
       refreshTokenResponse.masterRefreshSuccess = false;
       refreshTokenResponse.logUserOut = true;
       refreshTokenResponse.messages.push("Error verifying the refreshToken so logout user")
-    
+      //OLD
+
+      refeshTokenData.refreshTokenSent = true;
+      refreshTokenOutcome.message = "Could not verify the refresh Token so logout user"
+      refreshTokenOutcome.statusCode = 401
+
+      refreshTokenOutcome.data = refeshTokenData;
+
       res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
       res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
       res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
-      console.log(refreshTokenResponse)
-      res.status(440).json(refreshTokenResponse)
+      console.log(refreshTokenOutcome)
+      res.status(440).json(refreshTokenOutcome)
       return 
     } else {
 
       //VALID: Valid Token 
+      console.log("STEP 2: The refresh token is verified")
+
+      //OLD
       currentUserFromToken = authData.currentUser;
       refreshTokenResponse.currentUser = currentUserFromToken;
       refreshTokenResponse.refreshTokenValid = true;
-      console.log("STEP 2: The refresh token is verified")
+      //OLD
+
+      //TO DO: MAKE SURE NAMES MATCH
+      refreshTokenOutcome.currentUser = authData.currentUser;
+      
     }
   })
 
@@ -690,26 +681,50 @@ async function getRefreshToken(req, res) {
             console.log("____________________________________")
             res.cookie('accessToken', accessToken, {maxAge: 100 * 60 * 60 * 1000, httpOnly: true})
 
+            //OLD
             refreshTokenResponse.refreshTokenMatch = true;
             refreshTokenResponse.masterRefreshSuccess = true;
             refreshTokenResponse.accessToken = accessToken;
             refreshTokenResponse.messages.push("Need to get a new access token and it worked!")
-            console.log(refreshTokenResponse)
+            //OLD
+
+            refeshTokenData.refreshTokenSent = true
+            refeshTokenData.refreshTokenValid = true
+            refeshTokenData.refreshTokenDatabseMatch = true
+            refeshTokenData.newAccessToken = accessToken;
+            refreshTokenOutcome.success = true
+            refreshTokenOutcome.message = "SUCCESS: We sent a new access token"
+            refreshTokenOutcome.statusCode = 200
+            refreshTokenOutcome.data = refeshTokenData
+     
+            console.log(refreshTokenOutcome)
          
-            res.json(refreshTokenResponse)
+            res.json(refreshTokenOutcome)
             
           //LOGOUT: The token did not match    
           } else {
+            //OLD
             refreshTokenResponse.masterRefreshSuccess = false;
             refreshTokenResponse.refreshTokenMatch = false;
             refreshTokenResponse.logUserOut = true;
+
             refreshTokenResponse.errorMessages.push("no worky yours didn't match the database")
+            //OLD
+
+            refeshTokenData.refreshTokenSent = true
+            refeshTokenData.refreshTokenValid = true
+            refeshTokenData.refreshTokenDatabseMatch = false
+            refreshTokenOutcome.message = "There was no refresh token in the database"
+            refreshTokenOutcome.statusCode = 401
+      
+            refreshTokenOutcome.data = refeshTokenData;
+
             res.cookie('accessToken', accessToken, {maxAge: 1, httpOnly: true})
             res.cookie('refreshToken', refreshToken, {maxAge: 1, path: '/refresh', httpOnly: true})
             res.cookie('loggedInUser', userName,{maxAge: 1, httpOnly: true})
-            console.log(refreshTokenResponse)
+            console.log(refreshTokenOutcome)
 
-            res.status(440).json(refreshTokenResponse)
+            res.status(401).json(refreshTokenOutcome)
             return 
           }
         
@@ -717,7 +732,7 @@ async function getRefreshToken(req, res) {
         } else {
             console.log("Failed to Select Posts" + err)
             console.log("____________________________________")
-            console.log(refreshTokenResponse)
+            console.log(refreshTokenOutcome)
             
             res.sendStatus(500)
             return

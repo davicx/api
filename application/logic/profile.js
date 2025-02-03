@@ -50,9 +50,9 @@ async function getUserProfile(req, res) {
         lastName: getUserProfileOutcome.userProfile.lastName
     };
 
-    console.log("getUserProfile")
-    console.log(getUserProfileOutcome)
-    console.log("getUserProfile")
+    //console.log("getUserProfile")
+    //console.log(getUserProfileOutcome)
+    //console.log("getUserProfile")
 
     if(getUserProfileOutcome.success == true) {
         userProfileOutcome.message = "We got the user profile for " + currentUser;

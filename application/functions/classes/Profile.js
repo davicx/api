@@ -32,7 +32,7 @@ class Profile {
                     
                     if (!err) {
                         rows.map((row) => {
-                            console.log(row)
+                            //console.log(row)
                         }); 
 
                         const userProfile = {

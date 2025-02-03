@@ -31,7 +31,7 @@ profileRouter.post("/profile/update", (req, res) => {
 
 
 //Function A3: Update Full User Profile
-profileRouter.post("/profile/full/update", middlewares.verifyUser, (req, res) => {
+profileRouter.post("/profile/full/update",(req, res) => {
 	//profile.updateUserProfile(req, res);
 	const appLocation = process.env.APP_LOCATION
 	const fileLocation = process.env.FILE_LOCATION
