@@ -12,3 +12,8 @@
 #ALTER TABLE user_profile ADD COLUMN storage_location VARCHAR(255) AFTER biography;
 #ALTER TABLE user_profile ADD COLUMN cloud_bucket VARCHAR(255) AFTER storage_location;  
 #ALTER TABLE user_profile ADD COLUMN file_name_server VARCHAR(255) AFTER file_name;  
+#ALTER TABLE user_profile MODIFY storage_location VARCHAR(255) DEFAULT 'storage_location';
+
+#SELECT * FROM user_profile;
+DELETE FROM refresh_tokens WHERE user_name = "davey";
+SELECT * FROM refresh_tokens;

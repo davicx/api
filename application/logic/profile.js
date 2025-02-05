@@ -28,6 +28,10 @@ FUNCTIONS A: All Functions Related to User Profile
 async function getUserProfile(req, res) {
     const connection = db.getConnection(); 
     let currentUser = req.params.user_name;
+    console.log(" ")
+    console.log("______________________________________________")
+    console.log("FUNCTION: getUserProfile")
+    console.log("Getting User Profile for " + currentUser)
 
     var userProfileOutcome = {
 	    data: {},
@@ -69,8 +73,14 @@ async function getUserProfile(req, res) {
         userProfileOutcome.data = userProfile;
     }
 
-    res.json(userProfileOutcome)
-
+    console.log("userProfileOutcome")
+    console.log(userProfileOutcome)
+    console.log("userProfileOutcome")
+    console.log("______________________________________________")
+    console.log("______________________________________________")
+    console.log(" ")
+    //res.json(userProfileOutcome)
+    res.status(401).json(userProfileOutcome)
 }
 
 //Function A2: Get Simple User Profile
