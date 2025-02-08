@@ -132,6 +132,41 @@ class Profile {
 
         return new Promise(async function(resolve, reject) {
             try {	
+                const queryString = "UPDATE user_profile SET first_name = ?, last_name = ?, biography = ? WHERE user_name = ?";	
+        
+                connection.query(queryString, [updatedUser.firstName, updatedUser.lastName, updatedUser.biography, 
+                    updatedUser.currentUser], (err, rows) => {
+
+                    if (!err) {
+                        console.log("CLASS: Profile Status: Success")
+                        updateUserProfileStatus.success = true;
+                        resolve(updateUserProfileStatus); 
+                    } else {
+                        console.log("CLASS: Profile Status: Error")
+                        console.log(err)
+                        updateUserProfileStatus.errors.push(err);
+                        resolve(updateUserProfileStatus);
+                    }
+                })
+            } catch(err) {
+                console.log("CLASS: Profile Status: Catch Error")
+                updateUserProfileStatus.errors.push(err);
+                reject(updateUserProfileStatus);
+            } 
+        })
+    }
+
+    //Method A4: Update Full User Profile 
+    static async updateFullUserProfile(updatedUser){ 
+        const connection = db.getConnection(); 
+
+        var updateUserProfileStatus = {
+            success: false,
+            errors: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {	
                 const queryString = "UPDATE user_profile SET first_name = ?, last_name = ?, biography = ?, storage_location = ?, cloud_bucket = ?, cloud_key = ?, image_url = ?, file_name = ?, file_name_server = ? WHERE user_name = ?";	
         
                 connection.query(queryString, [updatedUser.firstName, updatedUser.lastName, updatedUser.biography, 
@@ -156,6 +191,7 @@ class Profile {
             } 
         })
     }
+
 
     /*
     */

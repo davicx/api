@@ -15,5 +15,19 @@
 #ALTER TABLE user_profile MODIFY storage_location VARCHAR(255) DEFAULT 'storage_location';
 
 #SELECT * FROM user_profile;
-DELETE FROM refresh_tokens WHERE user_name = "davey";
-SELECT * FROM refresh_tokens;
+#DELETE FROM refresh_tokens WHERE token_id = 501;
+#SELECT * FROM refresh_tokens;
+
+#ALTER TABLE `user_profile` CHANGE `cloud_bucket` `cloud_bucket` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'cloud_bucket'; 
+#ALTER TABLE `user_profile` CHANGE `cloud_key` `cloud_key` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'cloud_key'; 
+#ALTER TABLE `user_profile` CHANGE `image_url` `image_url` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'image_url'; 
+#ALTER TABLE `user_profile` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'file_name'; 
+#ALTER TABLE `user_profile` CHANGE `file_name_server` `file_name_server` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'file_name_server'; 
+
+
+
+
+
+
+
+

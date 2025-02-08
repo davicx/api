@@ -79,8 +79,8 @@ async function getUserProfile(req, res) {
     console.log("______________________________________________")
     console.log("______________________________________________")
     console.log(" ")
-    //res.json(userProfileOutcome)
-    res.status(401).json(userProfileOutcome)
+    res.json(userProfileOutcome)
+    //res.status(401).json(userProfileOutcome)
 }
 
 //Function A2: Get Simple User Profile
@@ -148,11 +148,12 @@ async function updateUserProfile(req, res) {
 
     let updatedUser = {
         currentUser: currentUser,
-        imageName: imageName,
         firstName: firstName,
         lastName: lastName,     
-        biography: biography     
+        biography: biography,
     }
+
+
     console.log("STEP 1: Created Updated User Profile Information ")
     console.log(updatedUser)
 
@@ -164,7 +165,19 @@ async function updateUserProfile(req, res) {
         updateUserProfileOutcome.message = "We updated the user profile for " + currentUser;
         updateUserProfileOutcome.success = true;
         updateUserProfileOutcome.statusCode = 200;
-        updateUserProfileOutcome.data = updatedUser;
+        
+        let userID = await userFunctions.getUserID(currentUser);
+
+        let responseUser = {
+            userName: currentUser ,
+            userID: userID.userID,
+            userImage: imageName,
+            firstName: firstName,
+            lastName: lastName,     
+            biography: biography,
+        }
+
+        updateUserProfileOutcome.data = responseUser;
     } else {
         console.log("STEP 2: There was an error Updating User Profile Information ")
     }
@@ -173,6 +186,10 @@ async function updateUserProfile(req, res) {
 
 }
 
+//Function A5: Update User Profile AWS
+//Will add when
+
+//Function A4: Update Full User Profile
 async function updateFullUserProfileLocal(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
 		var uploadSuccess = false
@@ -182,7 +199,7 @@ async function updateFullUserProfileLocal(req, res) {
             message: "", 
             success: false,
             statusCode: 500,
-            errors: [], 
+            errors: [""], 
             currentUser: req.body.currentUser
         }
 
@@ -258,7 +275,7 @@ async function updateFullUserProfileLocal(req, res) {
         console.log(" file.path " + file.path)
       
         //STEP 3: Update User Profile
-        let updateUserProfile = await Profile.updateUserProfile(updatedUser);
+        let updateUserProfile = await Profile.updateFullUserProfile(updatedUser);
 
         if(updateUserProfile.success == true) {
             console.log("STEP 2: Successfully Updated User Profile Information ")
@@ -289,6 +306,7 @@ async function updateFullUserProfileLocal(req, res) {
 
     updateUserProfileOutcome.data = updatedUserResponse
     console.log(" ")
+    console.log(updateUserProfileOutcome)
     console.log(" ______________________________________ ")
     console.log(" ")
     res.json(updateUserProfileOutcome)
@@ -297,6 +315,7 @@ async function updateFullUserProfileLocal(req, res) {
 
 
 }
+
 
 async function updateFullUserProfileLocalAWS(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
@@ -387,6 +406,9 @@ async function updateFullUserProfileLocalAWS(req, res) {
 
 }
 
+//Function A6: Update Full User Profile AWS
+
+//Original
 async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
 		var uploadSuccess = false
