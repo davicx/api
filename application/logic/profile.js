@@ -186,8 +186,6 @@ async function updateUserProfile(req, res) {
 
 }
 
-//Function A5: Update User Profile AWS
-//Will add when
 
 //Function A4: Update Full User Profile
 async function updateFullUserProfileLocal(req, res) {
@@ -199,7 +197,7 @@ async function updateFullUserProfileLocal(req, res) {
             message: "", 
             success: false,
             statusCode: 500,
-            errors: [""], 
+            errors: [], 
             currentUser: req.body.currentUser
         }
 
@@ -312,7 +310,6 @@ async function updateFullUserProfileLocal(req, res) {
     res.json(updateUserProfileOutcome)
 
   })
-
 
 }
 

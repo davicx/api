@@ -26,7 +26,7 @@ FUNCTIONS B: All Helper Functions Related to User Login
 
 //var tokenLength = '86000s'
 //var tokenLength = '3600s'
-var tokenLength = '60s'
+var tokenLength = '30s'
 //var tokenLength = '8s'
 
 //FUNCTIONS A: All Functions Related to a User 
