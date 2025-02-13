@@ -41,7 +41,7 @@ async function checkIfUserExists(userName) {
 		errors: []
     }
 
-    console.log("INSIDE FUNCTION checkIfUserExists " + userName)
+    //console.log("INSIDE FUNCTION checkIfUserExists " + userName)
 
     return new Promise(async function(resolve, reject) {
         try {

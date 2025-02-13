@@ -8,16 +8,16 @@ FUNCTIONS A: All Functions Related to Login
 */
 
 //Function A1: Insert Refresh Tokens
-async function insertRefreshToken(refreshToken, userName, userID) {
+async function insertRefreshToken(refreshToken, deviceID, userName, userID) {
   const connection = db.getConnection();
-  const queryString = "INSERT INTO refresh_tokens (refresh_token, user_name, user_id) VALUES (?, ?, ?)";
+  const queryString = "INSERT INTO refresh_tokens (refresh_token, device_id, user_name, user_id) VALUES (?, ?, ?, ?)";
 
   var insertRefreshTokenOutcome = {
     status: false
   }
 
   return new Promise((resolve, reject) => {
-      connection.query(queryString, [refreshToken, userName, userID], (err, results) => {
+      connection.query(queryString, [refreshToken, deviceID, userName, userID], (err, results) => {
           if (!err) {
               console.log("STEP 5: Added a refresh token to the database with ID " + results.insertId);
               insertRefreshTokenOutcome.status = true
@@ -34,16 +34,16 @@ async function insertRefreshToken(refreshToken, userName, userID) {
 }
 
 //Function A2: Delete Old Refresh Tokens
-async function deleteRefreshTokens(userName) {
+async function deleteRefreshTokens(userName, deviceID) {
   const connection = db.getConnection(); 
-  const clearQueryString = "DELETE FROM refresh_tokens WHERE user_name = ?;";
+  const clearQueryString = "DELETE FROM refresh_tokens WHERE user_name = ? AND device_id = ?;";
 
   var deleteRefreshTokenOutcome = {
     status: false
   }
 
   return new Promise((resolve, reject) => {
-      connection.query(clearQueryString, [userName], (err, result) => {
+      connection.query(clearQueryString, [userName, deviceID], (err, result) => {
           if (!err) {
               console.log("Removed old refresh tokens for " + userName);
               deleteRefreshTokenOutcome.status = true

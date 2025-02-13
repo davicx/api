@@ -7,6 +7,7 @@ const Functions = require('../functions/functions');
 const validationFunctions = require('../functions/validationFunctions');
 const timeFunctions = require('../functions/timeFunctions');
 const loginFunctions = require('../functions/loginFunctions');
+const userFunctions = require('../functions/userFunctions');
 const Login = require('../functions/classes/Login')
 const User = require('../functions/classes/User')
 
@@ -27,8 +28,8 @@ FUNCTIONS B: All Helper Functions Related to User Login
 */
 
 //var tokenLength = '86000s'
-//var tokenLength = '3600s'
-var tokenLength = '30s'
+var tokenLength = '3600s'
+//var tokenLength = '30s'
 //var tokenLength = '8s'
 
 //FUNCTIONS A: All Functions Related to a User 
@@ -37,8 +38,16 @@ var tokenLength = '30s'
 async function userLogin(req, res) {
   const connection = db.getConnection(); 
   const userName = req.body.userName;
-  const userID = 1;
   const password = req.body.password;
+  const deviceID = req.body.device_id;
+  //const userID = 1
+  //const userID = await userFunctions.getUserID(userName).userID;
+  var userOutcome = await userFunctions.getUserID(userName)
+  var userID = userOutcome.userID
+  //console.log("userOutcome")
+  //console.log(userOutcome.userID)
+  //console.log("userOutcome")
+
   var loginSuccess = true;
   
   console.log("LOGIN USER: Logging in " + userName);
@@ -60,7 +69,7 @@ async function userLogin(req, res) {
 
   //STEP 1: Check if user Exists 
   const userExistsStatus = await Functions.checkIfUserExists(userName);
-  console.log("THIS IS THE USERNAME TO USER " + userExistsStatus.userName)
+  //console.log("THIS IS THE USERNAME TO USER " + userExistsStatus.userName)
   userExists = !!userExistsStatus.userExists;
 
   //STEP 2: Validate user and password
@@ -101,10 +110,13 @@ async function userLogin(req, res) {
     console.log("STEP 4: Generated access and refresh tokens")
 
     //STEP 5: Add Refresh Token to Database
-    var deleteRefreshTokenOutcome = await loginFunctions.deleteRefreshTokens(userName);
+    var deleteRefreshTokenOutcome = await loginFunctions.deleteRefreshTokens(userName, deviceID);
     console.log(deleteRefreshTokenOutcome)
 
-    var insertRefreshTokenOutcome = await loginFunctions.insertRefreshToken(refreshToken, userName, userID)
+    console.log("userID")
+    console.log(userID)
+    console.log("userID")
+    var insertRefreshTokenOutcome = await loginFunctions.insertRefreshToken(refreshToken, deviceID, userName, userID)
     console.log(insertRefreshTokenOutcome)
 
     if(insertRefreshTokenOutcome.status == true ) {
@@ -165,8 +177,10 @@ async function userLogin(req, res) {
 async function userLogout(req, res) {
   const connection = db.getConnection(); 
   const userName = req.body.userName;
+  const deviceID = req.body.device_id;
 
   console.log("API logout userName " + userName)
+  console.log("API logout deviceID " + deviceID)
 
   var logoutOutcome = {
 		success: false,
@@ -177,7 +191,7 @@ async function userLogout(req, res) {
 	}
 
   //STEP 1: Remove all Access Tokens for User 
-  const logoutClassResult = await Login.logoutUser(userName)
+  const logoutClassResult = await Login.logoutUser(userName, deviceID)
   logoutOutcome.data = {
     logoutSuccess: logoutClassResult.success
   }
@@ -197,6 +211,9 @@ async function userLogout(req, res) {
   res.cookie('loggedInUser', "notLoggedIn",{maxAge: 1, httpOnly: true})
   res.cookie('refreshToken', "notLoggedIn", {maxAge: 1, path: '/refresh', httpOnly: true})
 
+  console.log("logoutOutcome")
+  console.log(logoutOutcome)
+  console.log("logoutOutcome")
   res.json(logoutOutcome)
 }
 
