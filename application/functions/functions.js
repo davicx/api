@@ -269,8 +269,8 @@ async function checkIfUserExists(userName) {
 		errors: []
     }
 
-    console.log("INSIDE FUNCTION checkIfUserExists " + userName)
-    console.log("INSIDE FUNCTION checkIfUserExists " + userName)
+    //console.log("INSIDE FUNCTION checkIfUserExists " + userName)
+    //console.log("INSIDE FUNCTION checkIfUserExists " + userName)
     return new Promise(async function(resolve, reject) {
         try {
             
@@ -281,19 +281,19 @@ async function checkIfUserExists(userName) {
 
                 if (!err) {
                     if(rows.length < 1){
-                        console.log("IF")
-                        console.log("IF")
-                        console.log("IF")
+                       //console.log("IF")
+                        //console.log("IF")
+                        //console.log("IF")
                         userExistsStatus.outcome = 200;
                         userExistsStatus.userExists = 0;
                     } else {
-                        console.log("ELSE")
-                        console.log("ELSE")
-                        console.log("ELSE")
-                        console.log("rows[0].user_name")
-                        console.log(userName)
-                        console.log(rows[0].user_name)
-                        console.log("rows[0].user_name")
+                        //console.log("ELSE")
+                        //console.log("ELSE")
+                        //console.log("ELSE")
+                        //console.log("rows[0].user_name")
+                        //console.log(userName)
+                        //console.log(rows[0].user_name)
+                        //console.log("rows[0].user_name")
                         userExistsStatus.outcome = 200;
                         userExistsStatus.userName = rows[0].user_name; 
                         userExistsStatus.userID = rows[0].user_id; 

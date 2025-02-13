@@ -1,44 +1,44 @@
 const express = require('express')
 const loginRouter = express.Router(); 
-const loginFunctions = require('../functions/loginFunctions')
+//const loginFunctions = require('../logic/login')
 const login = require('../logic/login')
 
 //LOGIN ROUTES
 //Route A1: User Login 
 loginRouter.post('/user/login', function(req, res) {
-    loginFunctions.userLogin(req, res);
+    login.userLogin(req, res);
 })
 
 //Route A2: Logout User 
 loginRouter.post('/user/logout', function(req, res) {
-    loginFunctions.userLogout(req, res);
+    login.userLogout(req, res);
 })
 
 //Route A3: Register 
 loginRouter.post('/user/register', function(req, res) {
-    loginFunctions.userRegister(req, res);
+    login.userRegister(req, res);
 })
 
 //Route A4: Login Status (On front end need to add refresh for expired access token and retry)
 loginRouter.post('/refresh/status', function(req, res) {
-    loginFunctions.loginStatus(req, res);
+    login.loginStatus(req, res);
 })
 
 //Route A5: Delete a User 
 loginRouter.post('/user/delete', function(req, res) {
-    loginFunctions.userDelete(req, res);
+    login.userDelete(req, res);
 })
 
 //Route A6: Check if Cookie Expired 
 loginRouter.get('/token/time', function(req, res) {
-    loginFunctions.checkTokenTime(req, res);
+    login.checkTokenTime(req, res);
 })
 
 //TOKEN AND COOKIE ROUTES
 //Route A7: Use Refresh Token to get New Access Token
 loginRouter.post('/refresh/tokens', function(req, res) {
     console.log("ROUTE /refresh/tokens: Requesting a new token by sending a refresh token")
-    loginFunctions.getRefreshToken(req, res);
+    login.getRefreshToken(req, res);
 })
 
 //Route A8 Get current Cookies

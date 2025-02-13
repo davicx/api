@@ -13,27 +13,27 @@ class Login {
 
     //METHODS A: Login Functions
     //Method A1: Login User
-    static async loginUser(userName) { 
+    static async loginUser(userName, deviceID) { 
         console.log("loginUser hi!! " + userName)  
     }
     
     //Method A2: Logout User
-    static async logoutUser(userName) { 
+    static async logoutUser(userName, deviceID ) { 
         const connection = db.getConnection(); 
+
+        console.log("logoutUser " + userName + " " + deviceID)
              
         var logoutOutcome = {
             success: false,
             errors: []
         }
-        
-        console.log(logoutOutcome)
 
         //Remove all Access Tokens for User 
-        const queryString = "DELETE FROM refresh_tokens WHERE user_name= ?;"			
+        const queryString = "DELETE FROM refresh_tokens WHERE user_name= ? AND device_id = ?;"			
 
         return new Promise(async function(resolve, reject) {
             try {
-                connection.query(queryString, [userName], (err, rows) => {
+                connection.query(queryString, [userName, deviceID], (err, rows) => {
                     if (!err) {
                         logoutOutcome.success = true
                         resolve(logoutOutcome)

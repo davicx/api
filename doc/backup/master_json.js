@@ -1,3 +1,4 @@
+/*
 //POST: Text to a User
 {
 	"masterSite": "kite",
@@ -39,3 +40,4 @@
     "notificationType": "new_post_text",
     "notificationLink": "http://localhost:3003/posts/group/77"          
 }
+*/
