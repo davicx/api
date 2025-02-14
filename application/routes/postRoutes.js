@@ -37,7 +37,7 @@ postRouter.post('/post/text', function(req, res) {
     posts.postText(req, res);
 })
 
-//Route A2: Post Photo Local
+//Route A2: Post Photo 
 postRouter.post('/post/photo', async function(req, res) {
 	//posts.postPhoto(req, res)
 	const appLocation = process.env.APP_LOCATION

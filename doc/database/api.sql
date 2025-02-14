@@ -16,8 +16,8 @@
 
 #SELECT * FROM user_profile;
 #DELETE FROM refresh_tokens WHERE token_id = 514;
-SELECT * FROM refresh_tokens;
-#ALTER TABLE refresh_tokens 
+SELECT * FROM posts;
+
 #ADD COLUMN device_id VARCHAR(255) NOT NULL DEFAULT 'device_id' AFTER refresh_token;
 
 #ALTER TABLE `user_profile` CHANGE `cloud_bucket` `cloud_bucket` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'cloud_bucket'; 

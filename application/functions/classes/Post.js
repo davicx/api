@@ -258,6 +258,13 @@ class Post {
         const limit = 2;
         const currentOffset = limit * (currentPage - 1);
 
+        console.log("getGroupPosts")
+        console.log("groupID")
+        console.log(groupID)
+        console.log("currentPage")
+        console.log(currentPage)
+        console.log("currentOffset")
+        console.log(currentOffset)
         const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?";
         
         var postsOutcome = {
@@ -271,6 +278,7 @@ class Post {
                 connection.query(queryString, [groupID, limit, currentOffset], (err, rows) => {
                     if (!err) {
                         const posts = rows.map((row) => {
+                            
                             return {
                                 postID: row.post_id,
                                 postType: row.post_type,
@@ -279,15 +287,23 @@ class Post {
                                 postFrom: row.post_from,
                                 postTo: row.post_to,
                                 postCaption: row.post_caption,
+                           
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
                                 fileURL: row.file_url,
+                                
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,
                                 created: row.created
+             
                             }
                         });
                         postsOutcome.posts = posts;
+                        console.log("posts")
+                        console.log(postsOutcome)
+                        console.log(posts)
+                        console.log("posts")
+
     
                         resolve(postsOutcome)
             
@@ -298,6 +314,7 @@ class Post {
                })
                 
             } catch(err) { 
+                console.log(err)
                 reject(postsOutcome);
             } 
         })

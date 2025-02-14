@@ -7,7 +7,8 @@ const secretAccessKey = process.env.AWS_SECRET_KEY
 const s3 = new S3({ region, accessKeyId, secretAccessKey })
 const fs = require('fs') 
 const multer = require('multer')
-const upload = multer({ dest: './uploads' })
+//const upload = multer({ dest: './uploads' })
+const upload = multer({ dest: './kite-posts-us-west-two' })
 
 /*
 FUNCTIONS A: All Functions Related to Local Uploads
@@ -20,7 +21,7 @@ FUNCTIONS A: All Functions Related to Local Uploads
 var fileLimit = 1024 * 1024 * 40; 
 //var fileLimit = 1; 
 //var uploadFolder = "./application/upload_temp/uploads";
-var uploadFolder = "./uploads";
+var uploadFolder = "./public/kite-posts-us-west-two";
 //var profileUploadFolder = "./public/profile";
 var profileUploadFolder = "./public/kite-profile-us-west-two";
 

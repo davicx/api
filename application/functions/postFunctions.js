@@ -255,7 +255,7 @@ async function getSignedURL(post) {
         let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
         console.log("getSignedURL: IF");
         console.log(signedURL);
-        post.fileUrl = signedURL;
+        post.fileURL = signedURL;
     } else {
         console.log("getSignedURL: ELSE");
         post.fileUrl = "#"
@@ -263,6 +263,24 @@ async function getSignedURL(post) {
 
     return post;
 }
+
+async function getImage(input) {
+    //Could be local or AWS 
+    /*
+    if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
+        let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
+        console.log("getSignedURL: IF");
+        console.log(signedURL);
+        post.fileURL = signedURL;
+    } else {
+        console.log("getSignedURL: ELSE");
+        post.fileUrl = "#"
+    }
+
+    return post;
+    */
+}
+
 
 //Function A8: Add Signed URLS to an Array of Posts
 

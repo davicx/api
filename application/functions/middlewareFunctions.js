@@ -53,17 +53,17 @@ function verifyUser(req, res, next) {
     }
   
     if(tokenType == "cookie") {
-        console.log("STEP 1: the access token is from a cookie")
+        //console.log("STEP 1: the access token is from a cookie")
         token = req.cookies.accessToken;
         //responseMessage.tokenType = "cookie"
         middleWareData.tokenType = "cookie";
     } else if(tokenType == "header") {
-        console.log("STEP 1: the access token is from a header")
+        //console.log("STEP 1: the access token is from a header")
         //responseMessage.tokenType = "header"
         middleWareData.tokenType = "header";
         token = authHeader && authHeader.split(' ')[1]
     } else {
-        console.log("STEP 1: There is no access token or it is null")
+        //console.log("STEP 1: There is no access token or it is null")
         //responseMessage.tokenType = "empty"
         middleWareData.tokenType = "empty";    
         tokenType = null;
@@ -72,10 +72,10 @@ function verifyUser(req, res, next) {
 
     //STEP 2: Verify there is an access token we can use to validate 
     if(token == null || undefined) {
-        console.log("STEP 2: There is no access token send a 498 and request a new access token with a refresh token")
+        //console.log("STEP 2: There is no access token send a 498 and request a new access token with a refresh token")
         responseMessage.noAccessToken = true
         responseMessage.requestNewAccessToken = true
-        console.log(responseMessage)
+        //console.log(responseMessage)
         res.status(498).json(responseMessage)
         var token = null;
         return
@@ -83,14 +83,14 @@ function verifyUser(req, res, next) {
     } else {
         //var tokenSmall = token.substring(0,5);
         var tokenSmall = token.substring(0,8);
-        console.log("STEP 2: The token " + tokenSmall)
+        //console.log("STEP 2: The token " + tokenSmall)
     }
   
   
     //STEP 4: Check time remaining on token 
     const tokenTimeResponse = functions.checkRemainingTokenTime(token)
     if(tokenTimeResponse.secondsRemaining > 0) {
-        console.log("STEP 4: There is still time on the token. It has " + tokenTimeResponse.secondsRemaining + " seconds left")
+        //console.log("STEP 4: There is still time on the token. It has " + tokenTimeResponse.secondsRemaining + " seconds left")
     } else {
         console.log("STEP 4: The token ran out of time need to refresh")
     }
@@ -103,7 +103,8 @@ function verifyUser(req, res, next) {
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, authorizationData) => {
         if(!err) {
             //SUCCESS
-            console.log("STEP 5: The token was a good one!")
+            //console.log("STEP 5: The token was a good one!")
+            console.log("Validated User!")
             console.log("____________________________________________")
             req.authorizationData = authorizationData
             req.currentUser = authorizationData.currentUser
@@ -120,9 +121,9 @@ function verifyUser(req, res, next) {
             responseMessage.data = middleWareData
             
             req.responseMessage = responseMessage;
-            console.log("MIDDLEWARE: responseMessage")
-            console.log(responseMessage)
-            console.log("MIDDLEWARE: responseMessage")
+            //console.log("MIDDLEWARE: responseMessage")
+            //console.log(responseMessage)
+            //console.log("MIDDLEWARE: responseMessage")
             next();
         } else {
             console.log("STEP 5: The token was no good try to get a new one with refresh token ")
