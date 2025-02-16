@@ -1,5 +1,15 @@
 #USE shareshare;
 
+#GROUPS
+#DELETE FROM shareshare.groups WHERE group_id >72;
+#SELECT * FROM shareshare.groups;
+
+#SELECT * FROM group_users;
+#DELETE FROM group_users WHERE group_id > 72;
+
+SELECT * FROM group_users WHERE user_name = "davey";
+
+#POSTS
 #ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
 #ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
 
@@ -16,8 +26,8 @@
 
 #SELECT * FROM user_profile;
 #DELETE FROM refresh_tokens WHERE token_id = 514;
-SELECT * FROM posts;
 
+#SELECT * FROM posts WHERE group_id = 70 AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?
 #ADD COLUMN device_id VARCHAR(255) NOT NULL DEFAULT 'device_id' AFTER refresh_token;
 
 #ALTER TABLE `user_profile` CHANGE `cloud_bucket` `cloud_bucket` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'cloud_bucket'; 

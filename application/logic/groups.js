@@ -5,18 +5,20 @@ const Notifications = require('../functions/classes/Notification')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const requestFunctions = require('../functions/requestFunctions')
-const groupFunctions = require('../functions/groupFunctions')
+const groupFunctions = require('../functions/groupFunctions');
+const { S3Outposts } = require('aws-sdk');
 
 
 /*
 FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Create a New Group
-	2) Function A2: Invite User to a Group 
-	3) Function A3: Accept Group Invite
-	4) Function A4: Leave a Group 
-	5) Function A5: Get All Groups User is In 
-	6) Function A6: Get Single Group by ID 
-	7) Function A7: Get Group Users
+	2) Function A2: Get Full Groups to Display
+	3) Function A3: Invite User to a Group 
+	4) Function A4: Accept Group Invite
+	5) Function A5: Leave a Group 
+	6) Function A6: Get All Groups User is In 
+	7) Function A7: Get Single Group by ID 
+	8) Function A8: Get Group Users
 */
 
 //Function A1: Create a New Group
@@ -129,7 +131,70 @@ async function createGroup(req, res) {
 	//res.status(500).json({no:"oh no!"});
 }
 
-//Function A2: Invite User to a Group 
+//Function A2: Get Full Groups to Display
+async function getGroups(req, res) {
+	const connection = db.getConnection(); 
+	const currentUser = req.params.user_name;
+
+	var groupOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	var groupsArray = []
+
+	//STEP 1: Get the Groups List 
+	let groupUsers = await Group.getGroupsUserIsIn(currentUser)
+	console.log("STEP 1: Get the Groups List status: " + groupUsers.status)
+
+
+	//STEP 2: Get Individual Group Information
+	const userGroupList = groupUsers.groupIDs 
+	console.log("STEP 2: Get Individual Group Information")
+
+	
+	for (let i = 0; i < userGroupList.length; i++) {
+		let currentGroup = {
+			groupID: "",
+			groupName: "",
+			groupImage: "",
+			activeMembers: [],
+			pendingMembers: []
+		}
+
+		let groupID = userGroupList[i];
+
+		console.log(userGroupList[i])
+
+		//Step 2A: Get the Groups Information (name, image, users)
+		let currentGroupInformation = await Group.getGroupInformation(groupID)	
+		//console.log(currentGroupInformation)
+		
+		//Step 2A: Get the Groups Users
+		let currentGroupUsers = await Group.getGroupUsers(groupID)	
+		//console.log(currentGroupUsers)
+		currentGroup.groupID = groupID
+		currentGroup.groupName = currentGroup.groupName
+		currentGroup.groupImage = currentGroup.groupImage
+		currentGroup.activeMembers = currentGroupUsers.groupUsers
+		currentGroup.pendingMembers = currentGroupUsers.pendingGroupUsers
+
+		groupsArray.push(currentGroup)
+
+	
+		
+	} 
+
+	groupOutcome.data = groupsArray
+
+	res.json(groupOutcome)
+	
+}
+//Function A3: Invite User to a Group 
 async function addGroupUsers(req, res) {
 	const connection = db.getConnection(); 
 	const groupID = req.body.groupID;
@@ -206,7 +271,7 @@ async function addGroupUsers(req, res) {
 	
 }
 
-//Function A3: Accept Group Invite
+//Function A4: Accept Group Invite
 async function acceptGroupInvite(req, res) {
 	const currentUser = req.body.currentUser;
 	const groupID = req.body.groupID;
@@ -269,7 +334,7 @@ async function acceptGroupInvite(req, res) {
 	res.json(acceptGroupInviteOutcome);
 }
 
-//Function A4: Leave a Group 
+//Function A5: Leave a Group 
 async function leaveGroup(req, res) {
 	const currentUser = req.body.currentUser;
 	const groupID = req.body.groupID;
@@ -310,7 +375,7 @@ async function leaveGroup(req, res) {
 
 }
 
-//Function A5: Get All Groups User is In 
+//Function A6: Get All Groups User is In 
 async function getUserGroups(req, res) {
     const connection = db.getConnection(); 
 	const currentUser = req.params.user_name;
@@ -341,17 +406,15 @@ async function getUserGroups(req, res) {
 	res.json(groupsOutcome)
 }
 
-//Function A6: Get Single Group by ID 
+//Function A7: Get Single Group by ID 
 async function getGroup(req, res) {
 	const groupID = req.params.groupID;
-	const groupOutcome = await Group.getGroupUsers(groupID);
-	Group.getGroup(groupID) 
-	console.log(" You got " +  groupID);
-	res.json({groupOutcome: groupOutcome});
+	
+	res.json({toDo: "Need"});
 
 }
 
-//Function A7: Get Group Users
+//Function A8: Get Group Users
 async function getGroupUsers(req, res) {
 	const groupID = req.params.groupID;
 	const groupOutcome = await Group.getGroupUsers(groupID);
@@ -378,6 +441,6 @@ async function getGroupUsers(req, res) {
 
 }
 
-module.exports = { createGroup, addGroupUsers, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };
+module.exports = { createGroup, getGroups, addGroupUsers, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };
 
 

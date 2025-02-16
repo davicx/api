@@ -332,6 +332,44 @@ class Group {
             } 
         });
     }
+   
+    //Method A8: Get Group Information
+    static async getGroupInformation(groupID) {
+        console.log("CLASS GROUP: getting Group Information for " + groupID);
+        const connection = db.getConnection(); 
+        const queryString = "SELECT group_id, group_image, group_name FROM shareshare.groups WHERE group_id = ?";
+        
+        var groupInfoResponse = {
+            status: 500,
+            groupID: 0,
+            groupImage: "",
+            groupName: "",
+            errors: [],
+        };
+    
+        return new Promise(async function(resolve, reject) {
+            try {
+                connection.query(queryString, [groupID], (err, rows) => {
+                    if (!err && rows.length > 0) {
+                        let row = rows[0];
+                        groupInfoResponse.status = 200;
+                        groupInfoResponse.groupID = row.group_id;
+                        groupInfoResponse.groupImage = row.group_image;
+                        groupInfoResponse.groupName = row.group_name;
+                    } else {
+                        console.log("Error retrieving group information or group not found");
+                        groupInfoResponse.errors.push(err || "Group not found");
+                    }
+                    resolve(groupInfoResponse);
+                });
+            } catch(err) {
+                groupInfoResponse.errors.push(err);
+                console.log("REJECTED");
+                reject(groupInfoResponse);
+            }
+        });
+    }
+        
 }
 
 module.exports = Group;
