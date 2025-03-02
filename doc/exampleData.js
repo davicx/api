@@ -4,6 +4,14 @@ Comment status: friends, pending, not friends
 Like status: friends, pending, not friends
 */
 
+/*
+const Functions = require('../functions/functions');
+var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID
+Functions.addHeader(headerMessage)
+
+Functions.addFooter()
+*/
+
 //POST
 /*
 {

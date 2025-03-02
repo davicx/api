@@ -12,7 +12,7 @@ const { S3Outposts } = require('aws-sdk');
 /*
 FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Create a New Group
-	2) Function A2: Get Full Groups to Display
+	2) Function A2: Get Groups for a User
 	3) Function A3: Invite User to a Group 
 	4) Function A4: Accept Group Invite
 	5) Function A5: Leave a Group 
@@ -185,8 +185,7 @@ async function getGroups(req, res) {
 
 		groupsArray.push(currentGroup)
 
-	
-		
+
 	} 
 
 	groupOutcome.data = groupsArray

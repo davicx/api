@@ -283,9 +283,7 @@ async function getImage(input) {
 
 
 //Function A8: Add Signed URLS to an Array of Posts
-
-//FIX NEED A BETTER KEY local_cloud_key or 
-async function addSignedURL(posts)  {
+async function addSignedURLPostsArray(posts)  {
     for (let i = 0; i < posts.length; i++) {
         //console.log(posts[i].cloudKey)
         if(Functions.compareStrings(posts[i].cloudKey, "no_cloud_key") == false) {
@@ -294,7 +292,7 @@ async function addSignedURL(posts)  {
             posts[i].fileURL = signedURL;
         } else {
             console.log("WE ARE NOT GETTING SIGNED URL cloudKEY is local_cloud_key")
-            posts[i].fileURL = "#"
+            //posts[i].fileURL = "#"
         }
     }
 
@@ -475,7 +473,7 @@ async function getPostFrom(postID)  {
     
 }
 
-module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURL, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURLPostsArray, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
 
 
 /*

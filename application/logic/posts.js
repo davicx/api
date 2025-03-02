@@ -129,7 +129,10 @@ async function postText(req, res) {
 
 //Function A2: Post Photo Local 
 async function postPhotoLocal(req, res) {
+	var headerMessage = "HEADER: New Photo Post "
+	Functions.addHeader(headerMessage)
 	uploadFunctions.uploadLocal(req, res, async function (err) {
+
 		var uploadSuccess = false
 		var groupID = req.body.groupID;
 
@@ -142,42 +145,42 @@ async function postPhotoLocal(req, res) {
 			currentUser: req.body.postFrom
 		}
 
-	//STEP 1: Upload Post to API
-	console.log("STEP 1: Upload Post to API")
-	//Error 1A: File too large
+	//STEP 2: Upload Post to API
+	console.log("STEP 2: Upload Post to API")
+	//Error 2A: File too large
 	if (err instanceof multer.MulterError) {
-		console.log("Error 1A: File too large")
-		postOutcome.message = "Error 1A: File too large"
+		console.log("Error 2A: File too large")
+		postOutcome.message = "Error 2A: File too large"
   
-	//Error 1B: Not Valid Image File
+	//Error 2B: Not Valid Image File
 	} else if (err) {
-		console.log("Error 1B: Not Valid Image File")
-		postOutcome.message = "Error 1B: Not Valid Image File"
+		console.log("Error 2B: Not Valid Image File")
+		postOutcome.message = "Error 2B: Not Valid Image File"
 
-	//Success 1A: No Multer Errors
+	//Success 2A: No Multer Errors
 	} else {
 		let file = req.file
-		console.log("Success 1A: No Multer Errors")
+		console.log("Success 2A: No Multer Errors")
 
 		//Success 1B: Success Upload File
 		if(file !== undefined) {
-			console.log("Success 1B: Success Upload File")
+			console.log("Success 2B: Success Upload File")
 			uploadSuccess = true   
 
 		//Error 1C: No File 	
 		} else {
-		  console.log("Error 1C: No File mah dude!")
-		  postOutcome.message = "Error 1C: No File mah dude!"
+		  console.log("Error 2C: No File mah dude!")
+		  postOutcome.message = "Error 2C: No File mah dude!"
  
 		} 
 	}
 
 	//STEP 2: Add Post to Database
 	if(uploadSuccess == true) {
-		console.log("STEP 2: Add Post to Database")
+		console.log("STEP 3: Add Post to Database")
 		let file = req.file
-		let imageURL = "http://localhost:3003/" + bucketName + "/" + file.filename
-	
+		//let imageURL = "http://localhost:3003/" + bucketName + "/" + file.filename
+
 
 		//File Information
 		var uploadFile = {}
@@ -209,7 +212,7 @@ async function postPhotoLocal(req, res) {
 			var notification = {}
 			const groupUsersOutcome = await Group.getGroupUsers(groupID);
 			const groupUsers = groupUsersOutcome.groupUsers;
-			console.log("STEP 3: Add notifications")
+			console.log("STEP 4: Add notifications")
 
 			var postID = 0
 			if (newPostOutcome.newPost.postID) {
@@ -221,154 +224,36 @@ async function postPhotoLocal(req, res) {
 					masterSite: "kite",
 					notificationFrom: req.body.postFrom,
 					notificationMessage: req.body.notificationMessage,
-					notificationTo: groupUsers,
+					notificationTo: "",
 					notificationLink: req.body.notificationLink,
 					notificationType: req.body.notificationType,
 					groupID: groupID,
 					postID: postID
 				}
 
-				console.log(notification)
-
+				console.log(groupUsers)
+				for (let i = 0; i < groupUsers.length; i++) {
+					//let notificationTo = groupUsers[i];
+					notification.notificationTo = groupUsers[i];
+					console.log(groupUsers[i]);
+					Notification.createSingleNotification(notification)
+				} 
+				
+				//WORKS
+				/*
 				if(groupUsers.length > 0) {
 					Notification.createGroupNotification(notification);
 				}
+				*/
 			}
 		}
 	}
 
+	Functions.addFooter()
     res.json(postOutcome)
 
   })
 }
-
-//TEMP
-async function updateFullUserProfileLocal(req, res) {
-    uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
-		var uploadSuccess = false
-        console.log("ENVIRONMENT: Local to Local")
-	
-        var updateUserProfileOutcome = {
-            message: "", 
-            success: false,
-            statusCode: 500,
-            errors: [], 
-            currentUser: req.body.currentUser
-        }
-
-        var updatedUserResponse = {
-            userName: "userName", 
-            userID: 0,
-            userImage: "userImage",
-            biography: "biography",
-            firstName: "firstName",
-            lastName: "lastName"
-            
-        }
-      
-    let file = req.file
-    console.log(file)
-
-	//STEP 1: Check for Valid File
-	console.log("STEP 1: Upload Post to API")
-
-	//Error 1A: File too large
-	if (err instanceof multer.MulterError) {
-		console.log("Error 1A: File too large")
-		updateUserProfileOutcome.message = "Error 1A: File too large"
-  
-	//Error 1B: Not Valid Image File
-	} else if (err) {
-		console.log("Error 1B: Not Valid Image File")
-		updateUserProfileOutcome.message = "Error 1B: Not Valid Image File"
-
-	//Success 1A: No Multer Errors
-	} else {
-		let file = req.file
-		console.log("Success 1A: No Multer Errors")
-
-		//Success 1B: Success Upload File
-		if(file !== undefined) {
-			console.log("Success 1B: Success Upload File")
-			uploadSuccess = true   
-
-		//Error 1C: No File 	
-		} else {
-		  console.log("Error 1C: No File mah dude!")
-		  updateUserProfileOutcome.message = "Error 1C: No File mah dude!"
- 
-		} 
-	}
-
-	//STEP 2: Update Profile 
-	if(uploadSuccess == true) {
-		console.log("STEP 2: Add Post to Database")
-		let file = req.file
- 
-        let currentUser = req.body.currentUser
-        let firstName = req.body.firstName
-        let lastName = req.body.lastName
-        let biography = req.body.biography
-        let imageURL = "http://localhost:3003/" + bucketName + "/" + file.filename
-
-        let updatedUser = {
-            currentUser: currentUser,
-            firstName: firstName,
-            lastName: lastName,     
-            biography: biography,
-            storageLocation: "local",
-            cloudBucket: bucketName,
-            cloudKey: file.path,
-            imageURL: imageURL,
-            fileName: file.originalname,
-            fileNameServer: file.filename
-        }
-
-        console.log("STEP 2: Created Updated User Profile Information ")
-        console.log(" file.path " + file.path)
-      
-        //STEP 3: Update User Profile
-        let updateUserProfile = await Profile.updateFullUserProfile(updatedUser);
-
-        if(updateUserProfile.success == true) {
-            console.log("STEP 2: Successfully Updated User Profile Information ")
-            updateUserProfileOutcome.message = "We updated the user profile for " + currentUser;
-            updateUserProfileOutcome.success = true;
-            updateUserProfileOutcome.statusCode = 200;
-
-            let userIDResponse = await userFunctions.getUserID(currentUser);
-            
-            updatedUserResponse.userName = currentUser;
-            updatedUserResponse.userID = userIDResponse.userID;
-            updatedUserResponse.userImage = imageURL;
-            updatedUserResponse.biography = biography;
-            updatedUserResponse.firstName = firstName;
-            updatedUserResponse.lastName = lastName;
-
-            updateUserProfileOutcome.data = updatedUserResponse;
-
-        } else {
-            updateUserProfileOutcome.errors = updateUserProfile.errors
-            console.log("STEP 2: There was an error Updating User Profile Information ")
-        }
-
-	} else {
-        //TO DO: Add updatedUser to this out come!!
-        console.log("STEP 2: Update Profile did not work")
-    }
-
-    updateUserProfileOutcome.data = updatedUserResponse
-    console.log(" ")
-    console.log(updateUserProfileOutcome)
-    console.log(" ______________________________________ ")
-    console.log(" ")
-    res.json(updateUserProfileOutcome)
-
-  })
-
-}
-//TEMP
-
 
 async function postPhotoLocalAWS(req, res) {
 	uploadFunctions.uploadLocal(req, res, async function (err) {
@@ -565,8 +450,12 @@ async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
 	//const currentUser = req.currentUser
-	const currentUser = "daveyChangeBack"
-	console.log("Get all Group Posts for Group: " + groupID)
+	
+	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID
+	Functions.addHeader(headerMessage)
+	
+	const currentUser = "daveyChangeBackWhenusingMiddleware"
+
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await Post.getGroupPostsAll(groupID)
@@ -579,7 +468,7 @@ async function getAllGroupPosts(req, res) {
 	var postsLikes = await PostFunctions.addPostLikes(currentUser, postsComments)
 	
 	//STEP 4: Get Image URL
-	var posts = await PostFunctions.addSignedURL(postsLikes);
+	var posts = await PostFunctions.addSignedURLPostsArray(postsLikes);
 
 	//let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
 
@@ -592,22 +481,23 @@ async function getAllGroupPosts(req, res) {
 		currentUser: currentUser
 	}
 
-	console.log("TOTAL POSTS " + posts.length)
+	//console.log("TOTAL POSTS " + posts.length)
 
-	console.log("Getting posts!")
-	console.log("At " + timeFunctions.getCurrentTime().postTime);
-
-	//TEMP
-	let fileURLTemp = "http://localhost:3003/images/background_2.png"
-	//let fileURLTemp = "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1723416523001-467663100-lake.jpg?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEE8aCXVzLXdlc3QtMiJIMEYCIQCuleLUVoYuQxX0LDzWKkd5nfGj8WRrzH8GGpsGRQEaggIhAIbeeyX9HopcvA2n8yzLLAxPAK0FpYI8nAYnX52tfhuCKuQCCGgQABoMNTM0NzUzMzY5ODUwIgzzrOU51U9oRAZ7g0IqwQJj2zZjZYmZ8RSN2gi9AMQkiKZs5gRasy6sGBLtql5Hgg7OC1EwfqzVAk1Y87E73tBtA1FvlggWlp3Sj2pa8vYN6QWm0iDIzSg6aCLZzi37mq7ef%2FFthgIAvj2kK0Rvp4s%2BP%2F10WsYMQ1JgctGgDVx9g3hwFx%2Fm%2Fs91AmamOgs6qPmtVF00pFIucWt2JwBx5mI6Rjnrl9ZHi7C%2Bxqkqguw94nshVMzvg0OavoCYjIrJnktvxTtDxawrOiBucy02A4Fli9gGstRun%2BEgV7U9lpg53qmyetoddR%2BPjBsb9nbpX4p9FD9gGJz4JBeE7sLDOy12SkeNaRI6u8yeOGm91GpJQRNYG6DV75gD6hZ7o%2BRbToqLbcdbNTPM6J8l2sJOQIpGmjDJ2m%2Bmi5sk8wELt3Up72CFTEZbGaneEee3p7QyGc4wpqHJtgY6sgJuv%2FBozg3R1F2ZR%2BO7YYyb4pTUPLLFm3WwSASWBGPw64HgAqHQOVxAcbdjAHnF9JJ4mcpUuzpmdySt9Cfh1HDfFPKUPcNH0XZ2ttDBX1OfZXg0OyOF%2BWQhN7pRO2z%2FH715sa%2BD5YNVSwzn%2BdCpSxdMIDqIf9WqXDBENLDf6P3j7kHDSmE2rJFUChRUazxj0v5FDZ9DH0HNXpH3anw93%2FQvhUZsrc3MavRLYbABjRbeU7TK5zrGgNF%2BjMi1Ksfhq5sE08jJScjNVL4%2FGPKrCSPxoATNUSa6TTh35Ew%2F9RkIXaXwvSm7xWQDnTFDcrEQ7hrMLUBKvuEVkO%2BIjS8wdIlPoM%2Bt33xxAol7MA1rj3Kus9FJCb83kwoTfvSAneH2sWjgquvpoVOvKZz8%2FOeJEUleC7Q%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240830T231229Z&X-Amz-SignedHeaders=host&X-Amz-Expires=14400&X-Amz-Credential=ASIAXZAOI335AW5B2P6Y%2F20240830%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Signature=08b38fba14fbc43bb0bbe8140495aee4124f6f391196b59f7e222a223af6a215"
-	for (let i = 0; i < postsResponse.data.length; i++) {
-		postsResponse.data[i].fileURL = fileURLTemp
-	}
-	//TEMP
-
+	//console.log("Getting posts!")
+	Functions.addFooter()
 	res.json(postsResponse)
 
 }
+
+
+	//TEMP
+	//let fileURLTemp = "http://localhost:3003/images/background_2.png"
+	//let fileURLTemp = "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1723416523001-467663100-lake.jpg?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEE8aCXVzLXdlc3QtMiJIMEYCIQCuleLUVoYuQxX0LDzWKkd5nfGj8WRrzH8GGpsGRQEaggIhAIbeeyX9HopcvA2n8yzLLAxPAK0FpYI8nAYnX52tfhuCKuQCCGgQABoMNTM0NzUzMzY5ODUwIgzzrOU51U9oRAZ7g0IqwQJj2zZjZYmZ8RSN2gi9AMQkiKZs5gRasy6sGBLtql5Hgg7OC1EwfqzVAk1Y87E73tBtA1FvlggWlp3Sj2pa8vYN6QWm0iDIzSg6aCLZzi37mq7ef%2FFthgIAvj2kK0Rvp4s%2BP%2F10WsYMQ1JgctGgDVx9g3hwFx%2Fm%2Fs91AmamOgs6qPmtVF00pFIucWt2JwBx5mI6Rjnrl9ZHi7C%2Bxqkqguw94nshVMzvg0OavoCYjIrJnktvxTtDxawrOiBucy02A4Fli9gGstRun%2BEgV7U9lpg53qmyetoddR%2BPjBsb9nbpX4p9FD9gGJz4JBeE7sLDOy12SkeNaRI6u8yeOGm91GpJQRNYG6DV75gD6hZ7o%2BRbToqLbcdbNTPM6J8l2sJOQIpGmjDJ2m%2Bmi5sk8wELt3Up72CFTEZbGaneEee3p7QyGc4wpqHJtgY6sgJuv%2FBozg3R1F2ZR%2BO7YYyb4pTUPLLFm3WwSASWBGPw64HgAqHQOVxAcbdjAHnF9JJ4mcpUuzpmdySt9Cfh1HDfFPKUPcNH0XZ2ttDBX1OfZXg0OyOF%2BWQhN7pRO2z%2FH715sa%2BD5YNVSwzn%2BdCpSxdMIDqIf9WqXDBENLDf6P3j7kHDSmE2rJFUChRUazxj0v5FDZ9DH0HNXpH3anw93%2FQvhUZsrc3MavRLYbABjRbeU7TK5zrGgNF%2BjMi1Ksfhq5sE08jJScjNVL4%2FGPKrCSPxoATNUSa6TTh35Ew%2F9RkIXaXwvSm7xWQDnTFDcrEQ7hrMLUBKvuEVkO%2BIjS8wdIlPoM%2Bt33xxAol7MA1rj3Kus9FJCb83kwoTfvSAneH2sWjgquvpoVOvKZz8%2FOeJEUleC7Q%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240830T231229Z&X-Amz-SignedHeaders=host&X-Amz-Expires=14400&X-Amz-Credential=ASIAXZAOI335AW5B2P6Y%2F20240830%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Signature=08b38fba14fbc43bb0bbe8140495aee4124f6f391196b59f7e222a223af6a215"
+	//for (let i = 0; i < postsResponse.data.length; i++) {
+	//	postsResponse.data[i].fileURL = fileURLTemp
+	//}
+	//TEMP
+
 
 //Route B2: Get Group Posts Pagination
 //http://localhost:3003/posts/group/72/page/1/

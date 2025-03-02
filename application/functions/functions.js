@@ -2,6 +2,7 @@ const db = require('./conn');
 const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
+const timeFunctions = require('./timeFunctions');
 
 
 /* FUNCTIONS 
@@ -11,12 +12,17 @@ FUNCTIONS A: Array and Validation Functions
 	3) Function A3: Remove duplicate values from array
     4) Function A4: Convert an Array to a Set
 
-//FUNCTIONS B: String Functions
-    1) Function B1: Compare two Strings
+
+//FUNCTIONS B: Format Functions
+    1) Function B1: Add Header
+    2) Function B2: Add Footer
+
+//FUNCTIONS C: String Functions
+    1) Function C1: Compare two Strings
 
 
-//FUNCTIONS C: Cloud Functions
-    1) Function C1: Get Environments
+//FUNCTIONS D: Cloud Functions
+    1) Function D1: Get Environments
 
 
 */
@@ -57,6 +63,24 @@ function removeArrayDuplicates(fullArray) {
 }
 
 //Function A4: Convert an Array to a Set
+
+//FUNCTIONS B: Format Functions
+//Function B1: Add Header
+function addHeader(headerMessage) {
+    console.log(" ")
+    console.log("______________________________________________________________")
+    console.log(headerMessage)
+    console.log(" ")
+}
+
+//Function B2: Add Footer
+function addFooter() {
+    console.log(" ")
+    console.log("FOOTER: Request made at " + timeFunctions.getCurrentTime().postTime);
+    console.log("______________________________________________________________")
+    console.log("______________________________________________________________")
+    console.log(" ")
+}
 
 //FUNCTIONS B: String Functions
 //Function B1: Compare two Strings
@@ -459,7 +483,7 @@ async function makeUserNotActiveInLoginTable(userName)  {
 }
 
 
-module.exports = { cleanUserName, cleanUserNameArray, getCloudEnvironments, removeArrayDuplicates, compareStrings, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime }
+module.exports = { cleanUserName, cleanUserNameArray, getCloudEnvironments, removeArrayDuplicates, compareStrings, logoutUser, verifyRefreshTokenInDatabse, generateAccessToken, checkIfUserExists, getUserPassword, removeArrayDuplicates, removeUserFromLoginTable, removeUserFromProfileTable, checkRemainingTokenTime, addHeader, addFooter }
 
 
 //APPENDIX

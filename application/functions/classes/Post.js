@@ -102,6 +102,7 @@ class Post {
 
     //Method A2: Make a Photo Post
     static async createPostPhoto(req, uploadFile)  {
+        console.log("POST: createPostPhoto")
         const connection = db.getConnection(); 
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
@@ -118,9 +119,15 @@ class Post {
         const cloudKey = uploadFile.cloudKey;
         const fileStorageType = uploadFile.storageType; //local | aws | other
         const bucket = uploadFile.bucket;
+
+        //console.log("TEMP: createPostPhoto")
+        //console.log(fileURL)
+        //console.log(cloudKey)
+        //console.log(fileStorageType)
+        //console.log("TEMP")
  
-        let tempTIME = timeFunctions.getCurrentTime().postTime 
-        console.log(tempTIME)
+        //let tempTIME = timeFunctions.getCurrentTime().postTime 
+        //console.log(tempTIME)
 
         var createdPost = {
             postID: 0,
@@ -133,6 +140,7 @@ class Post {
             fileName: fileName,
             fileNameServer: fileNameServer,
             fileURL: fileURL,
+            cloudBucket: bucket,
             cloudKey: cloudKey,
             videoURL: "empty",
             videoCode: "empty",
@@ -143,10 +151,10 @@ class Post {
             commentsArray: [],
             postLikesArray: [],
             simpleLikesArray: []
-        }  
+        }
 
-        console.log("Created Post")
-        console.log(createdPost)
+        //console.log("Created Post")
+        //console.log(createdPost)
 
         var postOutcome = {
             newPost: createdPost,
@@ -258,6 +266,7 @@ class Post {
         const limit = 2;
         const currentOffset = limit * (currentPage - 1);
 
+        /*
         console.log("getGroupPosts")
         console.log("groupID")
         console.log(groupID)
@@ -265,6 +274,7 @@ class Post {
         console.log(currentPage)
         console.log("currentOffset")
         console.log(currentOffset)
+        */
         const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?";
         
         var postsOutcome = {
@@ -369,6 +379,7 @@ class Post {
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
                                 fileURL: row.file_url,
+                                cloudBucket: "Need to add",
                                 cloudKey: row.cloud_key,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,

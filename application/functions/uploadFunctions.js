@@ -48,16 +48,16 @@ const uploadLocal = multer({
   fileFilter: function (req, file, cb) {
     let size = req.rawHeaders.slice(-1)[0]
 
-    console.log("Davey lets upload!!");
-    console.log("File Limit: " + fileLimit + " File Size: " + size);
+    console.log("STEP 1: Upload file to local storage");
+    console.log("Step 1A: File Limit: " + fileLimit + " File Size: " + size);
 
     //Create image and size filter
     //if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {
     if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-      console.log("File type is good!!!!!!!")
+      console.log("Step 1B: File type is good!")
       cb(null, true);
     } else {
-      console.log("Please choose an image type file like jpeg or something ya know?")
+      console.log("Step 1B: Please choose an image type file like jpeg or something ya know?")
       cb(new Error('This is not a valid image file'))
     } 
   }

@@ -2,17 +2,29 @@
 
 #GROUPS
 #DELETE FROM shareshare.groups WHERE group_id >72;
-#SELECT * FROM shareshare.groups;
+#SELECT * FROM shareshare.groups
+#SELECT * FROM shareshare.groups WHERE group_id = 70;
 
 #SELECT * FROM group_users;
-#DELETE FROM group_users WHERE group_id > 72;
+#DELETE FROM group_users WHERE primary_id > 1520;
 
-SELECT * FROM group_users WHERE user_name = "davey";
+#SELECT * FROM group_users WHERE user_name = "davey";
+#SELECT * FROM group_users WHERE group_id = 70;
 
 #POSTS
 #ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
 #ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
 
+
+#DELETE FROM posts WHERE post_id > 678;
+#DELETE FROM notifications WHERE notification_id > 0
+
+SELECT * FROM notifications;
+
+
+#SELECT * FROM shareshare.groups;
+
+#USER PROFILE
 #ALTER TABLE `user_profile` CHANGE `storage_location` `storage_location` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'storage_location'; 
 #ALTER TABLE user_profile CHANGE COLUMN storage_location storage_location VARCHAR(255) AFTER biography;
 #ALTER TABLE user_profile CHANGE COLUMN cloud_bucket cloud_bucket VARCHAR(255) AFTER storage_location;
