@@ -50,7 +50,11 @@ loginRouter.get("/cookie/get", (req, res) => {
 module.exports = loginRouter;
 
 
-
+/*
+  var headerMessage = "LOGIN USER: Logging in " + userName;
+    Functions.addHeader(headerMessage)
+  Functions.addFooter()
+  */
 
 
 /*

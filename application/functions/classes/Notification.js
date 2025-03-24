@@ -41,6 +41,79 @@ class Notification {
     	}
 	}
 
+
+    //NEW USE THIS
+    // Method A1: Create Group Notification
+static async createGroupNotificationNEEDTOUSE(notification) {
+    const connection = db.getConnection();
+
+    var notificationOutcome = {
+        success: false,
+        message: "",
+        notificationsCreated: [],
+        errors: []
+    };
+
+    const masterSite = notification.masterSite;
+    const notificationFrom = notification.notificationFrom;
+    const groupUsers = notification.notificationTo;
+    const notificationMessage = notification.notificationMessage;
+    const notificationLink = notification.notificationLink;
+    const notificationType = notification.notificationType;
+    const groupID = notification.groupID;
+    const postID = notification.postID || 0;
+
+    console.log("Step 4A: Notification: Creating New Group Notifications");
+
+    return new Promise(async function (resolve, reject) {
+        try {
+            const queryString = "INSERT INTO notifications (master_site, group_id, post_id, notification_from, notification_to, notification_message, notification_type, notification_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+            let insertPromises = [];
+
+            for (let i = 0; i < groupUsers.length; i++) {
+                let notificationTo = groupUsers[i];
+
+                if (notificationTo !== notificationFrom) {
+                    insertPromises.push(
+                        new Promise((resolveInsert) => {
+                            connection.query(queryString, [masterSite, groupID, postID, notificationFrom, notificationTo, notificationMessage, notificationType, notificationLink], (err, results) => {
+                                if (!err) {
+                                    console.log("Step 4B: Notification for " + notificationTo + " Worked!");
+                                    notificationOutcome.notificationsCreated.push(notificationTo);
+                                    resolveInsert(true);
+                                } else {
+                                    console.log("Step 4B: Failed to insert new Notification: " + err);
+                                    notificationOutcome.errors.push({ user: notificationTo, error: err });
+                                    resolveInsert(false);
+                                }
+                            });
+                        })
+                    );
+                }
+            }
+
+            // Wait for all notifications to be inserted
+            const results = await Promise.all(insertPromises);
+
+            if (results.includes(true)) {
+                notificationOutcome.success = true;
+                notificationOutcome.message = "Group notifications processed successfully.";
+            } else {
+                notificationOutcome.message = "Failed to insert all notifications.";
+            }
+
+            resolve(notificationOutcome);
+        } catch (err) {
+            notificationOutcome.message = "REJECTED";
+            notificationOutcome.errors.push(err);
+            console.log("REJECTED " + err);
+            reject(notificationOutcome);
+        }
+    });
+}
+
+    
 	static async createSingleNotification(notification) {
         const connection = db.getConnection(); 
 
@@ -93,48 +166,7 @@ class Notification {
             console.log("Your logged in so wont do one for " + notificationTo)
         }
     }
-    /*
-        static async registerUserProfile(newUser) {
-            const connection = db.getConnection(); 
-            var registerUserProfileOutcome = {
-                outcome: "",
-                message: "",
-                errors: []
-            }
-        
-            const biography = "They are (or were) a little people, about half our height, and smaller than the bearded dwarves"
-            const bilboImage = "frodo.jpg"
-            const rootFolder = newUser.userName
-            const firstName = newUser.fullName
-            const lastName = newUser.fullName
-            const university = "osu"
-            const postView = ""
-    
-            //INSERT USER PROFILE 
-            return new Promise(async function(resolve, reject) {
-                try {
-                    const queryString = "INSERT INTO user_profile (user_name, user_id, image_name, root_folder, biography, university, post_view, first_name, last_name, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                connection.query(queryString, [newUser.userName, newUser.userID, bilboImage, rootFolder, biography, university, postView, firstName, lastName, newUser.userEmail], (err, results) => {
-                        if (!err) {
-                            console.log("You created a new User with ID " + results.insertId);    
-                            registerUserProfileOutcome.message = "you sucesfully registered " + newUser.userName + "!";       
-                            registerUserProfileOutcome.outcome = 1;       
-    
-                        } else {    
-                            registerUserProfileOutcome.outcome = "no worky"
-                            registerUserProfileOutcome.errors.push(err);
-                        } 
-                        resolve(registerUserProfileOutcome);
-                    }) 
-                    
-                } catch(err) {
-                    registerUserProfileOutcome.outcome = "rejected";
-                    console.log("REJECTED " + err);
-                    reject(registerUserProfileOutcome);
-                } 
-            });
-        }
-    */
+
     //Method A2: Create Single Notification
 	static async createSingleNotificationWORKS(notification) {
         const connection = db.getConnection(); 

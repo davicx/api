@@ -49,8 +49,8 @@ async function userLogin(req, res) {
   //console.log("userOutcome")
 
   var loginSuccess = true;
-  
-  console.log("LOGIN USER: Logging in " + userName);
+  var headerMessage = "LOGIN USER: Logging in " + userName;
+	Functions.addHeader(headerMessage)
 
   var userExists = false;
   var passwordCorrect = false;
@@ -111,13 +111,13 @@ async function userLogin(req, res) {
 
     //STEP 5: Add Refresh Token to Database
     var deleteRefreshTokenOutcome = await loginFunctions.deleteRefreshTokens(userName, deviceID);
-    console.log(deleteRefreshTokenOutcome)
+    //console.log(deleteRefreshTokenOutcome)
 
-    console.log("userID")
-    console.log(userID)
-    console.log("userID")
+    //console.log("userID")
+    //console.log(userID)
+    //console.log("userID")
     var insertRefreshTokenOutcome = await loginFunctions.insertRefreshToken(refreshToken, deviceID, userName, userID)
-    console.log(insertRefreshTokenOutcome)
+    //console.log(insertRefreshTokenOutcome)
 
     if(insertRefreshTokenOutcome.status == true ) {
       console.log("STEP 5: Added New Refresh Token to database")
@@ -168,8 +168,8 @@ async function userLogin(req, res) {
     console.log("STEP 8: Sorry dude The User was NOT logged in!")
  
   }
-  
-  //res.json(loginOutcome)
+
+  Functions.addFooter()
   res.json(loginOutcome)
 }
 
@@ -179,7 +179,8 @@ async function userLogout(req, res) {
   const userName = req.body.userName;
   const deviceID = req.body.device_id;
 
-  console.log("API logout userName " + userName)
+  var headerMessage = "API logout userName " + userName;
+	Functions.addHeader(headerMessage)
   console.log("API logout deviceID " + deviceID)
 
   var logoutOutcome = {
@@ -214,6 +215,9 @@ async function userLogout(req, res) {
   console.log("logoutOutcome")
   console.log(logoutOutcome)
   console.log("logoutOutcome")
+  
+  Functions.addFooter()
+
   res.json(logoutOutcome)
 }
 
