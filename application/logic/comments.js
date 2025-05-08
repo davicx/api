@@ -30,9 +30,12 @@ async function postComment(req, res) {
 	const currentUser = req.body.commentFrom 
 	const commentFrom = req.body.commentFrom 
 	//const commentTo = req.body.commentTo 
-	const groupID = req.body.groupID 
+
 	const postTo = req.body.postTo 
 	const postID = req.body.postID 
+	const groupID = req.body.groupID 
+	const listID = req.body.listID 
+
 	//const commentStatus = 0;
 	const notificationMessage = req.body.notificationMessage 
 	const notificationType = req.body.notificationType 
@@ -99,6 +102,8 @@ async function postComment(req, res) {
 		let newComment = {
 			commentID: newCommentOutcome.commentID,
 			postID: postID,
+			groupID: groupID,
+			listID: listID,
 			commentCaption: commentCaption,
 			commentFrom: commentFrom,
 			userName: currentUser,
@@ -217,14 +222,25 @@ async function likeComment(req, res) {
 		currentUser: currentUser
 	}
 
+	var commentLike = {
+		commentLikeID: 0,
+		commentID: commentID,
+		likedByUserName: currentUser,
+		likedByImage: "",
+		likedByFirstName: "",
+		likedByLastName: "",
+		timestamp: ""
+	  };
+
 	//STEP 1: Check if the comment was already liked (Use commentFunctions)
 	var commentLikeStatus = await CommentFunctions.checkCommentLike(commentID, currentUser) 
 
-	//STEP 2: Like Comment or say already liked
-	var commentLikeOutcome = await Comment.likeComment(commentID, currentUser);
-	//console.log(commentLikeOutcome.newLike[0])
 
+	//STEP 2: Like Comment or say already liked
 	if(commentLikeStatus.alreadyLiked == false) { 
+
+		var commentLikeOutcome = await Comment.likeComment(commentID, currentUser);
+		
 		if(commentLikeOutcome.success == 1) {
 			commentOutcome.data.push(commentLikeOutcome.newLike[0])
 			commentOutcome.success = true
@@ -249,16 +265,19 @@ async function likeComment(req, res) {
 			Notification.createCommentNotification(notification);
 
 		} else {
+			commentOutcome.data = commentLike
 			commentLikeOutcome.message = "There was an error trying to like " + commentLikeStatus.commentID;
 			commentLikeOutcome.errors = commentLikeStatus.errors
 		}
 
 	} else {	
-		commentOutcome.message = "already liked"
+		commentOutcome.data = commentLike
+		commentOutcome.message = currentUser + " already liked the comment with ID " + commentID;
+
 	}
 
 	res.json(commentOutcome)
-	
+
 }
 
 //Function C2: Unlike a Comment 
@@ -268,8 +287,12 @@ async function unlikeComment(req, res) {
 	var commentID = req.body.commentID
 	//var groupID = req.body.groupID
 
+	var headerMessage = "Unliking comment " + commentID + " for user " + currentUser 
+	Functions.addHeader(headerMessage)
+	
+
 	var commentOutcome = {
-		data: [],
+		data: {},
 		success: false,
 		message: "", 
 		statusCode: 200,
@@ -277,38 +300,35 @@ async function unlikeComment(req, res) {
 		currentUser: currentUser
 	}
 
+	var commentLike = {
+		commentLikeID: 0,
+		commentID: commentID,
+		likedByUserName: currentUser,
+		likedByImage: "",
+		likedByFirstName: "",
+		likedByLastName: "",
+		timestamp: ""
+	  };
+
+	//STEP 1: Check if Comment was Liked
 	var commentLikeOutcome = await CommentFunctions.checkCommentLike(commentID, currentUser) 
 
-	console.log("unliking comment " + commentID + " for user " + currentUser )
+	//STEP 2: Handle Unlike
 
-	//The comment is not liked
-	if(commentLikeOutcome.alreadyLiked == false ) {
-		commentOutcome.message = "This comment was not liked so there was nothing to remove"
-		commentOutcome.success = true;
-		res.json(commentOutcome)
+	//Step 2A: The comment is liked
+	if(commentLikeOutcome.alreadyLiked == true ) {
+		var commentUnlike = await Comment.unlikeComment(commentID, currentUser);
+		commentOutcome.data = commentUnlike
 
+	//Step 2B: The comment is not liked
 	} else {
-		const queryString = "DELETE FROM comment_likes WHERE comment_id = ? AND liked_by_name = ?;"	
-	
-		connection.query(queryString, [commentID, currentUser], (err, rows) => {
-			if (!err) {
-				commentOutcome.message = "The like was removed";
-				commentOutcome.success = true;
-				
-				//TO DO: Remove Notification
-				var comment_type = "comment_like"
-				Notification.removeNotification(commentID, currentUser, comment_type);
-				res.json(commentOutcome)
-		
-			} else {
-				console.log("Failed to Unlike Requests: " + err);
-				//likeOutcome.commentDeletedMessage = "There was no like to remove";
-				res.json(commentOutcome)
-			}
-		})
+		commentOutcome.data = commentLike;
+		commentOutcome.message = "This comment does not have a like"
 	}
 
+	Functions.addFooter()
 
+	res.json(commentOutcome)
 
 }
 

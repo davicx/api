@@ -6,6 +6,7 @@ const Comment = require('../functions/classes/Comment')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const friendFunctions = require('../functions/friendFunctions');
+const profileFunctions = require('../functions/profileFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const userFunctions = require('../functions/userFunctions');
 const timeFunctions = require('../functions/timeFunctions');
@@ -474,12 +475,12 @@ async function postArticle(req, res) {
 async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
-	//const currentUser = req.currentUser
+	const currentUser = req.currentUser
 	
 	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID
 	Functions.addHeader(headerMessage)
 	
-	const currentUser = "daveyChangeBackWhenusingMiddleware"
+	//const currentUser = "daveyChangeBackWhenusingMiddleware"
 
 
 	//STEP 1: Get All Posts
@@ -487,7 +488,7 @@ async function getAllGroupPosts(req, res) {
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
-	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw, groupID)
 
 	//STEP 3: Get all Likes for these Posts
 	var postsLikes = await PostFunctions.addPostLikes(currentUser, postsComments)
@@ -513,8 +514,6 @@ async function getAllGroupPosts(req, res) {
 	res.json(postsResponse)
 
 }
-
-
 
 //Route B2: Get Group Posts Pagination
 //http://localhost:3003/posts/group/72/page/1/
@@ -641,6 +640,11 @@ async function getAllPosts(req, res) {
 
 //FUNCTIONS C: All Functions Related to Post Actions
 //Function C1: Like a Post
+//TEMP
+function delay(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+//TEMP
 async function likePost(req, res) {
 	const connection = db.getConnection(); 
 	var currentUser = req.body.currentUser
@@ -655,34 +659,60 @@ async function likePost(req, res) {
 		currentUser: currentUser
 	}
 
-	//STEP 1: Check if Post was Liked 
-	var postLikeStatus = await likeFunctions.checkPostLikeStatus(currentUser, postID);
+	var likedPost = {}
 
-	//STEP 2: If post was not already liked then Like the Post
-	if(postLikeStatus.currentLikeCount < 1) {
-		var currentUserIDOutcome = await userFunctions.getUserID(currentUser);
-		var postLikedStatus = await likeFunctions.likePost(postID, currentUser, currentUserIDOutcome.userID) 
-		
-		//STEP 3: Get new Post Like Information 
-		var postLikeID = postLikedStatus.postLikeID
-		var likedPostUserInfoStatus = await likeFunctions.getLikedPostUserInformation(postLikeID) 
+	var headerMessage = "HEADER: Post Like: " + postID
+	Functions.addHeader(headerMessage)
 
-		var likedPost = {}
-		
-		//STEP 4: Create the new Like to send back 
-		if(likedPostUserInfoStatus.newLike[0] != null || likedPostUserInfoStatus.newLike[0].length != 0){
-			likedPost = likedPostUserInfoStatus.newLike[0];
-			var postFromOutcome = await PostFunctions.getPostFrom(postID)
-			console.log(currentUser + " " + postFromOutcome.postFrom)
-			var likedPostUserInfoStatus = await friendFunctions.checkFriendshipStatus(currentUser, postFromOutcome.postFrom) 
-			likedPost.friendshipStatus = likedPostUserInfoStatus.friendshipStatus;
+	//STEP 1: Check User Exists
+	var userExists = await profileFunctions.getSimpleUserProfile(currentUser);
+
+	if(userExists.userFound == true) {
+
+		//STEP 1: Check if Post was Liked 
+		var postLikeStatus = await likeFunctions.checkPostLikeStatus(currentUser, postID);
+
+		//STEP 2: If post was not already liked then Like the Post
+		if(postLikeStatus.currentLikeCount < 1) {
+			var currentUserIDOutcome = await userFunctions.getUserID(currentUser);
+			var postLikedStatus = await likeFunctions.likePost(postID, currentUser, currentUserIDOutcome.userID) 
+			
+			//STEP 3: Get new Post Like Information 
+			var postLikeID = postLikedStatus.postLikeID
+			var likedPostUserInfoStatus = await likeFunctions.getLikedPostUserInformation(postLikeID) 
+			
+			//STEP 4: Create the new Like to send back 
+			if(likedPostUserInfoStatus.newLike[0] != null || likedPostUserInfoStatus.newLike[0].length != 0){
+				
+				//Set Liked Post
+				likedPost = likedPostUserInfoStatus.newLike[0];
+
+				var postFromOutcome = await PostFunctions.getPostFrom(postID)
+				//console.log(currentUser + " " + postFromOutcome.postFrom)
+				var likedPostUserInfoStatus = await friendFunctions.checkFriendshipStatus(currentUser, postFromOutcome.postFrom) 
+				likedPost.friendshipStatus = likedPostUserInfoStatus.friendshipStatus;
+			}
+			
+			likePostResponse.message = "You liked this post!";
+			likePostResponse.success = true;
+			likePostResponse.data = likedPost;
+
+		//You already liked the post
+		} else {
+			likedPost = {
+				postLikeID: 0,
+				postID: 0,
+				likedByUserName: "",
+				likedByImage: "",
+				likedByFirstName: "",
+				likedByLastName: "",
+				timestamp: "",
+				friendshipStatus: ""
+			}
+			likePostResponse.data = likedPost;
+			likePostResponse.message = "You already liked this post!"
 		}
-		
-		likePostResponse.message = "You liked this post!";
-		likePostResponse.success = true;
-		likePostResponse.data = likedPost;
 
-	//You already liked the post
 	} else {
 		likedPost = {
 			postLikeID: 0,
@@ -695,12 +725,16 @@ async function likePost(req, res) {
 			friendshipStatus: ""
 		}
 		likePostResponse.data = likedPost;
-		likePostResponse.message = "You already liked this post!"
+		likePostResponse.message = "USER NOT FOUND: " + currentUser
+		console.log("USER NOT FOUND: " + currentUser)
 	}
 
-	console.log("Post ID is " + postID + " Type: " + typeof(postID));
 	console.log("You liked a post! at " + timeFunctions.getCurrentTime().postTime);
+	console.log("TEMP DELAY")
 	console.log(likePostResponse)
+	Functions.addFooter()
+
+	await delay(2000);
 	res.json(likePostResponse)
 		
 }
@@ -730,6 +764,9 @@ async function unlikePost(req, res) {
 		friendshipStatus: ""
 	}
 
+	var headerMessage = "HEADER: You unliked the post: " + postID
+	Functions.addHeader(headerMessage)
+
 	//STEP 1: Check if Post was Liked 
 	var currentLikeStatus = await likeFunctions.checkPostLikeStatus(currentUser, postID);
 
@@ -738,12 +775,12 @@ async function unlikePost(req, res) {
 
 		//STEP 3: Get Post Like ID
 		var postLikeIDStatus = await likeFunctions.getPostLikeID(postID, currentUser)
-		console.log("postLikeIDStatus");
-		console.log(postLikeIDStatus);
+		//console.log("postLikeIDStatus");
+		//console.log(postLikeIDStatus);
 
 		var unlikePostStatus = await likeFunctions.unlikePost(postID, currentUser)
-		console.log("unlikePostStatus")
-		console.log(unlikePostStatus)
+		//console.log("unlikePostStatus")
+		//console.log(unlikePostStatus)
 
 		unlikePostResponse.message = "The Post Like was removed"
 		unlikePostResponse.success = true 
@@ -755,8 +792,10 @@ async function unlikePost(req, res) {
 		unlikePostResponse.message = "The post is not currently liked by " + currentUser;
 	}
 	
-	console.log("You unliked a post!")
+	console.log("You unliked a post! at " + timeFunctions.getCurrentTime().postTime);
 	console.log(unlikePostResponse)
+	Functions.addFooter()
+
 	res.json(unlikePostResponse)
 }
 

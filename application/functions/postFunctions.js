@@ -189,6 +189,41 @@ async function getPostLikes(postID)  {
 }
 
 //Function A6: Add Post Comments to an Array of Posts
+//chat
+async function addPostComments(currentUser, posts, groupID)  {
+	for (let i = 0; i < posts.length; i++) {
+		let postID = posts[i].postID;
+
+		var commentsOutcome = await Comment.getPostComments(postID);
+
+		if (commentsOutcome.success == true) {
+			var comments = commentsOutcome.comments;
+
+			for (let j = 0; j < comments.length; j++) {
+				let commentID = comments[j].commentID;
+				let currentCommentLikes = await Comment.getCommentLikes(commentID);
+				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, comments[j].commentFrom);
+
+				comments[j].friendshipStatus = friendshipCheck.friendshipStatus;
+				comments[j].commentLikes = currentCommentLikes.commentLikes;
+				comments[j].commentLikeCount = currentCommentLikes.commentLikes.length;
+				comments[j].groupID = parseInt(groupID);
+
+				// Check if currentUser liked this comment
+				comments[j].commentLikedByCurrentUser = currentCommentLikes.commentLikes.some(
+					like => like.likedByUserName === currentUser
+				);
+			}
+		}
+
+		posts[i].commentsArray = comments;
+	}
+
+	return posts;
+}
+
+//ORIGINAL WORKS SORT OF
+/*
 async function addPostComments(currentUser, posts)  {
 
 	for (let i = 0; i < posts.length; i++) {
@@ -206,6 +241,9 @@ async function addPostComments(currentUser, posts)  {
 				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, comments[i].commentFrom);
 				comments[i].friendshipStatus = friendshipCheck.friendshipStatus;
 				comments[i].commentLikes = currentCommentLikes.commentLikes;
+                console.log("currentCommentLikes.commentLikes")
+                console.log(currentCommentLikes.commentLikes)
+                console.log("currentCommentLikes.commentLikes")
 				comments[i].commentLikeCount = currentCommentLikes.commentLikes.length;
 			}
 
@@ -216,6 +254,7 @@ async function addPostComments(currentUser, posts)  {
 
     return posts;
 }
+*/
 
 //Function A6: Add Post Likes to an Array of Posts
 async function addPostLikes(currentUser, posts)  {
@@ -240,6 +279,9 @@ async function addPostLikes(currentUser, posts)  {
 		posts[i].postLikesArray.map((postLike) => (
 			simpleLikesArray.push(postLike.likedByUserName)
 		))
+
+        console.log("LIKES " + currentUser)
+        posts[i].isLikedByCurrentUser = simpleLikesArray.includes(currentUser);
 
 		posts[i].simpleLikesArray = simpleLikesArray;
 

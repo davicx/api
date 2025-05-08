@@ -9,6 +9,7 @@ FUNCTIONS A: All Functions Related to User Profile
 	1) Function A1: Get User Profile
 	2) Function A2: Get Simple User Profile
 	3) Function A3: Update User Profile
+	4) Function A4: Check User Exists
 */
 
 //REMOVE ALL THIS IS HELPER STUFF 

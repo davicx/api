@@ -81,8 +81,8 @@ postRouter.post('/post/article', function(req, res) {
 
 //FUNCTIONS B: All Functions Related to getting Posts
 //Route B1: Get all Group Posts
-//postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
-postRouter.get("/posts/group/:group_id", (req, res) => {
+postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
+//postRouter.get("/posts/group/:group_id", (req, res) => {
     posts.getAllGroupPosts(req, res);
 })
 
@@ -107,6 +107,7 @@ postRouter.get("/posts", (req, res) => {
 
 //FUNCTIONS C: All Functions Related to Post Actions
 //Function C1: Like a Post
+//TO DO: Crashes if user is not found!!
 postRouter.post('/post/like', function(req, res) {
     posts.likePost(req, res);
 })

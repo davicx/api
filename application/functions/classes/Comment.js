@@ -18,6 +18,7 @@ class Comment {
         const commentFrom = req.body.commentFrom 
         const commentTo = req.body.commentTo 
         const groupID = req.body.groupID 
+        const listID = req.body.listID 
         const postID = req.body.postID 
         const commentStatus = 0;
    
@@ -30,9 +31,9 @@ class Comment {
         //INSERT POST
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO comments (post_id, comment, comment_type, comment_from, comment_deleted) VALUES (?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO comments (post_id, group_id, list_id, comment, comment_type, comment_from, comment_deleted) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
-                connection.query(queryString, [postID, commentCaption, commentType, commentFrom, commentStatus], (err, results) => {
+                connection.query(queryString, [postID, groupID, listID, commentCaption, commentType, commentFrom, commentStatus], (err, results) => {
                     if (!err) {
                         console.log("You created a new Post with ID " + results.insertId);    
                         commentOutcome.outcome = 200;       
@@ -218,6 +219,76 @@ class Comment {
             
         });
 
+    }
+
+    // Method A5: Unlike a Comment
+    static async unlikeComment(commentID, currentUser) {
+        const connection = db.getConnection(); 
+        let removedLike = {};
+
+        let unlikeCommentOutcome = {
+            success: 0,
+            successMessage: "",
+            removedLike: removedLike,
+            commentID: commentID,
+            currentUser: currentUser,
+            errors: []
+        };
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                // STEP 1: Get like row to return later
+                const getLikeQuery = `
+                    SELECT comment_likes.comment_like_id, comment_likes.comment_id, comment_likes.liked_by_name, comment_likes.updated, 
+                        user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name 
+                    FROM comment_likes 
+                    INNER JOIN user_profile ON comment_likes.liked_by_name = user_profile.user_name 
+                    WHERE comment_likes.comment_id = ? AND comment_likes.liked_by_name = ?
+                    LIMIT 1;
+                `;
+
+                connection.query(getLikeQuery, [commentID, currentUser], (err, rows) => {
+                    if (err) {
+                        unlikeCommentOutcome.errors.push(err);
+                        return reject(unlikeCommentOutcome);
+                    }
+
+                    if (rows.length === 0) {
+                        unlikeCommentOutcome.successMessage = "No like found to remove.";
+                        return resolve(unlikeCommentOutcome);
+                    }
+
+                    removedLike = rows.map((row) => ({
+                        commentLikeID: row.comment_like_id,
+                        commentID: row.comment_id,
+                        likedByUserName: row.liked_by_name,
+                        likedByImage: row.image_name,
+                        likedByFirstName: row.first_name,
+                        likedByLastName: row.last_name,
+                        timestamp: row.updated
+                    }));
+
+                    // STEP 2: Delete the like
+                    const deleteQuery = "DELETE FROM comment_likes WHERE comment_id = ? AND liked_by_name = ?";
+                    connection.query(deleteQuery, [commentID, currentUser], (delErr, delResult) => {
+                        if (delErr) {
+                            unlikeCommentOutcome.errors.push(delErr);
+                            return reject(unlikeCommentOutcome);
+                        }
+
+                        unlikeCommentOutcome.success = 1;
+                        unlikeCommentOutcome.successMessage = "you unliked";
+                        unlikeCommentOutcome.removedLike = removedLike;
+
+                        return resolve(unlikeCommentOutcome);
+                    });
+                });
+            } catch (err) {
+                console.log("Exception in unlikeComment: ", err);
+                unlikeCommentOutcome.errors.push(err);
+                return reject(unlikeCommentOutcome);
+            }
+        });
     }
 
 

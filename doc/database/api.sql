@@ -19,7 +19,7 @@
 #DELETE FROM posts WHERE post_id > 678;
 #DELETE FROM notifications WHERE notification_id > 0
 
-SELECT * FROM notifications;
+#SELECT * FROM posts;
 
 
 #SELECT * FROM shareshare.groups;
@@ -50,6 +50,15 @@ SELECT * FROM notifications;
 
 
 
+#SELECT * FROM  user_profile
+
+#DELETE FROM comments WHERE comment_id > 215;
+#SELECT * FROM  comments
+#SELECT * FROM  comment_likes
+DELETE FROM comment_likes
+
+#SELECT * FROM posts WHERE group_id = 72;
+#DELETE FROM posts WHERE post_id = 718;
 
 
 
