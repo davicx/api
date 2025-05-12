@@ -190,7 +190,7 @@ class Comment {
                                     likedByImage: row.image_name, 
                                     likedByFirstName: row.first_name, 
                                     likedByLastName:row.last_name,
-                                    timestamp: row.updated
+                                    commentCreated: row.updated
                                 }
                             });
                             
@@ -265,7 +265,7 @@ class Comment {
                         likedByImage: row.image_name,
                         likedByFirstName: row.first_name,
                         likedByLastName: row.last_name,
-                        timestamp: row.updated
+                        commentCreated: row.updated
                     }));
 
                     // STEP 2: Delete the like

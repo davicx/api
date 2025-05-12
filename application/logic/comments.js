@@ -214,7 +214,7 @@ async function likeComment(req, res) {
     const commentID = req.body.commentID;
     
 	var commentOutcome = {
-		data: [],
+		data: {},
 		success: false,
 		message: "", 
 		statusCode: 200,
@@ -229,7 +229,7 @@ async function likeComment(req, res) {
 		likedByImage: "",
 		likedByFirstName: "",
 		likedByLastName: "",
-		timestamp: ""
+		commentCreated: ""
 	  };
 
 	//STEP 1: Check if the comment was already liked (Use commentFunctions)
@@ -242,7 +242,7 @@ async function likeComment(req, res) {
 		var commentLikeOutcome = await Comment.likeComment(commentID, currentUser);
 		
 		if(commentLikeOutcome.success == 1) {
-			commentOutcome.data.push(commentLikeOutcome.newLike[0])
+			commentOutcome.data = commentLikeOutcome.newLike[0]
 			commentOutcome.success = true
 			commentOutcome.message = "You liked " + commentID;
 
@@ -280,6 +280,12 @@ async function likeComment(req, res) {
 
 }
 
+//TEMP
+function delay(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+//TEMP
+
 //Function C2: Unlike a Comment 
 async function unlikeComment(req, res) {
 	const connection = db.getConnection();
@@ -293,7 +299,7 @@ async function unlikeComment(req, res) {
 
 	var commentOutcome = {
 		data: {},
-		success: false,
+		success: true,
 		message: "", 
 		statusCode: 200,
 		errors: [], 
@@ -307,7 +313,7 @@ async function unlikeComment(req, res) {
 		likedByImage: "",
 		likedByFirstName: "",
 		likedByLastName: "",
-		timestamp: ""
+		commentCreated: ""
 	  };
 
 	//STEP 1: Check if Comment was Liked
@@ -318,7 +324,7 @@ async function unlikeComment(req, res) {
 	//Step 2A: The comment is liked
 	if(commentLikeOutcome.alreadyLiked == true ) {
 		var commentUnlike = await Comment.unlikeComment(commentID, currentUser);
-		commentOutcome.data = commentUnlike
+		commentOutcome.data = commentUnlike.removedLike[0]
 
 	//Step 2B: The comment is not liked
 	} else {
@@ -328,6 +334,7 @@ async function unlikeComment(req, res) {
 
 	Functions.addFooter()
 
+	await delay(2000);
 	res.json(commentOutcome)
 
 }
