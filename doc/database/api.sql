@@ -1,6 +1,9 @@
 #USE shareshare;
 
-#GROUPS
+
+#########
+#GROUPS#
+#########
 #DELETE FROM shareshare.groups WHERE group_id >72;
 #SELECT * FROM shareshare.groups
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
@@ -11,7 +14,33 @@
 #SELECT * FROM group_users WHERE user_name = "davey";
 #SELECT * FROM group_users WHERE group_id = 70;
 
-#POSTS
+#########
+#FRIENDS#
+#########
+#SELECT * FROM friends WHERE user_name = "davey"
+#UPDATE friends SET request_pending = 1 WHERE friends_id = 732
+#DELETE FROM FRIENDS WHERE friends_id > 0
+
+#SELECT * FROM friends WHERE user_name = 'davey'
+#SELECT * FROM friends
+#SELECT * FROM friends WHERE request_pending = 1 AND sent_by = "davey" AND sent_to = "frodo"
+#SELECT * FROM user_profile
+#SELECT * FROM user_login
+
+#########
+#FOLLOW#
+#########
+#SELECT * FROM user_profile
+#SELECT * FROM following
+#DELETE FROM following WHERE follow_id > 0;
+
+
+
+
+
+#########
+#POSTS#
+#########
 #ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
 #ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
 
@@ -24,7 +53,9 @@
 
 #SELECT * FROM shareshare.groups;
 
-#USER PROFILE
+#########
+#USER PROFILE#
+#########
 #ALTER TABLE `user_profile` CHANGE `storage_location` `storage_location` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'storage_location'; 
 #ALTER TABLE user_profile CHANGE COLUMN storage_location storage_location VARCHAR(255) AFTER biography;
 #ALTER TABLE user_profile CHANGE COLUMN cloud_bucket cloud_bucket VARCHAR(255) AFTER storage_location;
@@ -36,7 +67,11 @@
 #ALTER TABLE user_profile ADD COLUMN file_name_server VARCHAR(255) AFTER file_name;  
 #ALTER TABLE user_profile MODIFY storage_location VARCHAR(255) DEFAULT 'storage_location';
 
+#UPDATE user_profile SET first_name = 'Merry' WHERE user_profile_id = 6;
+#UPDATE user_profile SET last_name = 'Brandybuck' WHERE user_profile_id = 5;
 #SELECT * FROM user_profile;
+
+
 #DELETE FROM refresh_tokens WHERE token_id = 514;
 
 #SELECT * FROM posts WHERE group_id = 70 AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?
@@ -50,15 +85,21 @@
 
 
 
-#SELECT * FROM  user_profile
+#########
+#COMMENTS#
+#########
+#SELECT * FROM comment_likes
 
 #DELETE FROM comments WHERE comment_id > 215;
-#SELECT * FROM  comments
-#SELECT * FROM  comment_likes
-DELETE FROM comment_likes
+#DELETE FROM comments WHERE comment_id > 230;
+#DELETE FROM comments WHERE comment_id = 230;
+#SELECT * FROM comments
 
+#SELECT * FROM comment_likes;
+#SELECT * FROM posts;
+#SET SQL_SAFE_UPDATES = 0; DELETE FROM comment_likes; SET SQL_SAFE_UPDATES = 1;
 #SELECT * FROM posts WHERE group_id = 72;
-#DELETE FROM posts WHERE post_id = 718;
+#DELETE FROM posts WHERE post_id = 7;
 
 
 

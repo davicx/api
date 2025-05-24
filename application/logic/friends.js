@@ -22,13 +22,231 @@ FUNCTIONS A: All Functions Related to Friends
 	7) Function A7: Get all Site Users with Friendship Status 
 
 FUNCTIONS B: All Functions Related to Friends
-	1) Function B1: Request a Friend	
-	2) Function B2: Cancel a Friend	Request	
-	3) Function B3: Accept Friend Request 
-	4) Function B4: Decline Friend Request
-	5) Function B4: Remove a Friend
+	1) Function B1: Add a Friend (Request)
+	2) Function B2: Remove a Friend
+	3) Function B3: Cancel a Friend	Request	
+	4) Function B4: Accept Friend Request 
+	5) Function B5: Decline Friend Request
+
+FUNCTIONS C: All Functions Related to Follower Actions
+	1) Function C1: Get All Your Following
+	2) Function C2: Get All Your Followers
+	3) Function C3: Get All Followers and Following of another User
+	4) Function C4: Follow a User
+	5) Function C5: UnFollow a User
 
 */
+
+
+//FUNCTIONS C: All Functions Related to Follower Actions
+//Function C1: Get All Your Following
+async function getYourFollowing(req, res) {
+	const currentUser = req.params.current_user;
+
+	var headerMessage = "Get your following " + currentUser;
+	Functions.addHeader(headerMessage);
+
+	var yourFollowersOutcome = {
+		data: {
+			currentUser: currentUser
+		},
+		message: "",
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	const result = await Friend.getUserFollowing(currentUser);
+	yourFollowersOutcome.data = result
+	/*
+	if (result.success) {
+		res.status(200).json(result);
+	} else {
+		res.status(500).json(result);
+	}
+	*/
+
+	Functions.addFooter();
+	res.json(yourFollowersOutcome);
+
+}
+/*
+friendRouter.get('/follow/following/current_user/:current_user/', function(req, res) { 
+	friends.getYourFollowers(req, res);
+})
+*/
+
+// Function C4: Follow a User
+async function followUser(req, res) {
+	const currentUser = req.body.currentUser;
+	const followName = req.body.followName;
+
+	var headerMessage = currentUser + " is going to follow " + followName;
+	Functions.addHeader(headerMessage);
+
+	var followUserOutcome = {
+		data: {
+			currentUser: currentUser,
+			followName: followName,
+			currentUserID: 0,
+			followUserID: 0,
+			followUserResult: {
+				userFollowed: false,
+				followKey: "",
+				errors: []	
+			},
+		},
+		message: "",
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	try {
+		// Step 1: Get user IDs for both users
+		const currentUserResult = await userFunctions.getUserID(currentUser);
+		const followUserResult = await userFunctions.getUserID(followName);
+
+		const currentUserID = currentUserResult.userID;
+		const followUserID = followUserResult.userID;
+
+		followUserOutcome.data.currentUserID = currentUserID;
+		followUserOutcome.data.followUserID = followUserID;
+
+		if (!followUserResult.userFound) {
+			followUserOutcome.message = "Status: Follow user not found.";
+			followUserOutcome.statusCode = 404;
+			return res.json(followUserOutcome);
+		}
+
+		// Step 2: Check if already following
+		const followStatus = await friendFunctions.checkFollowingStatus(currentUser, followName);
+
+		if (followStatus.status === "self") {
+			followUserOutcome.message = "You can't follow yourself.";
+		} else if (followStatus.status === "following") {
+			followUserOutcome.message = "You're already following this user.";
+		} else {
+			// Step 3: Follow the user
+			const followResult = await Friend.followUser(currentUser, followName, currentUserID, followUserID);
+			followUserOutcome.data.followUserResult = followResult;
+
+			if (followResult.followSuccess) {
+				followUserOutcome.success = true;
+				followUserOutcome.statusCode = 200;
+				followUserOutcome.message = currentUser + " is now following " + followName;
+
+				// Step 4: Add Notification
+				const notification = {
+					masterSite: "kite",
+					notificationFrom: currentUser,
+					notificationMessage: currentUser + " started following you!",
+					notificationTo: followName,
+					notificationLink: "", // Add link if needed
+					notificationType: "follow",
+					groupID: 0
+				};
+
+				Notification.createSingleNotification(notification);
+			} else {
+				followUserOutcome.message = "Error while following user.";
+				followUserOutcome.errors.push(...followResult.errors);
+			}
+		}
+	} catch (err) {
+		console.log("Error in followUser:", err);
+		followUserOutcome.errors.push(err);
+		followUserOutcome.message = "Unexpected server error.";
+	}
+
+	Functions.addFooter();
+	res.json(followUserOutcome);
+	
+}
+
+
+//Function C5: UnFollow a User
+// Function C5: Unfollow a User
+async function unfollowUser(req, res) {
+	const currentUser = req.body.currentUser;
+	const followingName = req.body.followingName;
+
+	const headerMessage = currentUser + " is going to unfollow " + followingName;
+	Functions.addHeader(headerMessage);
+
+	var unfollowUserOutcome = {
+		data: {
+			currentUser: currentUser,
+			followingName: followingName,
+			currentUserID: 0,
+			followingUserID: 0,
+			unfollowUserResult: {
+				userUnfollowed: false,
+				currentUser: currentUser,
+				followingKey: "",
+				errors: []
+			}
+		},
+		message: "",
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	try {
+		// Step 1: Get user IDs
+		const currentUserResult = await userFunctions.getUserID(currentUser);
+		const followingUserResult = await userFunctions.getUserID(followingName);
+
+		const currentUserID = currentUserResult.userID;
+		const followingUserID = followingUserResult.userID;
+
+		unfollowUserOutcome.data.currentUserID = currentUserID;
+		unfollowUserOutcome.data.followingUserID = followingUserID;
+
+		if (!followingUserResult.userFound) {
+			unfollowUserOutcome.message = "Status: User to unfollow not found.";
+			unfollowUserOutcome.statusCode = 404;
+			return res.json(unfollowUserOutcome);
+		}
+
+		// Step 2: Check if currently following
+		const followStatus = await friendFunctions.checkFollowingStatus(currentUser, followingName);
+
+		if (followStatus.status === "not_following") {
+			unfollowUserOutcome.message = "You are not currently following this user.";
+		} else if (followStatus.status === "self") {
+			unfollowUserOutcome.message = "You cannot unfollow yourself.";
+		} else if (followStatus.status === "following") {
+			// Step 3: Unfollow the user
+			const unfollowResult = await Friend.unfollowUser(currentUser, followingName, currentUserID, followingUserID);
+
+			unfollowUserOutcome.data.unfollowUserResult = unfollowResult;
+
+			if (unfollowResult.unfollowSuccess) {
+				unfollowUserOutcome.success = true;
+				unfollowUserOutcome.statusCode = 200;
+				unfollowUserOutcome.message = currentUser + " has unfollowed " + followingName;
+			} else {
+				unfollowUserOutcome.message = "Error while unfollowing user.";
+				unfollowUserOutcome.errors.push(...unfollowResult.errors);
+			}
+		} else {
+			unfollowUserOutcome.message = "Unexpected follow status.";
+		}
+	} catch (err) {
+		console.log("Error in unfollowUser:", err);
+		unfollowUserOutcome.errors.push(err);
+		unfollowUserOutcome.message = "Unexpected server error.";
+	}
+
+	Functions.addFooter();
+	res.json(unfollowUserOutcome);
+}
+
 
 
 //FUNCTIONS A: All Functions Related to Friends 
@@ -163,23 +381,6 @@ async function getAnotherUsersFriends(req, res) {
 
 	//STEP 3: Compare Friends (MAKE THIS FUNCTION WORK FOR ANY TWO LISTS OF USERS)
 	var theirFriends = await friendFunctions.compareUsersWithYourFriends(currentUser, yourFriendsArray, theirFriendsArray);
-	//console.log("theirFriends")
-	//console.log(theirFriends)
-	//console.log("_________________")
-	
-	/*
-
-	//LIKE
-	"postLikeID": 93,
-	"postID": 72,
-	"likedByUserName": "sam",
-	"likedByImage": "sam.jpg",
-	"likedByFirstName": "sam gamgee",
-	"likedByLastName": "sam gamgee",
-	//ADD: "friendshipKey"
-	"timestamp": "2023-02-21T00:42:33.000Z"
-
-	*/	
 
 	userFriendsOutcome.data = theirFriends;
 	userFriendsOutcome.message = "We got their friends!"
@@ -252,8 +453,24 @@ async function addFriend(req, res) {
     const sentBy = req.body.currentUser;
     const sentTo = req.body.addFriendName;
 
+	
     var newFriendOutcome = {
-		data: {},
+		data: {
+			currentUser: currentUser,
+			currentUserID: 0,
+			friendName: "",
+			friendUserID: 0,
+			friendOutcomeOne: {
+				userAdded: false,
+				friendShipKey: "",
+				errors: []
+			},
+			friendOutcomeTwo: {
+				userAdded: false,
+				friendShipKey: "",
+				errors: []
+			}
+		},
 		message: "", 
 		success: false,
 		statusCode: 500,
@@ -273,6 +490,8 @@ async function addFriend(req, res) {
 	console.log("CURRENT USER FROM POST " + currentUserBody)
 	console.log("CURRENT USER FROM TOKEN " + currentUser)
 	console.log("STEP 1: Get user IDs for both Users")
+	console.log("STEP 1: " + currentUser + " " + currentUserID)
+	console.log("STEP 1: " + friendName + " " + friendUserID)
 
 	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
 	//STEP 2: Check if they are friends	
@@ -286,19 +505,26 @@ async function addFriend(req, res) {
 	} else if(friendShipStatus.friendshipStatus == 1){
 		newFriendOutcome.message = "Status 1: Currently Friends";
 
-	//Status 2: Friendship Pending	
+	//Status 2: Friendship Invite Pending	
 	} else if(friendShipStatus.friendshipStatus == 2){
-		newFriendOutcome.message = "Status 2: Friendship Pending";	
+		newFriendOutcome.message = "Status 2: Friendship Invite Pending (you accept)";	
 
-	//Status 3: Not currently Friends so add Friend	
-	} else if(friendShipStatus.friendshipStatus == 3) {
+	//Status 3: Friendship Request Pending	
+	} else if(friendShipStatus.friendshipStatus == 3){
+		newFriendOutcome.message = "Status 3: Friendship Invite Pending (you accept)";	
+
+	//Status 4: Not currently Friends so add Friend	
+	} else if(friendShipStatus.friendshipStatus == 4) {
 		newFriendOutcome.statusCode = 200;
 		newFriendOutcome.success = true;
-		newFriendOutcome.message = "Status 3: Adding your friend!";	
+		newFriendOutcome.message = "Status 4: Adding your friend!";	
 
 		//Add Friendship One
 		let friendOutcomeOne = await Friend.inviteFriend(sentBy, sentTo, currentUser, currentUserID, friendName, friendUserID);
 		let friendOutcomeTwo = await Friend.inviteFriend(sentBy, sentTo, friendName, friendUserID, currentUser, currentUserID);
+
+		console.log(friendOutcomeOne)
+		console.log(friendOutcomeTwo)
 
 		//Add Friendship Two
 	 	newFriendOutcome.data = {
@@ -325,7 +551,6 @@ async function addFriend(req, res) {
 	
 			Notification.createSingleNotification(notification);
 	
-
 			//STEP 5: Add the Request
 			const newRequest = {
 				requestType: "friend_request",
@@ -339,15 +564,72 @@ async function addFriend(req, res) {
 
 		}
 
-	//Status 4: No data or error	
+	//Status 5: This is you!
+	} else if(friendShipStatus.friendshipStatus == 5){
+		newFriendOutcome.message = "This is you!";	
+
+	//Status 6: No data or error	
 	} else { 
-		newFriendOutcome.message = "Status 4: Somethin wrong dude!";
+		newFriendOutcome.message = "Status 6: Somethin wrong dude!";
 	}
 
     res.json(newFriendOutcome)
 }
 
-//Function B2: Cancel a Friend Request (You sent this)
+//Function B2: Decline Friend Invite (They sent this but you declined)
+async function removeFriend(req, res) {
+    const masterSite = req.body.masterSite;
+    const currentUser = req.body.currentUser;
+    const friendName = req.body.removeFriendName;
+
+	var removeFriendRequestOutcome = {
+		data: {
+			friendRemoved: false,
+			currentUser: "",
+			friendName: "",
+		},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+	
+	//STEP 1: Confirm there is a Friendship
+	let friendStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
+
+	//Friendship Found
+	if(friendStatus.friendshipStatus == 1 || friendStatus.friendshipStatus == 2) {
+		let removeFriendOutcomeOne = await Friend.deleteFriend(currentUser, friendName)
+		let removeFriendOutcomeTwo = await Friend.deleteFriend(friendName, currentUser)
+
+		//Success
+		if(removeFriendOutcomeOne.friendRemoved == true && removeFriendOutcomeTwo.friendRemoved == true) {
+			let friendship = {
+				currentUser: currentUser,
+				friendName: friendName
+			}
+			removeFriendRequestOutcome.data = friendship;
+			removeFriendRequestOutcome.data.friendRemoved = true;
+			removeFriendRequestOutcome.success = true;
+			removeFriendRequestOutcome.statusCode = 200;
+			removeFriendRequestOutcome.message = "Friendship removed for " + currentUser + " and " + friendName;
+		//Error
+		} else {
+			removeFriendRequestOutcome.message = "Friendship found for " + currentUser + " and " + friendName + " but error removing";
+			removeFriendRequestOutcome.errors = removeFriendOutcomeOne.errors;
+		}
+ 
+	//No Friendship
+	} else {
+		removeFriendRequestOutcome.message = "No friends found for " + currentUser + " and " + friendName;
+	}
+	
+	res.json(removeFriendRequestOutcome)
+
+}
+
+//Function B3: Cancel a Friend Request (You sent this)
 async function cancelFriendRequest(req, res) {
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
@@ -372,16 +654,22 @@ async function cancelFriendRequest(req, res) {
 	res.json(cancelFriendRequestOutcome)
 }
 
-//Function B3: Accept Friend Invite (They sent this you accepted
+//Function B4: Accept Friend Invite (They sent this you accepted
 async function acceptFriendInvite(req, res) {
     const connection = db.getConnection(); 
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
     const friendName = req.body.friendName;
-	console.log(currentUser + " acceptFriendInvite from " + friendName)
+	var headerMessage = currentUser +  " acceptFriendInvite from " + friendName;
+	Functions.addHeader(headerMessage)
+	
 
     var acceptFriendOutcome = {
-		data: {},
+		data: {
+			friendAdded: false,
+			currentUser: "",
+			friendName: "",
+		},
 		message: "", 
 		success: false,
 		statusCode: 500,
@@ -389,8 +677,9 @@ async function acceptFriendInvite(req, res) {
 		currentUser: currentUser
 	}
 
+
 	//STEP 1: Confirm there is a Pending Request
-	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
+	var requestStatus = await requestFunctions.getRequestStatus(currentUser, friendName, "friend_request");
 	console.log("STEP 1: Confirm there is a Pending Request")
 	console.log(requestStatus)
 
@@ -400,7 +689,7 @@ async function acceptFriendInvite(req, res) {
 	console.log(inviteStatus)
 	
 	//If there is a request 
-	if(inviteStatus.inviteExists == true) {
+	if(inviteStatus.inviteExists == true && requestStatus.requestExists == true) {
 
 		//STEP 3: Update Friendship
 		let friendshipAddedOutcome = await Friend.acceptFriendInvite(currentUser, friendName) 
@@ -430,6 +719,7 @@ async function acceptFriendInvite(req, res) {
 		//STEP 6: Mark original Notification as Seen
 		Notification.setNotificationSeen("friend_request", friendName, currentUser);
 
+		acceptFriendOutcome.data.friendAdded = true
 		acceptFriendOutcome.data.currentUser = currentUser
 		acceptFriendOutcome.data.friendName = friendName
 
@@ -444,10 +734,12 @@ async function acceptFriendInvite(req, res) {
 	}
 	
 	console.log(acceptFriendOutcome)
+	
+	Functions.addFooter()
     res.json(acceptFriendOutcome)
 }
 
-//Function B4: Decline Friend Invite (They sent this but you declined)
+//Function B5: Decline Friend Invite (They sent this but you declined)
 async function declineFriendInvite(req, res) {
     const masterSite = req.body.masterSite;
     const currentUser = req.body.currentUser;
@@ -495,64 +787,10 @@ async function declineFriendInvite(req, res) {
 	res.json(declineFriendRequestOutcome)
 
 }
-    //Status
-    /*
-    1: Currently Friends
-    2: Friendship Pending
-    3: Not Friends
-    4: No Data
-    */ 
-
-//Function B4: Decline Friend Invite (They sent this but you declined)
-async function removeFriend(req, res) {
-    const masterSite = req.body.masterSite;
-    const currentUser = req.body.currentUser;
-    const friendName = req.body.removeFriendName;
-
-	var removeFriendRequestOutcome = {
-		data: {},
-		message: "", 
-		success: false,
-		statusCode: 500,
-		errors: [], 
-		currentUser: currentUser
-	}
-	
-	//STEP 1: Confirm there is a Friendship
-	let friendStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
-
-	//Friendship Found
-	if(friendStatus.friendshipStatus == 1 || friendStatus.friendshipStatus == 2) {
-		let removeFriendOutcomeOne = await Friend.deleteFriend(currentUser, friendName)
-		let removeFriendOutcomeTwo = await Friend.deleteFriend(friendName, currentUser)
-
-		//Success
-		if(removeFriendOutcomeOne.friendRemoved == true && removeFriendOutcomeTwo.friendRemoved == true) {
-			let friendship = {
-				currentUser: currentUser,
-				friendName: friendName
-			}
-			removeFriendRequestOutcome.data = friendship;
-			removeFriendRequestOutcome.success = true;
-			removeFriendRequestOutcome.statusCode = 200;
-			removeFriendRequestOutcome.message = "Friendship removed for " + currentUser + " and " + friendName;
-		//Error
-		} else {
-			removeFriendRequestOutcome.message = "Friendship found for " + currentUser + " and " + friendName + " but error removing";
-			removeFriendRequestOutcome.errors = removeFriendOutcomeOne.errors;
-		}
- 
-	//No Friendship
-	} else {
-		removeFriendRequestOutcome.message = "No friends found for " + currentUser + " and " + friendName;
-	}
-	
-	res.json(removeFriendRequestOutcome)
-
-}
 
 
-module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendInvite, cancelFriendRequest, declineFriendInvite, removeFriend, getAnotherUsersFriends, getAllUsersWithFriendship }
+
+module.exports = { getAllUsers, getActiveFriends, getAllFriends, getPendingFriendRequests, getPendingFriendInvites, addFriend, acceptFriendInvite, cancelFriendRequest, declineFriendInvite, removeFriend, getAnotherUsersFriends, getAllUsersWithFriendship, followUser, unfollowUser, getYourFollowing }
 
 
 

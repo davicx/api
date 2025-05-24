@@ -192,8 +192,7 @@ class Comment {
                                     likedByLastName:row.last_name,
                                     commentCreated: row.updated
                                 }
-                            });
-                            
+                            });            
          
                             likeCommentOutcome.success = 1;
                             likeCommentOutcome.successMessage = "you liked"
