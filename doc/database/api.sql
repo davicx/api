@@ -31,8 +31,11 @@
 #FOLLOW#
 #########
 #SELECT * FROM user_profile
-#SELECT * FROM following
-#DELETE FROM following WHERE follow_id > 0;
+SELECT * FROM following
+#SELECT * FROM notifications
+
+#DELETE FROM notifications WHERE notification_id > 0
+#DELETE FROM following WHERE follow_id > 1;
 
 
 

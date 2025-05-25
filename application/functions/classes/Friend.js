@@ -122,8 +122,320 @@ class Friend {
         });
     }
     
+    // Method B1: Get Your Following
+    static async getCurrrentUserFollowing(currentUser) {
+        const connection = db.getConnection();
+    
+        const result = {
+            currentUser: currentUser,
+            followingList: [],
+            errors: [],
+            success: false
+        };
+    
+        return new Promise((resolve, reject) => {
+            const query = `
+                SELECT 
+                    u.user_name,
+                    u.image_name,
+                    u.first_name,
+                    u.last_name
+                FROM following f
+                JOIN user_profile u ON f.following_user = u.user_name
+                WHERE f.user_name = ?
+            `;
+    
+            connection.query(query, [currentUser], (err, rows) => {
+                if (err) {
+                    result.errors.push(err);
+                    return resolve(result);
+                }
+    
+                // Add followStatus: 1 to each row
+                const updatedRows = rows.map(user => ({
+                    ...user,
+                    followStatus: 1
+                }));
+    
+                result.followingList = updatedRows;
+                result.success = true;
+                resolve(result);
+            });
+        });
+    }
+    
+    // Method B2: Get Your Followers
+    static async getCurrentUserFollowers(currentUser) {
+        const connection = db.getConnection();
+    
+        const result = {
+            currentUser: currentUser,
+            followersList: [],
+            errors: [],
+            success: false
+        };
+    
+        return new Promise((resolve, reject) => {
+            // This query selects all users who are following the current user
+            // and joins their user profile data.
+            const query = `
+                SELECT 
+                    u.user_name,
+                    u.image_name,
+                    u.first_name,
+                    u.last_name
+                FROM following f
+                JOIN user_profile u ON f.user_name = u.user_name
+                WHERE f.following_user = ?
+            `;
+    
+            connection.query(query, [currentUser], (err, rows) => {
+                if (err) {
+                    result.errors.push(err);
+                    return resolve(result);
+                }
+    
+                if (!rows || rows.length === 0) {
+                    result.success = true;
+                    return resolve(result);
+                }
+    
+                // Now that we have the list of people who follow the current user,
+                // we need to check if the current user is following them back.
+                // First, get their usernames into a list
+                const followerUsernames = rows.map(function(row) {
+                    return row.user_name;
+                });
+    
+                // Prepare a second query to check who the current user follows back
+                const checkFollowingQuery = `
+                    SELECT following_user FROM following
+                    WHERE user_name = ? AND following_user IN (?)
+                `;
+    
+                connection.query(checkFollowingQuery, [currentUser, followerUsernames], (err2, followBackRows) => {
+                    if (err2) {
+                        result.errors.push(err2);
+                        return resolve(result);
+                    }
+    
+                    // Create a Set of usernames that current user is following back
+                    const followingBackSet = new Set();
+                    for (let i = 0; i < followBackRows.length; i++) {
+                        followingBackSet.add(followBackRows[i].following_user);
+                    }
+    
+                    // Build final followersList with followStatus: 1 or 0
+                    const finalList = [];
+                    for (let i = 0; i < rows.length; i++) {
+                        const follower = rows[i];
+                        const isFollowingBack = followingBackSet.has(follower.user_name);
+    
+                        const userData = {
+                            user_name: follower.user_name,
+                            image_name: follower.image_name,
+                            first_name: follower.first_name,
+                            last_name: follower.last_name,
+                            followStatus: isFollowingBack ? 1 : 0
+                        };
+    
+                        finalList.push(userData);
+                    }
+    
+                    result.followersList = finalList;
+                    result.success = true;
+                    resolve(result);
+                });
+            });
+        });
+    }
+    
+    // Method B3: Get Following other user
+    static async getUserFollowers(currentUser, otherUser) {
+        const connection = db.getConnection();
 
-    // Method B1: Follow a User
+        const result = {
+            currentUser: currentUser,
+            otherUser: otherUser,
+            followersList: [],
+            errors: [],
+            success: false
+        };
+
+        return new Promise((resolve, reject) => {
+            // Step 1: Get users who are following 'otherUser'
+            const query = `
+                SELECT 
+                    u.user_name,
+                    u.image_name,
+                    u.first_name,
+                    u.last_name
+                FROM following f
+                JOIN user_profile u ON f.user_name = u.user_name
+                WHERE f.following_user = ?
+            `;
+
+            connection.query(query, [otherUser], (err, rows) => {
+                if (err) {
+                    result.errors.push(err);
+                    return resolve(result);
+                }
+
+                if (!rows || rows.length === 0) {
+                    result.success = true;
+                    return resolve(result);
+                }
+
+                // Step 2: Extract all follower usernames
+                const followerUsernames = [];
+                for (let i = 0; i < rows.length; i++) {
+                    followerUsernames.push(rows[i].user_name);
+                }
+
+                // Step 3: Check if 'currentUser' follows each of these followers
+                const checkFollowingQuery = `
+                    SELECT following_user FROM following
+                    WHERE user_name = ? AND following_user IN (?)
+                `;
+
+                connection.query(checkFollowingQuery, [currentUser, followerUsernames], (err2, followBackRows) => {
+                    if (err2) {
+                        result.errors.push(err2);
+                        return resolve(result);
+                    }
+
+                    // Step 4: Build a Set of usernames the current user follows
+                    const followingBackSet = new Set();
+                    for (let i = 0; i < followBackRows.length; i++) {
+                        followingBackSet.add(followBackRows[i].following_user);
+                    }
+
+                    // Step 5: Build followersList with followStatus
+                    const finalList = [];
+                    for (let i = 0; i < rows.length; i++) {
+                        const follower = rows[i];
+
+                        let followStatus = 0;
+
+                        if (follower.user_name === currentUser) {
+                            followStatus = 2; // The follower is the current user
+                        } else if (followingBackSet.has(follower.user_name)) {
+                            followStatus = 1; // Current user follows them back
+                        }
+
+                        const userData = {
+                            user_name: follower.user_name,
+                            image_name: follower.image_name,
+                            first_name: follower.first_name,
+                            last_name: follower.last_name,
+                            followStatus: followStatus
+                        };
+
+                        finalList.push(userData);
+                    }
+
+                    result.followersList = finalList;
+                    result.success = true;
+                    resolve(result);
+                });
+            });
+        });
+    }
+
+    // Method B4: Get users that otherUser is following
+    static async getUserFollowingOtherUser(currentUser, otherUser) {
+        const connection = db.getConnection();
+
+        const result = {
+            currentUser: currentUser,
+            otherUser: otherUser,
+            followingList: [],
+            errors: [],
+            success: false
+        };
+
+        return new Promise((resolve, reject) => {
+            // Step 1: Get users that 'otherUser' is following
+            const query = `
+                SELECT 
+                    u.user_name,
+                    u.image_name,
+                    u.first_name,
+                    u.last_name
+                FROM following f
+                JOIN user_profile u ON f.following_user = u.user_name
+                WHERE f.user_name = ?
+            `;
+
+            connection.query(query, [otherUser], (err, rows) => {
+                if (err) {
+                    result.errors.push(err);
+                    return resolve(result);
+                }
+
+                if (!rows || rows.length === 0) {
+                    result.success = true;
+                    return resolve(result);
+                }
+
+                // Step 2: Extract all usernames that otherUser is following
+                const followingUsernames = [];
+                for (let i = 0; i < rows.length; i++) {
+                    followingUsernames.push(rows[i].user_name);
+                }
+
+                // Step 3: Check if currentUser is following each of these users
+                const checkFollowingQuery = `
+                    SELECT following_user FROM following
+                    WHERE user_name = ? AND following_user IN (?)
+                `;
+
+                connection.query(checkFollowingQuery, [currentUser, followingUsernames], (err2, followBackRows) => {
+                    if (err2) {
+                        result.errors.push(err2);
+                        return resolve(result);
+                    }
+
+                    // Step 4: Build a Set of usernames that currentUser follows
+                    const currentUserFollowingSet = new Set();
+                    for (let i = 0; i < followBackRows.length; i++) {
+                        currentUserFollowingSet.add(followBackRows[i].following_user);
+                    }
+
+                    // Step 5: Build followingList with followStatus
+                    const finalList = [];
+                    for (let i = 0; i < rows.length; i++) {
+                        const followedUser = rows[i];
+
+                        let followStatus = 0;
+
+                        if (followedUser.user_name === currentUser) {
+                            followStatus = 2; // This is the current user
+                        } else if (currentUserFollowingSet.has(followedUser.user_name)) {
+                            followStatus = 1; // Current user also follows this user
+                        }
+
+                        const userData = {
+                            user_name: followedUser.user_name,
+                            image_name: followedUser.image_name,
+                            first_name: followedUser.first_name,
+                            last_name: followedUser.last_name,
+                            followStatus: followStatus
+                        };
+
+                        finalList.push(userData);
+                    }
+
+                    result.followingList = finalList;
+                    result.success = true;
+                    resolve(result);
+                });
+            });
+        });
+    }
+
+    
+    // Method B5: Follow a User
     static async followUser(currentUser, followName, currentUserID, followUserID) {
         const connection = db.getConnection(); 
         var followingKey = currentUser + "_" + followName;
@@ -154,7 +466,7 @@ class Friend {
         });
     }
 
-    // Method B2: Unfollow a User
+    // Method B6: Unfollow a User
     static async unfollowUser(currentUser, unfollowName) {
         const connection = db.getConnection(); 
 
@@ -184,44 +496,6 @@ class Friend {
             } 
         });
     }
-
-    // Method B1: Get Your Following
-static async getUserFollowing(currentUser) {
-	const connection = db.getConnection();
-
-	const result = {
-		currentUser: currentUser,
-		followingList: [],
-		errors: [],
-		success: false
-	};
-
-	return new Promise((resolve, reject) => {
-		const query = `
-			SELECT 
-				u.user_name,
-				u.image_name,
-				u.first_name,
-				u.last_name
-			FROM following f
-			JOIN user_profile u ON f.following_user = u.user_name
-			WHERE f.user_name = ?
-		`;
-
-		connection.query(query, [currentUser], (err, rows) => {
-			if (err) {
-                
-				result.errors.push(err);
-				return resolve(result);
-			}
-
-            console.log(rows)
-			result.followingList = rows;
-			result.success = true;
-			resolve(result);
-		});
-	});
-}
 
 
 }
