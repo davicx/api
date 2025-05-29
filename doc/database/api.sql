@@ -18,20 +18,22 @@
 #FRIENDS#
 #########
 #SELECT * FROM friends WHERE user_name = "davey"
-#UPDATE friends SET request_pending = 1 WHERE friends_id = 732
-#DELETE FROM FRIENDS WHERE friends_id > 0
+#UPDATE friends SET request_pending = 0 WHERE friends_id > 0
+#DELETE FROM FRIENDS WHERE friends_id = 750
 
 #SELECT * FROM friends WHERE user_name = 'davey'
-#SELECT * FROM friends
+SELECT * FROM friends
 #SELECT * FROM friends WHERE request_pending = 1 AND sent_by = "davey" AND sent_to = "frodo"
 #SELECT * FROM user_profile
 #SELECT * FROM user_login
+
+
 
 #########
 #FOLLOW#
 #########
 #SELECT * FROM user_profile
-SELECT * FROM following
+#SELECT * FROM following
 #SELECT * FROM notifications
 
 #DELETE FROM notifications WHERE notification_id > 0

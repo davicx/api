@@ -436,87 +436,6 @@ async function unfollowUser(req, res) {
 	res.json(unfollowUserOutcome);
 }
 
-//WORKS SORT OF 
-/*
-async function unfollowUser(req, res) {
-	const currentUser = req.body.currentUser;
-	const followingName = req.body.followingName;
-
-	const headerMessage = currentUser + " is going to unfollow " + followingName;
-	Functions.addHeader(headerMessage);
-
-	var unfollowUserOutcome = {
-		data: {
-			currentUser: currentUser,
-			followingName: followingName,
-			currentUserID: 0,
-			followingUserID: 0,
-			unfollowUserResult: {
-				userUnfollowed: false,
-				currentUser: currentUser,
-				followingKey: "",
-				errors: []
-			}
-		},
-		message: "",
-		success: false,
-		statusCode: 500,
-		errors: [],
-		currentUser: currentUser
-	};
-
-	try {
-		// Step 1: Get user IDs
-		const currentUserResult = await userFunctions.getUserID(currentUser);
-		const followingUserResult = await userFunctions.getUserID(followingName);
-
-		const currentUserID = currentUserResult.userID;
-		const followingUserID = followingUserResult.userID;
-
-		unfollowUserOutcome.data.currentUserID = currentUserID;
-		unfollowUserOutcome.data.followingUserID = followingUserID;
-
-		if (!followingUserResult.userFound) {
-			unfollowUserOutcome.message = "Status: User to unfollow not found.";
-			unfollowUserOutcome.statusCode = 404;
-			return res.json(unfollowUserOutcome);
-		}
-
-		// Step 2: Check if currently following
-		const followStatus = await friendFunctions.checkFollowingStatus(currentUser, followingName);
-
-		if (followStatus.status === "not_following") {
-			unfollowUserOutcome.message = "You are not currently following this user.";
-		} else if (followStatus.status === "self") {
-			unfollowUserOutcome.message = "You cannot unfollow yourself.";
-		} else if (followStatus.status === "following") {
-			// Step 3: Unfollow the user
-			const unfollowResult = await Friend.unfollowUser(currentUser, followingName, currentUserID, followingUserID);
-
-			unfollowUserOutcome.data.unfollowUserResult = unfollowResult;
-
-			if (unfollowResult.unfollowSuccess == true) {
-				unfollowUserOutcome.success = true;
-				unfollowUserOutcome.statusCode = 200;
-				unfollowUserOutcome.message = currentUser + " has unfollowed " + followingName;
-			} else {
-				unfollowUserOutcome.message = "Error while unfollowing user.";
-				unfollowUserOutcome.errors.push(...unfollowResult.errors);
-			}
-		} else {
-			unfollowUserOutcome.message = "Unexpected follow status.";
-		}
-	} catch (err) {
-		console.log("Error in unfollowUser:", err);
-		unfollowUserOutcome.errors.push(err);
-		unfollowUserOutcome.message = "Unexpected server error.";
-	}
-
-	Functions.addFooter();
-	res.json(unfollowUserOutcome);
-}
-
-*/
 
 //FUNCTIONS A: All Functions Related to Friends 
 //Function A1: Get All Site Users
@@ -722,6 +641,8 @@ async function addFriend(req, res) {
     const sentBy = req.body.currentUser;
     const sentTo = req.body.addFriendName;
 
+	console.log(currentUser + " " + friendName)
+
 	
     var newFriendOutcome = {
 		data: {
@@ -756,6 +677,10 @@ async function addFriend(req, res) {
     var friendUserID = friendUserIdFull.userID
 
 	//Check if these match
+	const headerMessage = "";
+	Functions.addHeader(headerMessage);
+
+
 	console.log("CURRENT USER FROM POST " + currentUserBody)
 	console.log("CURRENT USER FROM TOKEN " + currentUser)
 	console.log("STEP 1: Get user IDs for both Users")
@@ -765,6 +690,9 @@ async function addFriend(req, res) {
 	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
 	//STEP 2: Check if they are friends	
     var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
+	console.log("STEP 2: Friendship Status")
+	console.log(friendShipStatus)
+
 
     //STEP 3: Add Friendship to Friends Table 
 	//Status 1: Currently Friends
@@ -842,6 +770,7 @@ async function addFriend(req, res) {
 		newFriendOutcome.message = "Status 6: Somethin wrong dude!";
 	}
 
+	Functions.addFooter();
     res.json(newFriendOutcome)
 }
 
