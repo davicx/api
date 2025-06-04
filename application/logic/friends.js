@@ -5,11 +5,12 @@ const Notification = require('../functions/classes/Notification')
 const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const userFunctions = require('../functions/userFunctions')
+const profileFunctions = require('../functions/profileFunctions')
 const friendFunctions = require('../functions/friendFunctions');
 const requestFunctions = require('../functions/requestFunctions');
 const notifications = require('./notifications');
 const Friend = require('../functions/classes/Friend');
-
+const Profile = require('../functions/classes/Profile');
 
 /*
 FUNCTIONS A: All Functions Related to Friends 
@@ -37,6 +38,11 @@ FUNCTIONS C: All Functions Related to Follower Actions
 
 */
 
+//TYPE 1: You are Currently Friends - "friends"
+//TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+//TYPE 3: Friendship Request Pending (them) - "request_pending"
+//TYPE 4: Not Friends - "not_friends"
+//TYPE 5: This is you - "you"
 
 //FUNCTIONS C: All Functions Related to Follower Actions
 //Function C1: Get All Your Following
@@ -626,10 +632,11 @@ async function getAllUsersWithFriendship(req, res) {
 async function addFriend(req, res) {
 	//Status
 	/*
-	1: Currently Friends
-	2: Friendship Pending
-	3: Not Friends
-	4: No Data
+    //TYPE 1: You are Currently Friends - "friends"
+    //TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+    //TYPE 3: Friendship Request Pending (them) - "request_pending"
+    //TYPE 4: Not Friends - "not_friends"
+    //TYPE 5: This is you - "you"
 	*/ 
 
 	//NEED TO RETURN THE ADDED FRIEND FOR REACT TO UPDATE 
@@ -641,74 +648,83 @@ async function addFriend(req, res) {
     const sentBy = req.body.currentUser;
     const sentTo = req.body.addFriendName;
 
-	console.log(currentUser + " " + friendName)
-
+	var friendData = {
+		friendID: 0,
+		friendName: friendName,
+		friendImage: "",
+		firstName: "",
+		lastName: "",
+		requestPending: 0,
+		requestSentBy: currentUser,
+		friendshipKey: "new_request",
+		alsoYourFriend: 0
+	}
 	
     var newFriendOutcome = {
 		data: {
 			currentUser: currentUser,
-			currentUserID: 0,
-			friendName: "",
-			friendUserID: 0,
-			friendOutcomeOne: {
-				userAdded: false,
-				friendShipKey: "",
-				errors: []
-			},
-			friendOutcomeTwo: {
-				userAdded: false,
-				friendShipKey: "",
-				errors: []
-			}
+			friendAddSuccessOutcome: false,
+			friendData: friendData
 		},
 		message: "", 
-		success: false,
-		statusCode: 500,
+		success: true,
+		statusCode: 200,
 		errors: [], 
 		currentUser: req.body.currentUser
 	}
 
-
-	//STEP 1: Get user IDs for both Users 
+    //STEP 1: Get user IDs for both Users 
 	var currentUserIdFull = await userFunctions.getUserID(currentUser)
 	var friendUserIdFull = await userFunctions.getUserID(friendName)
 
     var currentUserID = currentUserIdFull.userID
     var friendUserID = friendUserIdFull.userID
 
+	newFriendOutcome.data.friendData.friendID = friendUserID
+
 	//Check if these match
 	const headerMessage = "";
 	Functions.addHeader(headerMessage);
 
+	//console.log("CURRENT USER FROM POST " + currentUserBody)
+	//console.log("CURRENT USER FROM TOKEN " + currentUser)
+	//console.log("STEP 1: Get user IDs for both Users")
+	//console.log("STEP 1: " + currentUser + " " + currentUserID)
+	//console.log("STEP 1: " + friendName + " " + friendUserID)
 
-	console.log("CURRENT USER FROM POST " + currentUserBody)
-	console.log("CURRENT USER FROM TOKEN " + currentUser)
-	console.log("STEP 1: Get user IDs for both Users")
-	console.log("STEP 1: " + currentUser + " " + currentUserID)
-	console.log("STEP 1: " + friendName + " " + friendUserID)
+	//STEP 2: Get User Information
+	var friendProfileOutcome = await Profile.getUserProfile(friendName);
+	console.log(friendProfileOutcome)
 
-	//console.log(currentUserIdFull,currentUserID, friendUserIdFull, friendUserID)
-	//STEP 2: Check if they are friends	
+	friendData.friendImage = friendProfileOutcome.userProfile.userImage;
+	friendData.firstName = friendProfileOutcome.userProfile.firstName;
+	friendData.lastName = friendProfileOutcome.userProfile.lastName;
+
+
+	//STEP 3: Check if they are friends	
     var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
 	console.log("STEP 2: Friendship Status")
 	console.log(friendShipStatus)
 
-
-    //STEP 3: Add Friendship to Friends Table 
+    //STEP 4: Add Friendship to Friends Table 
 	//Status 1: Currently Friends
 	if(friendUserIdFull.userFound == false) {
 		newFriendOutcome.message = "Status: No user found";
+		newFriendOutcome.data.friendData.friendshipKey = "user_not_found"
 
 	} else if(friendShipStatus.friendshipStatus == 1){
 		newFriendOutcome.message = "Status 1: Currently Friends";
+		newFriendOutcome.data.friendData.friendshipKey = "friends"
 
 	//Status 2: Friendship Invite Pending	
 	} else if(friendShipStatus.friendshipStatus == 2){
-		newFriendOutcome.message = "Status 2: Friendship Invite Pending (you accept)";	
+		newFriendOutcome.message = "Status 2: Friendship Invite Pending (they accept)";	
+		newFriendOutcome.data.friendData.friendshipKey = "invite_pending"
 
 	//Status 3: Friendship Request Pending	
 	} else if(friendShipStatus.friendshipStatus == 3){
-		newFriendOutcome.message = "Status 3: Friendship Invite Pending (you accept)";	
+		newFriendOutcome.message = "Status 3: Friendship Request Pending (you accept)";	
+		newFriendOutcome.data.friendData.friendshipKey = "request_pending"
 
 	//Status 4: Not currently Friends so add Friend	
 	} else if(friendShipStatus.friendshipStatus == 4) {
@@ -722,16 +738,6 @@ async function addFriend(req, res) {
 
 		console.log(friendOutcomeOne)
 		console.log(friendOutcomeTwo)
-
-		//Add Friendship Two
-	 	newFriendOutcome.data = {
-			currentUser: currentUser,
-			currentUserID: currentUserID,
-			friendName: friendName,
-			friendUserID: friendUserID,
-			friendOutcomeOne: friendOutcomeOne,
-			friendOutcomeTwo: friendOutcomeTwo
-		}
 
 		if(friendOutcomeOne.userAdded == true && friendOutcomeTwo.userAdded == true) {
 
@@ -756,18 +762,26 @@ async function addFriend(req, res) {
 				sentTo: friendName,
 				groupID: 0
 			}
-	
-			Requests.newSingleRequest(newRequest) 
+
+			Requests.newSingleRequest(newRequest)  //TO DO: Handle Error
+			newFriendOutcome.data.friendAddSuccessOutcome = true
+
+			newFriendOutcome.data.friendData.friendshipKey = "new_request_pending"
 
 		}
 
 	//Status 5: This is you!
 	} else if(friendShipStatus.friendshipStatus == 5){
 		newFriendOutcome.message = "This is you!";	
+		newFriendOutcome.data.friendData.friendshipKey = "you"
 
 	//Status 6: No data or error	
 	} else { 
 		newFriendOutcome.message = "Status 6: Somethin wrong dude!";
+		newFriendOutcome.data.friendData.friendshipKey = "error_adding_friend"
+		newFriendOutcome.success = false
+		newFriendOutcome.statusCode = 500
+
 	}
 
 	Functions.addFooter();
@@ -780,21 +794,50 @@ async function removeFriend(req, res) {
     const currentUser = req.body.currentUser;
     const friendName = req.body.removeFriendName;
 
+	var friendData = {
+		friendID: 0,
+		friendName: friendName,
+		friendImage: "",
+		firstName: "",
+		lastName: "",
+		requestPending: 0,
+		requestSentBy: currentUser,
+		friendshipKey: "new_request",
+		alsoYourFriend: 0
+	}
+
 	var removeFriendRequestOutcome = {
 		data: {
-			friendRemoved: false,
-			currentUser: "",
-			friendName: "",
+			currentUser: currentUser,
+			friendAddSuccessOutcome: false,
+			friendData: friendData
 		},
 		message: "", 
-		success: false,
-		statusCode: 500,
+		success: true,
+		statusCode: 200,
 		errors: [], 
-		currentUser: currentUser
+		currentUser: req.body.currentUser
 	}
-	
+
 	//STEP 1: Confirm there is a Friendship
 	let friendStatus = await friendFunctions.checkFriendshipStatus(currentUser, friendName);
+
+	//STEP 2: Get user IDs for both Users 
+	var currentUserIdFull = await userFunctions.getUserID(currentUser)
+	var friendUserIdFull = await userFunctions.getUserID(friendName)
+
+	var currentUserID = currentUserIdFull.userID
+	var friendUserID = friendUserIdFull.userID
+
+	removeFriendRequestOutcome.data.friendData.friendID = friendUserID
+
+	//STEP 3: Get Profile Information 
+	var friendProfileOutcome = await Profile.getUserProfile(friendName);
+	console.log(friendProfileOutcome)
+
+	friendData.friendImage = friendProfileOutcome.userProfile.userImage;
+	friendData.firstName = friendProfileOutcome.userProfile.firstName;
+	friendData.lastName = friendProfileOutcome.userProfile.lastName;
 
 	//Friendship Found
 	if(friendStatus.friendshipStatus == 1 || friendStatus.friendshipStatus == 2) {
@@ -812,6 +855,7 @@ async function removeFriend(req, res) {
 			removeFriendRequestOutcome.success = true;
 			removeFriendRequestOutcome.statusCode = 200;
 			removeFriendRequestOutcome.message = "Friendship removed for " + currentUser + " and " + friendName;
+
 		//Error
 		} else {
 			removeFriendRequestOutcome.message = "Friendship found for " + currentUser + " and " + friendName + " but error removing";
@@ -876,13 +920,13 @@ async function acceptFriendInvite(req, res) {
 	}
 
 
-	//STEP 1: Confirm there is a Pending Request
-	var requestStatus = await requestFunctions.getRequestStatus(currentUser, friendName, "friend_request");
+	//STEP 1: Confirm there is a Pending Request (requestSentBy, requestSentTo)
+	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
 	console.log("STEP 1: Confirm there is a Pending Request")
 	console.log(requestStatus)
 
-	//STEP 2: Confirm there is a Friendship Pending
-	var inviteStatus = await friendFunctions.getSingleInvite(currentUser, friendName);
+	//STEP 2: Confirm there is a Friendship Pending (requestSentBy, requestSentTo)
+	var inviteStatus = await friendFunctions.getSingleInvite(friendName, currentUser);
 	console.log("STEP 2: Confirm there is a Friendship Pending")
 	console.log(inviteStatus)
 	
@@ -932,6 +976,7 @@ async function acceptFriendInvite(req, res) {
 	}
 	
 	console.log(acceptFriendOutcome)
+	console.log(acceptFriendOutcome)
 	
 	Functions.addFooter()
     res.json(acceptFriendOutcome)
@@ -943,8 +988,15 @@ async function declineFriendInvite(req, res) {
     const currentUser = req.body.currentUser;
     const friendName = req.body.friendName;
 
+	var headerMessage = currentUser +  " declineFriendInvite from " + friendName;
+	Functions.addHeader(headerMessage)
+	
 	var declineFriendRequestOutcome = {
-		data: {},
+		data: {
+			friendInviteDeclined: false,
+			currentUser: currentUser,
+			friendName: friendName,
+		},
 		message: "", 
 		success: false,
 		statusCode: 500,
@@ -952,34 +1004,37 @@ async function declineFriendInvite(req, res) {
 		currentUser: currentUser
 	}
 
-	//STEP 1: Confirm there is a Pending Request
+
+
+	//STEP 1: Confirm there is a Pending Request (requestSentBy, requestSentTo)
 	var requestStatus = await requestFunctions.getRequestStatus(friendName, currentUser, "friend_request");
 	console.log("STEP 1: Confirm there is a Pending Request")
-	//console.log(requestStatus)
+	console.log(requestStatus)
 
-	//STEP 2: Confirm there is a Friendship Pending
-	var inviteStatus = await friendFunctions.getSingleInvite(currentUser, friendName);
+	//STEP 2: Confirm there is a Friendship Pending (requestSentBy, requestSentTo)
+	var inviteStatus = await friendFunctions.getSingleInvite(friendName, currentUser);
 	console.log("STEP 2: Confirm there is a Friendship Pending")
-	//console.log(inviteStatus)
+	console.log(inviteStatus)
 
-		//If there is a request 
-		if(inviteStatus.inviteExists == true) {
+	//If there is a request 
+	if(inviteStatus.inviteExists == true) {
 
-			//STEP 3: Decline the Request 
-			var declineFriendRequest = await friendFunctions.declineFriendRequest(currentUser, friendName);
-			declineFriendRequestOutcome.success = true
-			declineFriendRequestOutcome.statusCode = 200
-			declineFriendRequestOutcome.data.currentUser = currentUser
-			declineFriendRequestOutcome.data.friendName = friendName
-			declineFriendRequestOutcome.message = currentUser + " declined the friendship request from " + friendName;
+		//STEP 3: Decline the Request 
+		var declineFriendRequest = await friendFunctions.declineFriendRequest(currentUser, friendName);
+		declineFriendRequestOutcome.data.friendInviteDeclined = true
+		declineFriendRequestOutcome.success = true
+		declineFriendRequestOutcome.statusCode = 200
+		declineFriendRequestOutcome.data.currentUser = currentUser
+		declineFriendRequestOutcome.data.friendName = friendName
+		declineFriendRequestOutcome.message = currentUser + " declined the friendship request from " + friendName;
 
 
-		} else {
-			declineFriendRequestOutcome.success = true
-			declineFriendRequestOutcome.statusCode = 200
-			declineFriendRequestOutcome.message = "Their is no friendship to decline"
-			console.log("STEP 2: Their is no friendship to decline")
-		}
+	} else {
+		declineFriendRequestOutcome.success = true
+		declineFriendRequestOutcome.statusCode = 200
+		declineFriendRequestOutcome.message = "Their is no friendship to decline"
+		console.log("STEP 2: Their is no friendship to decline")
+	}
 	
 	console.log(declineFriendRequestOutcome)
 	res.json(declineFriendRequestOutcome)

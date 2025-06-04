@@ -39,42 +39,6 @@ FUNCTIONS C: All Functions Related to Following
 //Function C1: Check if you are following a user 
 //Function C2: Compare your followers with a list of someone elses followers
 
-//Function C1: Check if you are following a user 
-async function checkFollowingStatus(currentUser, followName) {
-    const connection = db.getConnection();
-
-    var followOutcome = {
-        isFollowing: false,
-        status: "not_following", // "following", "not_following", or "self"
-        errors: []
-    }
-
-    return new Promise(async function(resolve, reject) {
-        try {
-            const queryString = "SELECT * FROM following WHERE user_name = ? AND following_user = ?";
-
-            connection.query(queryString, [currentUser, followName], (err, rows) => {
-                if (!err) {
-                    if (functions.compareStrings(currentUser, followName)) {
-                        followOutcome.status = "self";
-                    } else if (rows.length > 0) {
-                        followOutcome.isFollowing = true;
-                        followOutcome.status = "following";
-                    }
-
-                    resolve(followOutcome);
-                } else {
-                    followOutcome.errors.push(err);
-                    resolve(followOutcome);
-                }
-            })
-        } catch(err) {
-            followOutcome.errors.push(err);
-            reject(followOutcome);
-        } 
-    });
-}
-
 
 //FUNCTIONS A: All Functions Related to getting Friends 
 //Function A1: Get all Users
@@ -179,14 +143,14 @@ async function getAllUserFriends(currentUser) {
 
 	return new Promise(async function(resolve, reject) {
         try {
-            const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.image_url, user_profile.first_name, user_profile.last_name , user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
+            const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.image_url, user_profile.first_name, user_profile.last_name, user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
             connection.query(queryString, [currentUser], (err, rows) => {
                 var friendsArray = []
              
                 for (let i = 0; i < rows.length; i++) {
                     let currentFriend = {}
 
-                    currentFriend.friendID = rows[i].user_id;
+                    currentFriend.friendID = rows[i].friend_id;
                     currentFriend.friendName = rows[i].user_name;
                     currentFriend.friendImage = rows[i].image_url;
                     currentFriend.firstName = rows[i].first_name;
@@ -438,10 +402,9 @@ async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirF
 }
 
 //Function B2: Get a Single Friend Invite
-async function getSingleInvite(currentUser, friendRequestFrom) {
+async function getSingleInvite(requestSentBy, requestSentTo) {
     const connection = db.getConnection(); 
-    console.log(currentUser, friendRequestFrom)
-    
+
     var friendInviteOutcome = {
         inviteExists: false,
         errors: []
@@ -450,7 +413,7 @@ async function getSingleInvite(currentUser, friendRequestFrom) {
 	return new Promise(async function(resolve, reject) {
         try {
             const queryString = "SELECT * FROM friends WHERE request_pending = 1 AND sent_by = ? AND sent_to = ?"
-            connection.query(queryString, [currentUser, friendRequestFrom], (err, rows) => {
+            connection.query(queryString, [requestSentBy, requestSentTo], (err, rows) => {
                  console.log(rows)
                if(rows.length > 0) {
                     friendInviteOutcome.inviteExists = true;
@@ -573,6 +536,42 @@ async function declineFriendRequest(currentUser, friendName) {
 
 }
 
+
+//Function C1: Check if you are following a user 
+async function checkFollowingStatus(currentUser, followName) {
+    const connection = db.getConnection();
+
+    var followOutcome = {
+        isFollowing: false,
+        status: "not_following", // "following", "not_following", or "self"
+        errors: []
+    }
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT * FROM following WHERE user_name = ? AND following_user = ?";
+
+            connection.query(queryString, [currentUser, followName], (err, rows) => {
+                if (!err) {
+                    if (functions.compareStrings(currentUser, followName)) {
+                        followOutcome.status = "self";
+                    } else if (rows.length > 0) {
+                        followOutcome.isFollowing = true;
+                        followOutcome.status = "following";
+                    }
+
+                    resolve(followOutcome);
+                } else {
+                    followOutcome.errors.push(err);
+                    resolve(followOutcome);
+                }
+            })
+        } catch(err) {
+            followOutcome.errors.push(err);
+            reject(followOutcome);
+        } 
+    });
+}
 
 
 module.exports = { getAllUsers, getActiveFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites, checkFriendshipStatus, compareUsersWithYourFriends, getSingleInvite, getFriendStatus,removeFriend, declineFriendRequest, checkFollowingStatus };

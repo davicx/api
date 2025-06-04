@@ -17,10 +17,60 @@ FUNCTIONS A: All Functions Related to User Profile
 //Function A1: Get User Profile
 async function getUserProfile(userName) {
     const connection = db.getConnection(); 
+    let currentUser = userName;
+    console.log(" ")
+    console.log("______________________________________________")
+    console.log("FUNCTION: getUserProfile")
+    console.log("Getting User Profile for " + currentUser)
 
-    //STEP 1: User Profile Class to get information
-    console.log("getUserProfile")
+    var userProfileOutcome = {
+	    data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
 
+    //STEP 1: Get User Profile Information
+    let getUserProfileOutcome = await Profile.getUserProfile(currentUser);
+
+    const userProfile = {
+        userName: getUserProfileOutcome.userProfile.userName,
+        userID: getUserProfileOutcome.userProfile.userID,
+        userImage: getUserProfileOutcome.userProfile.userImage,
+        biography: getUserProfileOutcome.userProfile.biography,
+        firstName: getUserProfileOutcome.userProfile.firstName,
+        lastName: getUserProfileOutcome.userProfile.lastName
+    };
+
+    //console.log("getUserProfile")
+    //console.log(getUserProfileOutcome)
+    //console.log("getUserProfile")
+
+    if(getUserProfileOutcome.success == true) {
+        userProfileOutcome.message = "We got the user profile for " + currentUser;
+        userProfileOutcome.success = true;
+        userProfileOutcome.statusCode = 200;
+
+        //Get Correct User Image local or aws
+        if(functions.compareStrings(getUserProfileOutcome.storageLocation, "aws") == true) {
+            console.log("Get AWS Photo")
+        } else {
+            console.log("Good to go!")     
+        }
+
+        userProfileOutcome.data = userProfile;
+    }
+
+    console.log("userProfileOutcome")
+    console.log(userProfileOutcome)
+    console.log("userProfileOutcome")
+    console.log("______________________________________________")
+    console.log("______________________________________________")
+    console.log(" ")
+    res.json(userProfileOutcome)
+    //res.status(401).json(userProfileOutcome)
 }
 
 //Function A2: Get Simple User Profile

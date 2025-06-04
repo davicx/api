@@ -18,21 +18,15 @@
 #FRIENDS#
 #########
 #SELECT * FROM friends WHERE user_name = "davey"
-#UPDATE friends SET request_pending = 0 WHERE friends_id = 0
-#DELETE FROM FRIENDS WHERE friends_id > 750
+#UPDATE friends SET request_pending = 0 WHERE friends_id > 0
+#DELETE FROM FRIENDS WHERE friends_id = 750
 
 #SELECT * FROM friends WHERE user_name = 'davey'
-#SELECT * FROM friends
+SELECT * FROM friends
 #SELECT * FROM friends WHERE request_pending = 1 AND sent_by = "davey" AND sent_to = "frodo"
 #SELECT * FROM user_profile
 #SELECT * FROM user_login
 
-#DELETE FROM friends WHERE friends_id > 0
-#DELETE FROM pending_requests WHERE request_id > 0
-#SELECT * FROM pending_requests 
-#SELECT * FROM friends
-#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND sent_to = "merry" AND request_type = "friend_request";		
- SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "david" AND sent_to = "merry" AND request_type = friend_request           
 
 
 #########
@@ -46,20 +40,20 @@
 #DELETE FROM following WHERE follow_id > 1;
 
 
+
+
+
 #########
 #POSTS#
 #########
-#SELECT * FROM posts;
-
-#DELETE FROM posts WHERE post_id > 724;
-#DELETE FROM notifications WHERE notification_id > 0
-
-
 #ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
 #ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
 
 
+#DELETE FROM posts WHERE post_id > 678;
+#DELETE FROM notifications WHERE notification_id > 0
 
+#SELECT * FROM posts;
 
 
 #SELECT * FROM shareshare.groups;
@@ -81,9 +75,6 @@
 #UPDATE user_profile SET first_name = 'Merry' WHERE user_profile_id = 6;
 #UPDATE user_profile SET last_name = 'Brandybuck' WHERE user_profile_id = 5;
 #SELECT * FROM user_profile;
-
-#DELETE FROM user_profile WHERE user_profile_id = 4;
-
 
 
 #DELETE FROM refresh_tokens WHERE token_id = 514;
