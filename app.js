@@ -16,7 +16,9 @@ app.use(
   })
 );
 
+
 //Application 
+/*
 const login = require('./application/routes/loginRoutes.js'); 
 const group = require('./application/routes/groupRoute.js'); 
 const posts = require('./application/routes/postRoutes.js'); 
@@ -42,6 +44,7 @@ app.use(upload);
 app.use(uploadLearning);
 app.use(profile);
 app.use(simple);
+*/
 
 //Server Login 
 app.listen(3003, () => {
