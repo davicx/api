@@ -480,8 +480,6 @@ async function getAllGroupPosts(req, res) {
 	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID
 	Functions.addHeader(headerMessage)
 	
-	//const currentUser = "daveyChangeBackWhenusingMiddleware"
-
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await Post.getGroupPostsAll(groupID)
@@ -507,9 +505,6 @@ async function getAllGroupPosts(req, res) {
 		currentUser: currentUser
 	}
 
-	//console.log("TOTAL POSTS " + posts.length)
-
-	//console.log("Getting posts!")
 	Functions.addFooter()
 	res.json(postsResponse)
 

@@ -1,0 +1,55 @@
+-- MySQL dump 10.13  Distrib 8.0.41, for macos15 (arm64)
+--
+-- Host: localhost    Database: shareshare
+-- ------------------------------------------------------
+-- Server version	8.0.41
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `refresh_tokens`
+--
+
+DROP TABLE IF EXISTS `refresh_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `refresh_tokens` (
+  `token_id` int NOT NULL AUTO_INCREMENT,
+  `user_name` varchar(255) DEFAULT NULL,
+  `user_id` varchar(255) DEFAULT NULL,
+  `refresh_token` varchar(255) NOT NULL,
+  `device_id` varchar(255) NOT NULL DEFAULT 'device_id',
+  `token_created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`token_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=669 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `refresh_tokens`
+--
+
+LOCK TABLES `refresh_tokens` WRITE;
+/*!40000 ALTER TABLE `refresh_tokens` DISABLE KEYS */;
+INSERT INTO `refresh_tokens` VALUES (151,'temp2','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6InRlbXAyIiwiaWF0IjoxNjc3OTc3MTM0fQ.UF8Jw2mWK37wN2RdDqZZV-Cq0ANH7Sfe3SA6w_JhIfc','device_id','2023-03-05 00:45:34'),(150,'temp','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6InRlbXAiLCJpYXQiOjE2Nzc5NzcwNzd9.ZCD-sLcj34gNWIWugRbkT_tC7SGawStNSXXn_fxUm6o','device_id','2023-03-05 00:44:37'),(149,'temp','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6InRlbXAiLCJpYXQiOjE2Nzc5NzcwMTB9.nvPfNb0tGhv3dZjxGztf-39ChhlBe2zU-FDLhQfkazI','device_id','2023-03-05 00:43:30'),(386,'sam','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6InNhbSIsImlhdCI6MTcwNDE1Mzg5OX0.6Dcp5XckKPCtZLmilwVyFSRlv8aYidwsfyqrBx4i5NA','device_id','2024-01-02 00:04:59'),(331,'frodo3','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6ImZyb2RvMyIsImlhdCI6MTY5MzcwMTY3Mn0.7hte-h3lgwo8ggccPTbNLgwBoWEvptXv7HxiBQDwFt8','device_id','2023-09-03 00:41:12'),(668,'davey','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6ImRhdmV5IiwiaWF0IjoxNzQ4NjQ0NjE2fQ.BNvKVBD_OJVORbCmBJAjsOU7hgz0MG1YYzJIyt7jQho','davey_postman','2025-05-30 22:36:56'),(659,'davey','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6ImRhdmV5IiwiaWF0IjoxNzQ4MzAyMjA2fQ.a_CVlDIEujcBaEpatVRTaQ1nehr6_BZQ9PwlW7SWGtY','7697E4AA-E507-405C-9524-93A013845131','2025-05-26 23:30:06'),(581,'davey','1','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6ImRhdmV5IiwiaWF0IjoxNzQyODU4OTIzfQ.I8Fwo2Y1WP3uaGa0kaV1d7t5zvCYYoJ3aYKPfhUntbM','EA015F73-7049-48FF-B4F6-E0246C60DBE0','2025-03-24 23:28:43'),(667,'merry','6','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6Im1lcnJ5IiwiaWF0IjoxNzQ4NDc1NTM3fQ.z8RHgV2xNQGTVTyMcj_Wic9AlUbuN4p09tb1h4iB6tc','merry_postman','2025-05-28 23:38:57'),(661,'frodo','2','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXJyZW50VXNlciI6ImZyb2RvIiwiaWF0IjoxNzQ4Mzg4MTY3fQ.yHwh2BLOLAnTStQBVtxhBwMKaN9yZj52jWIU1Nn8mQ4','frodo_postman','2025-05-27 23:22:47');
+/*!40000 ALTER TABLE `refresh_tokens` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2025-05-30 16:22:06
