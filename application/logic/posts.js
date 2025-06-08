@@ -702,7 +702,7 @@ async function likePost(req, res) {
 				likedByFirstName: "",
 				likedByLastName: "",
 				timestamp: "",
-				friendshipStatus: ""
+				friendshipStatus: 0
 			}
 			likePostResponse.data = likedPost;
 			likePostResponse.message = "You already liked this post!"
@@ -756,7 +756,7 @@ async function unlikePost(req, res) {
 		likedByFirstName: "",
 		likedByLastName: "",
 		timestamp: "",
-		friendshipStatus: ""
+		friendshipStatus: 0
 	}
 
 	var headerMessage = "HEADER: You unliked the post: " + postID

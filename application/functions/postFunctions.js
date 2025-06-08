@@ -222,39 +222,6 @@ async function addPostComments(currentUser, posts, groupID)  {
 	return posts;
 }
 
-//ORIGINAL WORKS SORT OF
-/*
-async function addPostComments(currentUser, posts)  {
-
-	for (let i = 0; i < posts.length; i++) {
-		let postID = posts[i].postID	
-		//console.log("Get Comments for " + postID)
-
-		var commentsOutcome = await Comment.getPostComments(postID)
-
-		//Step 2B: Get all the likes for these comments
-		if(commentsOutcome.success == true) {
-			var comments = commentsOutcome.comments;
-
-			for (let i = 0; i < comments.length; i++) {
-				let currentCommentLikes = await Comment.getCommentLikes(comments[i].commentID);
-				let friendshipCheck = await friendFunctions.checkFriendshipStatus(currentUser, comments[i].commentFrom);
-				comments[i].friendshipStatus = friendshipCheck.friendshipStatus;
-				comments[i].commentLikes = currentCommentLikes.commentLikes;
-                console.log("currentCommentLikes.commentLikes")
-                console.log(currentCommentLikes.commentLikes)
-                console.log("currentCommentLikes.commentLikes")
-				comments[i].commentLikeCount = currentCommentLikes.commentLikes.length;
-			}
-
-		} 
-
-		posts[i].commentsArray = comments;
-	}
-
-    return posts;
-}
-*/
 
 //Function A6: Add Post Likes to an Array of Posts
 async function addPostLikes(currentUser, posts)  {
