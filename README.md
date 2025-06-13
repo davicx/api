@@ -1,8 +1,8 @@
 # API Project
 
-This project is a Node.js Express API. Looking at posts or profile is a good entry point to understand the codebase. This project is very much in development. My work at Amazon and Nike have been in Java and this is just a small backend for my iOS app I am making. I plan to add test coverage, regression testing, a retry mechanism (probably a python lambda with SQS) and a new Java Spring Boot micro service to interact with SNS for messaging. 
+This project is a Node.js Express application. A good place to start would be looking at **posts** or **profile**.This project is very much in development (sorry!). My work at Amazon and Nike have been in Java and this is just a small backend for my iOS app I am making. I plan to add a lot more including test coverage, regression testing, a retry mechanism (probably a python lambda with SQS) and a new Java Spring Boot micro service to interact with SNS for messaging. 
 
-GOOD EXAMPLES! 
+**GOOD EXAMPLES!**
 The post, profile, login and groups routes are pretty good. I would suggest looking at posts first. 
 
 ## Installation
