@@ -386,10 +386,10 @@ async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirF
         if(yourFriendsSet.has(tempUser) || currentUser.localeCompare(tempUser) == 0) { 
             theirFriendsArray[i].alsoYourFriend = 1;
             //theirFriendsArray[i].friendshipKey = "friends";
-            console.log("Trying to find friendship status for " + currentUser + " with the user " + tempUser)
+            //console.log("Trying to find friendship status for " + currentUser + " with the user " + tempUser)
             let friendStatus = getFriendStatus(currentUser, tempUser, yourFriendsArray)
             theirFriendsArray[i].friendshipKey = friendStatus;
-            console.log(friendStatus)
+            //console.log(friendStatus)
 
         } else {
             theirFriendsArray[i].alsoYourFriend = 0;

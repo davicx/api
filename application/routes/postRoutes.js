@@ -31,12 +31,7 @@ FUNCTIONS C: All Routes Related to Post Actions
 
 */
 
-/*
-	var headerMessage = "NEW POST: Post Text"
-	Functions.addHeader(headerMessage)
-	Functions.addFooter()
-	
-	*/
+
 //FUNCTIONS A: All Functions Related to Posts
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
@@ -144,11 +139,13 @@ module.exports = postRouter;
 
 
 
-
-
-
-
-
+//APPENDIX
+/*
+	var headerMessage = "NEW POST: Post Text"
+	Functions.addHeader(headerMessage)
+	Functions.addFooter()
+	
+	*/
 
 
 /*

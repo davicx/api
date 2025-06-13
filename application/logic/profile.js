@@ -54,9 +54,6 @@ async function getUserProfile(req, res) {
         lastName: getUserProfileOutcome.userProfile.lastName
     };
 
-    //console.log("getUserProfile")
-    //console.log(getUserProfileOutcome)
-    //console.log("getUserProfile")
 
     if(getUserProfileOutcome.success == true) {
         userProfileOutcome.message = "We got the user profile for " + currentUser;
@@ -73,12 +70,6 @@ async function getUserProfile(req, res) {
         userProfileOutcome.data = userProfile;
     }
 
-    console.log("userProfileOutcome")
-    console.log(userProfileOutcome)
-    console.log("userProfileOutcome")
-    console.log("______________________________________________")
-    console.log("______________________________________________")
-    console.log(" ")
     res.json(userProfileOutcome)
     //res.status(401).json(userProfileOutcome)
 }
@@ -578,6 +569,8 @@ async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
 
 module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
 
+
+//APPENDIX
 
   /*
 	//STEP 2: Update Profile 

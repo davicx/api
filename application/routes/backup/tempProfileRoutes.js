@@ -1,7 +1,7 @@
 const express = require('express')
 const simpleRouter = express.Router();
-const middlewares = require('../functions/middlewareFunctions')
-const db = require('../functions/conn');
+const middlewares = require('../../functions/middlewareFunctions')
+const db = require('../../functions/conn');
 
 /*
 FUNCTIONS A: All Functions Related to Groups

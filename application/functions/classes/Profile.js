@@ -93,66 +93,6 @@ class Profile {
         });
     }
     
-    /*
-    static async getUserProfile(userName){ 
-        const connection = db.getConnection(); 
-        const queryString = "SELECT * FROM user_profile WHERE user_name = ?";
-
-        console.log("CLASS: Profile.getUserProfile for " + userName)
-
-        var userProfileOutcome = {
-            success: false,
-            errors: [],
-        }   
-        
-        return new Promise(async function(resolve, reject) {
-            try {
-                
-                connection.query(queryString, [userName], (err, rows) => {
-                    
-                    if (!err) {
-                        rows.map((row) => {
-                            //console.log(row)
-                        }); 
-
-                        const userProfile = {
-                            userName: rows[0].user_name,
-                            userID: rows[0].user_id,
-                            userImage: rows[0].image_url,
-                            biography: rows[0].biography,
-                            storageLocation: rows[0].storage_location,
-                            cloudBucket: rows[0].cloud_bucket,
-                            cloudKey: rows[0].cloud_key,
-                            firstName: rows[0].first_name,
-                            lastName: rows[0].last_name,
-                            fileName: rows[0].file_name,
-                            fileNameServer: rows[0].file_name_server
-                        };
-
-                        userProfileOutcome.userProfile = userProfile;
-                        userProfileOutcome.success = true; 
- 
-                    } else {
-                        console.log("error getting user profile")    
-                        userProfileOutcome.errors.push("no worky")
-                        userProfileOutcome.success = false; 
-                        userProfileOutcome.errors.push(err);
-                    } 
-                    
-                    resolve(userProfileOutcome);
-                }) 
-                
-            } catch(err) {
-                console.log("catch error getting group users")    
-                userProfileOutcome.errors.push("no worky")
-                userProfileOutcome.success = false; 
-                userProfileOutcome.errors.push(err);
-                reject(userProfileOutcome);
-            } 
-        });
-    }
-        */
-     
     //Method A2: Get Simple Profile Info 
     static async getSimpleUserProfile(userName){ 
         const connection = db.getConnection(); 
@@ -273,9 +213,6 @@ class Profile {
         })
     }
 
-
-    /*
-    */
 }
 
 module.exports = Profile;

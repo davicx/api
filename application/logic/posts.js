@@ -933,15 +933,17 @@ module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postA
 
 
 
-	//TEMP
-	//let fileURLTemp = "http://localhost:3003/images/background_2.png"
-	//let fileURLTemp = "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1723416523001-467663100-lake.jpg?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEE8aCXVzLXdlc3QtMiJIMEYCIQCuleLUVoYuQxX0LDzWKkd5nfGj8WRrzH8GGpsGRQEaggIhAIbeeyX9HopcvA2n8yzLLAxPAK0FpYI8nAYnX52tfhuCKuQCCGgQABoMNTM0NzUzMzY5ODUwIgzzrOU51U9oRAZ7g0IqwQJj2zZjZYmZ8RSN2gi9AMQkiKZs5gRasy6sGBLtql5Hgg7OC1EwfqzVAk1Y87E73tBtA1FvlggWlp3Sj2pa8vYN6QWm0iDIzSg6aCLZzi37mq7ef%2FFthgIAvj2kK0Rvp4s%2BP%2F10WsYMQ1JgctGgDVx9g3hwFx%2Fm%2Fs91AmamOgs6qPmtVF00pFIucWt2JwBx5mI6Rjnrl9ZHi7C%2Bxqkqguw94nshVMzvg0OavoCYjIrJnktvxTtDxawrOiBucy02A4Fli9gGstRun%2BEgV7U9lpg53qmyetoddR%2BPjBsb9nbpX4p9FD9gGJz4JBeE7sLDOy12SkeNaRI6u8yeOGm91GpJQRNYG6DV75gD6hZ7o%2BRbToqLbcdbNTPM6J8l2sJOQIpGmjDJ2m%2Bmi5sk8wELt3Up72CFTEZbGaneEee3p7QyGc4wpqHJtgY6sgJuv%2FBozg3R1F2ZR%2BO7YYyb4pTUPLLFm3WwSASWBGPw64HgAqHQOVxAcbdjAHnF9JJ4mcpUuzpmdySt9Cfh1HDfFPKUPcNH0XZ2ttDBX1OfZXg0OyOF%2BWQhN7pRO2z%2FH715sa%2BD5YNVSwzn%2BdCpSxdMIDqIf9WqXDBENLDf6P3j7kHDSmE2rJFUChRUazxj0v5FDZ9DH0HNXpH3anw93%2FQvhUZsrc3MavRLYbABjRbeU7TK5zrGgNF%2BjMi1Ksfhq5sE08jJScjNVL4%2FGPKrCSPxoATNUSa6TTh35Ew%2F9RkIXaXwvSm7xWQDnTFDcrEQ7hrMLUBKvuEVkO%2BIjS8wdIlPoM%2Bt33xxAol7MA1rj3Kus9FJCb83kwoTfvSAneH2sWjgquvpoVOvKZz8%2FOeJEUleC7Q%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240830T231229Z&X-Amz-SignedHeaders=host&X-Amz-Expires=14400&X-Amz-Credential=ASIAXZAOI335AW5B2P6Y%2F20240830%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Signature=08b38fba14fbc43bb0bbe8140495aee4124f6f391196b59f7e222a223af6a215"
-	//for (let i = 0; i < postsResponse.data.length; i++) {
-	//	postsResponse.data[i].fileURL = fileURLTemp
-	//}
-	//TEMP
+//APPENDIX
 
-	
+//TEMP
+//let fileURLTemp = "http://localhost:3003/images/background_2.png"
+//let fileURLTemp = "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1723416523001-467663100-lake.jpg?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEE8aCXVzLXdlc3QtMiJIMEYCIQCuleLUVoYuQxX0LDzWKkd5nfGj8WRrzH8GGpsGRQEaggIhAIbeeyX9HopcvA2n8yzLLAxPAK0FpYI8nAYnX52tfhuCKuQCCGgQABoMNTM0NzUzMzY5ODUwIgzzrOU51U9oRAZ7g0IqwQJj2zZjZYmZ8RSN2gi9AMQkiKZs5gRasy6sGBLtql5Hgg7OC1EwfqzVAk1Y87E73tBtA1FvlggWlp3Sj2pa8vYN6QWm0iDIzSg6aCLZzi37mq7ef%2FFthgIAvj2kK0Rvp4s%2BP%2F10WsYMQ1JgctGgDVx9g3hwFx%2Fm%2Fs91AmamOgs6qPmtVF00pFIucWt2JwBx5mI6Rjnrl9ZHi7C%2Bxqkqguw94nshVMzvg0OavoCYjIrJnktvxTtDxawrOiBucy02A4Fli9gGstRun%2BEgV7U9lpg53qmyetoddR%2BPjBsb9nbpX4p9FD9gGJz4JBeE7sLDOy12SkeNaRI6u8yeOGm91GpJQRNYG6DV75gD6hZ7o%2BRbToqLbcdbNTPM6J8l2sJOQIpGmjDJ2m%2Bmi5sk8wELt3Up72CFTEZbGaneEee3p7QyGc4wpqHJtgY6sgJuv%2FBozg3R1F2ZR%2BO7YYyb4pTUPLLFm3WwSASWBGPw64HgAqHQOVxAcbdjAHnF9JJ4mcpUuzpmdySt9Cfh1HDfFPKUPcNH0XZ2ttDBX1OfZXg0OyOF%2BWQhN7pRO2z%2FH715sa%2BD5YNVSwzn%2BdCpSxdMIDqIf9WqXDBENLDf6P3j7kHDSmE2rJFUChRUazxj0v5FDZ9DH0HNXpH3anw93%2FQvhUZsrc3MavRLYbABjRbeU7TK5zrGgNF%2BjMi1Ksfhq5sE08jJScjNVL4%2FGPKrCSPxoATNUSa6TTh35Ew%2F9RkIXaXwvSm7xWQDnTFDcrEQ7hrMLUBKvuEVkO%2BIjS8wdIlPoM%2Bt33xxAol7MA1rj3Kus9FJCb83kwoTfvSAneH2sWjgquvpoVOvKZz8%2FOeJEUleC7Q%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240830T231229Z&X-Amz-SignedHeaders=host&X-Amz-Expires=14400&X-Amz-Credential=ASIAXZAOI335AW5B2P6Y%2F20240830%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Signature=08b38fba14fbc43bb0bbe8140495aee4124f6f391196b59f7e222a223af6a215"
+//for (let i = 0; i < postsResponse.data.length; i++) {
+//	postsResponse.data[i].fileURL = fileURLTemp
+//}
+//TEMP
+
+
 /*
 
 async function postPhotoLocal(req, res) {
