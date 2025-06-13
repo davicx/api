@@ -2,7 +2,7 @@
 
 This project is a Node.js Express application. A good place to start would be looking at **posts** or **profile**.This project is very much in development (sorry!). My work at Amazon and Nike have been in Java and this is just a small backend for my iOS app I am making. I plan to add a lot more including test coverage, regression testing, a retry mechanism (probably a python lambda with SQS) and a new Java Spring Boot micro service to interact with SNS for messaging. 
 
-**GOOD EXAMPLES!**
+**Good Exammples**
 The post, profile, login and groups routes are pretty good. I would suggest looking at posts first. 
 
 ## Installation
