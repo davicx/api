@@ -24,7 +24,7 @@ The post, profile, login and groups routes are pretty good. I would suggest look
    ```
 
 3. Configure environment variables:
-   - Copy `.env.example` to `.env` and update the values as needed.
+   - Create a new `.env` and update the values as needed.
 
 ## Running the Application
 
