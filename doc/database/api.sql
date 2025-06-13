@@ -18,7 +18,7 @@
 #FRIENDS#
 #########
 #SELECT * FROM friends WHERE user_name = "davey"
-#UPDATE friends SET request_pending = 0 WHERE friends_id = 0
+UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 #DELETE FROM FRIENDS WHERE friends_id > 750
 
 #SELECT * FROM friends WHERE user_name = 'davey'
@@ -31,8 +31,9 @@
 #DELETE FROM pending_requests WHERE request_id > 0
 #SELECT * FROM pending_requests 
 #SELECT * FROM friends
+#SELECT * FROM user_profile
 #SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "davey" AND sent_to = "merry" AND request_type = "friend_request";		
- SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "david" AND sent_to = "merry" AND request_type = friend_request           
+#SELECT * FROM pending_requests WHERE request_is_pending = 1 AND sent_by = "david" AND sent_to = "merry" AND request_type = "friend_request";           
 
 
 #########

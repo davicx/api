@@ -543,10 +543,15 @@ async function getPendingFriendInvites(req, res) {
 
 }
 
+
 //Function A6: Get a list of someones friends with Friendship Status
 async function getAnotherUsersFriends(req, res) {
     const currentUser = req.params.user_name;
     const friendName = req.params.friend_name;
+
+	var headerMessage = "The current User " + currentUser + " is getting the friends of " + friendName;
+	Functions.addHeader(headerMessage)
+
 	console.log(currentUser + " " + friendName)
 
 	var userFriendsOutcome = {
@@ -581,7 +586,8 @@ async function getAnotherUsersFriends(req, res) {
 	userFriendsOutcome.success = true
 	userFriendsOutcome.statusCode = 200
 	
-	//res.json({theirFriends: theirFriends, yourFriends: yourFriends, theirFriends: theirFriends})
+	Functions.addFooter()	
+
 	res.json(userFriendsOutcome)
 
 }

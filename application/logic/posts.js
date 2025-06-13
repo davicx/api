@@ -149,7 +149,6 @@ async function postText(req, res) {
 		console.log("STEP 3: Something went wrong making this post!")
 	} 
 
-
 	res.json(postOutcome);
 	console.log("____________________________")
 }
@@ -157,7 +156,7 @@ async function postText(req, res) {
 //Function A2: Post Photo Local 
 async function postPhotoLocal(req, res) {
 	var headerMessage = "HEADER: New Photo Post "
-	Functions.addHeader(headerMessage)
+	
 	uploadFunctions.uploadLocal(req, res, async function (err) {
 
 		var uploadSuccess = false
@@ -282,6 +281,8 @@ async function postPhotoLocal(req, res) {
 }
 
 async function postPhotoLocalAWS(req, res) {
+	var headerMessage = "HEADER: New AWS Photo Post "
+	Functions.addHeader(headerMessage)
 	uploadFunctions.uploadLocal(req, res, async function (err) {
 
 		var uploadSuccess = false
@@ -408,7 +409,9 @@ async function postPhotoLocalAWS(req, res) {
 	
 		res.json(postOutcome)
 
-	  })
+	  Functions.addFooter()
+
+  })
 }
 
 //Function A3: Post Video
@@ -702,7 +705,7 @@ async function likePost(req, res) {
 				likedByFirstName: "",
 				likedByLastName: "",
 				timestamp: "",
-				friendshipStatus: ""
+				friendshipStatus: 0
 			}
 			likePostResponse.data = likedPost;
 			likePostResponse.message = "You already liked this post!"
@@ -756,7 +759,7 @@ async function unlikePost(req, res) {
 		likedByFirstName: "",
 		likedByLastName: "",
 		timestamp: "",
-		friendshipStatus: ""
+		friendshipStatus: 0
 	}
 
 	var headerMessage = "HEADER: You unliked the post: " + postID
