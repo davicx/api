@@ -111,32 +111,6 @@ async function postText(req, res) {
 				Notification.createGroupNotification(notification);
 			}
 		}
-
-		/*
-
-			if(newPostOutcome.outcome == 200) {
-				notification = {
-					masterSite: "kite",
-					notificationFrom: req.body.postFrom,
-					notificationMessage: req.body.notificationMessage,
-					notificationTo: "",
-					notificationLink: req.body.notificationLink,
-					notificationType: req.body.notificationType,
-					groupID: groupID,
-					postID: postID
-				}
-
-				console.log(groupUsers)
-				for (let i = 0; i < groupUsers.length; i++) {
-					//let notificationTo = groupUsers[i];
-					notification.notificationTo = groupUsers[i];
-					console.log(groupUsers[i]);
-					Notification.createSingleNotification(notification)
-				} 
-		
-				
-			}
-			*/
 		
 		//STEP 3: New Post Outcome 
 		console.log("STEP 3: New Post Outcome")
