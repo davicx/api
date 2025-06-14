@@ -8,6 +8,7 @@
 #SELECT * FROM shareshare.groups
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
 
+SELECT * FROM shareshare.groups;
 #SELECT * FROM group_users;
 #DELETE FROM group_users WHERE primary_id > 1520;
 
@@ -18,7 +19,7 @@
 #FRIENDS#
 #########
 #SELECT * FROM friends WHERE user_name = "davey"
-UPDATE friends SET request_pending = 0 WHERE friends_id > 0
+#UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 #DELETE FROM FRIENDS WHERE friends_id > 750
 
 #SELECT * FROM friends WHERE user_name = 'davey'
@@ -26,7 +27,9 @@ UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 #SELECT * FROM friends WHERE request_pending = 1 AND sent_by = "davey" AND sent_to = "frodo"
 #SELECT * FROM user_profile
 #SELECT * FROM user_login
-
+#http://localhost:3003/kite-profile-us-west-two/profileImage-1748475444666-649191507-background_2.png
+#http://localhost:3003/kite-profile-us-west-two/profileImage-1748475444666-649191507-background_2.png
+#
 #DELETE FROM friends WHERE friends_id > 0
 #DELETE FROM pending_requests WHERE request_id > 0
 #SELECT * FROM pending_requests 

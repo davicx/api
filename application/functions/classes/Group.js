@@ -10,6 +10,7 @@ METHODS A: Group RELATED
     4) Method A4: Get Group Users
     5) Method A5: Accept Group Invite
     6) Method A6: Leave Group
+    7) Method A9: Update Group Information
 */
 
 class Group {
@@ -370,6 +371,31 @@ class Group {
         });
     }
         
+    //Method A9: Update Group Information
+    static async updateGroup(groupID, groupName, groupType, groupPrivate, groupImage) {
+        const connection = db.getConnection();
+        var updateOutcome = {
+            status: 500,
+            groupID: groupID,
+            errors: [],
+        };
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "UPDATE shareshare.groups SET group_name = ?, group_type = ?, group_private = ?, group_image = ? WHERE group_id = ?";
+                connection.query(queryString, [groupName, groupType, groupPrivate, groupImage, groupID], (err, results) => {
+                    if (!err) {
+                        updateOutcome.status = 200;
+                    } else {
+                        updateOutcome.errors.push(err);
+                    }
+                    resolve(updateOutcome);
+                });
+            } catch(err) {
+                updateOutcome.errors.push(err);
+                reject(updateOutcome);
+            }
+        });
+    }
 }
 
 module.exports = Group;
@@ -425,7 +451,7 @@ module.exports = Group;
 
                     //Part 1: Check if they are already in this group
             
-                    const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"			
+                    const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id =?"			
                     var groupUserCount = 100;
 
                     connection.query(queryString, [newGroupUser, groupID], (err, rows) => {

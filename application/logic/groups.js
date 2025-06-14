@@ -19,6 +19,7 @@ FUNCTIONS A: All Functions Related to Groups
 	6) Function A6: Get All Groups User is In 
 	7) Function A7: Get Single Group by ID 
 	8) Function A8: Get Group Users
+	9) Function A9: Update Group Information
 */
 
 //Function A1: Create a New Group
@@ -172,14 +173,14 @@ async function getGroups(req, res) {
 
 		//Step 2A: Get the Groups Information (name, image, users)
 		let currentGroupInformation = await Group.getGroupInformation(groupID)	
-		//console.log(currentGroupInformation)
+		console.log(currentGroupInformation)
 		
 		//Step 2A: Get the Groups Users
 		let currentGroupUsers = await Group.getGroupUsers(groupID)	
 		//console.log(currentGroupUsers)
 		currentGroup.groupID = groupID
-		currentGroup.groupName = currentGroup.groupName
-		currentGroup.groupImage = currentGroup.groupImage
+		currentGroup.groupName = currentGroupInformation.groupName
+		currentGroup.groupImage = currentGroupInformation.groupImage
 		currentGroup.activeMembers = currentGroupUsers.groupUsers
 		currentGroup.pendingMembers = currentGroupUsers.pendingGroupUsers
 
@@ -440,6 +441,35 @@ async function getGroupUsers(req, res) {
 
 }
 
-module.exports = { createGroup, getGroups, addGroupUsers, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup };
+//Function A9: Update Group Information
+async function updateGroup(req, res) {
+    const groupID = req.body.groupID;
+    const groupName = req.body.groupName;
+    const groupType = req.body.groupType;
+    const groupPrivate = req.body.groupPrivate;
+    const groupImage = req.body.groupImage;
+
+    let updateOutcome = {
+        success: false,
+        statusCode: 500,
+        errors: [],
+        groupID: groupID
+    };
+
+    try {
+        const result = await Group.updateGroup(groupID, groupName, groupType, groupPrivate, groupImage);
+        if (result.status === 200) {
+            updateOutcome.success = true;
+            updateOutcome.statusCode = 200;
+        } else {
+            updateOutcome.errors = result.errors;
+        }
+    } catch (err) {
+        updateOutcome.errors.push(err);
+    }
+    res.json(updateOutcome);
+}
+
+module.exports = { createGroup, getGroups, addGroupUsers, acceptGroupInvite, getUserGroups, getGroup, getGroupUsers, leaveGroup, updateGroup };
 
 

@@ -145,7 +145,6 @@ async function getPendingFriendInvites(req, res) {
 
 }
 
-
 //Function A6: Get a list of someones friends with Friendship Status
 async function getAnotherUsersFriends(req, res) {
     const currentUser = req.params.user_name;

@@ -93,7 +93,7 @@ async function getActiveFriends(currentUser) {
 
 	return new Promise(async function(resolve, reject) {
         try {
-            const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name , user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1 AND friends.request_pending = 0"
+            const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.image_url, user_profile.first_name, user_profile.last_name , user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1 AND friends.request_pending = 0"
             connection.query(queryString, [currentUser], (err, rows) => {
                 var friendsArray = []
              
@@ -102,7 +102,7 @@ async function getActiveFriends(currentUser) {
 
                     currentFriend.friendID = rows[i].friend_id;
                     currentFriend.friendName = rows[i].user_name;
-                    currentFriend.friendImage = rows[i].image_name;
+                    currentFriend.friendImage = rows[i].image_url;
                     currentFriend.firstName = rows[i].first_name;
                     currentFriend.lastName = rows[i].last_name;
                     currentFriend.friendBiography = rows[i].biography;

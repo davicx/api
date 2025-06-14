@@ -17,6 +17,7 @@ FUNCTIONS A: All Functions Related to Groups
 	4) Function A5: Get All Groups User is In 
     5) Function A6: Get Group Users  
 	6) Function A7: Leave a Group 
+	7) Function A8: Update Group
 
 */
 
@@ -57,6 +58,10 @@ groupRouter.post('/group/leave/', function(req, res) {
     groupFunctions.leaveGroup(req, res);
 })
 
+//Route A8: Update Group (Function A2: Update Group)
+groupRouter.post('/group/update/', function(req, res) {
+    groupFunctions.updateGroup(req, res);
+});
 
 module.exports = groupRouter;
 
