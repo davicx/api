@@ -31,9 +31,22 @@ async function createGroup(req, res) {
 	var groupPrivate = req.body.groupPrivate;
 
 	//New Group Users 
+	var newGroupUsersRaw
+
+	try {
+		// Parse from JSON string (because form-data treats it as string)
+		newGroupUsersRaw = JSON.parse(req.body.groupUsers);
+	} catch (e) {
+		console.error("Invalid groupUsers format");
+		newGroupUsersRaw = []; // or handle error properly
+	}
 	var newGroupUsersRaw = req.body.groupUsers;
+
 	var newGroupUsersClean = Functions.cleanUserNameArray(newGroupUsersRaw)
 	var newGroupUsers = Functions.removeArrayDuplicates(newGroupUsersClean)
+
+	var headerMessage = "New Group created by " + currentUser
+    console.log(headerMessage);
 
 	//Response Outcomes 
 	var groupOutcome = {}
@@ -128,6 +141,7 @@ async function createGroup(req, res) {
     newGroupOutcome.message = "Succesfully created the new group, yay!"
     newGroupOutcome.statusCode = 200;
 	
+	Functions.addFooter()
 	res.json(newGroupOutcome)
 	//res.status(500).json({no:"oh no!"});
 }

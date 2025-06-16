@@ -6,15 +6,21 @@
 #########
 #DELETE FROM shareshare.groups WHERE group_id >72;
 #SELECT * FROM shareshare.groups
+
+
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
 
-SELECT * FROM shareshare.groups;
+#SELECT * FROM posts;
+
+#SELECT * FROM shareshare.groups;
 #SELECT * FROM group_users;
 #DELETE FROM group_users WHERE primary_id > 1520;
 
 #SELECT * FROM group_users WHERE user_name = "davey";
 #SELECT * FROM group_users WHERE group_id = 70;
 
+
+DESCRIBE shareshare.groups;
 #########
 #FRIENDS#
 #########

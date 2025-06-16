@@ -19,10 +19,12 @@ class Group {
     }
 
     //Method A1: Create a Group
-    static async createGroup(currentUser, groupName, groupType, groupPrivate)  {
+    static async createGroup(currentUser, groupName, groupType, groupPrivate, groupImage)  {
         const connection = db.getConnection(); 
         var groupID = 0;
-        const groupImage = "the_shire.jpg"; 
+        var groupImage = "the_shire.jpg"; 
+
+
 
         var groupOutcome = {
             outcome: 0,
