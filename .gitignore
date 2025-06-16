@@ -18,7 +18,17 @@ hiya.jpg
 /ignore/hiya.jpg
 
 # Ignore Folder 
+api/public/kite-*-us-west-two/
+api/public/kite-profile-us-west-two/
+api/public/kite-posts-us-west-two/
+api/public/kite-groups-us-west-two/
+
+/kite-profile-us-west-two/
+/kite-posts-us-west-two/
+/kite-groups-us-west-two/
+
 /ignore
+
 
 .env
 
