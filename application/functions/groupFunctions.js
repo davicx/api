@@ -1,4 +1,16 @@
 const db = require('./conn');
+const Functions = require('../functions/functions');
+const uploadFunctions = require('../functions/uploadFunctions');
+const awsStorage = require('../functions/aws/awsStorage');
+const bucketName = process.env.AWS_POSTS_BUCKET_NAME
+
+//Upload imports
+const multerS3 = require('multer-s3');
+const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs') 
+const multer = require('multer')
+var mime = require('mime-types')
+
 
 /*
 FUNCTIONS A: All Functions Related to Groups
@@ -128,8 +140,70 @@ async function checkUserInGroup(userName, groupID)  {
 
 }
 
+function processGroupUsers(req) {
+    let newGroupUsersRaw;
 
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup }
+    try {
+        // STEP 1: Parse JSON string to array
+        newGroupUsersRaw = JSON.parse(req.body.groupUsers);
+    } catch (e) {
+        console.error("Invalid groupUsers format");
+        newGroupUsersRaw = [];
+    }
+
+    // STEP 2: Clean user names
+    const newGroupUsersClean = Functions.cleanUserNameArray(newGroupUsersRaw);
+
+    // STEP 3: Remove duplicates
+    const newGroupUsers = Functions.removeArrayDuplicates(newGroupUsersClean);
+
+    return newGroupUsers; // Optionally return the final array
+}
+
+function handleUploadResult(req, err) {
+	const uploadOutcome = {
+		uploadSuccess: false,
+		containsFile: false,
+		message: "",
+		statusCode: 500
+	};
+
+	console.log("STEP 2: Upload File to API");
+
+	if (err instanceof multer.MulterError) {
+		console.log("Error 2A: File too large");
+		uploadOutcome.message = "Error 2A: File too large";
+		uploadOutcome.containsFile = true;
+		uploadOutcome.statusCode = 413;
+	} else if (err) {
+		console.log("Error 2B: Not Valid Image File");
+		uploadOutcome.message = "Error 2B: Not Valid Image File";
+        uploadOutcome.containsFile = true;
+		uploadOutcome.statusCode = 415;
+	} else {
+		let file = req.file;
+		console.log("Success 2A: No Multer Errors");
+
+		if (file !== undefined) {
+			console.log("Success 2B: Success Upload File");
+			uploadOutcome.uploadSuccess = true;
+            uploadOutcome.containsFile = true;
+			uploadOutcome.message = "Success 2B: Success Upload File";
+			uploadOutcome.statusCode = 200;
+		} else {
+			console.log("Error 2C: No File mah dude!");
+            uploadOutcome.containsFile = false;
+			uploadOutcome.message = "Error 2C: No File mah dude!";
+			uploadOutcome.statusCode = 400;
+		}
+	}
+
+	return uploadOutcome;
+}
+
+
+
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, handleUploadResult }
 
 
 

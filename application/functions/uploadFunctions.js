@@ -9,6 +9,12 @@ const fs = require('fs')
 const multer = require('multer')
 //const upload = multer({ dest: './uploads' })
 const upload = multer({ dest: './kite-posts-us-west-two' })
+const awsStorage = require('../functions/aws/awsStorage');
+
+//Upload imports
+var mime = require('mime-types')
+
+
 
 /*
 FUNCTIONS A: All Functions Related to Local Uploads
@@ -19,7 +25,7 @@ FUNCTIONS A: All Functions Related to Local Uploads
 //SETUP: Set File Destination and Size
 //var fileLimit = 1024 * 1024 * 40; 
 var fileLimit = 1024 * 1024 * 40; 
-//var fileLimit = 1; 
+//var fileLimit = 1024; 
 //var uploadFolder = "./application/upload_temp/uploads";
 var uploadFolder = "./public/kite-posts-us-west-two";
 //var profileUploadFolder = "./public/profile";

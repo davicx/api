@@ -271,7 +271,7 @@ async function postPhotoLocal(req, res) {
     res.json(postOutcome)
 
 
-  })
+    })
 }
 
 
