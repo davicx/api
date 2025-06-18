@@ -19,24 +19,34 @@ class Group {
     }
 
     //Method A1: Create a Group
-    static async createGroup(currentUser, groupName, groupType, groupPrivate, groupImage)  {
+    static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupImage)  {
         const connection = db.getConnection(); 
         var groupID = 0;
         var groupImage = "the_shire.jpg"; 
-
-
 
         var groupOutcome = {
             outcome: 0,
             groupID: groupID,
             errors: []
         }
+        //group_image, fileName, fileNameServer, fileURL, cloudBucket, cloudKey, 
 
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private) VALUES (?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private, fileName, fileNameServer, fileURL, cloudBucket, cloudKey) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
-                connection.query(queryString, [groupType, currentUser, groupName, groupImage, groupPrivate], (err, results) => {
+                connection.query(queryString, [
+                    groupType,
+                    currentUser,
+                    groupName,
+                    uploadFile.originalname || groupImage, // group_image fallback to default
+                    groupPrivate,
+                    uploadFile.originalname || "",
+                    uploadFile.fileNameServer || "",
+                    uploadFile.fileURL || "",
+                    uploadFile.bucket || "",
+                    uploadFile.cloudKey || ""
+                ], (err, results) => {
                     if (!err) {
                         groupOutcome.outcome = 1;
                         groupOutcome.groupID = results.insertId

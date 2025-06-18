@@ -160,6 +160,50 @@ function processGroupUsers(req) {
     return newGroupUsers; // Optionally return the final array
 }
 
+
+function handleUploadResult(req, err) {
+	const uploadOutcome = {
+		uploadSuccess: false,
+		containsFile: false,
+		message: "",
+		statusCode: 500
+	};
+
+	console.log("STEP 2: Upload File to API");
+
+	if (err instanceof multer.MulterError) {
+		console.log("Error 2A: File too large");
+		uploadOutcome.message = "Error 2A: File too large";
+		uploadOutcome.containsFile = true;
+		uploadOutcome.statusCode = 413;
+	} else if (err) {
+		console.log("Error 2B: Not Valid Image File");
+		uploadOutcome.message = "Error 2B: Not Valid Image File";
+		uploadOutcome.containsFile = true;
+		uploadOutcome.statusCode = 415;
+	} else {
+		let file = req.file;
+		console.log("Success 2A: No Multer Errors");
+
+		if (file !== undefined) {
+			console.log("Success 2B: Success Upload File");
+			uploadOutcome.uploadSuccess = true;
+			uploadOutcome.containsFile = true;
+			uploadOutcome.message = "Success 2B: Success Upload File";
+			uploadOutcome.statusCode = 200;
+		} else {
+			console.log("No File mah dude! we will use a default");
+			uploadOutcome.uploadSuccess = true;
+			uploadOutcome.containsFile = false;
+			uploadOutcome.message = "No File mah dude! we will use a default";
+			uploadOutcome.statusCode = 200;
+		}
+	}
+
+	return uploadOutcome;
+}
+
+/*
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
 		uploadSuccess: false,
@@ -191,16 +235,17 @@ function handleUploadResult(req, err) {
 			uploadOutcome.message = "Success 2B: Success Upload File";
 			uploadOutcome.statusCode = 200;
 		} else {
-			console.log("Error 2C: No File mah dude!");
+			console.log("No File mah dude! we will use a default");
+            uploadOutcome.uploadSuccess = true;
             uploadOutcome.containsFile = false;
-			uploadOutcome.message = "Error 2C: No File mah dude!";
-			uploadOutcome.statusCode = 400;
+			uploadOutcome.message = "No File mah dude! we will use a default";
+			uploadOutcome.statusCode = 200;
 		}
 	}
 
 	return uploadOutcome;
 }
-
+*/
 
 
 module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, handleUploadResult }

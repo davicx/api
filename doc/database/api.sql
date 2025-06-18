@@ -5,7 +5,7 @@
 #GROUPS#
 #########
 #DELETE FROM shareshare.groups WHERE group_id >72;
-#SELECT * FROM shareshare.groups
+SELECT * FROM shareshare.groups
 
 
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
@@ -20,7 +20,7 @@
 #SELECT * FROM group_users WHERE group_id = 70;
 
 
-DESCRIBE shareshare.groups;
+#DESCRIBE shareshare.groups;
 #########
 #FRIENDS#
 #########

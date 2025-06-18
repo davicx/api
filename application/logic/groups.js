@@ -10,7 +10,7 @@ const { S3Outposts } = require('aws-sdk');
 
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
-const bucketName = process.env.AWS_POSTS_BUCKET_NAME
+const bucketName = process.env.AWS_GROUPS_BUCKET_NAME
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -63,7 +63,7 @@ async function createGroup(req, res) {
 		//STEP 1: Get Group Users 
 		var newGroupUsers = groupFunctions.processGroupUsers(req);
 
-		//STEP 2: Get new File and Check it is valid
+		//STEP 2: Get new File and Check it is valid (an image and not to big)
 		var uploadSuccess = false
 
 		const uploadOutcome = groupFunctions.handleUploadResult(req, err);
@@ -77,25 +77,66 @@ async function createGroup(req, res) {
 		console.log("uploadSuccess " + uploadSuccess)
 		console.log("uploadSuccess " + uploadSuccess)
 	
-		//STEP 3: Response Outcomes 
+		if(uploadSuccess == true) {
+			
+			//STEP 3: Create and upload the File to add to the database
+			console.log("STEP 3: Create the File to add to the database")
+
+			var uploadFile = {
+				fileMimetype: "image/png",
+				originalname: "hello_group.png",
+				fileNameServer: "groupImage-1750205456749-413559416-hello_group.png",
+				fileURL: "http://localhost:3003/kite-groups-us-west-two/groupImage-1750205456749-413559416-hello_group.png",
+				cloudKey: "no_cloud_key",
+				bucket: "kite-posts-us-west-two",
+				storageType: "local"
+			}
 
 
-		/*
-		try {
-			groupOutcome = await Group.createGroup(currentUser, groupName, groupType, groupPrivate);
+			if(uploadOutcome.containsFile == true) {
+				let file = req.file
 
-			//STEP 1: Create the Group
+				//File Information
+				uploadFile.fileMimetype = file.mimetype; 
+				uploadFile.originalname = file.originalname; //file_name
+				uploadFile.fileNameServer = file.filename; //file_name_server
+	
+				//Settings: Local 
+				uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)
+				uploadFile.cloudKey = "no_cloud_key"; //cloud_key
+				uploadFile.bucket = bucketName; //cloud_bucket	
+				uploadFile.storageType = "local"; //storage_type
+
+			} 
+
+			//STEP 4: Create the Group
+			groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+
 			if(groupOutcome.outcome == 1) {
-				console.log("STEP 1: You succesfully created a new group with Group ID " + groupOutcome.groupID);
+				console.log("STEP 5: You succesfully created a new group with Group ID " + groupOutcome.groupID);
 			} else {
-				console.log("STEP 1: There was an error creating the group");
+				console.log("STEP 5: There was an error creating the group");
 				console.log(groupOutcome.errors);
-				newGroupOutcome.message("STEP 1: There was an error creating the group")
+				newGroupOutcome.message("STEP 5: There was an error creating the group")
 				newGroupOutcome.errors = groupOutcome.errors;
 				res.status(500).json(newGroupOutcome);
 				return 
 			}
 
+					
+			//WORKING UP TO HERE
+			console.log(groupOutcome)
+
+
+			
+
+		}
+
+		/*
+		try {
+			groupOutcome = await Group.createGroup(currentUser, groupName, groupType, groupPrivate);
+
+	
 			//STEP 2: Add all the users to the new group
 			var groupUsersOutcome = await Group.addNewGroupUsers(groupOutcome.groupID, newGroupUsers, currentUser);
 			
@@ -167,6 +208,9 @@ async function createGroup(req, res) {
 		//res.status(500).json({no:"oh no!"});
 	})
 }
+
+
+
 
 
 		/*
