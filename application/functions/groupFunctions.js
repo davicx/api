@@ -2,7 +2,10 @@ const db = require('./conn');
 const Functions = require('../functions/functions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
-const bucketName = process.env.AWS_POSTS_BUCKET_NAME
+const bucketName = process.env.AWS_GROUPS_BUCKET_NAME
+const Requests = require('./classes/Requests');
+const Notifications = require('./classes/Notification');
+const Group = require('./classes/Group');
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -203,6 +206,80 @@ function handleUploadResult(req, err) {
 	return uploadOutcome;
 }
 
+
+function buildUploadFileObject(req, uploadOutcome) {
+	if (!uploadOutcome.containsFile) {
+		return {
+			fileMimetype: "image/png",
+			originalname: "group_image.png",
+			fileNameServer: "group_image.png",
+			fileURL: "http://localhost:3003/kite-groups-us-west-two/group_image.png",
+			cloudKey: "no_cloud_key",
+			bucket: "kite-groups-us-west-two",
+			storageType: "local"
+		};
+	}
+
+	const file = req.file;
+	return {
+		fileMimetype: file.mimetype,
+		originalname: file.originalname,
+		fileNameServer: file.filename,
+		fileURL: `http://localhost:3003/${bucketName}/${file.filename}`,
+		cloudKey: "no_cloud_key",
+		bucket: bucketName,
+		storageType: "local"
+	};
+}
+
+async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers) {
+	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+	if (groupOutcome.outcome !== 1) {
+		return {
+			success: false,
+			message: "Error creating group",
+			errors: groupOutcome.errors
+		};
+	}
+
+	const groupID = groupOutcome.groupID;
+	const usersOutcome = await Group.addNewGroupUsers(groupID, groupUsers, currentUser);
+	if (usersOutcome.outcome !== 1) {
+		return {
+			success: false,
+			message: "Error adding group users",
+			errors: usersOutcome.errors
+		};
+	}
+
+	return {
+		success: true,
+		groupID
+	};
+}
+
+async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupID, message, link, type) {
+	const notification = {
+		masterSite: "kite",
+		notificationFrom: currentUser,
+		notificationMessage: message,
+		notificationTo: groupUsers,
+		notificationLink: link,
+		notificationType: type,
+		groupID
+	};
+	Notifications.createGroupNotification(notification);
+
+	const request = {
+		requestType: "new_group",
+		requestTypeText: "invited you to join a group",
+		sentBy: currentUser,
+		sentTo: groupUsers,
+		groupID
+	};
+	Requests.newGroupRequest(request);
+}
+
 /*
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
@@ -248,7 +325,7 @@ function handleUploadResult(req, err) {
 */
 
 
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, handleUploadResult }
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, handleUploadResult, buildUploadFileObject, createGroupAndUsers, sendGroupNotificationsAndRequests }
 
 
 

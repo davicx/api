@@ -47,7 +47,7 @@ groupRouter.post('/group/create/', function(req, res) {
         console.log("__________________________________")
         console.log("New Group: Type 2: Local to AWS")
         console.log("__________________________________")
-        groupFunctions.createGroupAWS(req, res)
+        groupFunctions.createGroupLocalAWS(req, res)
     //Type 3: AWS to AWS	
     } else if(functions.compareStrings(appLocation, "aws") && functions.compareStrings(fileLocation, "aws")) {
         console.log("__________________________________")

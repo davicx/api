@@ -5,8 +5,11 @@
 #GROUPS#
 #########
 #DELETE FROM shareshare.groups WHERE group_id >72;
-SELECT * FROM shareshare.groups
-
+#SELECT * FROM shareshare.groups
+#SELECT * FROM notifications 
+SELECT * FROM pending_requests 
+#DELETE FROM notifications WHERE notification_id > 0
+#DELETE FROM pending_requests WHERE request_id > 0
 
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
 
