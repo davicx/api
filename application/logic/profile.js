@@ -396,6 +396,16 @@ async function updateFullUserProfileLocalAWS(req, res) {
 
 //Function A6: Update Full User Profile AWS
 
+
+
+
+module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
+
+
+//APPENDIX
+
+/*
+
 //Original
 async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
@@ -466,6 +476,67 @@ async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
 
         console.log(result)
 
+    let currentUser = req.body.currentUser
+    let firstName = req.body.firstName
+    let lastName = req.body.lastName
+    let biography = req.body.biography
+    let cloudBucket = "profile"
+    let fileURL = "http://localhost:3003/" + cloudBucket + "/" + file.filename
+
+    let updatedUser = {
+        currentUser: currentUser,
+        firstName: firstName,
+        lastName: lastName,     
+        biography: biography,
+        storageLocation: "aws",
+        cloudBucket: result.Bucket,
+        cloudPath: file.path,
+        fileURL: fileURL,
+        fileName: file.originalname,
+        fileNameServer: file.filename
+    }
+
+    console.log("STEP 2: Created Updated User Profile Information ")
+  
+    //STEP 3: Update User Profile
+    let updateUserProfile = await Profile.updateUserProfile(updatedUser);
+
+    if(updateUserProfile.success == true) {
+        console.log("STEP 2: Successfully Updated User Profile Information ")
+        updateUserProfileOutcome.message = "We updated the user profile for " + currentUser;
+        updateUserProfileOutcome.success = true;
+        updateUserProfileOutcome.statusCode = 200;
+
+        let userIDResponse = await userFunctions.getUserID(currentUser);
+        
+        updatedUserResponse.userName = currentUser;
+        updatedUserResponse.userID = userIDResponse.userID;
+        updatedUserResponse.userImage = fileURL;
+        updatedUserResponse.biography = biography;
+        updatedUserResponse.firstName = firstName;
+        updatedUserResponse.lastName = lastName;
+
+        updateUserProfileOutcome.data = updatedUserResponse;
+
+    } else {
+        console.log("STEP 2: There was an error Updating User Profile Information ")
+    }
+
+} else {
+    //TO DO: Add updatedUser to this out come!!
+    console.log("STEP 2: Update Profile did not work")
+}
+
+updateUserProfileOutcome.data = updatedUserResponse
+res.json(updateUserProfileOutcome)
+
+})
+
+
+}
+*/
+
+
         /*
 
         //File Information
@@ -493,9 +564,6 @@ async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
         var newPost = await PostFunctions.getSignedURL(newPostOutcome.newPost);
         
 
-        */
-
-        /*
         {
   ETag: '"de01b2f7428535f685bb56e4c0fad10b"',
   ServerSideEncryption: 'AES256',
@@ -507,72 +575,8 @@ async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
     cloudBucket
     cloudKey
     imageURL
-        */
-        let currentUser = req.body.currentUser
-        let firstName = req.body.firstName
-        let lastName = req.body.lastName
-        let biography = req.body.biography
-        let cloudBucket = "profile"
-        let fileURL = "http://localhost:3003/" + cloudBucket + "/" + file.filename
-
-        let updatedUser = {
-            currentUser: currentUser,
-            firstName: firstName,
-            lastName: lastName,     
-            biography: biography,
-            storageLocation: "aws",
-            cloudBucket: result.Bucket,
-            cloudPath: file.path,
-            fileURL: fileURL,
-            fileName: file.originalname,
-            fileNameServer: file.filename
-        }
-
-        console.log("STEP 2: Created Updated User Profile Information ")
-      
-        //STEP 3: Update User Profile
-        let updateUserProfile = await Profile.updateUserProfile(updatedUser);
-
-        if(updateUserProfile.success == true) {
-            console.log("STEP 2: Successfully Updated User Profile Information ")
-            updateUserProfileOutcome.message = "We updated the user profile for " + currentUser;
-            updateUserProfileOutcome.success = true;
-            updateUserProfileOutcome.statusCode = 200;
-
-            let userIDResponse = await userFunctions.getUserID(currentUser);
-            
-            updatedUserResponse.userName = currentUser;
-            updatedUserResponse.userID = userIDResponse.userID;
-            updatedUserResponse.userImage = fileURL;
-            updatedUserResponse.biography = biography;
-            updatedUserResponse.firstName = firstName;
-            updatedUserResponse.lastName = lastName;
-
-            updateUserProfileOutcome.data = updatedUserResponse;
-
-        } else {
-            console.log("STEP 2: There was an error Updating User Profile Information ")
-        }
-
-	} else {
-        //TO DO: Add updatedUser to this out come!!
-        console.log("STEP 2: Update Profile did not work")
-    }
-
-    updateUserProfileOutcome.data = updatedUserResponse
-    res.json(updateUserProfileOutcome)
-
-  })
-
-
-}
-
-module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
-
-
-//APPENDIX
-
-  /*
+        
+/*
 	//STEP 2: Update Profile 
 	if(uploadSuccess == true) {
 		console.log("STEP 2: Add Post to Database")

@@ -164,48 +164,6 @@ function processGroupUsers(req) {
 }
 
 
-function handleUploadResult(req, err) {
-	const uploadOutcome = {
-		uploadSuccess: false,
-		containsFile: false,
-		message: "",
-		statusCode: 500
-	};
-
-	console.log("STEP 2: Upload File to API");
-
-	if (err instanceof multer.MulterError) {
-		console.log("Error 2A: File too large");
-		uploadOutcome.message = "Error 2A: File too large";
-		uploadOutcome.containsFile = true;
-		uploadOutcome.statusCode = 413;
-	} else if (err) {
-		console.log("Error 2B: Not Valid Image File");
-		uploadOutcome.message = "Error 2B: Not Valid Image File";
-		uploadOutcome.containsFile = true;
-		uploadOutcome.statusCode = 415;
-	} else {
-		let file = req.file;
-		console.log("Success 2A: No Multer Errors");
-
-		if (file !== undefined) {
-			console.log("Success 2B: Success Upload File");
-			uploadOutcome.uploadSuccess = true;
-			uploadOutcome.containsFile = true;
-			uploadOutcome.message = "Success 2B: Success Upload File";
-			uploadOutcome.statusCode = 200;
-		} else {
-			console.log("No File mah dude! we will use a default");
-			uploadOutcome.uploadSuccess = true;
-			uploadOutcome.containsFile = false;
-			uploadOutcome.message = "No File mah dude! we will use a default";
-			uploadOutcome.statusCode = 200;
-		}
-	}
-
-	return uploadOutcome;
-}
-
 
 function buildUploadFileObject(req, uploadOutcome) {
 	if (!uploadOutcome.containsFile) {
@@ -325,7 +283,7 @@ function handleUploadResult(req, err) {
 */
 
 
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, handleUploadResult, buildUploadFileObject, createGroupAndUsers, sendGroupNotificationsAndRequests }
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, buildUploadFileObject, createGroupAndUsers, sendGroupNotificationsAndRequests }
 
 
 

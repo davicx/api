@@ -6,6 +6,7 @@ const Requests = require('../functions/classes/Requests');
 const Functions = require('../functions/functions');
 const requestFunctions = require('../functions/requestFunctions')
 const groupFunctions = require('../functions/groupFunctions');
+const fileFunctions = require('../functions/fileFunctions');
 const { S3Outposts } = require('aws-sdk');
 
 const uploadFunctions = require('../functions/uploadFunctions');
@@ -73,7 +74,7 @@ async function createGroup(req, res) {
 		console.log("STEP 1: Get Group Users from the Input Form ")
 
 		//STEP 2: Get new File and Check it is valid (an image and not to big)
-		const uploadOutcome = groupFunctions.handleUploadResult(req, err);
+		const uploadOutcome = fileFunctions.handleUploadResult(req, err);
 		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
 
 		newGroupOutcome.message = uploadOutcome.message;
@@ -178,7 +179,7 @@ async function createGroupLocalAWS(req, res) {
 		var groupName = req.body.groupName
 		var groupType = req.body.groupType; 
 		var groupPrivate = req.body.groupPrivate;
-		
+		var signedURL = "posts/groupImage-1750463560634-658785013-group_image.jpg";
 		var headerMessage = "New Group created by " + currentUser
 		console.log(headerMessage);
 
@@ -207,7 +208,7 @@ async function createGroupLocalAWS(req, res) {
 		console.log("STEP 1: Get Group Users from the Input Form ")
 
 		//STEP 2: Get new File and Check it is valid (an image and not to big)
-		const uploadOutcome = groupFunctions.handleUploadResult(req, err);
+		const uploadOutcome = fileFunctions.handleUploadResult(req, err);
 		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
 
 		newGroupOutcome.message = uploadOutcome.message;
@@ -219,51 +220,60 @@ async function createGroupLocalAWS(req, res) {
 			return res.status(400).json(newGroupOutcome);
 		}
 		
-		//STEP 3: Create and upload the File to add to the database
-		console.log("STEP 3: Create the File to add to the database")
+		//STEP 3: Handle the New Group Image File
+		console.log("STEP 3: Handle the New Group Image File")
 
 		var uploadFile = {}
 
-		if (!uploadOutcome.containsFile) {
+		//FIX THIS
+		if (uploadOutcome.containsFile) {
+			console.log("STEP 3A: There is a file so we will  Upload to AWS")
+			let file = req.file
+			console.log("file")
+			console.log(file)
+			console.log("file")
+			const fileExtension = mime.extension(file.mimetype) 
+			const result = await awsStorage.uploadPost(file)
+
+			console.log("result")
+			console.log(result)
+			console.log("result")
+
+			//File Information
+			var uploadFile = {}
+			uploadFile.fileMimetype = file.mimetype; 
+			uploadFile.originalname = file.originalname; //file_name
+			uploadFile.fileNameServer = file.filename; //file_name_server
+
+			//Settings: Local 
+			//uploadFile.fileURL = file.path; //file_url
+			//uploadFile.cloudKey = file.path; //cloud_key
+			//uploadFile.bucket = file.destination; //cloud_bucket	
+			//uploadFile.storageType = "aws"; //storage_type
+			
+			//Settings: Cloud
+			uploadFile.fileURL = result.Location; // file_url
+			uploadFile.cloudKey = result.Key; //cloud_key 
+			uploadFile.bucket = result.Bucket; // cloud_bucket 	
+			uploadFile.storageType = "aws"; //storage_type		
+
+			signedURL = await cloudFunctions.getSignedURL(uploadFile.cloudKey)
+
+			
+		} else {
+			console.log("STEP 3A: There is NO file so we will user our default")
+			signedURL = await cloudFunctions.getSignedURL("posts/groupImage-1750463560634-658785013-group_image.jpg")
 			uploadFile.fileMimetype = "image/png";
 			uploadFile.originalname = "group_image.png";
 			uploadFile.fileNameServer = "group_image.png";
 			uploadFile.fileURL = "http://localhost:3003/kite-groups-us-west-two/group_image.png";
-			uploadFile.cloudKey = "no_cloud_key";
+			uploadFile.cloudKey = "posts/groupImage-1750463560634-658785013-group_image.jpg";
 			uploadFile.bucket = "kite-groups-us-west-two";
 			uploadFile.storageType = "local";
+
+			
 		}
 
-		//STEP 2: 
-		console.log("STEP 2: Upload to AWS")
-		let file = req.file
-		console.log("file")
-		console.log(file)
-		console.log("file")
-		const fileExtension = mime.extension(file.mimetype) 
-		const result = await awsStorage.uploadPost(file)
-
-		console.log("result")
-		console.log(result)
-		console.log("result")
-
-		//File Information
-		var uploadFile = {}
-		uploadFile.fileMimetype = file.mimetype; 
-		uploadFile.originalname = file.originalname; //file_name
-		uploadFile.fileNameServer = file.filename; //file_name_server
-
-		//Settings: Local 
-		//uploadFile.fileURL = file.path; //file_url
-		//uploadFile.cloudKey = file.path; //cloud_key
-		//uploadFile.bucket = file.destination; //cloud_bucket	
-		//uploadFile.storageType = "aws"; //storage_type
-		
-		//Settings: Cloud
-		uploadFile.fileURL = result.Location; // file_url
-		uploadFile.cloudKey = result.Key; //cloud_key 
-		uploadFile.bucket = result.Bucket; // cloud_bucket 	
-		uploadFile.storageType = "aws"; //storage_type		
 
 		try { 
 
@@ -275,7 +285,7 @@ async function createGroupLocalAWS(req, res) {
 			} else {
 				console.log("STEP 4: There was an error creating the group");
 				console.log(groupOutcome.errors);
-				newGroupOutcome.message = "STEP 5: There was an error creating the group";
+				newGroupOutcome.message = "STEP 4: There was an error creating the group";
 				newGroupOutcome.errors = groupOutcome.errors;
 				res.status(500).json(newGroupOutcome);
 				return 
@@ -309,7 +319,7 @@ async function createGroupLocalAWS(req, res) {
 			
 			Notifications.createGroupNotification(notification);
 
-			console.log("STEP 6: Adding Group Requests");
+			console.log("STEP 7: Adding Group Requests");
 			const newRequest = {
 				requestType: "new_group",
 				requestTypeText: "invited you to join a group",
@@ -328,7 +338,6 @@ async function createGroupLocalAWS(req, res) {
 		}
 
 		//STEP 7: Create Response
-		let signedURL = await cloudFunctions.getSignedURL(uploadFile.cloudKey)
 
 		newGroupOutcome.success = true;
 		newGroupOutcome.message = "Succesfully created the new group, yay!"
