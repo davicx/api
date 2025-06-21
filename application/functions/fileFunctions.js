@@ -23,6 +23,41 @@ FUNCTIONS A: All Functions Related to Groups
 
 */
 
+// uploadHelper.js
+
+function handlePostUploadResult(req, err) {
+	const postOutcome = {
+		message: "",
+		uploadSuccess: false
+	};
+
+	// STEP 2: Upload Post to API (UPLOAD)
+	console.log("STEP 2: Upload Post to API");
+
+	if (err instanceof multer.MulterError) {
+		console.log("Error 2A: File too large");
+		postOutcome.message = "Error 2A: File too large";
+
+	} else if (err) {
+		console.log("Error 2B: Not Valid Image File");
+		postOutcome.message = "Error 2B: Not Valid Image File";
+
+	} else {
+		const file = req.file;
+		console.log("Success 2A: No Multer Errors");
+
+		if (file !== undefined) {
+			console.log("Success 2B: Success Upload File");
+			postOutcome.uploadSuccess = true;
+		} else {
+			console.log("Error 2C: No File mah dude!");
+			postOutcome.message = "Error 2C: No File mah dude!";
+		}
+	}
+
+	return postOutcome;
+}
+
 
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
@@ -66,7 +101,7 @@ function handleUploadResult(req, err) {
 	return uploadOutcome;
 }
 
-module.exports = { handleUploadResult }
+module.exports = { handleUploadResult, handlePostUploadResult }
 
 
 

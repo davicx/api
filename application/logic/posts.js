@@ -10,6 +10,7 @@ const profileFunctions = require('../functions/profileFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const userFunctions = require('../functions/userFunctions');
 const timeFunctions = require('../functions/timeFunctions');
+const fileFunctions = require('../functions/fileFunctions');
 const likeFunctions = require('../functions/likeFunctions');
 const cloudFunctions = require('../functions/cloudFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
@@ -148,35 +149,10 @@ async function postPhotoLocal(req, res) {
 			currentUser: req.body.postFrom
 		}
 
-	//STEP 2: Upload Post to API (UPLOAD)
-	console.log("STEP 2: Upload Post to API")
-	//Error 2A: File too large
-	if (err instanceof multer.MulterError) {
-		console.log("Error 2A: File too large")
-		postOutcome.message = "Error 2A: File too large"
-  
-	//Error 2B: Not Valid Image File
-	} else if (err) {
-		console.log("Error 2B: Not Valid Image File")
-		postOutcome.message = "Error 2B: Not Valid Image File"
-
-	//Success 2A: No Multer Errors
-	} else {
-		let file = req.file
-		console.log("Success 2A: No Multer Errors")
-
-		//Success 1B: Success Upload File
-		if(file !== undefined) {
-			console.log("Success 2B: Success Upload File")
-			uploadSuccess = true   
-
-		//Error 1C: No File 	
-		} else {
-		  console.log("Error 2C: No File mah dude!")
-		  postOutcome.message = "Error 2C: No File mah dude!"
- 
-		} 
-	}
+	//STEP 1: Upload Post to API (UPLOAD)
+	const uploadResult = fileFunctions.handlePostUploadResult(req, err);
+	uploadSuccess = uploadResult.uploadSuccess;
+	postOutcome.message = uploadResult.message;
 
 	//STEP 2: Add Post to Database (UPLOAD)
 	if(uploadSuccess == true) {
@@ -279,7 +255,12 @@ async function postPhotoLocalAWS(req, res) {
 
 		//STEP 1: Check for a valid file
 		console.log("STEP 1: Upload Post to API")
+		
+		const uploadResult = fileFunctions.handlePostUploadResult(req, err);
+		uploadSuccess = uploadResult.uploadSuccess;
+		postOutcome.message = uploadResult.message;
 
+		/*
 		//Error 1A: File too large
 		if (err instanceof multer.MulterError) {
 			console.log("Error 1A: File too large")
@@ -307,6 +288,7 @@ async function postPhotoLocalAWS(req, res) {
 	 
 			} 
 		}
+		*/
 
 		//STEP 2: Upload to AWS
 		if(uploadSuccess == true) {
