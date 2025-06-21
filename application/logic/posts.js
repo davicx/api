@@ -260,36 +260,6 @@ async function postPhotoLocalAWS(req, res) {
 		uploadSuccess = uploadResult.uploadSuccess;
 		postOutcome.message = uploadResult.message;
 
-		/*
-		//Error 1A: File too large
-		if (err instanceof multer.MulterError) {
-			console.log("Error 1A: File too large")
-			postOutcome.message = "Error 1A: File too large"
-	  
-		//Error 1B: Not Valid Image File
-		} else if (err) {
-			console.log("Error 1B: Not Valid Image File")
-			postOutcome.message = "Error 1B: Not Valid Image File"
-	
-		//Success 1A: No Multer Errors
-		} else {
-			let file = req.file
-			console.log("Success 1A: No Multer Errors")
-	
-			//Success 1B: Success Upload File
-			if(file !== undefined) {
-				console.log("Success 1B: Success Upload File")
-				uploadSuccess = true   
-	
-			//Error 1C: No File 	
-			} else {
-			  console.log("Error 1C: No File mah dude!")
-			  postOutcome.message = "Error 1C: No File mah dude!"
-	 
-			} 
-		}
-		*/
-
 		//STEP 2: Upload to AWS
 		if(uploadSuccess == true) {
 			console.log("STEP 2: Add Post to Database")
@@ -376,7 +346,35 @@ async function postPhotoLocalAWS(req, res) {
   })
 }
 
-//LEARNING
+		/*
+		//Error 1A: File too large
+		if (err instanceof multer.MulterError) {
+			console.log("Error 1A: File too large")
+			postOutcome.message = "Error 1A: File too large"
+	  
+		//Error 1B: Not Valid Image File
+		} else if (err) {
+			console.log("Error 1B: Not Valid Image File")
+			postOutcome.message = "Error 1B: Not Valid Image File"
+	
+		//Success 1A: No Multer Errors
+		} else {
+			let file = req.file
+			console.log("Success 1A: No Multer Errors")
+	
+			//Success 1B: Success Upload File
+			if(file !== undefined) {
+				console.log("Success 1B: Success Upload File")
+				uploadSuccess = true   
+	
+			//Error 1C: No File 	
+			} else {
+			  console.log("Error 1C: No File mah dude!")
+			  postOutcome.message = "Error 1C: No File mah dude!"
+	 
+			} 
+		}
+		*/
 
 
 //Function A3: Post Video

@@ -4,6 +4,7 @@ const userFunctions = require('../functions/userFunctions');
 const functions = require('../functions/functions');
 const Profile = require('../functions/classes/Profile');
 const uploadFunctions = require('../functions/uploadFunctions');
+const fileFunctions = require('../functions/fileFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 //const bucketName = process.env.AWS_BUCKET_NAME
 const bucketName = process.env.AWS_PROFILE_BUCKET_NAME
@@ -206,6 +207,10 @@ async function updateFullUserProfileLocal(req, res) {
     console.log(file)
 
 	//STEP 1: Check for Valid File
+	const uploadResult = fileFunctions.handlePostUploadResult(req, err);
+	uploadSuccess = uploadResult.uploadSuccess;
+	updateUserProfileOutcome.message = uploadResult.message;
+    /*
 	console.log("STEP 1: Upload Post to API")
 
 	//Error 1A: File too large
@@ -235,6 +240,7 @@ async function updateFullUserProfileLocal(req, res) {
  
 		} 
 	}
+        */
 
 	//STEP 2: Update Profile 
 	if(uploadSuccess == true) {
@@ -333,7 +339,85 @@ async function updateFullUserProfileLocalAWS(req, res) {
 
 	//STEP 1: Check for Valid File
 	console.log("STEP 1: Upload Post to API")
+	const uploadResult = fileFunctions.handlePostUploadResult(req, err);
+	uploadSuccess = uploadResult.uploadSuccess;
+	updateUserProfileOutcome.message = uploadResult.message;
 
+    //STEP 2: Update Profile 
+	if(uploadSuccess == true) {
+		console.log("STEP 2: Add Post to Database")
+		let file = req.file
+
+        let currentUser = req.body.currentUser
+        let firstName = req.body.firstName
+        let lastName = req.body.lastName
+        let biography = req.body.biography
+        let imageURL = "aws_request"
+
+        
+        //STEP 3: Upload to AWS
+        const fileExtension = mime.extension(file.mimetype) 
+        const result = await awsStorage.uploadProfile(file)
+
+
+        console.log("result")
+        console.log(result)
+        console.log("result")
+    
+    }
+
+    /*
+            //STEP 3: Update User Profile
+        let updateUserProfile = await Profile.updateFullUserProfile(updatedUser);
+
+        if(updateUserProfile.success == true) {
+            console.log("STEP 2: Successfully Updated User Profile Information ")
+            updateUserProfileOutcome.message = "We updated the user profile for " + currentUser;
+            updateUserProfileOutcome.success = true;
+            updateUserProfileOutcome.statusCode = 200;
+
+            let userIDResponse = await userFunctions.getUserID(currentUser);
+            
+            updatedUserResponse.userName = currentUser;
+            updatedUserResponse.userID = userIDResponse.userID;
+            updatedUserResponse.userImage = imageURL;
+            updatedUserResponse.biography = biography;
+            updatedUserResponse.firstName = firstName;
+            updatedUserResponse.lastName = lastName;
+
+            updateUserProfileOutcome.data = updatedUserResponse;
+
+        } else {
+            updateUserProfileOutcome.errors = updateUserProfile.errors
+            console.log("STEP 2: There was an error Updating User Profile Information ")
+        }
+
+	} else {
+        //TO DO: Add updatedUser to this out come!!
+        console.log("STEP 2: Update Profile did not work")
+    }
+    */
+
+    res.json(updateUserProfileOutcome)
+
+
+  
+  })
+
+
+}
+
+//Function A6: Update Full User Profile AWS
+
+
+
+
+module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
+
+
+//APPENDIX
+
+    /*
 	//Error 1A: File too large
 	if (err instanceof multer.MulterError) {
 		console.log("Error 1A: File too large")
@@ -361,48 +445,8 @@ async function updateFullUserProfileLocalAWS(req, res) {
  
 		} 
 	}
+        */
 
-    //STEP 2: Update Profile 
-	if(uploadSuccess == true) {
-		console.log("STEP 2: Add Post to Database")
-		let file = req.file
-
-        let currentUser = req.body.currentUser
-        let firstName = req.body.firstName
-        let lastName = req.body.lastName
-        let biography = req.body.biography
-        let imageURL = "aws_request"
-
-        
-        //STEP 3: Upload to AWS
-        const fileExtension = mime.extension(file.mimetype) 
-        const result = await awsStorage.uploadProfile(file)
-
-
-        console.log("result")
-        console.log(result)
-        console.log("result")
-    
-    }
-
-    res.json(updateUserProfileOutcome)
-
-
-  
-  })
-
-
-}
-
-//Function A6: Update Full User Profile AWS
-
-
-
-
-module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
-
-
-//APPENDIX
 
 /*
 
