@@ -1,7 +1,8 @@
 const db = require('../functions/conn');
 const profileFunctions = require('../functions/profileFunctions');
 const userFunctions = require('../functions/userFunctions');
-const functions = require('../functions/functions');
+//const functions = require('../functions/functions');
+const Functions = require('../functions/functions');
 const Profile = require('../functions/classes/Profile');
 const uploadFunctions = require('../functions/uploadFunctions');
 const fileFunctions = require('../functions/fileFunctions');
@@ -183,14 +184,17 @@ async function updateUserProfile(req, res) {
 async function updateFullUserProfileLocal(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
 		var uploadSuccess = false
-        console.log("ENVIRONMENT: Local to Local")
-	
+        var currentUser = req.body.currentUser
+
+		var headerMessage = "Updated user profile for " + currentUser + " Local to Local"
+		Functions.addHeader(headerMessage)
+
         var updateUserProfileOutcome = {
             message: "", 
             success: false,
             statusCode: 500,
             errors: [], 
-            currentUser: req.body.currentUser
+            currentUser: currentUser
         }
 
         var updatedUserResponse = {
@@ -203,44 +207,14 @@ async function updateFullUserProfileLocal(req, res) {
             
         }
       
-    let file = req.file
-    console.log(file)
 
 	//STEP 1: Check for Valid File
 	const uploadResult = fileFunctions.handlePostUploadResult(req, err);
+
 	uploadSuccess = uploadResult.uploadSuccess;
 	updateUserProfileOutcome.message = uploadResult.message;
-    /*
-	console.log("STEP 1: Upload Post to API")
 
-	//Error 1A: File too large
-	if (err instanceof multer.MulterError) {
-		console.log("Error 1A: File too large")
-		updateUserProfileOutcome.message = "Error 1A: File too large"
-  
-	//Error 1B: Not Valid Image File
-	} else if (err) {
-		console.log("Error 1B: Not Valid Image File")
-		updateUserProfileOutcome.message = "Error 1B: Not Valid Image File"
-
-	//Success 1A: No Multer Errors
-	} else {
-		let file = req.file
-		console.log("Success 1A: No Multer Errors")
-
-		//Success 1B: Success Upload File
-		if(file !== undefined) {
-			console.log("Success 1B: Success Upload File")
-			uploadSuccess = true   
-
-		//Error 1C: No File 	
-		} else {
-		  console.log("Error 1C: No File mah dude!")
-		  updateUserProfileOutcome.message = "Error 1C: No File mah dude!"
- 
-		} 
-	}
-        */
+    
 
 	//STEP 2: Update Profile 
 	if(uploadSuccess == true) {
@@ -310,6 +284,38 @@ async function updateFullUserProfileLocal(req, res) {
 
 }
 
+
+    /*
+	console.log("STEP 1: Upload Post to API")
+
+	//Error 1A: File too large
+	if (err instanceof multer.MulterError) {
+		console.log("Error 1A: File too large")
+		updateUserProfileOutcome.message = "Error 1A: File too large"
+  
+	//Error 1B: Not Valid Image File
+	} else if (err) {
+		console.log("Error 1B: Not Valid Image File")
+		updateUserProfileOutcome.message = "Error 1B: Not Valid Image File"
+
+	//Success 1A: No Multer Errors
+	} else {
+		let file = req.file
+		console.log("Success 1A: No Multer Errors")
+
+		//Success 1B: Success Upload File
+		if(file !== undefined) {
+			console.log("Success 1B: Success Upload File")
+			uploadSuccess = true   
+
+		//Error 1C: No File 	
+		} else {
+		  console.log("Error 1C: No File mah dude!")
+		  updateUserProfileOutcome.message = "Error 1C: No File mah dude!"
+ 
+		} 
+	}
+        */
 
 async function updateFullUserProfileLocalAWS(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {

@@ -132,13 +132,13 @@ async function postText(req, res) {
 
 //Function A2: Post Photo Local 
 async function postPhotoLocal(req, res) {
-	var headerMessage = "HEADER: New Photo Post "
-	
-	//UPLOAD
 	uploadFunctions.uploadPostPhotoLocal(req, res, async function (err) {
-
-		var uploadSuccess = false
 		var groupID = req.body.groupID;
+		var currentUser = req.body.postFrom
+		var uploadSuccess = false
+
+		var headerMessage = "New Post Photo created by " + currentUser + " Local to Local"
+		Functions.addHeader(headerMessage)
 
 		var postOutcome = {
 			data: {},
@@ -146,14 +146,19 @@ async function postPhotoLocal(req, res) {
 			success: true,
 			statusCode: 200,
 			errors: [], 
-			currentUser: req.body.postFrom
+			currentUser: currentUser
 		}
 
-	//STEP 1: Upload Post to API (UPLOAD)
+
+	//STEP 1: Check for Valid File
 	const uploadResult = fileFunctions.handlePostUploadResult(req, err);
+	console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
+
 	uploadSuccess = uploadResult.uploadSuccess;
 	postOutcome.message = uploadResult.message;
 
+
+	
 	//STEP 2: Add Post to Database (UPLOAD)
 	if(uploadSuccess == true) {
 		console.log("STEP 3: Add Post to Database")
@@ -215,7 +220,8 @@ async function postPhotoLocal(req, res) {
 					//let notificationTo = groupUsers[i];
 					notification.notificationTo = groupUsers[i];
 					console.log(groupUsers[i]);
-					Notification.createSingleNotification(notification)
+					let notificationOutcome = await Notification.createSingleNotification(notification)
+					console.log(notificationOutcome)
 				} 
 			}
 		}

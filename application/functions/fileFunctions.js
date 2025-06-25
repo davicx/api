@@ -101,7 +101,22 @@ function handleUploadResult(req, err) {
 	return uploadOutcome;
 }
 
-module.exports = { handleUploadResult, handlePostUploadResult }
+async function getAWSSignedURL(post) {
+
+	if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
+		let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
+		console.log("getSignedURL: IF");
+		console.log(signedURL);
+		post.fileURL = signedURL;
+	} else {
+		console.log("getSignedURL: ELSE");
+		post.fileUrl = "#"
+	}
+
+	return post;
+}
+
+module.exports = { handleUploadResult, handlePostUploadResult, getAWSSignedURL }
 
 
 

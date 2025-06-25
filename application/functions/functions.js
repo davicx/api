@@ -69,7 +69,8 @@ function removeArrayDuplicates(fullArray) {
 function addHeader(headerMessage) {
     console.log(" ")
     console.log("______________________________________________________________")
-    console.log(headerMessage)
+    console.log("HEADER: " + headerMessage)
+    console.log("______________________________________________________________")
     console.log(" ")
 }
 
