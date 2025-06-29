@@ -35,15 +35,16 @@ FUNCTIONS A: All Functions Related to Groups
 	9) Function A9: Update Group Information
 */
 
-//Function A1: Create a New Group (local to local)
+//Function A1: Create a New Group (local to local) 
 async function createGroup(req, res) {
 	uploadFunctions.uploadGroupPhotoLocal(req, res, async function (err) {	
+		var uploadSuccess = false
 		var currentUser = req.body.currentUser; 
 		var groupName = req.body.groupName
 		var groupType = req.body.groupType; 
 		var groupPrivate = req.body.groupPrivate;
-		var uploadSuccess = false
-		
+		var newGroupUsers = groupFunctions.processGroupUsers(req);
+
 		var headerMessage = "HEADER: New Group created by " + currentUser + " Local to Local"
 		Functions.addHeader(headerMessage)
 
@@ -68,7 +69,7 @@ async function createGroup(req, res) {
 		};
 
 		//STEP 1: Get new File and Check it is valid (an image and not to big)
-		const uploadResult = fileFunctions.handleUploadResult(req, err);
+		const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
 		console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
 
 		uploadSuccess = uploadResult.uploadSuccess;
@@ -81,21 +82,9 @@ async function createGroup(req, res) {
 			return res.status(400).json(newGroupOutcome);
 		}
 		
-		//STEP 2: Create and upload the File to add to the database
+		//STEP 2: Get the file Information
 		console.log("STEP 2: Get the file Information")
-		const uploadFile = groupFunctions.buildUploadFileObject(req, uploadResult);
-
-	
-
-		//ORGANIZE BELOW
-
-		//STEP 1: Get Group Users from the Input Form 
-		var newGroupUsers = groupFunctions.processGroupUsers(req);
-		console.log("STEP : Get Group Users from the Input Form ")
-
-
-
-
+		const uploadFile = fileFunctions.buildGroupUploadFileObject(req, uploadResult);
 
 		try { 
 
@@ -184,6 +173,7 @@ async function createGroupLocalAWS(req, res) {
 		var groupType = req.body.groupType; 
 		var groupPrivate = req.body.groupPrivate;
 		var signedURL = "posts/groupImage-1750463560634-658785013-group_image.jpg";
+		var newGroupUsers = groupFunctions.processGroupUsers(req);
 		
 		var headerMessage = "New Group created by " + currentUser
 		console.log(headerMessage);
@@ -208,12 +198,8 @@ async function createGroupLocalAWS(req, res) {
 			pendingGroupMembers: [""],
 		};
 
-		//STEP 1: Get Group Users from the Input Form 
-		var newGroupUsers = groupFunctions.processGroupUsers(req);
-		console.log("STEP 1: Get Group Users from the Input Form ")
-
-		//STEP 2: Get new File and Check it is valid (an image and not to big)
-		const uploadOutcome = fileFunctions.handleUploadResult(req, err);
+		//STEP 1: Get new File and Check it is valid (an image and not to big)
+		const uploadOutcome = fileFunctions.handleOptionalFileUploadResult(req, err);
 		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
 
 		newGroupOutcome.message = uploadOutcome.message;
@@ -225,27 +211,16 @@ async function createGroupLocalAWS(req, res) {
 			return res.status(400).json(newGroupOutcome);
 		}
 		
-		//STEP 3: Handle the New Group Image File
-		console.log("STEP 3: Handle the New Group Image File")
-
 		var uploadFile = {}
 
-		//FIX THIS
 		if (uploadOutcome.containsFile) {
 			console.log("STEP 3A: There is a file so we will  Upload to AWS")
 			let file = req.file
-			console.log("file")
-			console.log(file)
-			console.log("file")
-			const fileExtension = mime.extension(file.mimetype) 
-			const result = await awsStorage.uploadPost(file)
 
-			console.log("result")
-			console.log(result)
-			console.log("result")
+			const fileExtension = mime.extension(file.mimetype) 
+			const result = await awsStorage.uploadGroupImageToS3(file)
 
 			//File Information
-			var uploadFile = {}
 			uploadFile.fileMimetype = file.mimetype; 
 			uploadFile.originalname = file.originalname; //file_name
 			uploadFile.fileNameServer = file.filename; //file_name_server
@@ -274,11 +249,8 @@ async function createGroupLocalAWS(req, res) {
 			uploadFile.fileURL = "http://localhost:3003/kite-groups-us-west-two/group_image.png";
 			uploadFile.cloudKey = "posts/groupImage-1750463560634-658785013-group_image.jpg";
 			uploadFile.bucket = "kite-groups-us-west-two";
-			uploadFile.storageType = "local";
-
-			
+			uploadFile.storageType = "local";	
 		}
-
 
 		try { 
 
@@ -343,7 +315,6 @@ async function createGroupLocalAWS(req, res) {
 		}
 
 		//STEP 7: Create Response
-
 		newGroupOutcome.success = true;
 		newGroupOutcome.message = "Succesfully created the new group, yay!"
 		newGroupOutcome.statusCode = 200;

@@ -1,5 +1,6 @@
 const db = require('./../conn');
 
+const fileFunctions = require('../fileFunctions');
 
 /*
 FUNCTIONS A: PROFILE RELATED
@@ -92,6 +93,8 @@ class Profile {
             }
         });
     }
+
+    
     
     //Method A2: Get Simple Profile Info 
     static async getSimpleUserProfile(userName){ 
@@ -180,6 +183,8 @@ class Profile {
     //Method A4: Update Full User Profile 
     static async updateFullUserProfile(updatedUser){ 
         const connection = db.getConnection(); 
+
+        console.log("updateFullUserProfile KEY " + updatedUser.cloudKey)
 
         var updateUserProfileStatus = {
             success: false,

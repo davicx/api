@@ -164,32 +164,6 @@ function processGroupUsers(req) {
 }
 
 
-
-function buildUploadFileObject(req, uploadOutcome) {
-	if (!uploadOutcome.containsFile) {
-		return {
-			fileMimetype: "image/png",
-			originalname: "group_image.png",
-			fileNameServer: "group_image.png",
-			fileURL: "http://localhost:3003/kite-groups-us-west-two/group_image.png",
-			cloudKey: "no_cloud_key",
-			bucket: "kite-groups-us-west-two",
-			storageType: "local"
-		};
-	}
-
-	const file = req.file;
-	return {
-		fileMimetype: file.mimetype,
-		originalname: file.originalname,
-		fileNameServer: file.filename,
-		fileURL: `http://localhost:3003/${bucketName}/${file.filename}`,
-		cloudKey: "no_cloud_key",
-		bucket: bucketName,
-		storageType: "local"
-	};
-}
-
 async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers) {
 	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
 	if (groupOutcome.outcome !== 1) {
@@ -283,7 +257,7 @@ function handleUploadResult(req, err) {
 */
 
 
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, buildUploadFileObject, createGroupAndUsers, sendGroupNotificationsAndRequests }
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
 
 
 
