@@ -45,14 +45,26 @@ async function createGroup(req, res) {
 		var groupPrivate = req.body.groupPrivate;
 		var newGroupUsers = groupFunctions.processGroupUsers(req);
 
-		var headerMessage = "HEADER: New Group created by " + currentUser + " Local to Local"
+		var headerMessage = "New Group created by " + currentUser + " Local to Local"
 		Functions.addHeader(headerMessage)
+
+		console.log("newGroupUsers")
+		console.log(newGroupUsers)
+		console.log("newGroupUsers")
 
 		var groupOutcome = {}
 		var groupUsersOutcome = {}
 		var notification = {}
+		var newRequest = {}
 
 		var newGroupOutcome = {
+			data: {
+				groupName: "groupName", 
+				groupImage: "groupImage",
+				groupID: "groupID", 
+				groupMembers: [""],
+				pendingGroupMembers: [""],
+			},
 			message: "", 
 			success: false,
 			statusCode: 500,
@@ -60,15 +72,7 @@ async function createGroup(req, res) {
 			currentUser: req.body.currentUser
 		}
 
-		newGroupOutcome.data = {
-			groupName: "groupName", 
-			groupImage: "groupImage",
-			groupID: "groupID", 
-			groupMembers: [""],
-			pendingGroupMembers: [""],
-		};
-
-		//STEP 1: Get new File and Check it is valid (an image and not to big)
+	    //STEP 1: Get new File and Check it is valid (an image and not to big)
 		const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
 		console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
 
@@ -128,10 +132,11 @@ async function createGroup(req, res) {
 				groupID: groupOutcome.groupID
 			}
 			
-			Notifications.createGroupNotification(notification);
+			//Notifications.createGroupNotification(notification);
+			await Notifications.createGroupNotificationWait(notification);
 
 			console.log("STEP 6: Adding Group Requests");
-			const newRequest = {
+			newRequest = {
 				requestType: "new_group",
 				requestTypeText: "invited you to join a group",
 				sentBy: req.body.currentUser,
@@ -139,7 +144,7 @@ async function createGroup(req, res) {
 				groupID: groupOutcome.groupID
 			}
 
-			Requests.newGroupRequest(newRequest) 
+			await Requests.newGroupRequestWAIT(newRequest) 
 
 		} catch (err) {
 			console.error("Error occurred while creating group:", err);

@@ -114,6 +114,56 @@ class Requests {
 	//Function End
     }
 
+	//Method A2: Create a Group Request with wait
+	static async newGroupRequestWAIT(newRequest) {
+		const masterSite = "kite";
+		const connection = db.getConnection(); 
+		const requestType = newRequest.requestType;
+		const requestTypeText = newRequest.requestTypeText;
+		const requestIsPending = 1;
+		const groupUsers = newRequest.sentTo;
+		const requestFrom = newRequest.sentBy;
+		const groupID = newRequest.groupID;
+
+		const queryString = "SELECT COUNT(*) AS requestCount FROM pending_requests WHERE request_type = ? AND sent_by = ? AND sent_to = ? AND request_is_pending = '1' AND group_id = ?"			
+		const insertString = "INSERT INTO pending_requests (master_site, request_type, request_type_text, request_is_pending, sent_by, sent_to, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+
+		// helper to run query as a promise
+		function queryAsync(query, params) {
+			return new Promise((resolve, reject) => {
+				connection.query(query, params, (err, rows) => {
+					if (err) reject(err);
+					else resolve(rows);
+				});
+			});
+		}
+
+		//Create request and Loop over members
+		for(let i = 0; i < groupUsers.length; i++) {
+			let requestTo =  groupUsers[i];
+			if(requestTo != requestFrom) {
+				try {
+					//Step 1: Check if there is already a request 
+					const rows = await queryAsync(queryString, [requestType, requestFrom, requestTo, groupID]);
+
+					//Step 2: Insert Record if it is new 
+					const existingRequestCount = rows[0].requestCount;	
+
+					if(existingRequestCount == 0) {
+						const insertResult = await queryAsync(insertString, [masterSite, requestType, requestTypeText, requestIsPending, requestFrom, requestTo, groupID]);
+						console.log("You created a new Request with ID " + insertResult.insertId + " for user " + requestTo);    
+					} else {
+						console.log("NO MAKEY: there is already a request to " + requestTo  + " " + existingRequestCount);
+					}
+				} catch (err) {
+					console.log("Request Error for user " + requestTo + ": " + err);
+				}
+			}
+		}
+
+		//Function End
+	}
+
 	//Method A3: Delete a Request
 	static async deleteSingleRequest(requestType, sentBy, sentTo)  {
 		const connection = db.getConnection(); 

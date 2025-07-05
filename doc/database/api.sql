@@ -4,23 +4,30 @@
 #########
 #GROUPS#
 #########
-#DELETE FROM shareshare.groups WHERE group_id >72;
 #SELECT * FROM shareshare.groups
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
-#DELETE FROM notifications WHERE notification_id > 0
-#DELETE FROM pending_requests WHERE request_id > 0
 
+SELECT * FROM shareshare.groups
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
+#DELETE FROM shareshare.groups WHERE group_id >72;
 
+#SELECT * FROM friends;
 #SELECT * FROM posts;
+#SELECT * FROM user_profile;
 
-SELECT * FROM shareshare.groups;
+#SELECT * FROM shareshare.groups;
 #SELECT * FROM group_users;
 #DELETE FROM group_users WHERE primary_id > 1520;
 
 #SELECT * FROM group_users WHERE user_name = "davey";
 #SELECT * FROM group_users WHERE group_id = 70;
+
+#SELECT * FROM pending_requests 
+#SELECT * FROM notifications 
+
+#DELETE FROM notifications WHERE notification_id > 0
+#DELETE FROM pending_requests WHERE request_id > 0
 
 
 #DESCRIBE shareshare.groups;
@@ -40,7 +47,7 @@ SELECT * FROM shareshare.groups;
 #http://localhost:3003/kite-profile-us-west-two/profileImage-1748475444666-649191507-background_2.png
 #
 #DELETE FROM friends WHERE friends_id > 0
-#DELETE FROM pending_requests WHERE request_id > 0
+
 #SELECT * FROM pending_requests 
 #SELECT * FROM friends
 #SELECT * FROM user_profile
