@@ -1,5 +1,7 @@
+//NEED TO UPDATE PROFILE TO HANDLE AWS
 //UPLOADS
 //LEARNING
+
 /*
 file_name: The original file name the user uploaded the file with 
 file_name_server: The original file name and time stamp and added characters to make unique 
