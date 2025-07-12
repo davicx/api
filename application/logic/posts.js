@@ -126,8 +126,7 @@ async function postText(req, res) {
 
 	res.json(postOutcome);
 	console.log("____________________________")
-}mys
-
+}
 
 
 //Function A2: Post Photo Local (Image needed)

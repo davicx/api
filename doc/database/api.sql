@@ -1,6 +1,7 @@
 #USE shareshare;
 
 
+
 #########
 #GROUPS#
 #########
@@ -8,17 +9,36 @@
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
 
-SELECT * FROM shareshare.groups
-#SELECT * FROM shareshare.groups WHERE group_id = 70;
-#DELETE FROM shareshare.groups WHERE group_id >72;
+
+#SELECT * FROM shareshare.groups
+#SELECT * FROM group_users
+
+#UPDATE group_users SET group_id = 72 WHERE primary_id = 2074;
+
+
+#DELETE FROM shareshare.groups WHERE group_id > 500;
+#DELETE FROM group_users WHERE primary_id > 2074;
+#UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 692;
+
+
 
 #SELECT * FROM friends;
-#SELECT * FROM posts;
+SELECT * FROM posts;
+SELECT * FROM items;
+
 #SELECT * FROM user_profile;
 
+
+
+#SELECT * FROM shareshare.groups WHERE group_id = 70;
 #SELECT * FROM shareshare.groups;
+
+#DELETE FROM group_users WHERE primary_id < 2039;
+
 #SELECT * FROM group_users;
-#DELETE FROM group_users WHERE primary_id > 1520;
+#UPDATE group_users SET active_member = 1 WHERE primary_id = 2043
+#UPDATE group_users SET group_id = 70 WHERE primary_id = 2043
+
 
 #SELECT * FROM group_users WHERE user_name = "davey";
 #SELECT * FROM group_users WHERE group_id = 70;
@@ -31,6 +51,8 @@ SELECT * FROM shareshare.groups
 
 
 #DESCRIBE shareshare.groups;
+
+
 #########
 #FRIENDS#
 #########
@@ -69,9 +91,12 @@ SELECT * FROM shareshare.groups
 #########
 #POSTS#
 #########
-#SELECT * FROM posts;
+SELECT * FROM posts;
+#UPDATE posts SET post_to = 70 WHERE post_id > 729
+#UPDATE posts SET post_caption = "Lets go on a hike!!!" WHERE post_id > 731
 
-#DELETE FROM posts WHERE post_id > 724;
+
+#DELETE FROM posts WHERE post_id = 731;
 #DELETE FROM notifications WHERE notification_id > 0
 
 
@@ -138,4 +163,24 @@ SELECT * FROM shareshare.groups
 
 
 
+/*
+CREATE TABLE `items` (
+  `item_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `post_id` INT UNSIGNED NOT NULL,
+  `item_name` VARCHAR(255) NOT NULL DEFAULT 'item_name',
+  `item_price` DECIMAL(10,2) DEFAULT 0.00,
+  `item_description` TEXT,
+  `item_category` VARCHAR(255) DEFAULT 'item_category',
+  `item_link` VARCHAR(2083) DEFAULT 'item_link',
+  `purchased` BOOLEAN DEFAULT FALSE,
+  `purchased_by` VARCHAR(255) DEFAULT 'purchased_by',
+  `store` VARCHAR(255) DEFAULT 'store',
+  `multiple_stores` BOOLEAN DEFAULT FALSE,
+  `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`item_id`),
+  UNIQUE (`post_id`),
+  FOREIGN KEY (`post_id`) REFERENCES `posts`(`post_id`) ON DELETE CASCADE
+);
+*/
 

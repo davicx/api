@@ -350,7 +350,7 @@ class Group {
     static async getGroupInformation(groupID) {
         console.log("CLASS GROUP: getting Group Information for " + groupID);
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_id, group_image, group_name FROM shareshare.groups WHERE group_id = ?";
+        const queryString = "SELECT group_id, group_image, group_name, fileURL FROM shareshare.groups WHERE group_id = ?";
         
         var groupInfoResponse = {
             status: 500,
@@ -367,7 +367,7 @@ class Group {
                         let row = rows[0];
                         groupInfoResponse.status = 200;
                         groupInfoResponse.groupID = row.group_id;
-                        groupInfoResponse.groupImage = row.group_image;
+                        groupInfoResponse.groupImage = row.fileURL;
                         groupInfoResponse.groupName = row.group_name;
                     } else {
                         console.log("Error retrieving group information or group not found");

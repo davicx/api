@@ -62,7 +62,7 @@ async function createGroup(req, res) {
 				groupName: "groupName", 
 				groupImage: "groupImage",
 				groupID: "groupID", 
-				groupMembers: [""],
+				activeGroupMembers: [""],
 				pendingGroupMembers: [""],
 			},
 			message: "", 
@@ -161,11 +161,15 @@ async function createGroup(req, res) {
 			groupName: groupName, 
 			groupImage: uploadFile.fileURL,
 			groupID: groupOutcome.groupID, 
-			groupMembers: [req.body.currentUser],
+			activeGroupMembers: [req.body.currentUser],
 			pendingGroupMembers: groupUsersOutcome.pendingUsers,
 		};
 
 		Functions.addFooter()
+		console.log("newGroupOutcome")
+		console.log(newGroupOutcome)
+		console.log("newGroupOutcome")
+
 		res.json(newGroupOutcome)
 	})
 }
@@ -199,7 +203,7 @@ async function createGroupLocalAWS(req, res) {
 			groupName: "groupName", 
 			groupImage: "groupImage",
 			groupID: "groupID", 
-			groupMembers: [""],
+			activeGroupMembers: [""],
 			pendingGroupMembers: [""],
 		};
 
@@ -327,7 +331,7 @@ async function createGroupLocalAWS(req, res) {
 			groupName: groupName, 
 			groupImage: signedURL,
 			groupID: groupOutcome.groupID, 
-			groupMembers: [req.body.currentUser],
+			activeGroupMembers: [req.body.currentUser],
 			pendingGroupMembers: groupUsersOutcome.pendingUsers,
 		};
 
@@ -335,7 +339,6 @@ async function createGroupLocalAWS(req, res) {
 		res.json(newGroupOutcome)
 	})
 }
-
 
 //Function A2: Get Full Groups to Display
 async function getGroups(req, res) {
@@ -368,8 +371,8 @@ async function getGroups(req, res) {
 			groupID: "",
 			groupName: "",
 			groupImage: "",
-			activeMembers: [],
-			pendingMembers: []
+			activeGroupMembers: [""],
+			pendingGroupMembers: [""],
 		}
 
 		let groupID = userGroupList[i];
@@ -386,8 +389,8 @@ async function getGroups(req, res) {
 		currentGroup.groupID = groupID
 		currentGroup.groupName = currentGroupInformation.groupName
 		currentGroup.groupImage = currentGroupInformation.groupImage
-		currentGroup.activeMembers = currentGroupUsers.groupUsers
-		currentGroup.pendingMembers = currentGroupUsers.pendingGroupUsers
+		currentGroup.activeGroupMembers = currentGroupUsers.groupUsers
+		currentGroup.pendingGroupMembers = currentGroupUsers.pendingGroupUsers
 
 		groupsArray.push(currentGroup)
 
@@ -399,7 +402,6 @@ async function getGroups(req, res) {
 	res.json(groupOutcome)
 	
 }
-
 
 //Function A3: Invite User to a Group 
 async function addGroupUsers(req, res) {
