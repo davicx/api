@@ -287,6 +287,8 @@ class Post {
         const itemCategory = req.body.itemCategory;
         const itemLink = req.body.itemLink;
 
+        console.log("POST " + bucket)
+
         var createdPost = {
             postID: 0,
             postType: postType,
@@ -480,7 +482,7 @@ class Post {
                                 fileName: row.file_name,
                                 fileNameServer: row.file_name_server,
                                 fileURL: row.file_url,
-                                cloudBucket: "Need to add",
+                                cloudBucket: row.cloud_bucket,
                                 cloudKey: row.cloud_key,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,

@@ -29,6 +29,7 @@ const simple = require('./application/routes/simpleRoutes.js');
 const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
 const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
+const items = require('./application/routes/itemRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -42,6 +43,7 @@ app.use(upload);
 app.use(uploadLearning);
 app.use(profile);
 app.use(simple);
+app.use(items);
 
 //Server Login 
 app.listen(3003, () => {

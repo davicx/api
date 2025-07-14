@@ -414,10 +414,10 @@ async function postArticle(req, res) {
 	res.json({postArticle: "Still need!"}); 
 }
  
+/*
 //Function A5: Post Item 
 async function postItemLocal(req, res) {
 	uploadFunctions.uploadPostPhotoLocal(req, res, async function (err) {
-		//var uploadSuccess = false
 		var groupID = req.body.groupID;
 		var currentUser = req.body.postFrom
 
@@ -535,10 +535,8 @@ async function postItemLocal(req, res) {
 			}
 		}
 
-
 		Functions.addFooter()
 		res.json(postOutcome)
-
 
     })
 }
@@ -655,6 +653,7 @@ async function postItemLocalAWS(req, res) {
 
   })
 }
+*/
 
 
 
@@ -1116,7 +1115,7 @@ async function editPost(req, res) {
 }
 
 
-module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, postItemLocal, postItemLocalAWS, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
+module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
 
 
 

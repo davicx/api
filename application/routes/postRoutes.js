@@ -74,33 +74,6 @@ postRouter.post('/post/article', function(req, res) {
     posts.postArticle(req, res);
 })
 
-//Route A7: Post Item 
-postRouter.post('/post/item', async function(req, res) {
-	//posts.postPhoto(req, res)
-	const appLocation = process.env.APP_LOCATION
-	const fileLocation = process.env.FILE_LOCATION
-
-	console.log("appLocation " + appLocation + " fileLocation " +fileLocation );
-
-	//Type 1: Local to Local 
-	if(functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "local")) {
-		console.log("Post Router: Type 1: Local to Local")
-		posts.postItemLocal(req, res)
-		//posts.postPhotoLocalAWS(req, res)
-	//Type 2: Local to AWS 	
-	} else if (functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "aws")) {
-		console.log("Post Router: Type 2: Local to AWS")
-		//posts.postPhotoLocalAWS(req, res)
-		posts.postItemLocalAWS(req, res)
-	//Type 3: AWS to AWS	
-	} else if(functions.compareStrings(appLocation, "aws") && functions.compareStrings(fileLocation, "aws")) {
-		console.log("Post Router: Type 3: AWS to AWS")
-		res.json({need:"Set this up"})
-	} else {
-		res.json({outcome:"uhh whats up dude", appLocation: appLocation, fileLocation:fileLocation})
-	}
-})
-
 //FUNCTIONS B: All Functions Related to getting Posts
 //Route B1: Get all Group Posts
 postRouter.get("/posts/group/:group_id", middlewares.verifyUser, (req, res) => {
