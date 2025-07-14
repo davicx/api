@@ -433,87 +433,111 @@ async function postItemLocal(req, res) {
 			currentUser: currentUser
 		}
 
+		var uploadFile = {}
 
-	//STEP 1: Check for Valid File
-	const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
-	console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
+		//STEP 1: Check for Valid File
+		const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
+		console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
 
-	uploadSuccess = uploadResult.uploadSuccess;
-	postOutcome.message = uploadResult.message;
-	
-	if (!uploadResult.uploadSuccess) {
-		console.log("STEP 1 (ERROR): Invalid or missing file.");
-		Functions.addFooter();
-		return res.status(postOutcome.statusCode).json(postOutcome);
-	}
-
-	//STEP 2: Upload File to storage (Local) and get file information
-	var uploadFile = {}
-	let file = req.file
-	console.log("STEP 2: Upload File to storage (Local) and get file information")
-
-	//STEP 3: Create the Upload File with its information
-	uploadFile.fileMimetype = file.mimetype; 
-	uploadFile.originalname = file.originalname; //file_name
-	uploadFile.fileNameServer = file.filename; //file_name_server
-	
-	//Settings: Local 
-	uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)
-	uploadFile.cloudKey = "no_cloud_key"; //cloud_key
-	uploadFile.bucket = bucketName; //cloud_bucket	
-	uploadFile.storageType = "local"; //storage_type
-	
-	//Settings: Cloud
-	//uploadFile.fileURL = result.Location; // file_url
-	//uploadFile.cloudKey = result.Key; //cloud_key 
-	//uploadFile.bucket = result.Bucket; // cloud_bucket 	
-	//uploadFile.storageType = "aws"; //storage_type		
-
-	//POST
-	let newPostOutcome = await Post.createPostItem(req, uploadFile);
-
-	postOutcome.data = newPostOutcome.newPost;
-	postOutcome.message = "Your photo was posted!"
-	postOutcome.statusCode = 200
-	postOutcome.success = true
-
-	//STEP 3: Add the Notifications
-	if(newPostOutcome.outcome == 200) {
-		var notification = {}
-		const groupUsersOutcome = await Group.getGroupUsers(groupID);
-		const groupUsers = groupUsersOutcome.groupUsers;
-		console.log("STEP 4: Add notifications")
-
-		var postID = 0
-		if (newPostOutcome.newPost.postID) {
-			postID = newPostOutcome.newPost.postID
+		uploadSuccess = uploadResult.uploadSuccess;
+		postOutcome.message = uploadResult.message;
+		
+		//Step 1A: Handle if there is a file but it has an issue uploading
+		if (!uploadResult.uploadSuccess) {
+			console.log("STEP 1 (ERROR): Invalid or missing file.");
+			Functions.addFooter();
+			return res.status(postOutcome.statusCode).json(postOutcome);
 		}
 
+		//STEP 2: Upload File to storage (Local) and get file information
+		//Step 2A: Update with a image 
+		if(uploadResult.containsFile == true) {
+			console.log("FILE!!")
+
+			let file = req.file
+			console.log("STEP 2: Upload File to storage (Local) and get file information")
+
+			//STEP 3: Create the Upload File with its information
+			uploadFile.fileMimetype = file.mimetype; 
+			uploadFile.originalname = file.originalname; //file_name
+			uploadFile.fileNameServer = file.filename; //file_name_server
+			
+			//Settings: Local 
+			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)
+			uploadFile.cloudKey = "no_cloud_key"; //cloud_key
+			uploadFile.bucket = bucketName; //cloud_bucket	
+			uploadFile.storageType = "local"; //storage_type
+			
+			//Settings: Cloud
+			//uploadFile.fileURL = result.Location; // file_url
+			//uploadFile.cloudKey = result.Key; //cloud_key 
+			//uploadFile.bucket = result.Bucket; // cloud_bucket 	
+			//uploadFile.storageType = "aws"; //storage_type		
+		
+
+		//Step 2A: Update without an image 
+		} else {
+			//Need a better upload default file 
+			console.log("NO FILE!! We will use a default ")
+			uploadFile = {
+				fileMimetype: 'image/jpeg',
+				originalname: 'background.jpg',
+				fileNameServer: 'postImage-1752452613886-53069656-background.jpg',
+				fileURL: 'http://localhost:3003/kite-posts-us-west-two/postImage-1752452613886-53069656-background.jpg',
+				cloudKey: 'no_cloud_key',
+				bucket: 'kite-posts-us-west-two',
+				storageType: 'local'
+			  }; 
+
+			  console.log(uploadFile)
+		}
+	
+		//POST
+		let newPostOutcome = await Post.createPostItem(req, uploadFile);
+
+		postOutcome.data = newPostOutcome.newPost;
+		postOutcome.message = "Your photo was posted!"
+		postOutcome.statusCode = 200
+		postOutcome.success = true
+
+		//STEP 3: Add the Notifications
 		if(newPostOutcome.outcome == 200) {
-			notification = {
-				masterSite: "kite",
-				notificationFrom: req.body.postFrom,
-				notificationMessage: req.body.notificationMessage,
-				notificationTo: "",
-				notificationLink: req.body.notificationLink,
-				notificationType: req.body.notificationType,
-				groupID: groupID,
-				postID: postID
+			var notification = {}
+			const groupUsersOutcome = await Group.getGroupUsers(groupID);
+			const groupUsers = groupUsersOutcome.groupUsers;
+			console.log("STEP 4: Add notifications")
+
+			var postID = 0
+			if (newPostOutcome.newPost.postID) {
+				postID = newPostOutcome.newPost.postID
 			}
 
-			console.log(groupUsers)
-			for (let i = 0; i < groupUsers.length; i++) {
-				//let notificationTo = groupUsers[i];
-				notification.notificationTo = groupUsers[i];
-				console.log(groupUsers[i]);
-				let notificationOutcome = await Notification.createSingleNotification(notification)
-				console.log(notificationOutcome)
-			} 
-		}
-	}
+			if(newPostOutcome.outcome == 200) {
+				notification = {
+					masterSite: "kite",
+					notificationFrom: req.body.postFrom,
+					notificationMessage: req.body.notificationMessage,
+					notificationTo: "",
+					notificationLink: req.body.notificationLink,
+					notificationType: req.body.notificationType,
+					groupID: groupID,
+					postID: postID
+				}
 
-	Functions.addFooter()
-    res.json(postOutcome)
+				console.log(groupUsers)
+				for (let i = 0; i < groupUsers.length; i++) {
+					//let notificationTo = groupUsers[i];
+					notification.notificationTo = groupUsers[i];
+					console.log(groupUsers[i]);
+					let notificationOutcome = await Notification.createSingleNotification(notification)
+					console.log(notificationOutcome)
+				} 
+			}
+		}
+
+
+		Functions.addFooter()
+		res.json(postOutcome)
 
 
     })
