@@ -85,12 +85,13 @@ postRouter.post('/post/item', async function(req, res) {
 	//Type 1: Local to Local 
 	if(functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "local")) {
 		console.log("Post Router: Type 1: Local to Local")
-		posts.postPhotoLocal(req, res)
+		posts.postItemLocal(req, res)
 		//posts.postPhotoLocalAWS(req, res)
 	//Type 2: Local to AWS 	
 	} else if (functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "aws")) {
 		console.log("Post Router: Type 2: Local to AWS")
-		posts.postPhotoLocalAWS(req, res)
+		//posts.postPhotoLocalAWS(req, res)
+		posts.postItemLocalAWS(req, res)
 	//Type 3: AWS to AWS	
 	} else if(functions.compareStrings(appLocation, "aws") && functions.compareStrings(fileLocation, "aws")) {
 		console.log("Post Router: Type 3: AWS to AWS")

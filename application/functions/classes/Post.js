@@ -259,6 +259,107 @@ class Post {
         
     }
 
+
+    // Method A4: Make a Post With Item
+    static async createPostItem(req, uploadFile)  {
+        console.log("POST: createPostItem")
+        const connection = db.getConnection(); 
+        const masterSite = req.body.masterSite 
+        const postType = req.body.postType 
+        const postFrom = req.body.postFrom 
+        const postTo = req.body.postTo 
+        const groupID = req.body.groupID 
+        const listID = req.body.listID 
+        const postCaption = req.body.postCaption 
+
+        //This will come from the newFile object we need
+        const fileName = uploadFile.originalname;
+        const fileNameServer = uploadFile.fileNameServer;
+        const fileURL = uploadFile.fileURL;
+        const cloudKey = uploadFile.cloudKey;
+        const fileStorageType = uploadFile.storageType; //local | aws | other
+        const bucket = uploadFile.bucket;
+
+        //These come from the postman request
+        const itemName = req.body.itemName;
+        const itemPrice = req.body.itemPrice;
+        const itemDescription = req.body.itemDescription;
+        const itemCategory = req.body.itemCategory;
+        const itemLink = req.body.itemLink;
+
+        var createdPost = {
+            postID: 0,
+            postType: postType,
+            groupID: Number(groupID),
+            listID: Number(listID),
+            postFrom: postFrom,
+            postTo: postTo,
+            postCaption: postCaption,
+            fileName: fileName,
+            fileNameServer: fileNameServer,
+            fileURL: fileURL,
+            cloudBucket: bucket,
+            cloudKey: cloudKey,
+            videoURL: "empty",
+            videoCode: "empty",
+            itemName: itemName,
+            itemPrice: itemPrice,
+            itemDescription: itemDescription,
+            itemCategory: itemCategory,
+            itemLink: itemLink,
+            postDate: timeFunctions.getCurrentTime().postDate,
+            postTime: timeFunctions.getCurrentTime().postTime,
+            timeMessage: timeFunctions.getCurrentTime().timeMessage,
+            created: "",
+            commentsArray: [],
+            postLikesArray: [],
+            simpleLikesArray: []
+        }
+
+        var postOutcome = {
+            newPost: createdPost,
+            outcome: 0,
+            postID: 0,
+            errors: []
+        }
+
+        //INSERT POST
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "INSERT INTO posts (master_site, post_type, group_id, post_from, post_to, post_caption, file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+                connection.query(queryString, [masterSite, postType, groupID, postFrom, postTo, postCaption, fileName, fileNameServer, fileURL, cloudKey, bucket, fileStorageType], (err, results, fields) => {
+                    if (!err) {
+                        console.log("DATABASE: You created a new Post with ID " + results.insertId);    
+                        postOutcome.postID = results.insertId; 
+                        postOutcome.outcome = 200; 
+                        postOutcome.newPost.postID = results.insertId;
+
+                        //INSERT ITEM
+                        const itemQuery = "INSERT INTO items (post_id, item_name, item_price, item_description, item_category, item_link) VALUES (?, ?, ?, ?, ?, ?)"
+                        connection.query(itemQuery, [results.insertId, itemName, itemPrice, itemDescription, itemCategory, itemLink], (itemErr, itemResults, itemFields) => {
+                            if (itemErr) {
+                                postOutcome.outcome = "DATABASE: item insert failed"
+                                postOutcome.errors.push(itemErr);
+                            }
+                            resolve(postOutcome);
+                        })
+
+                    } else {    
+                        postOutcome.outcome = "DATABASE: post insert failed"
+                        postOutcome.errors.push(err);
+                        resolve(postOutcome);
+                    } 
+                }) 
+
+            } catch(err) {
+                postOutcome.outcome = "rejected";
+                console.log("REJECTED " + err);
+                reject(postOutcome);
+            } 
+        });
+    }
+
     //METHODS B: Getting Posts
     //Method B1: Get Group Posts with pagination
     static async getGroupPosts(groupID, currentPage, totalGroupPosts) { 

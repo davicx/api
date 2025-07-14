@@ -23,7 +23,7 @@
 
 
 #SELECT * FROM friends;
-SELECT * FROM posts;
+#SELECT * FROM posts;
 SELECT * FROM items;
 
 #SELECT * FROM user_profile;
@@ -91,7 +91,7 @@ SELECT * FROM items;
 #########
 #POSTS#
 #########
-SELECT * FROM posts;
+#SELECT * FROM posts;
 #UPDATE posts SET post_to = 70 WHERE post_id > 729
 #UPDATE posts SET post_caption = "Lets go on a hike!!!" WHERE post_id > 731
 
