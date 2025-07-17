@@ -58,7 +58,7 @@ function handleUploadResult(req, err) {
 			console.log("Success 2B: Success Upload File");
 			uploadOutcome.uploadSuccess = true;
 			uploadOutcome.containsFile = true;
-			uploadOutcome.uploadOutcome.statusCode = 200;
+			uploadOutcome.statusCode = 200;
 		} else {
 			console.log("Error 2C: No File mah dude!");
 			uploadOutcome.message = "Error 2C: No File mah dude!";

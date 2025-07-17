@@ -64,7 +64,6 @@ postRouter.post('/post/photo', async function(req, res) {
 	}
 })
 
-
 //Route A5: Post Video
 postRouter.post('/post/video', function(req, res) {
     posts.postVideo(req, res);
