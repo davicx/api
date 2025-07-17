@@ -581,6 +581,7 @@ class Post {
         })
     }
     
+    //Method B4: Get All Group Posts 
     static async getUserPostsAll(postID)  {
         const connection = db.getConnection(); 
 
@@ -653,7 +654,106 @@ class Post {
         })
     }
      
-    
+    //Method B6: Get All Group Items 
+    static async getGroupItemsAll(groupID)  {
+        const connection = db.getConnection(); 
+
+        const queryString = `
+            SELECT p.*, i.item_id, i.item_name, i.item_price, i.item_description, 
+                   i.item_category, i.item_link, i.purchased, i.purchased_by, 
+                   i.store, i.multiple_stores
+            FROM posts p
+            LEFT JOIN items i ON p.post_id = i.post_id
+            WHERE p.group_id = ? AND p.post_status = 1 
+            ORDER BY p.post_id DESC
+        `;
+        var postsOutcome = {
+            success: false,
+            posts: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                connection.query(queryString, [groupID], (err, rows) => {
+                    if (!err) {
+                        const posts = rows.map((row) => {
+                            
+                            //TIME 
+                            //Step 1: Create a Post Time Holder 
+                            let postTimeData = {}
+                            let date = dayjs(row.created).format('MM/DD/YYYY')      
+                            let minutes = dayjs(row.created).minute()
+                            let hour = dayjs(row.created).hour()
+                        
+                            //Step 2: Get the time in hours and minutes
+                            if(hour > 12) {
+                                hour = hour - 12
+                            }
+
+                            let time = hour + ":0" + minutes + " pm";
+
+                            //Step 3: Get the Message 
+                            let timeMessage = dayjs(row.created).fromNow()
+                        
+                            postTimeData.date = date
+                            postTimeData.time = time
+                            postTimeData.timeMessage = timeMessage
+
+                            // Create item object if item data exists
+                            let itemData = null;
+                            if (row.item_id) {
+                                itemData = {
+                                    item_id: row.item_id,
+                                    item_name: row.item_name,
+                                    item_price: row.item_price,
+                                    item_description: row.item_description,
+                                    item_category: row.item_category,
+                                    item_link: row.item_link,
+                                    purchased: row.purchased,
+                                    purchased_by: row.purchased_by,
+                                    store: row.store,
+                                    multiple_stores: row.multiple_stores
+                                };
+                            }
+
+                            return {
+                                postID: row.post_id,
+                                postType: row.post_type,
+                                groupID: row.group_id,
+                                listID: row.list_id,
+                                postFrom: row.post_from,
+                                postTo: row.post_to,
+                                postCaption: row.post_caption,
+                                fileName: row.file_name,
+                                fileNameServer: row.file_name_server,
+                                fileURL: row.file_url,
+                                cloudBucket: row.cloud_bucket,
+                                cloudKey: row.cloud_key,
+                                videoURL: row.video_url,
+                                videoCode: row.video_code,
+                                postDate: postTimeData.date,
+                                postTime: postTimeData.time,
+                                timeMessage: postTimeData.timeMessage,
+                                created: row.created,
+                                item: itemData
+                            }
+                        });
+                        postsOutcome.posts = posts;
+
+                        resolve(postsOutcome)
+            
+                    } else {
+                        console.log("Failed to Select Posts" + err)
+                        reject(postsOutcome);
+                    }
+            })
+                
+            } catch(err) { 
+                reject(postsOutcome);
+            } 
+        })
+    }
+
     //METHODS C: UPDATING POST
     static async updatePostCaption(postID, newPostCaption, currentUser)  {
         const connection = db.getConnection(); 

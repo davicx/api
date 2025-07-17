@@ -295,7 +295,7 @@ async function getAllGroupItems(req, res) {
 	
 
 	//STEP 1: Get All Posts
-	var postsOutcome = await Post.getGroupPostsAll(groupID)
+	var postsOutcome = await Post.getGroupItemsAll(groupID)
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
