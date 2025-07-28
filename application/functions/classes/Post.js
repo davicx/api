@@ -438,7 +438,17 @@ class Post {
     static async getGroupPostsAll(groupID)  {
         const connection = db.getConnection(); 
 
-        const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC";
+        //const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC";
+
+        const queryString = `SELECT 
+                                posts.*, 
+                                shareshare.groups.group_name,  
+                                shareshare.groups.fileURL 
+                            FROM posts
+                            JOIN shareshare.groups ON posts.group_id = shareshare.groups.group_id
+                            WHERE posts.group_id = ? AND posts.post_status = 1
+                            ORDER BY posts.post_id DESC`
+
         var postsOutcome = {
             success: false,
             posts: []
@@ -475,6 +485,8 @@ class Post {
                                 postID: row.post_id,
                                 postType: row.post_type,
                                 groupID: row.group_id,
+                                groupName: row.group_name,
+                                groupImage: row.fileURL,
                                 listID: row.list_id,
                                 postFrom: row.post_from,
                                 postTo: row.post_to,

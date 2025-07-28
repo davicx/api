@@ -9,24 +9,28 @@
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
 
+#UPDATE shareshare.groups SET fileURL = "",group_name = 'Hiking in the Shire' WHERE group_id = 72; 
 
 #SELECT * FROM shareshare.groups
 #SELECT * FROM group_users
 
 #UPDATE group_users SET group_id = 72 WHERE primary_id = 2074;
+#UPDATE posts SET post_caption = "The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 729;
 
 
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
 #UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 692;
 
-
-
 #SELECT * FROM friends;
 #SELECT * FROM posts;
-SELECT * FROM items;
+
+
+#SELECT * FROM items;
 
 #SELECT * FROM user_profile;
+
+SELECT * FROM comments;
 
 
 
@@ -96,7 +100,7 @@ SELECT * FROM items;
 #UPDATE posts SET post_caption = "Lets go on a hike!!!" WHERE post_id > 731
 
 
-#DELETE FROM posts WHERE post_id = 731;
+#DELETE FROM posts WHERE post_id = 748;
 #DELETE FROM notifications WHERE notification_id > 0
 
 

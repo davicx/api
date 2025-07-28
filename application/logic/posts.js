@@ -666,7 +666,7 @@ async function getAllGroupPosts(req, res) {
     const groupID = req.params.group_id;
 	const currentUser = req.currentUser
 	
-	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID
+	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID + "Non Pagination"
 	Functions.addHeader(headerMessage)
 	
 

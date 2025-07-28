@@ -169,6 +169,7 @@ async function getAWSSignedURL(post) {
 }
 
 
+
 //Function A1: This will get a link that will show the actual image and can handle aws or a local image
 async function getImageURL(storageLocation, imageURL, cloudKey) {
 	if(Functions.compareStrings(storageLocation, "aws") == true) {
