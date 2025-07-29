@@ -80,6 +80,7 @@ async function postText(req, res) {
 	console.log("STEP 1: Make a new post")
 	var newPostOutcome = await Post.createPostText(req);
 
+
 	if(newPostOutcome.outcome == 200) {
 		postOutcome.data = newPostOutcome.newPost;
 		postOutcome.message = "You made a Text post!"
@@ -185,7 +186,6 @@ async function postPhotoLocal(req, res) {
 	//uploadFile.storageType = "aws"; //storage_type		
 
 
-	//SORT BELOW
 	//POST
 	let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 

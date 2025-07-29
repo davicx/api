@@ -21,6 +21,7 @@ class Post {
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
+        const postFromImage = "Need postFromImage"
         const postTo = req.body.postTo 
         const groupID = Number(req.body.groupID)
         const listID = Number(req.body.listID)
@@ -50,6 +51,7 @@ class Post {
             groupID: Number(groupID),
             listID: Number(listID),
             postFrom: postFrom,
+            postFromImage: postFromImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -107,6 +109,7 @@ class Post {
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
+        const postFromImage = "Need postFromImage"
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const listID = req.body.listID 
@@ -135,6 +138,7 @@ class Post {
             groupID: Number(groupID),
             listID: Number(listID),
             postFrom: postFrom,
+            postFromImage: postFromImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -195,6 +199,7 @@ class Post {
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
+        const postFromImage = "Need postFromImage"
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const listID = req.body.listID 
@@ -208,6 +213,7 @@ class Post {
             groupID: groupID,
             listID: listID,
             postFrom: postFrom,
+            postFromImage: postFromImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: "fileName",
@@ -267,6 +273,7 @@ class Post {
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
+        const postFromImage= "Need"
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const listID = req.body.listID 
@@ -437,15 +444,20 @@ class Post {
     //Method B2: Get All Group Posts 
     static async getGroupPostsAll(groupID)  {
         const connection = db.getConnection(); 
+        const fileFunctions = require('../fileFunctions');
 
         //const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC";
 
         const queryString = `SELECT 
                                 posts.*, 
                                 shareshare.groups.group_name,  
-                                shareshare.groups.fileURL 
+                                shareshare.groups.fileURL,
+                                user_profile.storage_location,
+                                user_profile.image_url,
+                                user_profile.cloud_key
                             FROM posts
                             JOIN shareshare.groups ON posts.group_id = shareshare.groups.group_id
+                            LEFT JOIN user_profile ON posts.post_from = user_profile.user_name
                             WHERE posts.group_id = ? AND posts.post_status = 1
                             ORDER BY posts.post_id DESC`
 
@@ -458,7 +470,8 @@ class Post {
             try {
                 connection.query(queryString, [groupID], (err, rows) => {
                     if (!err) {
-                        const posts = rows.map((row) => {
+                        // Use Promise.all to handle async operations for each post
+                        Promise.all(rows.map(async (row) => {
                             
                             //TIME 
                             //Step 1: Create a Post Time Holder 
@@ -481,6 +494,17 @@ class Post {
                             postTimeData.time = time
                             postTimeData.timeMessage = timeMessage
 
+                            // Get user image URL using fileFunctions.getImageURL
+                            let userImage = null;
+                            if (row.storage_location && row.image_url) {
+                                try {
+                                    userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.cloud_key);
+                                } catch (error) {
+                                    console.log("Error getting user image for " + row.post_from + ": " + error);
+                                    userImage = null;
+                                }
+                            }
+
                             return {
                                 postID: row.post_id,
                                 postType: row.post_type,
@@ -489,6 +513,7 @@ class Post {
                                 groupImage: row.fileURL,
                                 listID: row.list_id,
                                 postFrom: row.post_from,
+                                postFromImage: userImage, // Add user image for post creator
                                 postTo: row.post_to,
                                 postCaption: row.post_caption,
                                 fileName: row.file_name,
@@ -503,17 +528,18 @@ class Post {
                                 timeMessage: postTimeData.timeMessage,
                                 created: row.created
                             }
+                        })).then(posts => {
+                            postsOutcome.posts = posts;
+                            resolve(postsOutcome)
+                        }).catch(error => {
+                            console.log("Error processing posts: " + error);
+                            reject(postsOutcome);
                         });
-                        postsOutcome.posts = posts;
-
-                        resolve(postsOutcome)
-            
                     } else {
                         console.log("Failed to Select Posts" + err)
                         reject(postsOutcome);
                     }
             })
-                
             } catch(err) { 
                 reject(postsOutcome);
             } 

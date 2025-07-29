@@ -29,6 +29,24 @@ FUNCTIONS A: All Functions Related to Groups
 */
 
 
+
+
+//Function A1: This will get a link that will show the actual image and can handle aws or a local image
+async function getImageURL(storageLocation, imageURL, cloudKey) {
+	if(Functions.compareStrings(storageLocation, "aws") == true) {
+		console.log("fileFunctions: Get AWS Photo FOR " + cloudKey)
+		let signedImageURL = await cloudFunctions.getSignedURL(cloudKey)
+		
+		return signedImageURL;
+	} else {
+		console.log("Good to go!")  
+		return imageURL;   
+	}
+
+
+}
+
+
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
 		message: "",
@@ -168,22 +186,6 @@ async function getAWSSignedURL(post) {
 	return post;
 }
 
-
-
-//Function A1: This will get a link that will show the actual image and can handle aws or a local image
-async function getImageURL(storageLocation, imageURL, cloudKey) {
-	if(Functions.compareStrings(storageLocation, "aws") == true) {
-		console.log("fileFunctions: Get AWS Photo FOR " + cloudKey)
-		let signedImageURL = await cloudFunctions.getSignedURL(cloudKey)
-		
-		return signedImageURL;
-	} else {
-		console.log("Good to go!")  
-		return imageURL;   
-	}
-
-
-}
 
 
 module.exports = { handleOptionalFileUploadResult, handleUploadResult, buildGroupUploadFileObject, getAWSSignedURL, getProfileAWSSignedURL, getImageURL }
