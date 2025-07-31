@@ -672,7 +672,22 @@ async function getAllGroupPosts(req, res) {
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await Post.getGroupPostsAll(groupID)
+
+	console.log(postsOutcome)
+	console.log(postsOutcome)
+	console.log(postsOutcome)
+	console.log(postsOutcome)
+
 	var postsRaw = postsOutcome.posts;
+
+	//TO DO!!! HANDLE NO GROUP AND NO POSTS
+
+	if (Array.isArray(postsRaw) && postsRaw.length > 0) {
+		console.log("POSTS YO!!")
+	} else {
+		console.log("NONE!!!")
+	}
+	
 
 	//STEP 2: Get All Comments for these Posts 
 	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw, groupID)

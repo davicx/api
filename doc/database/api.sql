@@ -1,18 +1,48 @@
 #USE shareshare;
 
 
+#########
+#ALL#
+#########
+SELECT * FROM posts;
+#SELECT * FROM shareshare.groups
+#SELECT * FROM notifications 
+#SELECT * FROM pending_requests 
+#SELECT * FROM user_profile;
+
+
+#DELETE FROM posts WHERE post_id > 740;
+#DELETE FROM shareshare.groups WHERE group_id > 500;
+#DELETE FROM group_users WHERE primary_id > 2074;
+
+
 
 #########
 #GROUPS#
 #########
-#SELECT * FROM shareshare.groups
-#SELECT * FROM notifications 
-#SELECT * FROM pending_requests 
-
 #UPDATE shareshare.groups SET fileURL = "",group_name = 'Hiking in the Shire' WHERE group_id = 72; 
 
+#EXAMPLE: file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type
+#ALTER TABLE shareshare.groups CHANGE COLUMN cloudBucket cloud_bucket VARCHAR(255) AFTER cloud_key;
 #SELECT * FROM shareshare.groups
 #SELECT * FROM group_users
+
+#UPDATE shareshare.groups SET storage_type = "local" WHERE group_id > 2; 
+
+
+/*
+fileName to file_name 
+fileNameServer file_name_server
+cloudBucket cloud_bucket 
+cloudKey cloud_key
+fileURL gone
+storage_type added this
+*/
+#GROUPS
+#file_name, file_name_server, group_image, storage_type, cloud_key, cloud_bucket
+#group_image, fileName, fileNameServer, fileURL, cloudBucket, cloudKey
+
+
 
 #UPDATE group_users SET group_id = 72 WHERE primary_id = 2074;
 #UPDATE posts SET post_caption = "The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 729;
@@ -23,14 +53,15 @@
 #UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 692;
 
 #SELECT * FROM friends;
-#SELECT * FROM posts;
+
 
 
 #SELECT * FROM items;
 
 #SELECT * FROM user_profile;
+#UPDATE comments SET comment = "The hemlock-umbels tall and fair, And in the glade a light was seen Of stars in shadow shimmering. The hemlock-umbels tall and fair, And in the glade a light was seen Of stars in shadow shimmering.user_profile" WHERE comment_id = 237;
 
-SELECT * FROM comments;
+#SELECT * FROM comments;
 
 
 

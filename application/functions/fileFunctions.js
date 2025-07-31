@@ -42,9 +42,8 @@ async function getImageURL(storageLocation, imageURL, cloudKey) {
 		console.log("Good to go!")  
 		return imageURL;   
 	}
-
-
 }
+
 
 
 function handleUploadResult(req, err) {

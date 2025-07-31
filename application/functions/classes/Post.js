@@ -30,6 +30,7 @@ class Post {
         const fileNameServer = "no_file.jpg";
         const fileURL = "no_file.jpg";
         const cloudKey = "no_cloud_key"
+        const cloudBucket = "no_cloud_bucket"
 
 		if(req.body.fileNameServer != undefined) {
 			fileNameServer = req.body.fileNameServer;
@@ -451,7 +452,7 @@ class Post {
         const queryString = `SELECT 
                                 posts.*, 
                                 shareshare.groups.group_name,  
-                                shareshare.groups.fileURL,
+                                shareshare.groups.group_image,
                                 user_profile.storage_location,
                                 user_profile.image_url,
                                 user_profile.cloud_key
@@ -530,6 +531,7 @@ class Post {
                             }
                         })).then(posts => {
                             postsOutcome.posts = posts;
+                            postsOutcome.success = true;
                             resolve(postsOutcome)
                         }).catch(error => {
                             console.log("Error processing posts: " + error);

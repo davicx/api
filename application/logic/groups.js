@@ -86,6 +86,7 @@ async function createGroup(req, res) {
 			return res.status(400).json(newGroupOutcome);
 		}
 		
+		
 		//STEP 2: Get the file Information
 		console.log("STEP 2: Get the file Information")
 		const uploadFile = fileFunctions.buildGroupUploadFileObject(req, uploadResult);
@@ -263,8 +264,10 @@ async function createGroupLocalAWS(req, res) {
 
 		try { 
 
+
 			//STEP 4: Create the Group
 			groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+
 
 			if(groupOutcome.outcome == 1) {
 				console.log("STEP 4: You succesfully created a new group with Group ID " + groupOutcome.groupID);
@@ -377,7 +380,7 @@ async function getGroups(req, res) {
 
 		let groupID = userGroupList[i];
 
-		console.log(userGroupList[i])
+		//console.log(userGroupList[i])
 
 		//Step 2A: Get the Groups Information (name, image, users)
 		let currentGroupInformation = await Group.getGroupInformation(groupID)	
