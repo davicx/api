@@ -12,7 +12,9 @@ const { S3Outposts } = require('aws-sdk');
 const uploadFunctions = require('../functions/uploadFunctions');
 const cloudFunctions = require('../functions/cloudFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
-const bucketName = process.env.AWS_GROUPS_BUCKET_NAME
+
+const bucketName = process.env.AWS_BUCKET_NAME
+const groupsFolder = process.env.GROUPS
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -89,7 +91,9 @@ async function createGroup(req, res) {
 		
 		//STEP 2: Get the file Information
 		console.log("STEP 2: Get the file Information")
-		const uploadFile = fileFunctions.buildGroupUploadFileObject(req, uploadResult);
+
+		const uploadFile = fileFunctions.buildGroupUploadFileObject(req.file, uploadResult, groupsFolder);
+
 
 		try { 
 

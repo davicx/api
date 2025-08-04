@@ -17,6 +17,46 @@ FUNCTIONS A: All Functions Related to User Profile
 //Function A1: Get User Image
 async function getUserImage(userName) {
     const connection = db.getConnection(); 
+
+    const userProfileImage = {
+        message: "",
+        success: false,
+        userName: userName,
+        userProfileImage: "profile.jpg", // default fallback
+    };
+
+    return new Promise((resolve) => {
+        const query = "SELECT image_url FROM user_profile WHERE user_name = ?";
+
+        connection.query(query, [userName], (err, rows) => {
+            if (err) {
+                userProfileImage.message = "Database error: " + err.message;
+                return resolve(userProfileImage);
+            }
+
+            if (rows.length === 0) {
+                userProfileImage.message = "User not found: " + userName;
+                return resolve(userProfileImage);
+            }
+
+            const imageURL = rows[0].image_url;
+
+            if (imageURL) {
+                userProfileImage.userProfileImage = imageURL;
+                userProfileImage.success = true;
+                userProfileImage.message = "Image retrieved successfully";
+            } else {
+                userProfileImage.message = "Image not set for user: " + userName;
+            }
+
+            resolve(userProfileImage);
+        });
+    });
+}
+
+/*
+async function getUserImageComplex(userName) {
+    const connection = db.getConnection(); 
     
     console.log(" ")
     console.log("______________________________________________")
@@ -94,7 +134,7 @@ async function getUserImage(userName) {
         } 
     })
 }
-
+*/
 //REMOVE ALL THIS IS HELPER STUFF 
 
 async function getUserProfile(userName) {

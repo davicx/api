@@ -294,9 +294,10 @@ async function getImage(input) {
 //Function A8: Add Signed URLS to an Array of Posts
 async function addSignedURLPostsArray(posts)  {
     for (let i = 0; i < posts.length; i++) {
-        //console.log(posts[i].cloudKey)
-        if(Functions.compareStrings(posts[i].cloudKey, "no_cloud_key") == false) {
-            console.log("GETTING SIGNED URL cloudKEY is local_cloud_key")
+        //console.log(posts[i])
+
+        if(Functions.compareStrings(posts[i].storageType, "aws") == true) {
+            console.log("GETTING SIGNED URL storageType is aws")
             let signedURL = await cloudFunctions.getSignedURL(posts[i].cloudKey)
             posts[i].fileURL = signedURL;
         } else {

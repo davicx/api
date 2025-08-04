@@ -4,8 +4,9 @@
 #########
 #ALL#
 #########
-SELECT * FROM posts;
-#SELECT * FROM shareshare.groups
+#SELECT * FROM posts;
+#SELECT * FROM comments;
+SELECT * FROM shareshare.groups;
 #SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
 #SELECT * FROM user_profile;
@@ -15,6 +16,12 @@ SELECT * FROM posts;
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
 
+#UPDATE posts SET post_caption = "The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 791;
+#UPDATE comments SET post_id = 791 WHERE comment_id = 237;
+
+UPDATE shareshare.groups SET cloud_key = "groups/groupImage-1754264482637-64076401-IMG_3737.JPG" WHERE group_id = 72;
+ 
+ 
 
 
 #########

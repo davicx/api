@@ -124,19 +124,13 @@ class Post {
         const fileStorageType = uploadFile.storageType; //local | aws | other
         const bucket = uploadFile.bucket;
 
-        //console.log("TEMP: createPostPhoto")
-        //console.log(fileURL)
-        //console.log(cloudKey)
-        //console.log(fileStorageType)
-        //console.log("TEMP")
- 
-        //let tempTIME = timeFunctions.getCurrentTime().postTime 
-        //console.log(tempTIME)
 
         var createdPost = {
             postID: 0,
             postType: postType,
             groupID: Number(groupID),
+            groupName: "needGroupName",
+            groupImage: "needGroupImage",
             listID: Number(listID),
             postFrom: postFrom,
             postFromImage: postFromImage,
@@ -147,8 +141,10 @@ class Post {
             fileURL: fileURL,
             cloudBucket: bucket,
             cloudKey: cloudKey,
+            storageType: fileStorageType,
             videoURL: "empty",
             videoCode: "empty",
+            isLikedByCurrentUser: false,
             postDate: timeFunctions.getCurrentTime().postDate,
 			postTime: timeFunctions.getCurrentTime().postTime,
 			timeMessage: timeFunctions.getCurrentTime().timeMessage,
@@ -377,15 +373,7 @@ class Post {
         const limit = 2;
         const currentOffset = limit * (currentPage - 1);
 
-        /*
-        console.log("getGroupPosts")
-        console.log("groupID")
-        console.log(groupID)
-        console.log("currentPage")
-        console.log(currentPage)
-        console.log("currentOffset")
-        console.log(currentOffset)
-        */
+
         const queryString = "SELECT * FROM posts WHERE group_id = ? AND post_status = 1 ORDER BY post_id DESC LIMIT ? OFFSET ?";
         
         var postsOutcome = {
@@ -511,7 +499,7 @@ class Post {
                                 postType: row.post_type,
                                 groupID: row.group_id,
                                 groupName: row.group_name,
-                                groupImage: row.fileURL,
+                                groupImage: row.group_image,
                                 listID: row.list_id,
                                 postFrom: row.post_from,
                                 postFromImage: userImage, // Add user image for post creator
@@ -522,6 +510,7 @@ class Post {
                                 fileURL: row.file_url,
                                 cloudBucket: row.cloud_bucket,
                                 cloudKey: row.cloud_key,
+                                storageType: row.storage_type,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,
                                 postDate: postTimeData.date,

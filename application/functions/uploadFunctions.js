@@ -14,11 +14,12 @@ const awsStorage = require('../functions/aws/awsStorage');
 //Upload imports
 var mime = require('mime-types')
 
-
+const postsFolder = process.env.POSTS;
+const groupsFolder = process.env.GROUPS;
+const profileFolder = process.env.PROFILE;
 
 /*
 FUNCTIONS A: All Functions Related to Local Uploads
-	1) Function A1: Create local upload and filename for uploads folder
 	2) Function A2: Image Upload for Local Upload 
 */
 
@@ -27,11 +28,11 @@ FUNCTIONS A: All Functions Related to Local Uploads
 var fileLimit = 1024 * 1024 * 40; 
 //var fileLimit = 1024; 
 //var uploadFolder = "./application/upload_temp/uploads";
-var uploadFolder = "./public/kite-posts-us-west-two";
-//var profileUploadFolder = "./public/profile";
-var profileUploadFolder = "./public/kite-profile-us-west-two";
-var groupUploadFolder = "./public/kite-groups-us-west-two";
+var uploadFolder = "./public/kite-us-west-two/" + postsFolder;
+var profileUploadFolder = "./public/kite-us-west-two/"  + profileFolder;
+var groupUploadFolder = "./public/kite-us-west-two/" + groupsFolder;
 
+//FUNCTIONS: POSTS
 //Function A1: Post Image Upload for Local Upload 
 const localStorage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -70,6 +71,8 @@ const uploadPostPhotoLocal = multer({
   
 }).single('postImage')
 
+
+//FUNCTIONS: GROUPS
 //Function A2: New Group Image Upload for Local Upload
 const localGroupStorage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -107,6 +110,8 @@ const uploadGroupPhotoLocal = multer({
   
 }).single('groupImage')
 
+
+//FUNCTIONS: PROFILE
 //Function A3: User Image Upload for Local Upload
 const localProfileStorage = multer.diskStorage({
   destination: function (req, file, cb) {

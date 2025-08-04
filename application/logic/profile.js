@@ -11,9 +11,12 @@ const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const cloudFunctions = require('../functions/cloudFunctions');
 
-const bucketName = process.env.AWS_PROFILE_BUCKET_NAME
 const appLocation = process.env.APP_LOCATION
 const fileLocation = process.env.FILE_LOCATION
+
+const bucketName = process.env.AWS_BUCKET_NAME
+const profileFolder = process.env.PROFILE
+
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -243,12 +246,12 @@ async function updateFullUserProfileLocal(req, res) {
                 biography: req.body.biography,
                 storageLocation: "local",
                 cloudBucket: bucketName,
-                cloudKey: file.path,
-                imageURL: "http://localhost:3003/" + bucketName + "/" + file.filename,
+                cloudKey: profileFolder + "/" + file.filename,
+                imageURL: "http://localhost:3003/" + bucketName + "/" + profileFolder + "/" + file.filename,
                 fileName: file.originalname,
                 fileNameServer: file.filename
             }
-      
+     
             var updateUserProfile = await Profile.updateFullUserProfile(updatedUser);
 
 	    //STEP 3: Update Profile 
@@ -301,9 +304,7 @@ async function updateFullUserProfileLocalAWS(req, res) {
         var currentUser = req.body.currentUser
  
 		var headerMessage = "Updated user profile for " + currentUser + " Local to Local"
-		Functions.addHeader(headerMessage)
-  
-       
+		Functions.addHeader(headerMessage) 
 
         var updateUserProfileOutcome = {
             data: {
@@ -364,8 +365,6 @@ async function updateFullUserProfileLocalAWS(req, res) {
       
             var updateUserProfile = await Profile.updateFullUserProfile(updatedUser);
 
-
-
 	    //STEP 3: Update Profile 
         //Step 3A: Update without an image 
         } else {
@@ -425,8 +424,6 @@ async function updateFullUserProfileLocalAWS(req, res) {
 
 
 //Function A6: Update Full User Profile AWS
-
-
 
 
 module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };

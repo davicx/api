@@ -1,16 +1,14 @@
-const db = require('./conn');
-
-const Functions = require('../functions/functions');
-
-const cloudFunctions = require('../functions/cloudFunctions');
-const uploadFunctions = require('../functions/uploadFunctions');
-
-const awsStorage = require('../functions/aws/awsStorage');
-
-const bucketName = process.env.AWS_GROUPS_BUCKET_NAME
 const Requests = require('./classes/Requests');
 const Notifications = require('./classes/Notification');
 const Group = require('./classes/Group');
+const Functions = require('../functions/functions');
+const cloudFunctions = require('../functions/cloudFunctions');
+const uploadFunctions = require('../functions/uploadFunctions');
+const awsStorage = require('../functions/aws/awsStorage');
+
+const db = require('./conn');
+
+const bucketName = process.env.AWS_BUCKET_NAME
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -29,8 +27,6 @@ FUNCTIONS A: All Functions Related to Groups
 */
 
 
-
-
 //Function A1: This will get a link that will show the actual image and can handle aws or a local image
 async function getImageURL(storageLocation, imageURL, cloudKey) {
 	if(Functions.compareStrings(storageLocation, "aws") == true) {
@@ -43,8 +39,6 @@ async function getImageURL(storageLocation, imageURL, cloudKey) {
 		return imageURL;   
 	}
 }
-
-
 
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
@@ -129,34 +123,35 @@ function handleOptionalFileUploadResult(req, err) {
 	return uploadOutcome;
 }
 
-function buildGroupUploadFileObject(req, uploadOutcome) {
+
+function buildGroupUploadFileObject(file, uploadOutcome, groupsFolder) {
 	if (!uploadOutcome.containsFile) {
 		return {
 			fileMimetype: "image/png",
-			originalname: "group_image.png",
-			fileNameServer: "group_image.png",
-			fileURL: "http://localhost:3003/kite-groups-us-west-two/group_image.png",
-			cloudKey: "no_cloud_key",
-			bucket: "kite-groups-us-west-two",
+			originalname: "group_image.jpg",
+			fileNameServer: "group_image.jpg",
+			fileURL: "http://localhost:3003/" + bucketName + "/" + groupsFolder + "/" + "group_image.jpg",
+			cloudKey: groupsFolder + "/" + "group_image.jpg",
+			bucket: bucketName,
 			storageType: "local"
 		};
 	}
 
-	const file = req.file;
+
 	return {
 		fileMimetype: file.mimetype,
 		originalname: file.originalname,
 		fileNameServer: file.filename,
-		fileURL: `http://localhost:3003/${bucketName}/${file.filename}`,
-		cloudKey: "no_cloud_key",
+		fileURL: "http://localhost:3003/" + bucketName + "/" + groupsFolder + "/" + file.filename,
+		cloudKey: groupsFolder + "/" + file.filename,
 		bucket: bucketName,
 		storageType: "local"
 	};
 }
 
 
+//NOT USED?
 async function getProfileAWSSignedURL(post) {
-
 	if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
 		let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
 		console.log("getSignedURL: IF");
@@ -171,7 +166,6 @@ async function getProfileAWSSignedURL(post) {
 }
 
 async function getAWSSignedURL(post) {
-
 	if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
 		let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
 		console.log("getSignedURL: IF");
