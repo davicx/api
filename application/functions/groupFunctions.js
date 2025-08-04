@@ -163,7 +163,6 @@ function processGroupUsers(req) {
     return newGroupUsers; // Optionally return the final array
 }
 
-
 async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers) {
 	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
 	if (groupOutcome.outcome !== 1) {
@@ -212,6 +211,18 @@ async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupI
 	Requests.newGroupRequest(request);
 }
 
+
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
+
+
+
+
+
+
+
+
+
+
 /*
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
@@ -255,13 +266,3 @@ function handleUploadResult(req, err) {
 	return uploadOutcome;
 }
 */
-
-
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
-
-
-
-
-
-
-

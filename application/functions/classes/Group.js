@@ -22,6 +22,62 @@ class Group {
     static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupImage)  {
         const connection = db.getConnection(); 
         var groupID = 0;
+        var groupImage = "the_shire_default_group_image.jpg"; 
+    
+        var groupOutcome = {
+            outcome: 0,
+            groupID: groupID,
+            errors: []
+        }
+    
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = `
+                    INSERT INTO shareshare.groups (
+                        group_type,
+                        created_by,
+                        group_name,
+                        group_image,
+                        group_private,
+                        file_name,
+                        file_name_server,
+                        cloud_bucket,
+                        cloud_key,
+                        storage_type
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+    
+                connection.query(queryString, [
+                    groupType,
+                    currentUser,
+                    groupName,
+                    uploadFile.fileURL || groupImage,  // fallback for group_image
+                    groupPrivate,
+                    uploadFile.originalname || "",
+                    uploadFile.fileNameServer || "",
+                    uploadFile.bucket || "",
+                    uploadFile.cloudKey || "",
+                    uploadFile.storageType || "error"
+                ], (err, results) => {
+                    if (!err) {
+                        groupOutcome.outcome = 1;
+                        groupOutcome.groupID = results.insertId;
+                    } else {
+                        groupOutcome.errors.push(err);
+                    }
+                    resolve(groupOutcome);
+                });   
+            } catch(err) {
+                console.log("REJECTED " + err);
+                reject(groupOutcome);
+            } 
+        });
+    }
+    /*
+    static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupImage)  {
+        const connection = db.getConnection(); 
+        var groupID = 0;
         var groupImage = "the_shire.jpg"; 
 
         var groupOutcome = {
@@ -33,7 +89,7 @@ class Group {
 
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private, fileName, fileNameServer, fileURL, cloudBucket, cloudKey) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private, file_Name, fileNameServer, fileURL, cloudBucket, cloudKey) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
                 connection.query(queryString, [
                     groupType,
@@ -63,6 +119,7 @@ class Group {
             } 
         });
     }
+    */
 
     //Method A2: Add Single User to Group (Accepts cleaned data they are not in the group already)
     static async addGroupUser(groupID, groupUser)  {
@@ -346,11 +403,12 @@ class Group {
         });
     }
    
+    //getImageURL(storageLocation, imageURL, cloudKey)
     //Method A8: Get Group Information
     static async getGroupInformation(groupID) {
         console.log("CLASS GROUP: getting Group Information for " + groupID);
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_id, group_image, group_name, fileURL FROM shareshare.groups WHERE group_id = ?";
+        const queryString = "SELECT group_id, group_image, group_name, group_image FROM shareshare.groups WHERE group_id = ?";
         
         var groupInfoResponse = {
             status: 500,
@@ -367,7 +425,8 @@ class Group {
                         let row = rows[0];
                         groupInfoResponse.status = 200;
                         groupInfoResponse.groupID = row.group_id;
-                        groupInfoResponse.groupImage = row.fileURL;
+                        groupInfoResponse.groupImage = row.group_image;
+                        groupInfoResponse.groupCreatedBy = row.created_by;
                         groupInfoResponse.groupName = row.group_name;
                     } else {
                         console.log("Error retrieving group information or group not found");

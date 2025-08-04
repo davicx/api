@@ -1,0 +1,175 @@
+{
+    "data": [
+        {
+            "postID": 747,
+            "postType": "photo",
+            "groupID": 72,
+            "groupName": "Hiking!",
+            "groupImage": "http://localhost:3003/kite-groups-us-west-two/group_image.png",
+            "listID": 0,
+            "postFrom": "davey",
+            "postTo": "72",
+            "postCaption": "Hiya wanna garden! ",
+            "fileName": "background.jpg",
+            "fileNameServer": "postImage-1752365724688-356909632-background.jpg",
+            "fileURL": "http://localhost:3003/kite-posts-us-west-two/postImage-1752365724688-356909632-background.jpg",
+            "cloudBucket": "kite-posts-us-west-two",
+            "cloudKey": "no_cloud_key",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "07/12/2025",
+            "postTime": "5:015 pm",
+            "timeMessage": "6 days ago",
+            "created": "2025-07-13T00:15:24.000Z",
+            "commentsArray": [],
+            "postLikesArray": [],
+            "isLikedByCurrentUser": false,
+            "simpleLikesArray": []
+        },
+        {
+            "postID": 722,
+            "postType": "text",
+            "groupID": 72,
+            "groupName": "Hiking!",
+            "groupImage": "http://localhost:3003/kite-groups-us-west-two/group_image.png",
+            "listID": 0,
+            "postFrom": "davey",
+            "postTo": "frodo",
+            "postCaption": "The weather is perfect! wanna hike or we could garden!",
+            "fileName": "no_file.jpg",
+            "fileNameServer": "hiya.jpg",
+            "fileURL": "empty",
+            "cloudBucket": "no_cloud_bucket",
+            "cloudKey": "no_cloud_key",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "03/14/2025",
+            "postTime": "4:022 pm",
+            "timeMessage": "4 months ago",
+            "created": "2025-03-14T23:22:20.000Z",
+            "commentsArray": [
+                {
+                    "commentID": 229,
+                    "postID": 722,
+                    "commentCaption": "He loved mountains, or he had loved the thought of them marching on the edge of stories brought from far away; but now he was borne down by the insupportable weight of Middle-earth. He longed to shut out the immensity in a quiet room by a fire.",
+                    "commentFrom": "davey",
+                    "commentType": "post",
+                    "userName": "davey",
+                    "imageName": "frodo.jpg",
+                    "firstName": "david",
+                    "lastName": "v2",
+                    "commentDate": "05/06/2025",
+                    "commentTime": "4:23 pm",
+                    "timeMessage": "2 months ago",
+                    "commentLikes": [
+                        {
+                            "commentLikeID": 186,
+                            "commentID": 229,
+                            "likedByUserName": "merry",
+                            "likedByImage": "frodo.jpg",
+                            "likedByFirstName": "Merry",
+                            "likedByLastName": "BrandyBuck",
+                            "commentCreated": "2025-05-11T23:17:13.000Z"
+                        },
+                        {
+                            "commentLikeID": 187,
+                            "commentID": 229,
+                            "likedByUserName": "pippin",
+                            "likedByImage": "frodo.jpg",
+                            "likedByFirstName": "Pippin",
+                            "likedByLastName": "BrandyBuck",
+                            "commentCreated": "2025-05-11T23:19:57.000Z"
+                        },
+                        {
+                            "commentLikeID": 249,
+                            "commentID": 229,
+                            "likedByUserName": "davey",
+                            "likedByImage": "frodo.jpg",
+                            "likedByFirstName": "david",
+                            "likedByLastName": "v2",
+                            "commentCreated": "2025-07-09T23:43:57.000Z"
+                        }
+                    ],
+                    "created": "2025-05-06T23:23:02.000Z",
+                    "friendshipStatus": 5,
+                    "commentLikeCount": 3,
+                    "groupID": 72,
+                    "commentLikedByCurrentUser": true
+                },
+                {
+                    "commentID": 234,
+                    "postID": 722,
+                    "commentCaption": "He loved mountains.",
+                    "commentFrom": "davey",
+                    "commentType": "post",
+                    "userName": "davey",
+                    "imageName": "frodo.jpg",
+                    "firstName": "david",
+                    "lastName": "v2",
+                    "commentDate": "05/17/2025",
+                    "commentTime": "4:12 pm",
+                    "timeMessage": "2 months ago",
+                    "commentLikes": [
+                        {
+                            "commentLikeID": 248,
+                            "commentID": 234,
+                            "likedByUserName": "davey",
+                            "likedByImage": "frodo.jpg",
+                            "likedByFirstName": "david",
+                            "likedByLastName": "v2",
+                            "commentCreated": "2025-06-08T23:43:31.000Z"
+                        }
+                    ],
+                    "created": "2025-05-17T23:12:54.000Z",
+                    "friendshipStatus": 5,
+                    "commentLikeCount": 1,
+                    "groupID": 72,
+                    "commentLikedByCurrentUser": true
+                }
+            ],
+            "postLikesArray": [
+                {
+                    "postLikeID": 220,
+                    "postID": 722,
+                    "likedByUserName": "frodo",
+                    "likedByImage": "frodo.jpg",
+                    "likedByFirstName": "Mr Frodo",
+                    "likedByLastName": "Baggins",
+                    "timestamp": "2025-04-08T23:36:10.000Z",
+                    "friendshipStatus": 2
+                },
+                {
+                    "postLikeID": 222,
+                    "postID": 722,
+                    "likedByUserName": "sam",
+                    "likedByImage": "frodo.jpg",
+                    "likedByFirstName": "Sam",
+                    "likedByLastName": "Gamgee",
+                    "timestamp": "2025-04-08T23:36:17.000Z",
+                    "friendshipStatus": 1
+                },
+                {
+                    "postLikeID": 369,
+                    "postID": 722,
+                    "likedByUserName": "davey",
+                    "likedByImage": "frodo.jpg",
+                    "likedByFirstName": "david",
+                    "likedByLastName": "v2",
+                    "timestamp": "2025-07-09T23:58:26.000Z",
+                    "friendshipStatus": 5
+                }
+            ],
+            "isLikedByCurrentUser": true,
+            "simpleLikesArray": [
+                "frodo",
+                "sam",
+                "davey"
+            ]
+        }
+    ],
+    "message": "Need to add error and stuff in this always works!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}

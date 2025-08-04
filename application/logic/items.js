@@ -15,7 +15,7 @@ const likeFunctions = require('../functions/likeFunctions');
 const cloudFunctions = require('../functions/cloudFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
-const bucketName = process.env.AWS_POSTS_BUCKET_NAME
+const bucketName = process.env.AWS_BUCKET_NAME
 
 //Upload imports
 const multerS3 = require('multer-s3');

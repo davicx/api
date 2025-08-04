@@ -14,7 +14,6 @@ const s3 = new S3({
   })
 
 
-
 //Upload Post to S3
 function uploadPost(file) {
   const fileStream = fs.createReadStream(file.path)

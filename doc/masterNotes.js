@@ -1,14 +1,28 @@
+//FILES
+/*
+file_name:
+file_name_server:
+file_url:
+cloud_key:
+cloud_bucket: 
+storage_type:
+
+file_name: The original file name the user uploaded the file with 
+file_name_server: The original file name and time stamp and added characters to make unique 
+file_url: The actual URL you can get the file if it is local (right now local or from AWS)
+cloud_key: Any other folders inside bucket plus fileNameServer (bucket\folder\fileNameServer)
+cloud_bucket: The bucket name on AWS but locally this is the folder it is stored in
+storage_type: local or aws
+
+
+*/
+
+
 //NEED TO UPDATE PROFILE TO HANDLE AWS
 //UPLOADS
 //LEARNING
 
 /*
-file_name: The original file name the user uploaded the file with 
-file_name_server: The original file name and time stamp and added characters to make unique 
-file_url: The actual URL you can get the file (right now local or from AWS)
-cloud_key: Any other folders inside bucket plus fileNameServer (bucket\folder\fileNameServer)
-cloud_bucket: The bucket name on AWS but locally this is the folder it is stored in
-storage_type: local or aws
 
 AWS
 "fileName": "background_1.jpg",

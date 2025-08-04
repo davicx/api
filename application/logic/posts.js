@@ -15,7 +15,9 @@ const likeFunctions = require('../functions/likeFunctions');
 const cloudFunctions = require('../functions/cloudFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
-const bucketName = process.env.AWS_POSTS_BUCKET_NAME
+
+const bucketName = process.env.AWS_BUCKET_NAME
+const postsFolder = process.env.POSTS
 
 //Upload imports
 const multerS3 = require('multer-s3');
@@ -79,6 +81,7 @@ async function postText(req, res) {
 	//STEP 1: Make a new post
 	console.log("STEP 1: Make a new post")
 	var newPostOutcome = await Post.createPostText(req);
+
 
 	if(newPostOutcome.outcome == 200) {
 		postOutcome.data = newPostOutcome.newPost;
@@ -173,8 +176,9 @@ async function postPhotoLocal(req, res) {
 	uploadFile.fileNameServer = file.filename; //file_name_server
 	
 	//Settings: Local 
-	uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)
-	uploadFile.cloudKey = "no_cloud_key"; //cloud_key
+	//localhost + bucket + folder + fileName
+	uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename; 
+	uploadFile.cloudKey = postsFolder + "/" + file.filename;  //cloud_key
 	uploadFile.bucket = bucketName; //cloud_bucket	
 	uploadFile.storageType = "local"; //storage_type
 	
@@ -185,7 +189,6 @@ async function postPhotoLocal(req, res) {
 	//uploadFile.storageType = "aws"; //storage_type		
 
 
-	//SORT BELOW
 	//POST
 	let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 
@@ -655,24 +658,30 @@ async function postItemLocalAWS(req, res) {
 }
 */
 
-
-
-
 //FUNCTIONS B: All Functions Related to getting Posts
 //Function B1: Get all Group Posts
-//http://localhost:3003/posts/group/70
+//http://localhost:3003/posts/group/72
 async function getAllGroupPosts(req, res) {
 	const connection = db.getConnection(); 
     const groupID = req.params.group_id;
 	const currentUser = req.currentUser
 	
-	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID
+	var headerMessage = "HEADER: Get all Group Posts for Group: " + groupID + "Non Pagination"
 	Functions.addHeader(headerMessage)
 	
 
 	//STEP 1: Get All Posts
 	var postsOutcome = await Post.getGroupPostsAll(groupID)
 	var postsRaw = postsOutcome.posts;
+
+	//TO DO!!! HANDLE NO GROUP AND NO POSTS
+
+	if (Array.isArray(postsRaw) && postsRaw.length > 0) {
+		console.log("POSTS YO!!")
+	} else {
+		console.log("NONE!!!")
+	}
+	
 
 	//STEP 2: Get All Comments for these Posts 
 	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw, groupID)
@@ -710,9 +719,9 @@ async function getGroupPosts(req, res) {
 	
 	//STEP 1: Get All Posts
 	var postsCountOutcome = await PostFunctions.getGroupPostCount(groupID)
-	//console.log(postsCountOutcome)
+	
 	var postsOutcome = await Post.getGroupPosts(groupID, currentPage, postsCountOutcome.groupPostCount)
-	//console.log(postsOutcome)
+ 
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts 
