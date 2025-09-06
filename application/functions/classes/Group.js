@@ -408,13 +408,14 @@ class Group {
     static async getGroupInformation(groupID) {
         console.log("CLASS GROUP: getting Group Information for " + groupID);
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_id, group_image, group_name, group_image FROM shareshare.groups WHERE group_id = ?";
+        const queryString = "SELECT group_id, group_image, group_name, created_by FROM shareshare.groups WHERE group_id = ?";
         
         var groupInfoResponse = {
             status: 500,
             groupID: 0,
             groupImage: "",
             groupName: "",
+            createdBy: "",
             errors: [],
         };
     

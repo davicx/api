@@ -6,33 +6,42 @@
 #########
 #SELECT * FROM posts;
 #SELECT * FROM comments;
-SELECT * FROM shareshare.groups;
-#SELECT * FROM notifications 
+#SELECT * FROM shareshare.groups;
+#SELECT * FROM group_users
+SELECT * FROM notifications 
 #SELECT * FROM pending_requests 
 #SELECT * FROM user_profile;
 
 
-#DELETE FROM posts WHERE post_id > 740;
+#DELETE FROM posts WHERE post_id = 792;
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
+#DELETE FROM notifications WHERE notification_id > 4140;
 
-#UPDATE posts SET post_caption = "The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 791;
+
+#UPDATE posts SET post_caption = "Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 790;
 #UPDATE comments SET post_id = 791 WHERE comment_id = 237;
 
-UPDATE shareshare.groups SET cloud_key = "groups/groupImage-1754264482637-64076401-IMG_3737.JPG" WHERE group_id = 72;
+#UPDATE shareshare.groups SET cloud_key = "groups/groupImage-1754264482637-64076401-IMG_3737.JPG" WHERE group_id = 72;
+#UPDATE shareshare.groups SET group_name = "Games Sam Wants" WHERE group_id = 722;
  
  
-
-
 #########
 #GROUPS#
 #########
+#SELECT * FROM shareshare.groups
+#SELECT * FROM shareshare.groups WHERE group_id = 723
+#SELECT * FROM posts WHERE group_id = 723
+#SELECT * FROM posts  
 #UPDATE shareshare.groups SET fileURL = "",group_name = 'Hiking in the Shire' WHERE group_id = 72; 
+#DELETE FROM shareshare.groups WHERE group_id = 721;
+
 
 #EXAMPLE: file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type
 #ALTER TABLE shareshare.groups CHANGE COLUMN cloudBucket cloud_bucket VARCHAR(255) AFTER cloud_key;
 #SELECT * FROM shareshare.groups
-#SELECT * FROM group_users
+#UPDATE group_users SET active_member = 1 WHERE primary_id > 1000; 
+#SELECT * FROM group_users;
 
 #UPDATE shareshare.groups SET storage_type = "local" WHERE group_id > 2; 
 
@@ -59,11 +68,26 @@ storage_type added this
 #DELETE FROM group_users WHERE primary_id > 2074;
 #UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 692;
 
-#SELECT * FROM friends;
+
+#########
+#POSTS#
+#########
+#SELECT * FROM posts;
+#UPDATE posts SET post_to = 70 WHERE post_id > 729
+#UPDATE posts SET post_caption = "Lets go on a hike!!!" WHERE post_id > 731
+
+
+#DELETE FROM posts WHERE post_id = 748;
+#DELETE FROM notifications WHERE notification_id > 0
+
+
+#ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
+#ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
 
 
 
-#SELECT * FROM items;
+
+
 
 #SELECT * FROM user_profile;
 #UPDATE comments SET comment = "The hemlock-umbels tall and fair, And in the glade a light was seen Of stars in shadow shimmering. The hemlock-umbels tall and fair, And in the glade a light was seen Of stars in shadow shimmering.user_profile" WHERE comment_id = 237;
@@ -130,26 +154,7 @@ storage_type added this
 #DELETE FROM following WHERE follow_id > 1;
 
 
-#########
-#POSTS#
-#########
-#SELECT * FROM posts;
-#UPDATE posts SET post_to = 70 WHERE post_id > 729
-#UPDATE posts SET post_caption = "Lets go on a hike!!!" WHERE post_id > 731
 
-
-#DELETE FROM posts WHERE post_id = 748;
-#DELETE FROM notifications WHERE notification_id > 0
-
-
-#ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
-#ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
-
-
-
-
-
-#SELECT * FROM shareshare.groups;
 
 #########
 #USER PROFILE#

@@ -17,6 +17,8 @@ const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const bucketName = process.env.AWS_BUCKET_NAME
 
+const postsFolder = process.env.POSTS
+
 //Upload imports
 const multerS3 = require('multer-s3');
 const S3 = require('aws-sdk/clients/s3')
@@ -27,7 +29,7 @@ var mime = require('mime-types')
 /*
 FUNCTIONS A: All Functions Related to New Item
 	1) Function A1: Post Item
-
+	2) Function A2: Purchase Item
  
 FUNCTIONS B: All Functions Related to getting Items
 	1) Function B1: Get all Group Items
@@ -36,7 +38,7 @@ FUNCTIONS B: All Functions Related to getting Items
 
 */
 
-//TO DO: Make output the same Add a template
+
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Item
 async function postItemLocal(req, res) {
@@ -86,11 +88,11 @@ async function postItemLocal(req, res) {
 			uploadFile.fileNameServer = file.filename; //file_name_server
 			
 			//Settings: Local 
-			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)
-			uploadFile.cloudKey = "no_cloud_key"; //cloud_key
+			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)			
+			uploadFile.cloudKey = postsFolder + "/" + file.filename;  //cloud_key
 			uploadFile.bucket = bucketName; //cloud_bucket	
 			uploadFile.storageType = "local"; //storage_type
-			
+
 			//Settings: Cloud
 			//uploadFile.fileURL = result.Location; // file_url
 			//uploadFile.cloudKey = result.Key; //cloud_key 
@@ -280,6 +282,8 @@ async function postItemLocalAWS(req, res) {
 
   })
 }
+
+
 
 
 //FUNCTIONS B: All Functions Related to getting Items
