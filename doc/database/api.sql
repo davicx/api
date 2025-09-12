@@ -4,19 +4,25 @@
 #########
 #ALL#
 #########
+
 #SELECT * FROM posts;
+#SELECT * FROM items;
 #SELECT * FROM comments;
 #SELECT * FROM shareshare.groups;
 #SELECT * FROM group_users
-SELECT * FROM notifications 
+#SELECT * FROM notifications;
 #SELECT * FROM pending_requests 
 #SELECT * FROM user_profile;
+
+
+#UPDATE shareshare.groups SET group_deleted = 1 WHERE group_id < 100;
+#UPDATE items SET purchased_by = "sam" WHERE item_id >0;
 
 
 #DELETE FROM posts WHERE post_id = 792;
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
-#DELETE FROM notifications WHERE notification_id > 4140;
+#DELETE FROM notifications WHERE notification_id < 4134;
 
 
 #UPDATE posts SET post_caption = "Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 790;
@@ -229,5 +235,10 @@ CREATE TABLE `items` (
   UNIQUE (`post_id`),
   FOREIGN KEY (`post_id`) REFERENCES `posts`(`post_id`) ON DELETE CASCADE
 );
+*/
+
+/*
+post_id, master_site, post_type, post_status, group_id, list_id, post_from, post_to, post_caption, file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type, video_url, video_code, updated, created
+item_id, post_id, item_name, item_price, item_description, item_category, item_link, purchased, purchased_by, store, multiple_stores
 */
 

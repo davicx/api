@@ -255,7 +255,7 @@ class Group {
     //Method A5:: Get All Groups User is In 
     static async getGroupsUserIsIn(userName) {
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 
+        const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1 AND group_deleted = 0"; 
 
         var userGroupsResponse = {
             status: 500,
