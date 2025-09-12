@@ -16,7 +16,26 @@ app.use(
   })
 );
 
+app.listen(3003, () => {
+  console.log("Server is up and listening on 3003...")
+})
+
+app.get("/", (req, res) => {
+    console.log("hiya!");
+    res.send("hiya!");
+    res.end()
+})
+
+
+app.get("/hello", (req, res) => {
+  console.log("hiya!");
+  res.send({hello: "Hiya davey!"});
+  res.end()
+})
+
+
 //Application 
+/*
 const login = require('./application/routes/loginRoutes.js'); 
 const group = require('./application/routes/groupRoute.js'); 
 const posts = require('./application/routes/postRoutes.js'); 
@@ -46,16 +65,8 @@ app.use(simple);
 app.use(items);
 
 //Server Login 
-app.listen(3003, () => {
-  console.log("Server is up and listening on 3003...")
-})
 
-app.get("/", (req, res) => {
-    console.log("hiya!");
-    res.send("hiya!");
-    res.end()
-})
-
+*/
 
 
 //APPENDIX
