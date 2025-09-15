@@ -23,6 +23,7 @@ const fs = require('fs')
 const multer = require('multer')
 var mime = require('mime-types')
 
+//NEED: Group Type kite, list, etc
 
 /*
 FUNCTIONS A: All Functions Related to Groups
@@ -378,6 +379,7 @@ async function getGroups(req, res) {
 			groupID: "",
 			groupName: "",
 			groupImage: "",
+			createdBy: "",
 			activeGroupMembers: [""],
 			pendingGroupMembers: [""],
 		}
@@ -396,6 +398,7 @@ async function getGroups(req, res) {
 		currentGroup.groupID = groupID
 		currentGroup.groupName = currentGroupInformation.groupName
 		currentGroup.groupImage = currentGroupInformation.groupImage
+		currentGroup.createdBy = currentGroupInformation.groupCreatedBy
 		currentGroup.activeGroupMembers = currentGroupUsers.groupUsers
 		currentGroup.pendingGroupMembers = currentGroupUsers.pendingGroupUsers
 

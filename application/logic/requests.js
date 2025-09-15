@@ -25,7 +25,7 @@ FUNCTIONS B: All Functions Related to Requests Actions
 
 //Function A1: Get Single Request (Check if it exists)
 async function getUserRequests(req, res) {
-    //res.json({getUserRequests: "getUserRequests"})
+    res.json({getUserRequests: "getUserRequests"})
 
 }
 

@@ -1,6 +1,7 @@
 const db = require('../functions/conn');
 const Group = require('../functions/classes/Group');
 const Post = require('../functions/classes/Post');
+const Item = require('../functions/classes/Item');
 const Notification = require('../functions/classes/Notification')
 const Comment = require('../functions/classes/Comment')
 const Requests = require('../functions/classes/Requests');
@@ -17,6 +18,8 @@ const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const bucketName = process.env.AWS_BUCKET_NAME
 
+const postsFolder = process.env.POSTS
+
 //Upload imports
 const multerS3 = require('multer-s3');
 const S3 = require('aws-sdk/clients/s3')
@@ -27,7 +30,7 @@ var mime = require('mime-types')
 /*
 FUNCTIONS A: All Functions Related to New Item
 	1) Function A1: Post Item
-
+	2) Function A2: Purchase Item
  
 FUNCTIONS B: All Functions Related to getting Items
 	1) Function B1: Get all Group Items
@@ -36,7 +39,7 @@ FUNCTIONS B: All Functions Related to getting Items
 
 */
 
-//TO DO: Make output the same Add a template
+
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Item
 async function postItemLocal(req, res) {
@@ -86,11 +89,11 @@ async function postItemLocal(req, res) {
 			uploadFile.fileNameServer = file.filename; //file_name_server
 			
 			//Settings: Local 
-			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)
-			uploadFile.cloudKey = "no_cloud_key"; //cloud_key
+			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)			
+			uploadFile.cloudKey = postsFolder + "/" + file.filename;  //cloud_key
 			uploadFile.bucket = bucketName; //cloud_bucket	
 			uploadFile.storageType = "local"; //storage_type
-			
+
 			//Settings: Cloud
 			//uploadFile.fileURL = result.Location; // file_url
 			//uploadFile.cloudKey = result.Key; //cloud_key 
@@ -282,6 +285,8 @@ async function postItemLocalAWS(req, res) {
 }
 
 
+
+
 //FUNCTIONS B: All Functions Related to getting Items
 //Function B1: Get all Group Items
 //http://localhost:3003/items/group/70
@@ -324,5 +329,147 @@ async function getAllGroupItems(req, res) {
 }
 
 
-module.exports = { postItemLocal, postItemLocalAWS, getAllGroupItems };
+//FUNCTIONS C: All Functions Related to Item Actions
+//Function C1: Purchase an Item
+async function purchaseItem(req, res) {
+	const connection = db.getConnection(); 
+	var currentUser = req.body.userName
+	var postID = req.body.postID
+	var itemID = req.body.itemID
+
+	var purchaseItemResponse = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	var purchasedItem = {}
+
+	var headerMessage = "HEADER: Item Purchase: " + itemID + " by " + currentUser
+	Functions.addHeader(headerMessage)
+
+	//STEP 1: Check User Exists
+	var userExists = await profileFunctions.getSimpleUserProfile(currentUser);
+
+	if(userExists.userFound == true) {
+
+		//STEP 2: Check if Item is already purchased
+		var itemPurchaseStatus = await Item.checkItemPurchaseStatus(itemID);
+
+		//STEP 3: If item is not already purchased then purchase the Item
+		if(itemPurchaseStatus.purchased == 0) {
+			var purchaseItemOutcome = await Item.purchaseItem(itemID, currentUser, postID) 
+			
+			//STEP 4: Get updated Item Information 
+			if(purchaseItemOutcome.success == true) {
+				purchasedItem = {
+					itemID: itemID,
+					postID: postID,
+					purchased: 1,
+					purchasedBy: currentUser,
+					message: "Item purchased successfully"
+				}
+				
+				purchaseItemResponse.message = "You purchased this item!";
+				purchaseItemResponse.success = true;
+				purchaseItemResponse.data = purchasedItem;
+
+			} else {
+				purchaseItemResponse.message = "Failed to purchase item";
+				purchaseItemResponse.success = false;
+			}
+
+		//Item is already purchased
+		} else {
+			purchasedItem = {
+				itemID: itemID,
+				postID: postID,
+				purchased: 1,
+				purchasedBy: itemPurchaseStatus.purchasedBy,
+				message: "Item already purchased"
+			}
+			purchaseItemResponse.data = purchasedItem;
+			purchaseItemResponse.message = "This item is already purchased by " + itemPurchaseStatus.purchasedBy;
+		}
+
+	} else {
+		purchasedItem = {
+			itemID: 0,
+			postID: 0,
+			purchased: 0,
+			purchasedBy: "",
+			message: "User not found"
+		}
+		purchaseItemResponse.data = purchasedItem;
+		purchaseItemResponse.message = "USER NOT FOUND: " + currentUser
+		console.log("USER NOT FOUND: " + currentUser)
+	}
+
+	console.log("Item purchase attempt at " + timeFunctions.getCurrentTime().postTime);
+	console.log(purchaseItemResponse)
+	Functions.addFooter()
+
+	res.json(purchaseItemResponse)
+}
+
+//Function C2: Remove Purchase from an Item 
+async function removePurchase(req, res) {
+	var currentUser = req.body.userName
+	var postID = req.body.postID
+	var itemID = req.body.itemID
+
+	var removePurchaseResponse = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 200,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+	var unpurchasedItem = {
+		itemID: itemID,
+		postID: postID,
+		purchased: 0,
+		purchasedBy: "",
+		message: "Purchase removed"
+	}
+
+	var headerMessage = "HEADER: Remove Item Purchase: " + itemID + " by " + currentUser
+	Functions.addHeader(headerMessage)
+
+	//STEP 1: Check if Item is currently purchased
+	var currentPurchaseStatus = await Item.checkItemPurchaseStatus(itemID);
+
+	//STEP 2: Remove Purchase if it is currently purchased
+	if(currentPurchaseStatus.purchased == 1) {
+
+		var removePurchaseOutcome = await Item.removePurchase(itemID, currentUser)
+		
+		if(removePurchaseOutcome.success == true) {
+			removePurchaseResponse.message = "The item purchase was removed"
+			removePurchaseResponse.success = true 
+			removePurchaseResponse.data = unpurchasedItem
+		} else {
+			removePurchaseResponse.message = "Failed to remove item purchase"
+			removePurchaseResponse.success = false
+			removePurchaseResponse.data = unpurchasedItem
+		}
+
+	} else {
+		removePurchaseResponse.data = unpurchasedItem
+		removePurchaseResponse.message = "The item is not currently purchased";
+	}
+	
+	console.log("Item purchase removal at " + timeFunctions.getCurrentTime().postTime);
+	console.log(removePurchaseResponse)
+	Functions.addFooter()
+
+	res.json(removePurchaseResponse)
+}
+
+module.exports = { postItemLocal, postItemLocalAWS, getAllGroupItems, purchaseItem, removePurchase };
 

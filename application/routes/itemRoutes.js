@@ -46,5 +46,15 @@ itemRouter.get("/items/group/:group_id", middlewares.verifyUser, (req, res) => {
 	items.getAllGroupItems(req, res);
 })
 
+//FUNCTIONS C: All Routes Related to Item Actions
+//Function C1: Purchase an Item
+itemRouter.post('/items/purchase/add', function(req, res) {
+    items.purchaseItem(req, res);
+})
+
+//Function C2: Remove Purchase from an Item 
+itemRouter.post('/items/purchase/remove', function(req, res) {
+	items.removePurchase(req, res);
+})
 
 module.exports = itemRouter; 
