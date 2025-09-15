@@ -7,12 +7,17 @@
 
 #SELECT * FROM posts;
 #SELECT * FROM items;
+#SELECT * FROM friends;
+SELECT * FROM pending_requests;
 #SELECT * FROM comments;
 #SELECT * FROM shareshare.groups;
 #SELECT * FROM group_users
 #SELECT * FROM notifications;
 #SELECT * FROM pending_requests 
 #SELECT * FROM user_profile;
+
+#DELETE FROM friends WHERE post_id = 792;
+#DELETE FROM pending_requests WHERE request_id > 0;
 
 
 #UPDATE shareshare.groups SET group_deleted = 1 WHERE group_id < 100;
