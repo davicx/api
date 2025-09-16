@@ -18,7 +18,7 @@ app.use(
 );
 
 app.listen(PORT, () => {
-  console.log("Server is up and listening on 3003...")
+  console.log("Server is up and listening on 5000...")
 })
 
 /*
