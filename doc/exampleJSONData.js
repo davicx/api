@@ -8,6 +8,11 @@
 //TYPE 4: Not Friends - "not_friends"
 //TYPE 5: This is you - "you"
 
+    "friendshipKey": "friends",
+    "requestPending": 0,
+    "requestSentBy": "davey",
+    "alsoYourFriend": 1
+
 "data": {
     "userName": "davey",
     "userID": 1,

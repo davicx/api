@@ -74,9 +74,9 @@ async function getUserProfile(req, res) {
     //STEP 1: Get User Profile Information
     let getUserProfileOutcome = await Profile.getUserProfile(userName);
 
-    console.log("getUserProfileOutcome")
-    console.log(getUserProfileOutcome)
-    console.log("getUserProfileOutcome")
+    //console.log("getUserProfileOutcome")
+    //console.log(getUserProfileOutcome)
+    //console.log("getUserProfileOutcome")
 
     var userFullProfile = {
         userName: getUserProfileOutcome.userProfile.userName,
@@ -89,23 +89,22 @@ async function getUserProfile(req, res) {
 
     //STEP 2: Fill in Friendship Information 
     var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, userName);
-	console.log("STEP 2: Friendship Status")
-	console.log(friendShipStatus)
-
-    var userProfileFriendshipInformation = await friendFunctions.createFriendshipInformationUserProfile(currentUser, currentFriendship, friendshipStatus, userName);
+	//console.log("STEP 2: Friendship Status")
+	//console.log(friendShipStatus)
+    var userProfileFriendshipInformation = await friendFunctions.createFriendshipInformationUserProfile(currentUser, friendShipStatus.currentFriendship, friendShipStatus.friendshipStatus, userName);
 	
-    var userProfileFriendshipInformation = await friendFunctions.createFriendshipInformationUserProfile(currentUser, currentFriendship, friendshipStatus, userName);
-    console.log()
+    userFullProfile.friendshipKey = userProfileFriendshipInformation.friendshipKey
+    userFullProfile.requestPending = userProfileFriendshipInformation.requestPending
+    userFullProfile.requestSentBy = userProfileFriendshipInformation.requestSentBy
+    userFullProfile.alsoYourFriend = userProfileFriendshipInformation.alsoYourFriend
+
     /*
-    { currentFriendship: 'you', friendshipStatus: 5, errors: [] }
-
-
     "friendshipKey": "friends",
     "requestPending": 0,
     "requestSentBy": "davey",
     "alsoYourFriend": 1
     */
-
+    //console.log(userProfileFriendshipInformation)
 
     if(getUserProfileOutcome.success == true) {
         userProfileOutcome.message = "We got the user profile for " + userName;
