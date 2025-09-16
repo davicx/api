@@ -2,6 +2,12 @@
 
 //NEW
 /*
+//TYPE 1: You are Currently Friends - "friends"
+//TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+//TYPE 3: Friendship Request Pending (them) - "request_pending"
+//TYPE 4: Not Friends - "not_friends"
+//TYPE 5: This is you - "you"
+
 "data": {
     "userName": "davey",
     "userID": 1,
@@ -9,9 +15,9 @@
     "firstName": "David",
     "lastName": "Vasquez",
     "biography": "They are (or were) a little people, about half our height, and smaller than the bearded dwarves",
+    "friendshipKey": "friends",
     "requestPending": 0,
     "requestSentBy": "davey",
-    "friendshipKey": "friends",
     "alsoYourFriend": 1
 },
 */

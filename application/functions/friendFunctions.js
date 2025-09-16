@@ -297,11 +297,11 @@ async function checkFriendshipStatus(currentUser, userFriend) {
     4: Not Friends
     5: This is you
     */ 
-    var friendKey = currentUser + "" + userFriend;
-    var friendKeyTwo = userFriend + "" + currentUser;
+    var friendKey = currentUser + "_" + userFriend;
+    var friendKeyTwo = userFriend + "_" + currentUser;
    
-    //var friendKey = "vasquezdmatt";
-    //var friendKeyTwo = "vasquezdmat";
+    //var friendKey = "vasquezd_matt";
+    //var friendKeyTwo = "vasquezd_matt";
     
     const connection = db.getConnection();
 
@@ -359,6 +359,60 @@ async function checkFriendshipStatus(currentUser, userFriend) {
         } 
     })
     
+}
+
+//Function A7: Create Friendship Information for User Profile
+async function createFriendshipInformationUserProfile(currentUser, currentFriendship, friendshipStatus, userName) {
+    //TYPE 1: You are Currently Friends - "friends"
+    //TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+    //TYPE 3: Friendship Request Pending (them) - "request_pending"
+    //TYPE 4: Not Friends - "not_friends"
+    //TYPE 5: This is you - "you"
+
+    var userProfileFriendship = {
+        friendshipKey: "",
+        requestPending: "",
+        requestSentBy: "",
+        alsoYourFriend: 0,
+    };
+
+    //Test Case 1: Currently Friends
+    if (friendshipStatus == 1) {
+        userProfileFriendship.friendshipKey = "friends";
+        userProfileFriendship.requestPending = 0;
+        userProfileFriendship.requestSentBy = currentUser;
+        userProfileFriendship.alsoYourFriend = 1;
+    }
+    //Test Case 2: Friendship Invite Pending (you sent the invite)
+    else if (friendshipStatus == 2) {
+        userProfileFriendship.friendshipKey = "invite_pending";
+        userProfileFriendship.requestPending = 1;
+        userProfileFriendship.requestSentBy = currentUser;
+        userProfileFriendship.alsoYourFriend = 0;
+    }
+    //Test Case 3: Friendship Request Pending (they sent the request)
+    else if (friendshipStatus == 3) {
+        userProfileFriendship.friendshipKey = "request_pending";
+        userProfileFriendship.requestPending = 1;
+        userProfileFriendship.requestSentBy = userName;
+        userProfileFriendship.alsoYourFriend = 0;
+    }
+    //Test Case 4: Not Friends
+    else if (friendshipStatus == 4) {
+        userProfileFriendship.friendshipKey = "not_friends";
+        userProfileFriendship.requestPending = 0;
+        userProfileFriendship.requestSentBy = "";
+        userProfileFriendship.alsoYourFriend = 0;
+    }
+    //Test Case 5: This is you
+    else if (friendshipStatus == 5) {
+        userProfileFriendship.friendshipKey = "you";
+        userProfileFriendship.requestPending = 0;
+        userProfileFriendship.requestSentBy = "";
+        userProfileFriendship.alsoYourFriend = 0;
+    }
+
+    return userProfileFriendship;
 }
 
 //FUNCTIONS B: All Functions Related to Friends  
@@ -435,6 +489,7 @@ async function getSingleInvite(requestSentBy, requestSentTo) {
   
 }
 
+/*
 //Function B3: Get Friendship Status
 function getFriendStatus(currentUser, friendName, yourFriendsArray) {
     if(!currentUser.toLowerCase().localeCompare(friendName.toLowerCase())) {
@@ -449,7 +504,7 @@ function getFriendStatus(currentUser, friendName, yourFriendsArray) {
 	}
 
 }
-
+*/
 //Function B4: Get Friendship Key
 function getFriendshipKey(currentUser, requestSentBy, requestPending, friendName) {
     var friendKey = "not_friends"
@@ -487,7 +542,6 @@ function getFriendshipKey(currentUser, requestSentBy, requestPending, friendName
 
 
 }
-
 
 //Function B5: Remove a Friend 
 async function removeFriend(currentUser, friendName) {
@@ -574,7 +628,7 @@ async function checkFollowingStatus(currentUser, followName) {
 }
 
 
-module.exports = { getAllUsers, getActiveFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites, checkFriendshipStatus, compareUsersWithYourFriends, getSingleInvite, getFriendStatus,removeFriend, declineFriendRequest, checkFollowingStatus };
+module.exports = { getAllUsers, getActiveFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites, checkFriendshipStatus, createFriendshipInformationUserProfile, compareUsersWithYourFriends, getSingleInvite,removeFriend, declineFriendRequest, checkFollowingStatus };
 
 
 //APPENDIX

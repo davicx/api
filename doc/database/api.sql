@@ -7,8 +7,8 @@
 
 #SELECT * FROM posts;
 #SELECT * FROM items;
-#SELECT * FROM friends;
-SELECT * FROM pending_requests;
+SELECT * FROM friends;
+#SELECT * FROM pending_requests;
 #SELECT * FROM comments;
 #SELECT * FROM shareshare.groups;
 #SELECT * FROM group_users

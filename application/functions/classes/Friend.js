@@ -23,7 +23,7 @@ class Friend {
     //Method A1: Invite a new Friend
     static async inviteFriend(sentBy, sentTo, currentUser, currentUserID, friendName, friendUserID) {
         const requestPending = 1;
-        const friendKey = currentUser + "" + friendName;
+        const friendKey = currentUser + "_" + friendName;
         console.log("Add a Friend! " + currentUser, currentUserID, friendName, friendUserID)
 
         const connection = db.getConnection(); 
