@@ -4,7 +4,8 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 var cors = require('cors')
 const app = express()
-const PORT = process.env.PORT || 3003;
+//const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cookieParser())
@@ -16,9 +17,15 @@ app.use(
   })
 );
 
+app.listen(PORT, () => {
+  console.log("Server is up and listening on 3003...")
+})
+
+/*
 app.listen(3003, () => {
   console.log("Server is up and listening on 3003...")
 })
+*/
 
 app.get("/", (req, res) => {
     console.log("hiya!");
