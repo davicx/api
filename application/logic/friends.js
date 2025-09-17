@@ -58,6 +58,9 @@ async function getAllUsers(req, res) {
 //Function A2: Get Your Friends (Active only)
 async function getActiveFriends(req, res) {
     const userName = req.params.user_name;
+	var currentUser = req.currentUser 
+	var headerMessage = "Getting Active Friends for " + userName + " current user is " + currentUser
+	Functions.addHeader(headerMessage)
 
 	var currentUserfriendsOutcome = {
 		data: {},
@@ -71,6 +74,28 @@ async function getActiveFriends(req, res) {
 	//var friendsOutcome = await friendFunctions.getUserFriends(userName)
 	var friendsOutcome = await friendFunctions.getActiveFriends(userName)
  
+	
+	//STEP 2: Fill in Friendship Information 
+	var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, userName);
+	
+	console.log("STEP 2: Friendship Status")
+	//console.log(friendShipStatus)
+	var userProfileFriendshipInformation = await friendFunctions.createFriendshipInformationUserProfile(currentUser, friendShipStatus.currentFriendship, friendShipStatus.friendshipStatus, userName);
+	
+	//userFullProfile.friendshipKey = userProfileFriendshipInformation.friendshipKey
+	//userFullProfile.requestPending = userProfileFriendshipInformation.requestPending
+	//userFullProfile.requestSentBy = userProfileFriendshipInformation.requestSentBy
+	//userFullProfile.alsoYourFriend = userProfileFriendshipInformation.alsoYourFriend
+	console.log(userProfileFriendshipInformation)
+
+	/*
+	"friendshipKey": "friends",
+	"requestPending": 0,
+	"requestSentBy": "davey",
+	"alsoYourFriend": 1
+	
+
+	*/
 	currentUserfriendsOutcome.data = friendsOutcome.friendsArray;
 	currentUserfriendsOutcome.message = "We got your friends!"
 	currentUserfriendsOutcome.success = true
