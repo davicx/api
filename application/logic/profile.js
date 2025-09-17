@@ -5,8 +5,8 @@ const Profile = require('../functions/classes/Profile');
 
 const fileFunctions = require('../functions/fileFunctions');
 const userFunctions = require('../functions/userFunctions');
-const profileFunctions = require('../functions/profileFunctions');
-
+const profileFunctions = require('../functions/profileFunctions')
+const friendFunctions = require('../functions/friendFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const cloudFunctions = require('../functions/cloudFunctions');
@@ -32,14 +32,34 @@ FUNCTIONS A: All Functions Related to User Profile
 	3) Function A3: Update User Profile
 */
 
+/*
+//TYPE 1: You are Currently Friends - "friends"
+//TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+//TYPE 3: Friendship Request Pending (them) - "request_pending"
+//TYPE 4: Not Friends - "not_friends"
+//TYPE 5: This is you - "you"
+*/
+/*
+"data": {
+    "userName": "davey",
+    "userID": 1,
+    "userImage": "http://localhost:3003/kite-us-west-two/profile/profileImage-1754177896055-604384021-1597356887small7_p0_master1200.jpg",
+    "firstName": "David",
+    "lastName": "Vasquez",
+    "biography": "They are (or were) a little people, about half our height, and smaller than the bearded dwarves",
+    "friendshipKey": "friends",
+    "requestPending": 0,
+    "requestSentBy": "davey",
+    "alsoYourFriend": 1
+},
+*/
 //Function A1: Get User Profile
 async function getUserProfile(req, res) {
-    const connection = db.getConnection(); 
-    let currentUser = req.params.user_name;
-    console.log(" ")
-    console.log("______________________________________________")
-    console.log("FUNCTION: getUserProfile")
-    console.log("Getting User Profile for " + currentUser)
+    const connection = db.getConnection();
+    var currentUser = req.currentUser 
+    let userName = req.params.user_name;
+    var headerMessage = "Getting User Profile for " + userName + " current user is " + currentUser
+    Functions.addHeader(headerMessage)
 
     var userProfileOutcome = {
 	    data: {},
@@ -48,27 +68,46 @@ async function getUserProfile(req, res) {
 		statusCode: 500,
 		errors: [], 
 		currentUser: currentUser
+
 	}
 
     //STEP 1: Get User Profile Information
-    let getUserProfileOutcome = await Profile.getUserProfile(currentUser);
+    let getUserProfileOutcome = await Profile.getUserProfile(userName);
 
-    console.log("getUserProfileOutcome")
-    console.log(getUserProfileOutcome)
-    console.log("getUserProfileOutcome")
+    //console.log("getUserProfileOutcome")
+    //console.log(getUserProfileOutcome)
+    //console.log("getUserProfileOutcome")
 
-    var userProfile = {
+    var userFullProfile = {
         userName: getUserProfileOutcome.userProfile.userName,
         userID: getUserProfileOutcome.userProfile.userID,
         userImage: "userImageLink",
-        biography: getUserProfileOutcome.userProfile.biography,
         firstName: getUserProfileOutcome.userProfile.firstName,
-        lastName: getUserProfileOutcome.userProfile.lastName
+        lastName: getUserProfileOutcome.userProfile.lastName,
+        biography: getUserProfileOutcome.userProfile.biography,
     };
 
+    //STEP 2: Fill in Friendship Information 
+    var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, userName);
+	//console.log("STEP 2: Friendship Status")
+	//console.log(friendShipStatus)
+    var userProfileFriendshipInformation = await friendFunctions.createFriendshipInformationUserProfile(currentUser, friendShipStatus.currentFriendship, friendShipStatus.friendshipStatus, userName);
+	
+    userFullProfile.friendshipKey = userProfileFriendshipInformation.friendshipKey
+    userFullProfile.requestPending = userProfileFriendshipInformation.requestPending
+    userFullProfile.requestSentBy = userProfileFriendshipInformation.requestSentBy
+    userFullProfile.alsoYourFriend = userProfileFriendshipInformation.alsoYourFriend
+
+    /*
+    "friendshipKey": "friends",
+    "requestPending": 0,
+    "requestSentBy": "davey",
+    "alsoYourFriend": 1
+    */
+    //console.log(userProfileFriendshipInformation)
 
     if(getUserProfileOutcome.success == true) {
-        userProfileOutcome.message = "We got the user profile for " + currentUser;
+        userProfileOutcome.message = "We got the user profile for " + userName;
         userProfileOutcome.success = true;
         userProfileOutcome.statusCode = 200;
 
@@ -79,54 +118,13 @@ async function getUserProfile(req, res) {
 
         let userProfileImage = await fileFunctions.getImageURL(storageLocation, imageURL, cloudKey);
         console.log(userProfileImage)
-        userProfile.userImage = userProfileImage;
+        userFullProfile.userImage = userProfileImage;
        
-        userProfileOutcome.data = userProfile;
+        userProfileOutcome.data = userFullProfile;
     }
 
     res.json(userProfileOutcome)
 
-
-}
-
-//Function A2: Get Simple User Profile
-async function getSimpleUserProfile(req, res) {
-    const connection = db.getConnection(); 
-    let currentUser = req.params.user_name;
-
-    var userProfileOutcome = {
-		message: "", 
-		success: false,
-		statusCode: 500,
-		errors: [], 
-		currentUser: req.params.user_name
-	}
-
-    //STEP 1: Get User Profile Information
-    let getUserProfileOutcome = await Profile.getUserProfile(currentUser);
-    console.log("STEP 1: Getting User Profile Information ")
-
-
-    const userProfile = {
-        userName: getUserProfileOutcome.user_name,
-        userID: getUserProfileOutcome.user_id,
-        userImage: getUserProfileOutcome.image_url,
-        biography: getUserProfileOutcome.biography,
-        firstName: getUserProfileOutcome.first_name,
-        lastName: getUserProfileOutcome.last_name
-    };
-
-    console.log(getUserProfileOutcome)
-
-    if(getUserProfileOutcome.success == true) {
-        userProfileOutcome.data = userProfile;
-        userProfileOutcome.message = "We got the user profile for " + currentUser;
-        userProfileOutcome.success = true;
-        userProfileOutcome.statusCode = 200;
-        userProfileOutcome.data = getUserProfileOutcome.userProfile;
-    }
-
-    res.json(userProfileOutcome)
 
 }
 
@@ -190,7 +188,6 @@ async function updateUserProfile(req, res) {
     res.json(updateUserProfileOutcome)
 
 }
-
 
 //Function A4: Update Full User Profile (Image Optional)
 async function updateFullUserProfileLocal(req, res) {
@@ -426,11 +423,53 @@ async function updateFullUserProfileLocalAWS(req, res) {
 //Function A6: Update Full User Profile AWS
 
 
-module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
+module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
 
 
 //APPENDIX
 
+/*
+//Function A2: Get Simple User Profile
+async function getSimpleUserProfile(req, res) {
+    const connection = db.getConnection(); 
+    let currentUser = req.params.user_name;
+
+    var userProfileOutcome = {
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: req.params.user_name
+	}
+
+    //STEP 1: Get User Profile Information
+    let getUserProfileOutcome = await Profile.getUserProfile(currentUser);
+    console.log("STEP 1: Getting User Profile Information ")
+
+
+    const userProfile = {
+        userName: getUserProfileOutcome.user_name,
+        userID: getUserProfileOutcome.user_id,
+        userImage: getUserProfileOutcome.image_url,
+        biography: getUserProfileOutcome.biography,
+        firstName: getUserProfileOutcome.first_name,
+        lastName: getUserProfileOutcome.last_name
+    };
+
+    console.log(getUserProfileOutcome)
+
+    if(getUserProfileOutcome.success == true) {
+        userProfileOutcome.data = userProfile;
+        userProfileOutcome.message = "We got the user profile for " + currentUser;
+        userProfileOutcome.success = true;
+        userProfileOutcome.statusCode = 200;
+        userProfileOutcome.data = getUserProfileOutcome.userProfile;
+    }
+
+    res.json(userProfileOutcome)
+
+}
+*/
 /*
 async function updateFullUserProfileLocalAWSORIGINAL(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {

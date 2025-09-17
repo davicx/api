@@ -16,6 +16,14 @@ FUNCTIONS A: All Routes Related to User Profile
 
 */
 
+/*
+//USER KEY
+//TYPE 1: You are Currently Friends - "friends"
+//TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+//TYPE 3: Friendship Request Pending (them) - "request_pending"
+//TYPE 4: Not Friends - "not_friends"
+//TYPE 5: This is you - "you"
+*/
 
 //FUNCTIONS A: All Routes Related to User Profile
 //Function A1: Get User Profile
