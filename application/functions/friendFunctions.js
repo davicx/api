@@ -414,8 +414,6 @@ async function createFriendshipInformationUserProfile(currentUser, currentFriend
     }
 
     /*
-
-
     "friendshipKey": "friends",
     "requestPending": 0,
     "requestSentBy": "davey",
