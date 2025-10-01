@@ -73,7 +73,6 @@ async function getActiveFriends(req, res) {
 
 	//var friendsOutcome = await friendFunctions.getUserFriends(userName)
 	var friendsOutcome = await friendFunctions.getActiveFriends(userName)
- 
 	
 	//STEP 2: Fill in Friendship Information 
 	var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, userName);
@@ -93,8 +92,6 @@ async function getActiveFriends(req, res) {
 	"requestPending": 0,
 	"requestSentBy": "davey",
 	"alsoYourFriend": 1
-	
-
 	*/
 	currentUserfriendsOutcome.data = friendsOutcome.friendsArray;
 	currentUserfriendsOutcome.message = "We got your friends!"

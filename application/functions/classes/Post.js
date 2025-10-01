@@ -291,14 +291,32 @@ class Post {
         const itemCategory = req.body.itemCategory;
         const itemLink = req.body.itemLink;
 
+        /*
+        "item": {
+            "item_id": 20,
+            "item_name": "Final Fantasy",
+            "item_price": "40.00",
+            "item_description": "I really want this cool game~! It is at a lot of stores",
+            "item_category": "video games",
+            "item_link": "www.chronotrigger.com",
+            "purchased": 0,
+            "purchased_by": "purchased_by",
+            "store": "store",
+            "multiple_stores": 0
+        }
+        */
+
         console.log("POST " + bucket)
 
         var createdPost = {
             postID: 0,
             postType: postType,
             groupID: Number(groupID),
+            groupName: null,
+            groupImage: null,
             listID: Number(listID),
             postFrom: postFrom,
+            postFromImage: null,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -306,20 +324,29 @@ class Post {
             fileURL: fileURL,
             cloudBucket: bucket,
             cloudKey: cloudKey,
+            storageType: fileStorageType,
             videoURL: "empty",
             videoCode: "empty",
-            itemName: itemName,
-            itemPrice: itemPrice,
-            itemDescription: itemDescription,
-            itemCategory: itemCategory,
-            itemLink: itemLink,
             postDate: timeFunctions.getCurrentTime().postDate,
             postTime: timeFunctions.getCurrentTime().postTime,
             timeMessage: timeFunctions.getCurrentTime().timeMessage,
             created: "",
+            isLikedByCurrentUser: false,
             commentsArray: [],
             postLikesArray: [],
-            simpleLikesArray: []
+            simpleLikesArray: [],
+            item: {
+                item_id: 0,
+                item_name: itemName,
+                item_price: itemPrice,
+                item_description: itemDescription,
+                item_category: itemCategory,
+                item_link: itemLink,
+                purchased: 0,
+                purchased_by: "",
+                store: "",
+                multiple_stores: 0
+            }
         }
 
         var postOutcome = {
@@ -347,6 +374,9 @@ class Post {
                             if (itemErr) {
                                 postOutcome.outcome = "DATABASE: item insert failed"
                                 postOutcome.errors.push(itemErr);
+                            } else {
+                                // Update the item_id in the createdPost object
+                                postOutcome.newPost.item.item_id = itemResults.insertId;
                             }
                             resolve(postOutcome);
                         })

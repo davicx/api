@@ -8,10 +8,18 @@
 //TYPE 4: Not Friends - "not_friends"
 //TYPE 5: This is you - "you"
 
-    "friendshipKey": "friends",
+"data": {
+    "userName": "davey",
+    "userID": 1,
+    "userImage": "http://localhost:3003/kite-us-west-two/profile/profileImage-1754177896055-604384021-1597356887small7_p0_master1200.jpg",
+    "firstName": "David",
+    "lastName": "Vasquez",
+    "biography": "They are (or were) a little people, about half our height, and smaller than the bearded dwarves",
+    "friendshipKey": "you",
     "requestPending": 0,
     "requestSentBy": "davey",
     "alsoYourFriend": 1
+},
 
 "data": {
     "userName": "davey",

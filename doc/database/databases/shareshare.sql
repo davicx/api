@@ -22,7 +22,7 @@
 #DELETE FROM pending_requests WHERE request_id > 0;
 
 #DELETE FROM friends WHERE post_id = 792;
-#DELETE FROM pending_requests WHERE request_id > 0;
+@DELETE FROM pending_requests WHERE request_id > 0;
 
 
 #UPDATE shareshare.groups SET group_deleted = 1 WHERE group_id < 100;
@@ -33,7 +33,7 @@
 #DELETE FROM posts WHERE post_id = 792;
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
-#DELETE FROM notifications WHERE notification_id > 0;
+DELETE FROM notifications WHERE notification_id > 0;
 
 
 #UPDATE posts SET post_caption = "Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 790;

@@ -57,12 +57,16 @@ async function getAllUsers() {
             connection.query(queryString, [accountActive], (err, rows) => {
                 const userArray = rows.map((row) => {
                     return {
-                        friendName: row.user_name,
                         userName: row.user_name,
-                        imageName: row.image_name,
+                        userID: row.user_id,
+                        userImage: row.image_url,
                         firstName: row.first_name,
                         lastName: row.last_name,
-                        biography: row.biography
+                        biography: row.biography,
+                        friendshipKey: "not_friends",
+                        requestPending: 0,
+                        requestSentBy: "",
+                        alsoYourFriend: 0
                     }
                 });
                 
@@ -100,16 +104,17 @@ async function getActiveFriends(currentUser) {
                 for (let i = 0; i < rows.length; i++) {
                     let currentFriend = {}
 
-                    currentFriend.friendID = rows[i].friend_id;
-                    currentFriend.friendName = rows[i].user_name;
-                    currentFriend.friendImage = rows[i].image_url;
+                    currentFriend.userName = rows[i].user_name;
+                    currentFriend.userID = rows[i].friend_id;
+                    currentFriend.userImage = rows[i].image_url;
                     currentFriend.firstName = rows[i].first_name;
                     currentFriend.lastName = rows[i].last_name;
-                    currentFriend.friendBiography = rows[i].biography;
+                    currentFriend.biography = rows[i].biography;
+
+                    currentFriend.friendshipKey = "friends";
                     currentFriend.requestPending = rows[i].request_pending;;
                     currentFriend.requestSentBy = rows[i].sent_by;
-                    currentFriend.friendshipKey = "friends"
-     
+                    currentFriend.alsoYourFriend = 1;
 
                     friendsArray.push(currentFriend)
 
@@ -151,12 +156,12 @@ async function getAllUserFriends(currentUser) {
                 for (let i = 0; i < rows.length; i++) {
                     let currentFriend = {}
 
-                    currentFriend.friendID = rows[i].friend_id;
-                    currentFriend.friendName = rows[i].user_name;
-                    currentFriend.friendImage = rows[i].image_url;
+                    currentFriend.userName = rows[i].user_name;
+                    currentFriend.userID = rows[i].friend_id;
+                    currentFriend.userImage = rows[i].image_url;
                     currentFriend.firstName = rows[i].first_name;
                     currentFriend.lastName = rows[i].last_name;
-                    currentFriend.friendBiography = rows[i].biography;
+                    currentFriend.biography = rows[i].biography;
                     currentFriend.requestPending = rows[i].request_pending;
                     currentFriend.requestSentBy = rows[i].sent_by;
                     
@@ -447,25 +452,38 @@ async function compareUsersWithYourFriends(currentUser, yourFriendsArray, theirF
 
 	for (let i = 0; i < yourFriendsArray.length ; i++) {
         //console.log(yourFriendsArray[i].userName)
-		yourFriendsSet.add(yourFriendsArray[i].friendName.toLowerCase())
+		yourFriendsSet.add(yourFriendsArray[i].userName.toLowerCase())
 	}	
 
     //STEP 2: Check this set for friend Matches
 	for (let i = 0; i < theirFriendsArray.length ; i++) {
-		let tempUser = theirFriendsArray[i].friendName.toLowerCase();
+		let tempUser = theirFriendsArray[i].userName.toLowerCase();
 
         //This will find friend overlap
         if(yourFriendsSet.has(tempUser) || currentUser.localeCompare(tempUser) == 0) { 
             theirFriendsArray[i].alsoYourFriend = 1;
-            //theirFriendsArray[i].friendshipKey = "friends";
-            //console.log("Trying to find friendship status for " + currentUser + " with the user " + tempUser)
-            let friendStatus = getFriendStatus(currentUser, tempUser, yourFriendsArray)
-            theirFriendsArray[i].friendshipKey = friendStatus;
-            //console.log(friendStatus)
+            
+            // Find the friend in yourFriendsArray to get detailed friendship info
+            let friendInfo = yourFriendsArray.find(friend => 
+                friend.userName.toLowerCase() === tempUser.toLowerCase()
+            );
+            
+            if (friendInfo) {
+                theirFriendsArray[i].friendshipKey = friendInfo.friendshipKey;
+                theirFriendsArray[i].requestPending = friendInfo.requestPending;
+                theirFriendsArray[i].requestSentBy = friendInfo.requestSentBy;
+            } else {
+                // This is the current user
+                theirFriendsArray[i].friendshipKey = "you";
+                theirFriendsArray[i].requestPending = 0;
+                theirFriendsArray[i].requestSentBy = currentUser;
+            }
 
         } else {
             theirFriendsArray[i].alsoYourFriend = 0;
             theirFriendsArray[i].friendshipKey = "not_friends";
+            theirFriendsArray[i].requestPending = 0;
+            theirFriendsArray[i].requestSentBy = "";
         }
         
     }
@@ -514,7 +532,7 @@ function getFriendStatus(currentUser, friendName, yourFriendsArray) {
     } 
 
 	for (let i = 0; i < yourFriendsArray.length ; i++) {
-        let currentArrayFriend = yourFriendsArray[i].friendName.toLowerCase();
+        let currentArrayFriend = yourFriendsArray[i].userName.toLowerCase();
 		if(currentArrayFriend.localeCompare(friendName.toLowerCase()) == 0) {
 			return yourFriendsArray[i].friendshipKey;
 		}
