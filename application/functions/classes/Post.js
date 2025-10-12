@@ -1,6 +1,7 @@
 const db = require('./../conn');
 const timeFunctions = require('../timeFunctions');
-const postFunctions = require('../postFunctions');
+const profileFunctions = require('../profileFunctions');
+const validationFunctions = require('../validationFunctions');
 const dayjs = require('dayjs')
 var relativeTime = require('dayjs/plugin/relativeTime')
 dayjs.extend(relativeTime)
@@ -110,7 +111,6 @@ class Post {
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
-        const postFromImage = "Need postFromImage"
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const listID = req.body.listID 
@@ -124,6 +124,22 @@ class Post {
         const fileStorageType = uploadFile.storageType; //local | aws | other
         const bucket = uploadFile.bucket;
 
+        console.log("cloudKey")
+        console.log("cloudKey")
+        console.log(cloudKey)
+        console.log("cloudKey")
+        console.log("cloudKey")
+  
+        // Get user image
+        let userImage = null;
+        try {
+            const userImageResult = await profileFunctions.getUserImage(postFrom);
+            if (userImageResult.success) {
+                userImage = userImageResult.userProfileImage;
+            }
+        } catch (error) {
+            console.log("Error getting user image for " + postFrom + ": " + error);
+        }
 
         var createdPost = {
             postID: 0,
@@ -133,7 +149,7 @@ class Post {
             groupImage: "needGroupImage",
             listID: Number(listID),
             postFrom: postFrom,
-            postFromImage: postFromImage,
+            postFromImage: userImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -286,37 +302,34 @@ class Post {
 
         //These come from the postman request
         const itemName = req.body.itemName;
-        const itemPrice = req.body.itemPrice;
+        const itemPriceRaw = req.body.itemPrice;
+        const itemPrice = validationFunctions.convertAndValidateDecimal(itemPriceRaw);
         const itemDescription = req.body.itemDescription;
         const itemCategory = req.body.itemCategory;
         const itemLink = req.body.itemLink;
 
-        /*
-        "item": {
-            "item_id": 20,
-            "item_name": "Final Fantasy",
-            "item_price": "40.00",
-            "item_description": "I really want this cool game~! It is at a lot of stores",
-            "item_category": "video games",
-            "item_link": "www.chronotrigger.com",
-            "purchased": 0,
-            "purchased_by": "purchased_by",
-            "store": "store",
-            "multiple_stores": 0
-        }
-        */
-
         console.log("POST " + bucket)
+
+        // Get user image
+        let userImage = null;
+        try {
+            const userImageResult = await profileFunctions.getUserImage(postFrom);
+            if (userImageResult.success) {
+                userImage = userImageResult.userProfileImage;
+            }
+        } catch (error) {
+            console.log("Error getting user image for " + postFrom + ": " + error);
+        }
 
         var createdPost = {
             postID: 0,
             postType: postType,
             groupID: Number(groupID),
-            groupName: null,
-            groupImage: null,
+            groupName: "needGroupName",
+            groupImage: "needGroupImage",
             listID: Number(listID),
             postFrom: postFrom,
-            postFromImage: null,
+            postFromImage: userImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -370,11 +383,14 @@ class Post {
 
                         //INSERT ITEM
                         const itemQuery = "INSERT INTO items (post_id, item_name, item_price, item_description, item_category, item_link) VALUES (?, ?, ?, ?, ?, ?)"
+                        console.log("createPostItem: Inserting item with post_id:", results.insertId, "item_name:", itemName);
                         connection.query(itemQuery, [results.insertId, itemName, itemPrice, itemDescription, itemCategory, itemLink], (itemErr, itemResults, itemFields) => {
                             if (itemErr) {
+                                console.log("createPostItem: Item insert failed:", itemErr);
                                 postOutcome.outcome = "DATABASE: item insert failed"
                                 postOutcome.errors.push(itemErr);
                             } else {
+                                console.log("createPostItem: Item inserted successfully with ID:", itemResults.insertId);
                                 // Update the item_id in the createdPost object
                                 postOutcome.newPost.item.item_id = itemResults.insertId;
                             }
@@ -735,6 +751,13 @@ class Post {
             try {
                 connection.query(queryString, [groupID], (err, rows) => {
                     if (!err) {
+                        console.log("getGroupItemsAll: Found " + rows.length + " posts");
+                        console.log("getGroupItemsAll: Sample row data:", rows.length > 0 ? {
+                            post_id: rows[0].post_id,
+                            item_id: rows[0].item_id,
+                            item_name: rows[0].item_name
+                        } : "No rows found");
+                        
                         const posts = rows.map((row) => {
                             
                             //TIME 

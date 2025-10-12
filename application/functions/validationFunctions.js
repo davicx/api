@@ -135,6 +135,7 @@ function validatePassword(password) {
     return passwordOutcome;
 }
 
+//Function A5: Validate Alphanumeric 
 function validAlphaNumeric(checkString) {
     var RegEx = /^[a-z0-9]+$/i;
     var Valid = RegEx.test(checkString);
@@ -143,4 +144,28 @@ function validAlphaNumeric(checkString) {
     return Valid
 }
 
-module.exports = { validateRegisterUser, validateEmail, validateUsername, validateFullName, validatePassword }
+//Function A6: Validate Decimal 
+function convertAndValidateDecimal(num) {
+    if (num == null) return 0.00;
+  
+    // Convert to string and trim spaces
+    let str = String(num).trim();
+  
+    // Remove any dollar signs, commas, or other non-numeric chars except dot and minus
+    str = str.replace(/[^0-9.\-]/g, "");
+  
+    // Handle multiple dots (invalid format)
+    if ((str.match(/\./g) || []).length > 1) return 0.00;
+  
+    // Try converting to float
+    const value = parseFloat(str);
+  
+    // Validate it’s a finite number
+    if (isNaN(value) || !isFinite(value)) return 0.00;
+  
+    // Round to 2 decimal places to match SQL DECIMAL(10,2)
+    return parseFloat(value.toFixed(2));
+  }
+  
+
+module.exports = { validateRegisterUser, validateEmail, validateUsername, validateFullName, validatePassword, convertAndValidateDecimal }
