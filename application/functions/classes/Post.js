@@ -489,7 +489,7 @@ class Post {
                                 shareshare.groups.group_image,
                                 user_profile.storage_location,
                                 user_profile.image_url,
-                                user_profile.cloud_key
+                                user_profile.cloud_key as user_cloud_key
                             FROM posts
                             JOIN shareshare.groups ON posts.group_id = shareshare.groups.group_id
                             LEFT JOIN user_profile ON posts.post_from = user_profile.user_name
@@ -529,16 +529,16 @@ class Post {
                             postTimeData.time = time
                             postTimeData.timeMessage = timeMessage
 
-                            // Get user image URL using fileFunctions.getImageURL
-                            let userImage = null;
-                            if (row.storage_location && row.image_url) {
-                                try {
-                                    userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.cloud_key);
-                                } catch (error) {
-                                    console.log("Error getting user image for " + row.post_from + ": " + error);
-                                    userImage = null;
-                                }
+                        // Get user image URL using fileFunctions.getImageURL
+                        let userImage = null;
+                        if (row.storage_location && row.image_url) {
+                            try {
+                                userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.user_cloud_key);
+                            } catch (error) {
+                                console.log("Error getting user image for " + row.post_from + ": " + error);
+                                userImage = null;
                             }
+                        }
 
                             return {
                                 postID: row.post_id,
