@@ -7,7 +7,6 @@
 
 #SELECT * FROM posts;
 #SELECT * FROM items;
-SELECT * FROM groups;
 #SELECT * FROM friends;
 #SELECT * FROM pending_requests;
 #SELECT * FROM comments;
@@ -48,6 +47,8 @@ SELECT * FROM groups;
 #UPDATE shareshare.groups SET group_name = "Games Sam Wants" WHERE group_id = 722;
  
 #ITEMS
+#UPDATE posts SET file_url = "http://localhost:3003/kite-us-west-two/posts/postImage-1760223872278-186100521-ff_tactics.jpg" WHERE post_id = 831;
+
 SELECT * FROM posts WHERE post_type = "item";
 #SELECT * FROM items; 
 #UPDATE items SET purchased_by = "sam" WHERE item_id >0;

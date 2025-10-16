@@ -89,7 +89,9 @@ async function postItemLocal(req, res) {
 			uploadFile.fileNameServer = file.filename; //file_name_server
 			
 			//Settings: Local 
-			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)			
+			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename; //file_url (image_url)	
+		  //uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename; 
+		
 			uploadFile.cloudKey = postsFolder + "/" + file.filename;  //cloud_key
 			uploadFile.bucket = bucketName; //cloud_bucket	
 			uploadFile.storageType = "local"; //storage_type
@@ -115,7 +117,7 @@ async function postItemLocal(req, res) {
 				storageType: 'local'
 			  }; 
 
-			  console.log(uploadFile)
+			  //console.log(uploadFile)
 		}
 	
 		//POST
