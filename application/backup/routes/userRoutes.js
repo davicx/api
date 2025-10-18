@@ -17,6 +17,8 @@ userRouter.get("/user/:userName", (req, res) => {
     userFunctions.getUserProfile(req, res);
 })
 
+//MAYBE OLD
+/*
 //Route B2: Get User Friends 
 userRouter.get("/user/friends/:userName", (req, res) => {
     userFunctions.getUserFriends(req, res);
@@ -27,7 +29,7 @@ userRouter.get("/users/all", (req, res) => {
     userFunctions.getAllUsers(req, res);
 })
 
-
+*/
 module.exports = userRouter;
 
 

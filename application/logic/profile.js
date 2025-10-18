@@ -89,7 +89,8 @@ async function getUserProfile(req, res) {
 
     //STEP 2: Fill in Friendship Information 
     var friendShipStatus = await friendFunctions.checkFriendshipStatus(currentUser, userName);
-	//console.log("STEP 2: Friendship Status")
+	
+    console.log("STEP 2: Friendship Status")
 	//console.log(friendShipStatus)
     var userProfileFriendshipInformation = await friendFunctions.createFriendshipInformationUserProfile(currentUser, friendShipStatus.currentFriendship, friendShipStatus.friendshipStatus, userName);
 	

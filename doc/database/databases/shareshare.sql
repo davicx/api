@@ -18,26 +18,22 @@
 #SELECT * FROM folders;
 #SELECT * FROM user_profile;
 
-
 #DELETE FROM friends WHERE post_id = 792;
 #DELETE FROM pending_requests WHERE request_id > 0;
 
-#DELETE FROM items WHERE item_id > 0;
-#DELETE FROM posts WHERE post_id = 794;
-
 #DELETE FROM friends WHERE post_id = 792;
-#DELETE FROM pending_requests WHERE request_id > 0;
+@DELETE FROM pending_requests WHERE request_id > 0;
 
-#UPDATE posts SET post_to = 723 WHERE post_id = 826;
 
 #UPDATE shareshare.groups SET group_deleted = 1 WHERE group_id < 100;
 #UPDATE items SET purchased_by = "sam" WHERE item_id >0;
 #UPDATE friends SET request_pending = 0 WHERE friends_id > 898;
 
+
 #DELETE FROM posts WHERE post_id = 792;
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
-#DELETE FROM notifications WHERE notification_id > 0;
+DELETE FROM notifications WHERE notification_id > 0;
 
 
 #UPDATE posts SET post_caption = "Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 790;
@@ -46,18 +42,6 @@
 #UPDATE shareshare.groups SET cloud_key = "groups/groupImage-1754264482637-64076401-IMG_3737.JPG" WHERE group_id = 72;
 #UPDATE shareshare.groups SET group_name = "Games Sam Wants" WHERE group_id = 722;
  
-#ITEMS
-#UPDATE posts SET file_url = "http://localhost:3003/kite-us-west-two/posts/postImage-1760223872278-186100521-ff_tactics.jpg" WHERE post_id = 831;
-
-SELECT * FROM posts WHERE post_type = "item";
-#SELECT * FROM items; 
-#UPDATE items SET purchased_by = "sam" WHERE item_id >0;
-#UPDATE posts SET post_to = 723 WHERE post_id = 826;
-
-#DELETE FROM items WHERE item_id > 0;
-#DELETE FROM posts WHERE post_id > 810;
-
-
  
 #########
 #GROUPS#

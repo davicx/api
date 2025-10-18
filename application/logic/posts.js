@@ -178,9 +178,11 @@ async function postPhotoLocal(req, res) {
 	//Settings: Local 
 	//localhost + bucket + folder + fileName
 	uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename; 
+
 	uploadFile.cloudKey = postsFolder + "/" + file.filename;  //cloud_key
 	uploadFile.bucket = bucketName; //cloud_bucket	
 	uploadFile.storageType = "local"; //storage_type
+
 	
 	//Settings: Cloud
 	//uploadFile.fileURL = result.Location; // file_url

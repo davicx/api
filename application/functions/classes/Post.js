@@ -1,6 +1,7 @@
 const db = require('./../conn');
 const timeFunctions = require('../timeFunctions');
-const postFunctions = require('../postFunctions');
+const profileFunctions = require('../profileFunctions');
+const validationFunctions = require('../validationFunctions');
 const dayjs = require('dayjs')
 var relativeTime = require('dayjs/plugin/relativeTime')
 dayjs.extend(relativeTime)
@@ -110,7 +111,6 @@ class Post {
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
-        const postFromImage = "Need postFromImage"
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const listID = req.body.listID 
@@ -124,6 +124,22 @@ class Post {
         const fileStorageType = uploadFile.storageType; //local | aws | other
         const bucket = uploadFile.bucket;
 
+        console.log("cloudKey")
+        console.log("cloudKey")
+        console.log(cloudKey)
+        console.log("cloudKey")
+        console.log("cloudKey")
+  
+        // Get user image
+        let userImage = null;
+        try {
+            const userImageResult = await profileFunctions.getUserImage(postFrom);
+            if (userImageResult.success) {
+                userImage = userImageResult.userProfileImage;
+            }
+        } catch (error) {
+            console.log("Error getting user image for " + postFrom + ": " + error);
+        }
 
         var createdPost = {
             postID: 0,
@@ -133,7 +149,7 @@ class Post {
             groupImage: "needGroupImage",
             listID: Number(listID),
             postFrom: postFrom,
-            postFromImage: postFromImage,
+            postFromImage: userImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -286,19 +302,34 @@ class Post {
 
         //These come from the postman request
         const itemName = req.body.itemName;
-        const itemPrice = req.body.itemPrice;
+        const itemPriceRaw = req.body.itemPrice;
+        const itemPrice = validationFunctions.convertAndValidateDecimal(itemPriceRaw);
         const itemDescription = req.body.itemDescription;
         const itemCategory = req.body.itemCategory;
         const itemLink = req.body.itemLink;
 
         console.log("POST " + bucket)
 
+        // Get user image
+        let userImage = null;
+        try {
+            const userImageResult = await profileFunctions.getUserImage(postFrom);
+            if (userImageResult.success) {
+                userImage = userImageResult.userProfileImage;
+            }
+        } catch (error) {
+            console.log("Error getting user image for " + postFrom + ": " + error);
+        }
+
         var createdPost = {
             postID: 0,
             postType: postType,
             groupID: Number(groupID),
+            groupName: "needGroupName",
+            groupImage: "needGroupImage",
             listID: Number(listID),
             postFrom: postFrom,
+            postFromImage: userImage,
             postTo: postTo,
             postCaption: postCaption,
             fileName: fileName,
@@ -306,20 +337,29 @@ class Post {
             fileURL: fileURL,
             cloudBucket: bucket,
             cloudKey: cloudKey,
+            storageType: fileStorageType,
             videoURL: "empty",
             videoCode: "empty",
-            itemName: itemName,
-            itemPrice: itemPrice,
-            itemDescription: itemDescription,
-            itemCategory: itemCategory,
-            itemLink: itemLink,
             postDate: timeFunctions.getCurrentTime().postDate,
             postTime: timeFunctions.getCurrentTime().postTime,
             timeMessage: timeFunctions.getCurrentTime().timeMessage,
             created: "",
+            isLikedByCurrentUser: false,
             commentsArray: [],
             postLikesArray: [],
-            simpleLikesArray: []
+            simpleLikesArray: [],
+            item: {
+                item_id: 0,
+                item_name: itemName,
+                item_price: itemPrice,
+                item_description: itemDescription,
+                item_category: itemCategory,
+                item_link: itemLink,
+                purchased: 0,
+                purchased_by: "",
+                store: "",
+                multiple_stores: 0
+            }
         }
 
         var postOutcome = {
@@ -343,10 +383,16 @@ class Post {
 
                         //INSERT ITEM
                         const itemQuery = "INSERT INTO items (post_id, item_name, item_price, item_description, item_category, item_link) VALUES (?, ?, ?, ?, ?, ?)"
+                        console.log("createPostItem: Inserting item with post_id:", results.insertId, "item_name:", itemName);
                         connection.query(itemQuery, [results.insertId, itemName, itemPrice, itemDescription, itemCategory, itemLink], (itemErr, itemResults, itemFields) => {
                             if (itemErr) {
+                                console.log("createPostItem: Item insert failed:", itemErr);
                                 postOutcome.outcome = "DATABASE: item insert failed"
                                 postOutcome.errors.push(itemErr);
+                            } else {
+                                console.log("createPostItem: Item inserted successfully with ID:", itemResults.insertId);
+                                // Update the item_id in the createdPost object
+                                postOutcome.newPost.item.item_id = itemResults.insertId;
                             }
                             resolve(postOutcome);
                         })
@@ -443,7 +489,7 @@ class Post {
                                 shareshare.groups.group_image,
                                 user_profile.storage_location,
                                 user_profile.image_url,
-                                user_profile.cloud_key
+                                user_profile.cloud_key as user_cloud_key
                             FROM posts
                             JOIN shareshare.groups ON posts.group_id = shareshare.groups.group_id
                             LEFT JOIN user_profile ON posts.post_from = user_profile.user_name
@@ -483,16 +529,16 @@ class Post {
                             postTimeData.time = time
                             postTimeData.timeMessage = timeMessage
 
-                            // Get user image URL using fileFunctions.getImageURL
-                            let userImage = null;
-                            if (row.storage_location && row.image_url) {
-                                try {
-                                    userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.cloud_key);
-                                } catch (error) {
-                                    console.log("Error getting user image for " + row.post_from + ": " + error);
-                                    userImage = null;
-                                }
+                        // Get user image URL using fileFunctions.getImageURL
+                        let userImage = null;
+                        if (row.storage_location && row.image_url) {
+                            try {
+                                userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.user_cloud_key);
+                            } catch (error) {
+                                console.log("Error getting user image for " + row.post_from + ": " + error);
+                                userImage = null;
                             }
+                        }
 
                             return {
                                 postID: row.post_id,
@@ -686,13 +732,22 @@ class Post {
     //Method B6: Get All Group Items 
     static async getGroupItemsAll(groupID)  {
         const connection = db.getConnection(); 
+        const fileFunctions = require('../fileFunctions');
 
         const queryString = `
-            SELECT p.*, i.item_id, i.item_name, i.item_price, i.item_description, 
+            SELECT p.*, 
+                   i.item_id, i.item_name, i.item_price, i.item_description, 
                    i.item_category, i.item_link, i.purchased, i.purchased_by, 
-                   i.store, i.multiple_stores
+                   i.store, i.multiple_stores,
+                   shareshare.groups.group_name,
+                   shareshare.groups.group_image,
+                   user_profile.storage_location,
+                   user_profile.image_url,
+                   user_profile.cloud_key as user_cloud_key
             FROM posts p
             LEFT JOIN items i ON p.post_id = i.post_id
+            JOIN shareshare.groups ON p.group_id = shareshare.groups.group_id
+            LEFT JOIN user_profile ON p.post_from = user_profile.user_name
             WHERE p.group_id = ? AND p.post_status = 1 
             ORDER BY p.post_id DESC
         `;
@@ -705,7 +760,15 @@ class Post {
             try {
                 connection.query(queryString, [groupID], (err, rows) => {
                     if (!err) {
-                        const posts = rows.map((row) => {
+                        console.log("getGroupItemsAll: Found " + rows.length + " posts");
+                        console.log("getGroupItemsAll: Sample row data:", rows.length > 0 ? {
+                            post_id: rows[0].post_id,
+                            item_id: rows[0].item_id,
+                            item_name: rows[0].item_name
+                        } : "No rows found");
+                        
+                        // Use Promise.all to handle async operations for each post
+                        Promise.all(rows.map(async (row) => {
                             
                             //TIME 
                             //Step 1: Create a Post Time Holder 
@@ -728,6 +791,17 @@ class Post {
                             postTimeData.time = time
                             postTimeData.timeMessage = timeMessage
 
+                            // Get user image URL using fileFunctions.getImageURL
+                            let userImage = null;
+                            if (row.storage_location && row.image_url) {
+                                try {
+                                    userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.user_cloud_key);
+                                } catch (error) {
+                                    console.log("Error getting user image for " + row.post_from + ": " + error);
+                                    userImage = null;
+                                }
+                            }
+
                             // Create item object if item data exists
                             let itemData = null;
                             if (row.item_id) {
@@ -749,8 +823,11 @@ class Post {
                                 postID: row.post_id,
                                 postType: row.post_type,
                                 groupID: row.group_id,
+                                groupName: row.group_name,
+                                groupImage: row.group_image,
                                 listID: row.list_id,
                                 postFrom: row.post_from,
+                                postFromImage: userImage,
                                 postTo: row.post_to,
                                 postCaption: row.post_caption,
                                 fileName: row.file_name,
@@ -758,6 +835,7 @@ class Post {
                                 fileURL: row.file_url,
                                 cloudBucket: row.cloud_bucket,
                                 cloudKey: row.cloud_key,
+                                storageType: row.storage_type,
                                 videoURL: row.video_url,
                                 videoCode: row.video_code,
                                 postDate: postTimeData.date,
@@ -766,10 +844,14 @@ class Post {
                                 created: row.created,
                                 item: itemData
                             }
+                        })).then(posts => {
+                            postsOutcome.posts = posts;
+                            postsOutcome.success = true;
+                            resolve(postsOutcome)
+                        }).catch(error => {
+                            console.log("Error processing posts: " + error);
+                            reject(postsOutcome);
                         });
-                        postsOutcome.posts = posts;
-
-                        resolve(postsOutcome)
             
                     } else {
                         console.log("Failed to Select Posts" + err)

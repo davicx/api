@@ -38,7 +38,7 @@ FUNCTIONS B: All Functions Related to getting Items
 
 
 */
-
+//In items.js postItemLocal I 
 
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Item
@@ -89,7 +89,9 @@ async function postItemLocal(req, res) {
 			uploadFile.fileNameServer = file.filename; //file_name_server
 			
 			//Settings: Local 
-			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + file.filename; //file_url (image_url)			
+			uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename; //file_url (image_url)	
+		  //uploadFile.fileURL = "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename; 
+		
 			uploadFile.cloudKey = postsFolder + "/" + file.filename;  //cloud_key
 			uploadFile.bucket = bucketName; //cloud_bucket	
 			uploadFile.storageType = "local"; //storage_type
@@ -108,14 +110,14 @@ async function postItemLocal(req, res) {
 			uploadFile = {
 				fileMimetype: 'image/jpeg',
 				originalname: 'background.jpg',
-				fileNameServer: 'postImage-1752452613886-53069656-background.jpg',
-				fileURL: 'http://localhost:3003/kite-posts-us-west-two/postImage-1752452613886-53069656-background.jpg',
-				cloudKey: 'no_cloud_key',
-				bucket: 'kite-posts-us-west-two',
+				fileNameServer: 'postImage-1759360291801-540655558-background.jpg',
+				fileURL: 'http://localhost:3003/kite-us-west-two/postImage-1759360291801-540655558-background.jpg',
+				cloudKey: 'posts/postImage-1759360291801-540655558-background.jpg',
+				bucket: 'kite-us-west-two',
 				storageType: 'local'
 			  }; 
 
-			  console.log(uploadFile)
+			  //console.log(uploadFile)
 		}
 	
 		//POST

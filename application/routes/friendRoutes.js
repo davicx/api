@@ -33,12 +33,12 @@ FUNCTIONS C: All Functions Related to Follower Actions
 
 //FUNCTIONS A: All Functions Related to Friends 
 //Function A1: Get All Site Users	
-friendRouter.get('/users/all/', function(req, res) { 
+friendRouter.get('/users/all/', middlewares.verifyUser, function(req, res) { 
     friends.getAllUsers(req, res);
 })
 
 //Function A2: Get Your Active Friends
-friendRouter.get('/friends/:user_name/', function(req, res) { 
+friendRouter.get('/friends/:user_name/', middlewares.verifyUser, function(req, res) { 
     friends.getActiveFriends(req, res);
 })
 
