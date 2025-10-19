@@ -152,6 +152,20 @@ async function getAllUserFriends(currentUser) {
             const queryString = "SELECT friends.user_name, friends.sent_by, friends.user_id, friends.friend_user_name, friends.friend_id, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.image_url, user_profile.first_name, user_profile.last_name, user_profile.biography FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND user_profile.account_active = 1"
             connection.query(queryString, [currentUser], (err, rows) => {
                 var friendsArray = []
+                
+                if (err) {
+                    console.log("Error getting user friends: " + err);
+                    userFriendsOutcome.errors.push(err);
+                    reject(userFriendsOutcome);
+                    return;
+                }
+                
+                if (!rows) {
+                    console.log("No rows returned from friends query");
+                    userFriendsOutcome.friendsArray = [];
+                    resolve(userFriendsOutcome);
+                    return;
+                }
              
                 for (let i = 0; i < rows.length; i++) {
                     let currentFriend = {}
