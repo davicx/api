@@ -660,6 +660,7 @@ async function postItemLocalAWS(req, res) {
 }
 */
 
+
 //FUNCTIONS B: All Functions Related to getting Posts
 //Function B1: Get all Group Posts
 //http://localhost:3003/posts/group/72
