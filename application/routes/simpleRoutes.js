@@ -66,8 +66,6 @@ simpleRouter.get("/simple/database", (req, res) => {
   res.json(post)
 })
 
-
-
 //Simple Posts
 simpleRouter.get("/simple/posts", (req, res) => {
   var post = {

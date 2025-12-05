@@ -1,4 +1,5 @@
 const db = require('./conn');
+const cheerio = require('cheerio');
 /*
 const userFunctions = require('./userFunctions');
 const Friend = require('./classes/Friend');
@@ -8,14 +9,13 @@ const Notifications = require('./classes/Notification');
 
 /*
 FUNCTIONS A: All Functions Related to Search 
-	1) Function A1: 
-
+	1) Function A1: Search for active friends
+	2) Function A2: Get product information from URL
 
 */
 
-
 //FUNCTIONS A: All Functions Related to Search 
-//Function A1: 
+//Function A1: Search for active friends
 async function searchActiveFriendList(currentUser, searchStringRaw) {
     const connection = db.getConnection(); 
     let searchString = searchStringRaw + "%";
@@ -67,6 +67,222 @@ async function searchActiveFriendList(currentUser, searchStringRaw) {
 
 }
 
+//Function A2: Get product information from URL
+async function getProductInfoFromURL(itemURL) {
+    var productInfoOutcome = {
+        success: false,
+        productData: {},
+        message: "",
+        errors: []
+    }
 
+    try {
+        // Fetch the webpage content
+        const response = await fetch(itemURL, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+            }
+        });
 
-module.exports = { searchActiveFriendList };
+        if (!response.ok) {
+            productInfoOutcome.message = `Failed to fetch URL: ${response.status} ${response.statusText}`;
+            productInfoOutcome.errors.push(`HTTP ${response.status}: ${response.statusText}`);
+            return productInfoOutcome;
+        }
+
+        const html = await response.text();
+        
+        // Load HTML into Cheerio for parsing
+        const $ = cheerio.load(html);
+        
+        // Extract product information using Cheerio selectors
+        let productData = {
+            name: "Product name not found",
+            price: "Price not found",
+            image: "Image not found",
+            description: "Description not found",
+            sourceURL: itemURL
+        };
+
+        // Extract title/name - try multiple selectors
+        const title = $('meta[property="og:title"]').attr('content') ||
+                     $('meta[name="title"]').attr('content') ||
+                     $('title').text() ||
+                     $('h1').first().text() ||
+                     $('[data-testid="product-title"]').text() ||
+                     $('.product-title').text() ||
+                     $('.product-name').text() ||
+                     $('[class*="title"]').first().text();
+        
+        if (title && title.trim()) {
+            productData.name = title.trim();
+        }
+
+        // Extract price - try multiple selectors
+        const priceText = $('[data-testid="product-price"]').text() ||
+                         $('.product-price').text() ||
+                         $('.price').text() ||
+                         $('[class*="price"]').text() ||
+                         $('span:contains("$")').text();
+        
+        if (priceText) {
+            const priceMatch = priceText.match(/\$?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+            if (priceMatch) {
+                productData.price = `$${priceMatch[1]}`;
+            }
+        }
+
+        // Extract image - try multiple selectors
+        const image = $('meta[property="og:image"]').attr('content') ||
+                     $('meta[property="twitter:image"]').attr('content') ||
+                     $('meta[name="twitter:image"]').attr('content') ||
+                     $('.product-image img').attr('src') ||
+                     $('.product-img img').attr('src') ||
+                     $('[data-testid="product-image"] img').attr('src') ||
+                     $('img[src*="product"]').first().attr('src') ||
+                     $('img').first().attr('src');
+        
+        if (image) {
+            // Handle relative URLs
+            if (image.startsWith('//')) {
+                productData.image = 'https:' + image;
+            } else if (image.startsWith('/')) {
+                const url = new URL(itemURL);
+                productData.image = url.origin + image;
+            } else if (!image.startsWith('http')) {
+                const url = new URL(itemURL);
+                productData.image = url.origin + '/' + image;
+            } else {
+                productData.image = image;
+            }
+        }
+
+        // Extract description - try multiple selectors
+        const description = $('meta[property="og:description"]').attr('content') ||
+                          $('meta[name="description"]').attr('content') ||
+                          $('meta[property="description"]').attr('content') ||
+                          $('.product-description').text() ||
+                          $('.product-desc').text() ||
+                          $('[data-testid="product-description"]').text();
+        
+        if (description && description.trim()) {
+            productData.description = description.trim();
+        }
+
+        // Clean up the data
+        if (productData.name.length > 100) {
+            productData.name = productData.name.substring(0, 100) + "...";
+        }
+        
+        if (productData.description.length > 200) {
+            productData.description = productData.description.substring(0, 200) + "...";
+        }
+
+        // Remove extra whitespace and newlines
+        productData.name = productData.name.replace(/\s+/g, ' ').trim();
+        productData.description = productData.description.replace(/\s+/g, ' ').trim();
+
+        productInfoOutcome.success = true;
+        productInfoOutcome.productData = productData;
+        productInfoOutcome.message = "Product information extracted successfully";
+
+    } catch (error) {
+        console.error("Error extracting product info:", error);
+        productInfoOutcome.message = "Failed to extract product information";
+        productInfoOutcome.errors.push(error.message);
+    }
+
+    return productInfoOutcome;
+}
+
+/*
+ORIGINAL REGEX-BASED IMPLEMENTATION (COMMENTED OUT)
+This was the original approach using regex patterns before upgrading to Cheerio.
+
+async function getProductInfoFromURL_ORIGINAL(itemURL) {
+    var productInfoOutcome = {
+        success: false,
+        productData: {},
+        message: "",
+        errors: []
+    }
+
+    try {
+        // Fetch the webpage content
+        const response = await fetch(itemURL, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+
+        if (!response.ok) {
+            productInfoOutcome.message = `Failed to fetch URL: ${response.status} ${response.statusText}`;
+            productInfoOutcome.errors.push(`HTTP ${response.status}: ${response.statusText}`);
+            return productInfoOutcome;
+        }
+
+        const html = await response.text();
+        
+        // Extract product information using regex patterns
+        // This is a basic approach - for production, consider using a proper HTML parser like cheerio
+        
+        // Extract title/name
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i) || 
+                          html.match(/<h1[^>]*>([^<]+)<\/h1>/i) ||
+                          html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i) ||
+                          html.match(/<meta[^>]*name="title"[^>]*content="([^"]+)"/i);
+        
+        // Extract price
+        const priceMatch = html.match(/\$(\d+(?:\.\d{2})?)/) ||
+                          html.match(/price["\s:]*\$?(\d+(?:\.\d{2})?)/i) ||
+                          html.match(/<meta[^>]*property="product:price:amount"[^>]*content="([^"]+)"/i);
+        
+        // Extract image
+        const imageMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i) ||
+                          html.match(/<meta[^>]*property="twitter:image"[^>]*content="([^"]+)"/i) ||
+                          html.match(/<img[^>]*src="([^"]*product[^"]*\.(?:jpg|jpeg|png|gif|webp))"/i) ||
+                          html.match(/<img[^>]*src="([^"]*\.(?:jpg|jpeg|png|gif|webp))"/i);
+        
+        // Extract description
+        const descMatch = html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]+)"/i) ||
+                         html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i) ||
+                         html.match(/<meta[^>]*property="description"[^>]*content="([^"]+)"/i);
+
+        // Build product data object
+        const productData = {
+            name: titleMatch ? titleMatch[1].trim() : "Product name not found",
+            price: priceMatch ? `$${priceMatch[1]}` : "Price not found",
+            image: imageMatch ? imageMatch[1] : "Image not found",
+            description: descMatch ? descMatch[1].trim() : "Description not found",
+            sourceURL: itemURL
+        };
+
+        // Clean up the data
+        if (productData.name.length > 100) {
+            productData.name = productData.name.substring(0, 100) + "...";
+        }
+        
+        if (productData.description.length > 200) {
+            productData.description = productData.description.substring(0, 200) + "...";
+        }
+
+        productInfoOutcome.success = true;
+        productInfoOutcome.productData = productData;
+        productInfoOutcome.message = "Product information extracted successfully";
+
+    } catch (error) {
+        console.error("Error extracting product info:", error);
+        productInfoOutcome.message = "Failed to extract product information";
+        productInfoOutcome.errors.push(error.message);
+    }
+
+    return productInfoOutcome;
+}
+*/
+
+module.exports = { searchActiveFriendList, getProductInfoFromURL };

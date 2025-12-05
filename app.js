@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 var cors = require('cors')
 const app = express()
 const PORT = process.env.PORT || 3003;
+//const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cookieParser())
@@ -29,6 +30,7 @@ const simple = require('./application/routes/simpleRoutes.js');
 const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
 const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
+const items = require('./application/routes/itemRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -42,8 +44,55 @@ app.use(upload);
 app.use(uploadLearning);
 app.use(profile);
 app.use(simple);
+app.use(items);
 
 //Server Login 
+app.listen(PORT, () => {
+  console.log("Server is up and listening on 3003...")
+})
+
+app.get("/", (req, res) => {
+    console.log("hiya!");
+    res.send("hiya!");
+    res.end()
+})
+
+
+app.get("/hiya", (req, res) => {
+  console.log("hiya!");
+  res.json({hiya: "hiya!"});
+  res.end()
+})
+
+
+
+
+//SIMPLE
+/*
+require('dotenv').config()
+const express = require('express');
+//const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser');
+var cors = require('cors')
+const app = express()
+//const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+app.use(cookieParser())
+app.use(express.static('public'));
+app.use(
+  cors({
+      credentials: true,
+      origin: ["http://localhost:3003", "http://localhost:3000"]
+  })
+);
+
+app.listen(PORT, () => {
+  console.log("Server is up and listening on 5000...")
+})
+
+/*
 app.listen(3003, () => {
   console.log("Server is up and listening on 3003...")
 })
@@ -55,6 +104,12 @@ app.get("/", (req, res) => {
 })
 
 
+app.get("/hello", (req, res) => {
+  console.log("hiya!");
+  res.send({hello: "Hiya davey!"});
+  res.end()
+})
+*/
 
 //APPENDIX
 //const posts = require('./application/routes/postRoutes.js');

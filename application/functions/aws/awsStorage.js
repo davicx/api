@@ -30,7 +30,7 @@ function uploadPost(file) {
 }
 
 //Upload Profile to S3
-function uploadProfile(file) {
+function uploadProfileImageToS3(file) {
   const fileStream = fs.createReadStream(file.path)
   const key = "profile/" + file.filename;
 
@@ -45,6 +45,21 @@ function uploadProfile(file) {
 }
 
 
+//Upload Group to S3
+function uploadGroupImageToS3(file) {
+  const fileStream = fs.createReadStream(file.path)
+  //const key = "images/" + file.filename;
+  const key = "groups/" + file.filename;
+
+  const uploadParams = {
+    Bucket: bucketName,                                                                                                                                                               
+    Body: fileStream,
+    Key: key
+  }
+
+  return s3.upload(uploadParams).promise()
+
+}
 
 //Upload to S3
 function uploadFile(file) {
@@ -77,4 +92,4 @@ function getFileStream(fileKey) {
 //exports.getFileStream = getFileStream
 
 
-module.exports = { getFileStream, uploadFile, uploadPost, uploadProfile }
+module.exports = { getFileStream, uploadProfileImageToS3, uploadPost, uploadGroupImageToS3, uploadFile }

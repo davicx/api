@@ -10,6 +10,7 @@ METHODS A: Group RELATED
     4) Method A4: Get Group Users
     5) Method A5: Accept Group Invite
     6) Method A6: Leave Group
+    7) Method A9: Update Group Information
 */
 
 class Group {
@@ -18,22 +19,90 @@ class Group {
     }
 
     //Method A1: Create a Group
-    static async createGroup(currentUser, groupName, groupType, groupPrivate)  {
+    static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupImage)  {
         const connection = db.getConnection(); 
         var groupID = 0;
-        const groupImage = "the_shire.jpg"; 
+        var groupImage = "the_shire_default_group_image.jpg"; 
+    
+        var groupOutcome = {
+            outcome: 0,
+            groupID: groupID,
+            errors: []
+        }
+    
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = `
+                    INSERT INTO shareshare.groups (
+                        group_type,
+                        created_by,
+                        group_name,
+                        group_image,
+                        group_private,
+                        file_name,
+                        file_name_server,
+                        cloud_bucket,
+                        cloud_key,
+                        storage_type
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+    
+                connection.query(queryString, [
+                    groupType,
+                    currentUser,
+                    groupName,
+                    uploadFile.fileURL || groupImage,  // fallback for group_image
+                    groupPrivate,
+                    uploadFile.originalname || "",
+                    uploadFile.fileNameServer || "",
+                    uploadFile.bucket || "",
+                    uploadFile.cloudKey || "",
+                    uploadFile.storageType || "error"
+                ], (err, results) => {
+                    if (!err) {
+                        groupOutcome.outcome = 1;
+                        groupOutcome.groupID = results.insertId;
+                    } else {
+                        groupOutcome.errors.push(err);
+                    }
+                    resolve(groupOutcome);
+                });   
+            } catch(err) {
+                console.log("REJECTED " + err);
+                reject(groupOutcome);
+            } 
+        });
+    }
+    /*
+    static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupImage)  {
+        const connection = db.getConnection(); 
+        var groupID = 0;
+        var groupImage = "the_shire.jpg"; 
 
         var groupOutcome = {
             outcome: 0,
             groupID: groupID,
             errors: []
         }
+        //group_image, fileName, fileNameServer, fileURL, cloudBucket, cloudKey, 
 
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private) VALUES (?, ?, ?, ?, ?)"
+                const queryString = "INSERT INTO shareshare.groups (group_type, created_by, group_name, group_image, group_private, file_Name, fileNameServer, fileURL, cloudBucket, cloudKey) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
-                connection.query(queryString, [groupType, currentUser, groupName, groupImage, groupPrivate], (err, results) => {
+                connection.query(queryString, [
+                    groupType,
+                    currentUser,
+                    groupName,
+                    uploadFile.originalname || groupImage, // group_image fallback to default
+                    groupPrivate,
+                    uploadFile.originalname || "",
+                    uploadFile.fileNameServer || "",
+                    uploadFile.fileURL || "",
+                    uploadFile.bucket || "",
+                    uploadFile.cloudKey || ""
+                ], (err, results) => {
                     if (!err) {
                         groupOutcome.outcome = 1;
                         groupOutcome.groupID = results.insertId
@@ -50,6 +119,7 @@ class Group {
             } 
         });
     }
+    */
 
     //Method A2: Add Single User to Group (Accepts cleaned data they are not in the group already)
     static async addGroupUser(groupID, groupUser)  {
@@ -185,7 +255,7 @@ class Group {
     //Method A5:: Get All Groups User is In 
     static async getGroupsUserIsIn(userName) {
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1"; 
+        const queryString = "SELECT group_users.group_id, group_users.user_name, group_users.active_member, shareshare.groups.group_name FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND active_member = 1 AND group_deleted = 0"; 
 
         var userGroupsResponse = {
             status: 500,
@@ -333,17 +403,19 @@ class Group {
         });
     }
    
+    //getImageURL(storageLocation, imageURL, cloudKey)
     //Method A8: Get Group Information
     static async getGroupInformation(groupID) {
         console.log("CLASS GROUP: getting Group Information for " + groupID);
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_id, group_image, group_name FROM shareshare.groups WHERE group_id = ?";
+        const queryString = "SELECT group_id, group_image, group_name, created_by FROM shareshare.groups WHERE group_id = ?";
         
         var groupInfoResponse = {
             status: 500,
             groupID: 0,
             groupImage: "",
             groupName: "",
+            createdBy: "",
             errors: [],
         };
     
@@ -355,6 +427,7 @@ class Group {
                         groupInfoResponse.status = 200;
                         groupInfoResponse.groupID = row.group_id;
                         groupInfoResponse.groupImage = row.group_image;
+                        groupInfoResponse.groupCreatedBy = row.created_by;
                         groupInfoResponse.groupName = row.group_name;
                     } else {
                         console.log("Error retrieving group information or group not found");
@@ -370,6 +443,31 @@ class Group {
         });
     }
         
+    //Method A9: Update Group Information
+    static async updateGroup(groupID, groupName, groupType, groupPrivate, groupImage) {
+        const connection = db.getConnection();
+        var updateOutcome = {
+            status: 500,
+            groupID: groupID,
+            errors: [],
+        };
+        return new Promise(async function(resolve, reject) {
+            try {
+                const queryString = "UPDATE shareshare.groups SET group_name = ?, group_type = ?, group_private = ?, group_image = ? WHERE group_id = ?";
+                connection.query(queryString, [groupName, groupType, groupPrivate, groupImage, groupID], (err, results) => {
+                    if (!err) {
+                        updateOutcome.status = 200;
+                    } else {
+                        updateOutcome.errors.push(err);
+                    }
+                    resolve(updateOutcome);
+                });
+            } catch(err) {
+                updateOutcome.errors.push(err);
+                reject(updateOutcome);
+            }
+        });
+    }
 }
 
 module.exports = Group;
@@ -425,7 +523,7 @@ module.exports = Group;
 
                     //Part 1: Check if they are already in this group
             
-                    const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id = ?"			
+                    const queryString = "SELECT COUNT(*) AS requestCount FROM group_users WHERE user_name = ? AND group_id =?"			
                     var groupUserCount = 100;
 
                     connection.query(queryString, [newGroupUser, groupID], (err, rows) => {

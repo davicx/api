@@ -17,6 +17,10 @@ FUNCTIONS A: All Functions Related to Searching for Friends
 	1) Function A1: Search for your Active Friends 
 	2) Function A2: Search for a Group
 
+FUNCTIONS B: All Functions Related to Searching for Information 
+	1) Function B1: Search for item information 
+	2) Function B2: Get product information from URL
+
 */
 
 //FUNCTIONS A: All Functions Related to Searching for Friends 
@@ -74,4 +78,47 @@ async function searchGroups(req, res) {
 
 }
 
-module.exports = { searchActiveFriends, searchGroups }
+//FUNCTIONS B: All Functions Related to Searching for Information 
+//Function B1: Search for item information 
+//Function B2: Get product information from URL
+async function getProductInfo(req, res) {
+    const itemURL = req.body.itemURL;
+    
+    var productInfoOutcome = {
+		data: {},
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		itemURL: itemURL
+	}
+
+    if (!itemURL) {
+        productInfoOutcome.message = "Item URL is required";
+        productInfoOutcome.statusCode = 400;
+        productInfoOutcome.errors.push("Missing itemURL in request body");
+        return res.json(productInfoOutcome);
+    }
+
+    try {
+        var productInfo = await searchFunctions.getProductInfoFromURL(itemURL);
+        
+        if(productInfo.success == true) {
+            productInfoOutcome.data = productInfo.productData
+            productInfoOutcome.message = "Product information retrieved successfully"
+            productInfoOutcome.success = true;
+            productInfoOutcome.statusCode = 200;
+        } else {
+            productInfoOutcome.message = productInfo.message || "Failed to retrieve product information"
+            productInfoOutcome.errors = productInfo.errors || []
+        }
+    } catch (error) {
+        console.error("Error getting product info:", error);
+        productInfoOutcome.message = "Internal server error while processing request"
+        productInfoOutcome.errors.push(error.message)
+    }
+    
+    res.json(productInfoOutcome)
+}
+
+module.exports = { searchActiveFriends, searchGroups, getProductInfo }

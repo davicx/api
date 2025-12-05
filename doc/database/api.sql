@@ -2,23 +2,161 @@
 
 
 #########
+#ALL#
+#########
+
+#SELECT * FROM posts;
+#SELECT * FROM items;
+#SELECT * FROM friends;
+#SELECT * FROM pending_requests;
+#SELECT * FROM comments;
+#SELECT * FROM shareshare.groups;
+#SELECT * FROM group_users
+#SELECT * FROM notifications;
+#SELECT * FROM pending_requests 
+#SELECT * FROM user_profile;
+#SELECT * FROM folders;
+#SELECT * FROM user_profile;
+
+
+#DELETE FROM friends WHERE post_id = 792;
+#DELETE FROM pending_requests WHERE request_id > 0;
+
+#DELETE FROM items WHERE item_id > 0;
+#DELETE FROM posts WHERE post_id = 794;
+
+#DELETE FROM friends WHERE post_id = 792;
+#DELETE FROM pending_requests WHERE request_id > 0;
+
+#UPDATE posts SET post_to = 723 WHERE post_id = 826;
+
+#UPDATE shareshare.groups SET group_deleted = 1 WHERE group_id < 100;
+#UPDATE items SET purchased_by = "sam" WHERE item_id >0;
+#UPDATE friends SET request_pending = 0 WHERE friends_id > 898;
+
+#DELETE FROM posts WHERE post_id = 792;
+#DELETE FROM shareshare.groups WHERE group_id > 500;
+#DELETE FROM group_users WHERE primary_id > 2074;
+#DELETE FROM notifications WHERE notification_id > 0;
+
+
+#UPDATE posts SET post_caption = "Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! Hiya wanna garden! The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 790;
+#UPDATE comments SET post_id = 791 WHERE comment_id = 237;
+
+#UPDATE shareshare.groups SET cloud_key = "groups/groupImage-1754264482637-64076401-IMG_3737.JPG" WHERE group_id = 72;
+#UPDATE shareshare.groups SET group_name = "Games Sam Wants" WHERE group_id = 722;
+ 
+#ITEMS
+#UPDATE posts SET file_url = "http://localhost:3003/kite-us-west-two/posts/postImage-1760223872278-186100521-ff_tactics.jpg" WHERE post_id = 831;
+
+SELECT * FROM posts WHERE post_type = "item";
+#SELECT * FROM items; 
+#UPDATE items SET purchased_by = "sam" WHERE item_id >0;
+#UPDATE posts SET post_to = 723 WHERE post_id = 826;
+
+#DELETE FROM items WHERE item_id > 0;
+#DELETE FROM posts WHERE post_id > 810;
+
+
+ 
+#########
 #GROUPS#
 #########
-#DELETE FROM shareshare.groups WHERE group_id >72;
 #SELECT * FROM shareshare.groups
+#SELECT * FROM shareshare.groups WHERE group_id = 723
+#SELECT * FROM posts WHERE group_id = 723
+#SELECT * FROM posts  
+#UPDATE shareshare.groups SET fileURL = "",group_name = 'Hiking in the Shire' WHERE group_id = 72; 
+#DELETE FROM shareshare.groups WHERE group_id = 721;
+
+
+#EXAMPLE: file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type
+#ALTER TABLE shareshare.groups CHANGE COLUMN cloudBucket cloud_bucket VARCHAR(255) AFTER cloud_key;
+#SELECT * FROM shareshare.groups
+#UPDATE group_users SET active_member = 1 WHERE primary_id > 1000; 
+#SELECT * FROM group_users;
+
+#UPDATE shareshare.groups SET storage_type = "local" WHERE group_id > 2; 
+
+
+/*
+fileName to file_name 
+fileNameServer file_name_server
+cloudBucket cloud_bucket 
+cloudKey cloud_key
+fileURL gone
+storage_type added this
+*/
+#GROUPS
+#file_name, file_name_server, group_image, storage_type, cloud_key, cloud_bucket
+#group_image, fileName, fileNameServer, fileURL, cloudBucket, cloudKey
+
+
+
+#UPDATE group_users SET group_id = 72 WHERE primary_id = 2074;
+#UPDATE posts SET post_caption = "The weather is perfect! wanna hike or we could garden! The mountains look lovely too!!!" WHERE post_id = 729;
+
+
+#DELETE FROM shareshare.groups WHERE group_id > 500;
+#DELETE FROM group_users WHERE primary_id > 2074;
+#UPDATE shareshare.groups SET group_id = 72 WHERE group_id = 692;
+
+
+#########
+#POSTS#
+#########
+#SELECT * FROM posts;
+#UPDATE posts SET post_to = 70 WHERE post_id > 729
+#UPDATE posts SET post_caption = "Lets go on a hike!!!" WHERE post_id > 731
+
+
+#DELETE FROM posts WHERE post_id = 748;
+#DELETE FROM notifications WHERE notification_id > 0
+
+
+#ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
+#ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
+
+
+
+
+
+
+#SELECT * FROM user_profile;
+#UPDATE comments SET comment = "The hemlock-umbels tall and fair, And in the glade a light was seen Of stars in shadow shimmering. The hemlock-umbels tall and fair, And in the glade a light was seen Of stars in shadow shimmering.user_profile" WHERE comment_id = 237;
+
+#SELECT * FROM comments;
+
+
+
 #SELECT * FROM shareshare.groups WHERE group_id = 70;
+#SELECT * FROM shareshare.groups;
+
+#DELETE FROM group_users WHERE primary_id < 2039;
 
 #SELECT * FROM group_users;
-#DELETE FROM group_users WHERE primary_id > 1520;
+#UPDATE group_users SET active_member = 1 WHERE primary_id = 2043
+#UPDATE group_users SET group_id = 70 WHERE primary_id = 2043
+
 
 #SELECT * FROM group_users WHERE user_name = "davey";
 #SELECT * FROM group_users WHERE group_id = 70;
+
+#SELECT * FROM pending_requests 
+#SELECT * FROM notifications 
+
+#DELETE FROM notifications WHERE notification_id > 0
+#DELETE FROM pending_requests WHERE request_id > 0
+
+
+#DESCRIBE shareshare.groups;
+
 
 #########
 #FRIENDS#
 #########
 #SELECT * FROM friends WHERE user_name = "davey"
-UPDATE friends SET request_pending = 0 WHERE friends_id > 0
+#UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 #DELETE FROM FRIENDS WHERE friends_id > 750
 
 #SELECT * FROM friends WHERE user_name = 'davey'
@@ -26,9 +164,11 @@ UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 #SELECT * FROM friends WHERE request_pending = 1 AND sent_by = "davey" AND sent_to = "frodo"
 #SELECT * FROM user_profile
 #SELECT * FROM user_login
-
+#http://localhost:3003/kite-profile-us-west-two/profileImage-1748475444666-649191507-background_2.png
+#http://localhost:3003/kite-profile-us-west-two/profileImage-1748475444666-649191507-background_2.png
+#
 #DELETE FROM friends WHERE friends_id > 0
-#DELETE FROM pending_requests WHERE request_id > 0
+
 #SELECT * FROM pending_requests 
 #SELECT * FROM friends
 #SELECT * FROM user_profile
@@ -47,23 +187,7 @@ UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 #DELETE FROM following WHERE follow_id > 1;
 
 
-#########
-#POSTS#
-#########
-#SELECT * FROM posts;
 
-#DELETE FROM posts WHERE post_id > 724;
-#DELETE FROM notifications WHERE notification_id > 0
-
-
-#ALTER TABLE `posts` CHANGE `file_name` `file_name` VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL DEFAULT 'empty'; 
-#ALTER TABLE `posts` CHANGE `post_status` `post_status` INT(11) NOT NULL DEFAULT '1'; 
-
-
-
-
-
-#SELECT * FROM shareshare.groups;
 
 #########
 #USER PROFILE#
@@ -119,4 +243,29 @@ UPDATE friends SET request_pending = 0 WHERE friends_id > 0
 
 
 
+/*
+CREATE TABLE `items` (
+  `item_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `post_id` INT UNSIGNED NOT NULL,
+  `item_name` VARCHAR(255) NOT NULL DEFAULT 'item_name',
+  `item_price` DECIMAL(10,2) DEFAULT 0.00,
+  `item_description` TEXT,
+  `item_category` VARCHAR(255) DEFAULT 'item_category',
+  `item_link` VARCHAR(2083) DEFAULT 'item_link',
+  `purchased` BOOLEAN DEFAULT FALSE,
+  `purchased_by` VARCHAR(255) DEFAULT 'purchased_by',
+  `store` VARCHAR(255) DEFAULT 'store',
+  `multiple_stores` BOOLEAN DEFAULT FALSE,
+  `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`item_id`),
+  UNIQUE (`post_id`),
+  FOREIGN KEY (`post_id`) REFERENCES `posts`(`post_id`) ON DELETE CASCADE
+);
+*/
+
+/*
+post_id, master_site, post_type, post_status, group_id, list_id, post_from, post_to, post_caption, file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type, video_url, video_code, updated, created
+item_id, post_id, item_name, item_price, item_description, item_category, item_link, purchased, purchased_by, store, multiple_stores
+*/
 

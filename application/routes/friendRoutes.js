@@ -30,51 +30,15 @@ FUNCTIONS C: All Functions Related to Follower Actions
 
 */
 
-//FRIEND ROUTES
-
-//FUNCTIONS C: All Functions Related to Follower Actions
-//Function C1: Get All Your Following
-friendRouter.get('/follow/following/current_user/:current_user/', function(req, res) { 
-    friends.getYourFollowing(req, res);
-})
-
-//Function C2: Get All Your Followers
-friendRouter.get('/follow/followers/current_user/:current_user/', function(req, res) { 
-    friends.getYourFollowers(req, res);
-})
-
-//Function C3: Get All Followers of another User
-//http://localhost:3003/follow/user/followers/current_user/davey/other_user/frodo/
-friendRouter.get('/follow/user/followers/current_user/:current_user/other_user/:other_user/', function(req, res) { 
-    friends.getUserFollowers(req, res);
-})
-
-//Function C4: Get All Following of another User
-friendRouter.get('/follow/user/following/current_user/:current_user/other_user/:other_user/', function(req, res) { 
-    friends.getUserFollowingOtherUser(req, res);
-})
-
-//Function C5: Follow a User
-friendRouter.post('/follow/add/', function(req, res) { 
-    friends.followUser(req, res);
-})
-
-//Function C6: UnFollow a User
-friendRouter.post('/follow/remove/', function(req, res) { 
-    friends.unfollowUser(req, res);
-})
-
-
-
 
 //FUNCTIONS A: All Functions Related to Friends 
 //Function A1: Get All Site Users	
-friendRouter.get('/users/all/', function(req, res) { 
+friendRouter.get('/users/all/', middlewares.verifyUser, function(req, res) { 
     friends.getAllUsers(req, res);
 })
 
 //Function A2: Get Your Active Friends
-friendRouter.get('/friends/:user_name/', function(req, res) { 
+friendRouter.get('/friends/:user_name/', middlewares.verifyUser, function(req, res) { 
     friends.getActiveFriends(req, res);
 })
 
@@ -128,6 +92,42 @@ friendRouter.post('/friend/decline/', function(req, res) {
 friendRouter.post('/friend/remove/', function(req, res) { 
     friends.removeFriend(req, res);
 })
+
+
+//FUNCTIONS C: All Functions Related to Follower Actions
+//Function C1: Get All Your Following
+friendRouter.get('/follow/following/current_user/:current_user/', function(req, res) { 
+    friends.getYourFollowing(req, res);
+})
+
+//Function C2: Get All Your Followers
+friendRouter.get('/follow/followers/current_user/:current_user/', function(req, res) { 
+    friends.getYourFollowers(req, res);
+})
+
+//Function C3: Get All Followers of another User
+//http://localhost:3003/follow/user/followers/current_user/davey/other_user/frodo/
+friendRouter.get('/follow/user/followers/current_user/:current_user/other_user/:other_user/', function(req, res) { 
+    friends.getUserFollowers(req, res);
+})
+
+//Function C4: Get All Following of another User
+friendRouter.get('/follow/user/following/current_user/:current_user/other_user/:other_user/', function(req, res) { 
+    friends.getUserFollowingOtherUser(req, res);
+})
+
+//Function C5: Follow a User
+friendRouter.post('/follow/add/', function(req, res) { 
+    friends.followUser(req, res);
+})
+
+//Function C6: UnFollow a User
+friendRouter.post('/follow/remove/', function(req, res) { 
+    friends.unfollowUser(req, res);
+})
+
+
+
 
 
 module.exports = friendRouter;

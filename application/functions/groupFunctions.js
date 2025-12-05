@@ -1,4 +1,19 @@
 const db = require('./conn');
+const Functions = require('../functions/functions');
+const uploadFunctions = require('../functions/uploadFunctions');
+const awsStorage = require('../functions/aws/awsStorage');
+const bucketName = process.env.AWS_GROUPS_BUCKET_NAME
+const Requests = require('./classes/Requests');
+const Notifications = require('./classes/Notification');
+const Group = require('./classes/Group');
+
+//Upload imports
+const multerS3 = require('multer-s3');
+const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs') 
+const multer = require('multer')
+var mime = require('mime-types')
+
 
 /*
 FUNCTIONS A: All Functions Related to Groups
@@ -128,8 +143,76 @@ async function checkUserInGroup(userName, groupID)  {
 
 }
 
+function processGroupUsers(req) {
+    let newGroupUsersRaw;
 
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup }
+    try {
+        // STEP 1: Parse JSON string to array
+        newGroupUsersRaw = JSON.parse(req.body.groupUsers);
+    } catch (e) {
+        console.error("Invalid groupUsers format");
+        newGroupUsersRaw = [];
+    }
+
+    // STEP 2: Clean user names
+    const newGroupUsersClean = Functions.cleanUserNameArray(newGroupUsersRaw);
+
+    // STEP 3: Remove duplicates
+    const newGroupUsers = Functions.removeArrayDuplicates(newGroupUsersClean);
+
+    return newGroupUsers; // Optionally return the final array
+}
+
+async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers) {
+	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+	if (groupOutcome.outcome !== 1) {
+		return {
+			success: false,
+			message: "Error creating group",
+			errors: groupOutcome.errors
+		};
+	}
+
+	const groupID = groupOutcome.groupID;
+	const usersOutcome = await Group.addNewGroupUsers(groupID, groupUsers, currentUser);
+	if (usersOutcome.outcome !== 1) {
+		return {
+			success: false,
+			message: "Error adding group users",
+			errors: usersOutcome.errors
+		};
+	}
+
+	return {
+		success: true,
+		groupID
+	};
+}
+
+async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupID, message, link, type) {
+	const notification = {
+		masterSite: "kite",
+		notificationFrom: currentUser,
+		notificationMessage: message,
+		notificationTo: groupUsers,
+		notificationLink: link,
+		notificationType: type,
+		groupID
+	};
+	Notifications.createGroupNotification(notification);
+
+	const request = {
+		requestType: "new_group",
+		requestTypeText: "invited you to join a group",
+		sentBy: currentUser,
+		sentTo: groupUsers,
+		groupID
+	};
+	Requests.newGroupRequest(request);
+}
+
+
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
 
 
 
@@ -137,3 +220,49 @@ module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup }
 
 
 
+
+
+
+/*
+function handleUploadResult(req, err) {
+	const uploadOutcome = {
+		uploadSuccess: false,
+		containsFile: false,
+		message: "",
+		statusCode: 500
+	};
+
+	console.log("STEP 2: Upload File to API");
+
+	if (err instanceof multer.MulterError) {
+		console.log("Error 2A: File too large");
+		uploadOutcome.message = "Error 2A: File too large";
+		uploadOutcome.containsFile = true;
+		uploadOutcome.statusCode = 413;
+	} else if (err) {
+		console.log("Error 2B: Not Valid Image File");
+		uploadOutcome.message = "Error 2B: Not Valid Image File";
+        uploadOutcome.containsFile = true;
+		uploadOutcome.statusCode = 415;
+	} else {
+		let file = req.file;
+		console.log("Success 2A: No Multer Errors");
+
+		if (file !== undefined) {
+			console.log("Success 2B: Success Upload File");
+			uploadOutcome.uploadSuccess = true;
+            uploadOutcome.containsFile = true;
+			uploadOutcome.message = "Success 2B: Success Upload File";
+			uploadOutcome.statusCode = 200;
+		} else {
+			console.log("No File mah dude! we will use a default");
+            uploadOutcome.uploadSuccess = true;
+            uploadOutcome.containsFile = false;
+			uploadOutcome.message = "No File mah dude! we will use a default";
+			uploadOutcome.statusCode = 200;
+		}
+	}
+
+	return uploadOutcome;
+}
+*/
