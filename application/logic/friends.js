@@ -257,7 +257,6 @@ async function addFriend(req, res) {
     //TYPE 5: This is you - "you"
 	*/ 
 
-	//NEED TO RETURN THE ADDED FRIEND FOR REACT TO UPDATE 
     const connection = db.getConnection(); 
     const masterSite = req.body.masterSite;
     const currentUserBody = req.body.currentUser;
@@ -265,6 +264,10 @@ async function addFriend(req, res) {
     const friendName = req.body.addFriendName;
     const sentBy = req.body.currentUser;
     const sentTo = req.body.addFriendName;
+
+	var headerMessage = "ADD FRIEND: " + currentUser + " Added " + friendName;
+	Functions.addHeader(headerMessage)
+
 
 	var friendData = {
 		friendID: 0,
@@ -299,10 +302,6 @@ async function addFriend(req, res) {
     var friendUserID = friendUserIdFull.userID
 
 	newFriendOutcome.data.friendData.friendID = friendUserID
-
-	//Check if these match
-	const headerMessage = "";
-	Functions.addHeader(headerMessage);
 
 	//STEP 2: Get User Information
 	var friendProfileOutcome = await Profile.getUserProfile(friendName);
@@ -407,14 +406,15 @@ async function removeFriend(req, res) {
     const friendName = req.body.removeFriendName;
 
 	var friendData = {
-		friendID: 0,
-		friendName: friendName,
-		friendImage: "",
+		userName: friendName,
+		userID: 0,
+		userImage: "",
 		firstName: "",
 		lastName: "",
+		biography: "",
+		friendshipKey: "not_friends",
 		requestPending: 0,
-		requestSentBy: currentUser,
-		friendshipKey: "new_request",
+		requestSentBy: "",
 		alsoYourFriend: 0
 	}
 
@@ -441,15 +441,16 @@ async function removeFriend(req, res) {
 	var currentUserID = currentUserIdFull.userID
 	var friendUserID = friendUserIdFull.userID
 
-	removeFriendRequestOutcome.data.friendData.friendID = friendUserID
+	removeFriendRequestOutcome.data.friendData.userID = friendUserID
 
 	//STEP 3: Get Profile Information 
 	var friendProfileOutcome = await Profile.getUserProfile(friendName);
 	console.log(friendProfileOutcome)
 
-	friendData.friendImage = friendProfileOutcome.userProfile.userImage;
+	friendData.userImage = friendProfileOutcome.userProfile.userImage;
 	friendData.firstName = friendProfileOutcome.userProfile.firstName;
 	friendData.lastName = friendProfileOutcome.userProfile.lastName;
+	friendData.biography = friendProfileOutcome.userProfile.biography || "";
 
 	//Friendship Found
 	if(friendStatus.friendshipStatus == 1 || friendStatus.friendshipStatus == 2) {
@@ -458,11 +459,13 @@ async function removeFriend(req, res) {
 
 		//Success
 		if(removeFriendOutcomeOne.friendRemoved == true && removeFriendOutcomeTwo.friendRemoved == true) {
-			let friendship = {
-				currentUser: currentUser,
-				friendName: friendName
-			}
-			removeFriendRequestOutcome.data = friendship;
+			// After removal, set friendship status to "not_friends"
+			friendData.friendshipKey = "not_friends";
+			friendData.requestPending = 0;
+			friendData.requestSentBy = "";
+			friendData.alsoYourFriend = 0;
+			
+			removeFriendRequestOutcome.data.friendData = friendData;
 			removeFriendRequestOutcome.data.friendRemoved = true;
 			removeFriendRequestOutcome.success = true;
 			removeFriendRequestOutcome.statusCode = 200;
@@ -476,6 +479,12 @@ async function removeFriend(req, res) {
  
 	//No Friendship
 	} else {
+		// Even if no friendship found, return the user data with "not_friends" status
+		friendData.friendshipKey = "not_friends";
+		friendData.requestPending = 0;
+		friendData.requestSentBy = "";
+		friendData.alsoYourFriend = 0;
+		removeFriendRequestOutcome.data.friendData = friendData;
 		removeFriendRequestOutcome.message = "No friends found for " + currentUser + " and " + friendName;
 	}
 	

@@ -61,8 +61,7 @@ async function searchActiveFriends(req, res) {
 
 //Function A2: Search for a Group
 async function searchGroups(req, res) {
-    const currentUser = req.params.user_name;
-    const searchString = req.params.search_string;
+    const searchString = req.body.search_string || "";
     
     var searchGroupsOutcome = {
 		data: {},
@@ -70,9 +69,38 @@ async function searchGroups(req, res) {
 		success: false,
 		statusCode: 500,
 		errors: [], 
-		currentUser: currentUser
 	}
 
+	if(searchString == "") {
+		console.log("no search")
+		searchGroupsOutcome.message = "Search string is required";
+		searchGroupsOutcome.statusCode = 400;
+		searchGroupsOutcome.errors.push("Missing search_string in request body");
+		return res.json(searchGroupsOutcome);
+	} else {
+		console.log("ok search")
+	}
+    
+	console.log("Searching for: " + searchString)
+
+    try {
+        var groupsList = await searchFunctions.searchGroups(searchString);
+      
+        if(groupsList.success == true) {
+            searchGroupsOutcome.data = groupsList.groupsArray
+            searchGroupsOutcome.message = groupsList.groupsArray.length + " groups found"
+            searchGroupsOutcome.success = true;
+            searchGroupsOutcome.statusCode = 200;
+        } else {
+            searchGroupsOutcome.errors = groupsList.errors || [];
+            searchGroupsOutcome.message = "Error searching for groups";
+        }
+    } catch (error) {
+        console.error("Error in searchGroups:", error);
+        searchGroupsOutcome.message = "Internal server error while searching for groups";
+        searchGroupsOutcome.errors.push(error.message || error.toString());
+        searchGroupsOutcome.statusCode = 500;
+    }
     
     res.json(searchGroupsOutcome)
 
