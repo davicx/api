@@ -29,7 +29,7 @@ async function searchActiveFriendList(currentUser, searchStringRaw) {
 
 	return new Promise(async function(resolve, reject) {
         try {
-            const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND friends.friend_user_name LIKE ?";
+            const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.image_url, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0 AND friends.friend_user_name LIKE ?";
             //const queryString = "SELECT friends.user_name, friends.friend_user_name, friends.request_pending, user_profile.user_name, user_profile.account_active, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM user_profile INNER JOIN friends ON user_profile.user_name = friends.friend_user_name WHERE friends.user_name = ? AND friends.request_pending = 0";
             connection.query(queryString, [currentUser, searchString], (err, rows) => {
                 //console.log(rows)
@@ -39,7 +39,7 @@ async function searchActiveFriendList(currentUser, searchStringRaw) {
                     let currentFriend = {}
 
                     currentFriend.friendName = rows[i].user_name;
-                    currentFriend.friendImage = rows[i].image_name;
+                    currentFriend.friendImage = rows[i].image_url;
                     currentFriend.firstName = rows[i].first_name;
                     currentFriend.lastName = rows[i].last_name;
 
@@ -285,4 +285,69 @@ async function getProductInfoFromURL_ORIGINAL(itemURL) {
 }
 */
 
-module.exports = { searchActiveFriendList, getProductInfoFromURL };
+//Function A2: Search for Groups
+async function searchGroups(searchStringRaw) {
+    const connection = db.getConnection(); 
+    let searchString = "%" + searchStringRaw.trim() + "%";
+
+    console.log("searchGroups - searchString: " + searchString);
+
+    var searchGroupsOutcome = {
+        success: false,
+        groupsArray: [],
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT group_id, group_type, created_by, group_name, group_image, group_private, group_deleted, updated, created FROM shareshare.groups WHERE LOWER(group_name) LIKE LOWER(?) AND group_deleted = 0";
+            console.log("searchGroups - queryString: " + queryString);
+            console.log("searchGroups - searchString param: " + searchString);
+            
+            connection.query(queryString, [searchString], (err, rows) => {
+                console.log("searchGroups - query executed");
+                console.log("searchGroups - err: " + (err ? err.toString() : "null"));
+                console.log("searchGroups - rows length: " + (rows ? rows.length : "null"));
+                
+                var groupsArray = []
+             
+                if (rows && rows.length > 0) {
+                    for (let i = 0; i < rows.length; i++) {
+                        let currentGroup = {
+                            group_id: rows[i].group_id,
+                            group_type: rows[i].group_type,
+                            created_by: rows[i].created_by,
+                            group_name: rows[i].group_name,
+                            group_image: rows[i].group_image,
+                            group_private: rows[i].group_private,
+                            group_deleted: rows[i].group_deleted,
+                            updated: rows[i].updated,
+                            created: rows[i].created
+                        }
+
+                        groupsArray.push(currentGroup)
+                    }
+                }
+
+                if (!err) {
+                    searchGroupsOutcome.success = true;
+                    searchGroupsOutcome.groupsArray = groupsArray
+                    console.log("searchGroups - success, found " + groupsArray.length + " groups");
+                    resolve(searchGroupsOutcome); 
+
+                } else {
+                    console.log("searchGroups - error: " + err);
+                    searchGroupsOutcome.errors.push(err);
+                    resolve(searchGroupsOutcome);
+                }
+            })
+        } catch(err) {
+            console.log("searchGroups - catch error: " + err);
+            searchGroupsOutcome.errors.push(err);
+            reject(searchGroupsOutcome);
+        } 
+    })
+
+}
+
+module.exports = { searchActiveFriendList, getProductInfoFromURL, searchGroups };
