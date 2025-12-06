@@ -350,4 +350,65 @@ async function searchGroups(searchStringRaw) {
 
 }
 
-module.exports = { searchActiveFriendList, getProductInfoFromURL, searchGroups };
+//Function A3: Search for All Users (not just friends)
+async function searchAllUsers(searchStringRaw) {
+    const connection = db.getConnection(); 
+    let searchString = "%" + searchStringRaw.trim() + "%";
+
+    console.log("searchAllUsers - searchString: " + searchString);
+
+    var searchUsersOutcome = {
+        success: false,
+        usersArray: [],
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT user_id, user_name, image_url, first_name, last_name, biography FROM user_profile WHERE account_active = 1 AND (LOWER(user_name) LIKE LOWER(?) OR LOWER(first_name) LIKE LOWER(?) OR LOWER(last_name) LIKE LOWER(?))";
+            console.log("searchAllUsers - queryString: " + queryString);
+            
+            connection.query(queryString, [searchString, searchString, searchString], (err, rows) => {
+                console.log("searchAllUsers - query executed");
+                console.log("searchAllUsers - err: " + (err ? err.toString() : "null"));
+                console.log("searchAllUsers - rows length: " + (rows ? rows.length : "null"));
+                
+                var usersArray = []
+             
+                if (rows && rows.length > 0) {
+                    for (let i = 0; i < rows.length; i++) {
+                        let currentUser = {
+                            userID: rows[i].user_id,
+                            userName: rows[i].user_name,
+                            userImage: rows[i].image_url,
+                            firstName: rows[i].first_name,
+                            lastName: rows[i].last_name,
+                            biography: rows[i].biography || ""
+                        }
+
+                        usersArray.push(currentUser)
+                    }
+                }
+
+                if (!err) {
+                    searchUsersOutcome.success = true;
+                    searchUsersOutcome.usersArray = usersArray
+                    console.log("searchAllUsers - success, found " + usersArray.length + " users");
+                    resolve(searchUsersOutcome); 
+
+                } else {
+                    console.log("searchAllUsers - error: " + err);
+                    searchUsersOutcome.errors.push(err);
+                    resolve(searchUsersOutcome);
+                }
+            })
+        } catch(err) {
+            console.log("searchAllUsers - catch error: " + err);
+            searchUsersOutcome.errors.push(err);
+            reject(searchUsersOutcome);
+        } 
+    })
+
+}
+
+module.exports = { searchActiveFriendList, getProductInfoFromURL, searchGroups, searchAllUsers };
