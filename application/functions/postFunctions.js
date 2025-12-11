@@ -483,7 +483,7 @@ async function getPostFrom(postID)  {
     
 }
 
-module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURLPostsArray, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, getUserPostCount, addPostComments, addPostLikes, addSignedURLPostsArray, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
 
 
 /*

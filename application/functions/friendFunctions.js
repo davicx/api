@@ -13,9 +13,10 @@ const Notifications = require('./classes/Notification');
 FUNCTIONS A: All Functions Related to getting Friends 
 	1) Function A1: Get all Users
     2) Function A2: Get Your Friends
-    3) Function A3: Get All Your Friends (Active, Pending, Requested)
-	4) Function A4: Get your Pending Friends Requests (They accept)	
-	5) Function A5: Get your Pending Friends Invites (You can accept)
+    3) Function A3: Get a Users Active Friends Count
+    4) Function A4: Get All Your Friends (Active, Pending, Requested)
+	5) Function A5: Get your Pending Friends Requests (They accept)	
+	6) Function A6: Get your Pending Friends Invites (You can accept)
 
 FUNCTIONS B: All Functions Related to Friends  
 	1) Function B1: Compare a group of users with your friends 
@@ -139,7 +140,46 @@ async function getActiveFriends(currentUser) {
     
 }
 
-//Function A3: Get All Your Friends (Active, Pending, Requested)
+//Function A3: Get a Users Active Friends Count
+async function getUserFriendCount(userName) {
+    const connection = db.getConnection(); 
+
+    var userFriendCountOutcome = {
+        userName: userName,
+        friendCount: 0,
+        success: false,
+        errors: []
+    }
+
+	return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT COUNT(friends_id) AS friend_count FROM friends WHERE user_name = ? AND request_pending = 0";
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    if(rows.length >= 1){
+                        userFriendCountOutcome.friendCount = rows[0].friend_count;
+                        userFriendCountOutcome.success = true;
+                    } else {
+                        userFriendCountOutcome.errors.push("Could not get friend count for " + userName);
+                    }
+
+                    resolve(userFriendCountOutcome); 
+
+                } else {
+                    userFriendCountOutcome.errors.push(err);
+                    resolve(userFriendCountOutcome);
+                }
+            })
+        } catch(err) {
+            userFriendCountOutcome.errors.push(err);
+            reject(userFriendCountOutcome);
+        } 
+    })
+
+}
+
+//Function A4: Get All Your Friends (Active, Pending, Requested)
 async function getAllUserFriends(currentUser) {
     const connection = db.getConnection(); 
 
@@ -206,7 +246,7 @@ async function getAllUserFriends(currentUser) {
     })
 }
 
-//Function A4: Get your Pending Friends Requests (They accept)	
+//Function A5: Get your Pending Friends Requests (They accept)	
 async function getPendingFriendRequests(sentBy, userName) {
     const connection = db.getConnection(); 
 
@@ -252,7 +292,7 @@ async function getPendingFriendRequests(sentBy, userName) {
     })
 }
 
-//Function A5: Get your Pending Friends Invites (You can accept)
+//Function A6: Get your Pending Friends Invites (You can accept)
 async function getPendingFriendInvites(currentUser) {
     const connection = db.getConnection(); 
 
@@ -677,7 +717,7 @@ async function checkFollowingStatus(currentUser, followName) {
 }
 
 
-module.exports = { getAllUsers, getActiveFriends, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites,getFriendStatus,  checkFriendshipStatus, createFriendshipInformationUserProfile, compareUsersWithYourFriends, getSingleInvite,removeFriend, declineFriendRequest, checkFollowingStatus };
+module.exports = { getAllUsers, getActiveFriends, getUserFriendCount, getAllUserFriends, getPendingFriendRequests, getPendingFriendInvites,getFriendStatus,  checkFriendshipStatus, createFriendshipInformationUserProfile, compareUsersWithYourFriends, getSingleInvite,removeFriend, declineFriendRequest, checkFollowingStatus };
 
 
 //APPENDIX

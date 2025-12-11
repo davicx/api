@@ -16,6 +16,7 @@ const Profile = require('../functions/classes/Profile');
 FUNCTIONS A: All Functions Related to Friends 
 	1) Function A1: Get All Site Users	
 	2) Function A2: Get Your Friends	
+	3) Function A3: Get a Users Active Friends Count	
 	3) Function A3: Get All Your Friends (Active and Pending)	
 	4) Function A4: Get your Pending Friends Requests (They accept)	
 	5) Function A5: Get your Pending Friends Invites (You can accept)

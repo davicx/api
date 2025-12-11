@@ -1,5 +1,20 @@
 #SELECT * FROM pur_vndr_hdr_t LIMIT 20 vndr_us_tax_nbr
 
+
+#SELECT * FROM CA_UH_ACCT_SPRVSR_DLGT_T LIMIT 10;
+#SELECT COUNT(*) FROM CA_UH_ACCT_SPRVSR_DLGT_T;
+-- Check the related delegate table
+#SELECT 'CA_ACCT_DELEGATE_T' as TABLE_NAME, COUNT(*) as ROW_COUNT FROM CA_ACCT_DELEGATE_T
+#UNION ALL
+#SELECT 'CA_UH_ACCT_SPRVSR_DLGT_T' as TABLE_NAME, COUNT(*) as ROW_COUNT FROM CA_UH_ACCT_SPRVSR_DLGT_T;
+#SELECT * FROM KRCR_PARM_T LIMIT 10;
+
+SELECT COLUMN_NAME 
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+AND TABLE_NAME = 'CA_ACCT_DELEGATE_T'
+AND COLUMN_NAME LIKE '%END%';
+
 /*
 SELECT 
     TABLE_NAME,
@@ -12,6 +27,10 @@ WHERE TABLE_SCHEMA = DATABASE()
 ORDER BY TABLE_NAME, ORDINAL_POSITION;
 */
 
+#SELECT explanation FROM fs_doc_header_t LIMIT 5;
+
+
+/*
 SELECT DISTINCT grp.payee_id
 FROM KFS.pdp_pmt_dtl_t pdt
 INNER JOIN KFS.pdp_pmt_grp_t grp ON grp.pmt_grp_id = pdt.pmt_grp_id
@@ -19,6 +38,7 @@ INNER JOIN KFS.pdp_pmt_acct_dtl_t pad ON pad.pmt_dtl_id = pdt.pmt_dtl_id
 WHERE pad.fin_object_cd BETWEEN '6500' AND '6593'
   AND pdt.fdoc_typ_cd LIKE 'DV%'
 LIMIT 5;
+*/
 /*
 SELECT
     grp.pmt_payee_nm AS payee_name,

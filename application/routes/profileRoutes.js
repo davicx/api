@@ -14,6 +14,9 @@ FUNCTIONS A: All Routes Related to User Profile
 	2) Function A2: Update User Profile
 	3) Function A3: Update User Image
 
+FUNCTIONS B: All Functions Related to User Info
+	1) Function B1: Get total User Posts, Groups and Friends
+
 */
 
 /*
@@ -31,12 +34,10 @@ profileRouter.get("/profile/:user_name", middlewares.verifyUser, (req, res) => {
     profile.getUserProfile(req, res);
 })
 
-
 //Function A2: Update User Profile
 profileRouter.post("/profile/update", (req, res) => {
 	profile.updateUserProfile(req, res);
 })
-
 
 //Function A3: Update Full User Profile
 profileRouter.post("/profile/full/update",(req, res) => {
@@ -68,6 +69,11 @@ profileRouter.post("/profile/full/update",(req, res) => {
 	
 })
 
+//FUNCTIONS B: All Functions Related to User Info
+//Function B1: Get total User Posts, Groups and Friends
+profileRouter.get("/profile/info/:user_name", middlewares.verifyUser, (req, res) => {
+    profile.getUserProfileInformation(req, res);
+})
 
 
 

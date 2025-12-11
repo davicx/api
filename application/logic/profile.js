@@ -29,7 +29,14 @@ var mime = require('mime-types')
 FUNCTIONS A: All Functions Related to User Profile
 	1) Function A1: Get User Profile
 	2) Function A2: Get Simple User Profile
-	3) Function A3: Update User Profile
+    3) Function A3: Update User Profile
+    4) Function A4: Update Full User Profile (Image Optional)
+    5) Function A5: Update Full User Profile Local to AWS
+    6) Function A6: Update Full User Profile AWS
+
+FUNCTIONS B: All Functions Related to User Info
+	1) Function B1: Get total User Posts, Groups and Friends
+
 */
 
 /*
@@ -296,6 +303,8 @@ async function updateFullUserProfileLocal(req, res) {
 
 }
 
+
+//Function A5: Update Full User Profile Local to AWS
 async function updateFullUserProfileLocalAWS(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
         var uploadSuccess = false
@@ -420,11 +429,114 @@ async function updateFullUserProfileLocalAWS(req, res) {
 
 }
 
-
 //Function A6: Update Full User Profile AWS
 
+//FUNCTIONS B: All Functions Related to User Info
+//Function B1: Get total User Posts, Groups and Friends
+async function getUserProfileInformation(req, res) {
+    res.json({})
+}
 
-module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
+/*
+//FUNCTIONS B: All Functions Related to User Info
+//Function B1: Get total User Posts, Groups and Friends
+async function getUserProfileInformation(req, res) {
+    const userName = req.params.user_name;
+    const currentUser = req.currentUser;
+    
+    var headerMessage = "Get User Profile Information for " + userName;
+    Functions.addHeader(headerMessage);
+    
+    var userProfileInfoOutcome = {
+		data: [],
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
+
+    try {
+        // STEP 1: Get User ID
+        var userIDResult = await userFunctions.getUserID(userName);
+        var userID = userIDResult.userID || -1;
+        
+        if (!userIDResult.userFound) {
+            userProfileInfoOutcome.message = "User not found";
+            userProfileInfoOutcome.statusCode = 404;
+            Functions.addFooter();
+            return res.json(userProfileInfoOutcome);
+        }
+
+        // STEP 2: Get all counts in parallel
+        const [postsResult, friendsResult, groupsResult] = await Promise.allSettled([
+            postFunctions.getUserPostCount(userName),
+            friendFunctions.getUserFriendCount(userName),
+            getGroupCount(userName)
+        ]);
+
+        // STEP 3: Extract counts (use -1 if failed)
+        var totalPosts = -1;
+        if (postsResult.status === 'fulfilled' && postsResult.value && postsResult.value.groupPostCount !== undefined) {
+            totalPosts = postsResult.value.groupPostCount;
+        }
+
+        var totalFriends = -1;
+        if (friendsResult.status === 'fulfilled' && friendsResult.value && friendsResult.value.success === true) {
+            totalFriends = friendsResult.value.friendCount;
+        }
+
+        var totalGroups = -1;
+        if (groupsResult.status === 'fulfilled' && groupsResult.value !== undefined) {
+            totalGroups = groupsResult.value;
+        }
+
+        // STEP 4: Build response
+        var userInfo = {
+            userName: userName,
+            userID: userID,
+            totalFriends: totalFriends,
+            totalGroups: totalGroups,
+            totalPosts: totalPosts
+        };
+
+        userProfileInfoOutcome.data = [userInfo];
+        userProfileInfoOutcome.message = "We got your profile information!";
+        userProfileInfoOutcome.success = true;
+        userProfileInfoOutcome.statusCode = 200;
+
+    } catch (error) {
+        console.error("Error in getUserProfileInformation:", error);
+        userProfileInfoOutcome.message = "Internal server error while getting profile information";
+        userProfileInfoOutcome.errors.push(error.message || error.toString());
+        userProfileInfoOutcome.statusCode = 500;
+    }
+    
+    Functions.addFooter();
+    res.json(userProfileInfoOutcome);
+}
+
+// Helper function to get group count
+async function getGroupCount(userName) {
+    const connection = db.getConnection();
+    
+    return new Promise(function(resolve, reject) {
+        try {
+            const queryString = "SELECT COUNT(group_users.primary_id) AS group_count FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND group_users.active_member = 1 AND shareshare.groups.group_deleted = 0";
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err && rows && rows.length > 0) {
+                    resolve(rows[0].group_count);
+                } else {
+                    reject(err || "Failed to get group count");
+                }
+            });
+        } catch(err) {
+            reject(err);
+        }
+    });
+}
+    */
+module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS, getUserProfileInformation };
 
 
 //APPENDIX
