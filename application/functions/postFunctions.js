@@ -351,7 +351,7 @@ async function getUserPostCount(userName)  {
     const connection = db.getConnection(); 
  
     //const queryString = "SELECT * FROM posts WHERE group_id = ? ";
-    const queryString = "SELECT COUNT(post_id) AS post_count FROM posts WHERE post_to = ? AND post_status = 1";
+    const queryString = "SELECT COUNT(post_id) AS post_count FROM posts WHERE post_from = ? AND post_status = 1";
 
     var postsOutcome = {
         success: false,

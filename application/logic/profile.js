@@ -7,6 +7,8 @@ const fileFunctions = require('../functions/fileFunctions');
 const userFunctions = require('../functions/userFunctions');
 const profileFunctions = require('../functions/profileFunctions')
 const friendFunctions = require('../functions/friendFunctions');
+const postFunctions = require('../functions/postFunctions');
+const groupFunctions = require('../functions/groupFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const cloudFunctions = require('../functions/cloudFunctions');
@@ -434,13 +436,6 @@ async function updateFullUserProfileLocalAWS(req, res) {
 //FUNCTIONS B: All Functions Related to User Info
 //Function B1: Get total User Posts, Groups and Friends
 async function getUserProfileInformation(req, res) {
-    res.json({})
-}
-
-/*
-//FUNCTIONS B: All Functions Related to User Info
-//Function B1: Get total User Posts, Groups and Friends
-async function getUserProfileInformation(req, res) {
     const userName = req.params.user_name;
     const currentUser = req.currentUser;
     
@@ -472,7 +467,7 @@ async function getUserProfileInformation(req, res) {
         const [postsResult, friendsResult, groupsResult] = await Promise.allSettled([
             postFunctions.getUserPostCount(userName),
             friendFunctions.getUserFriendCount(userName),
-            getGroupCount(userName)
+            groupFunctions.getUserGroupCount(userName)
         ]);
 
         // STEP 3: Extract counts (use -1 if failed)
@@ -487,8 +482,8 @@ async function getUserProfileInformation(req, res) {
         }
 
         var totalGroups = -1;
-        if (groupsResult.status === 'fulfilled' && groupsResult.value !== undefined) {
-            totalGroups = groupsResult.value;
+        if (groupsResult.status === 'fulfilled' && groupsResult.value && groupsResult.value.success === true) {
+            totalGroups = groupsResult.value.groupCount;
         }
 
         // STEP 4: Build response
@@ -516,26 +511,6 @@ async function getUserProfileInformation(req, res) {
     res.json(userProfileInfoOutcome);
 }
 
-// Helper function to get group count
-async function getGroupCount(userName) {
-    const connection = db.getConnection();
-    
-    return new Promise(function(resolve, reject) {
-        try {
-            const queryString = "SELECT COUNT(group_users.primary_id) AS group_count FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND group_users.active_member = 1 AND shareshare.groups.group_deleted = 0";
-            connection.query(queryString, [userName], (err, rows) => {
-                if (!err && rows && rows.length > 0) {
-                    resolve(rows[0].group_count);
-                } else {
-                    reject(err || "Failed to get group count");
-                }
-            });
-        } catch(err) {
-            reject(err);
-        }
-    });
-}
-    */
 module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS, getUserProfileInformation };
 
 
