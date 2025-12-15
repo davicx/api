@@ -5,9 +5,14 @@
 #ALL#
 #########
 
-#SELECT * FROM posts;
+#UPDATE posts SET post_caption = "I really want to get Secret of Mana you can find it at a couple of stores and it would be so awesome!!" WHERE post_id = 838;
+
+SELECT * FROM posts;
+
+#SELECT * FROM items;
 #SELECT * FROM items;
 #SELECT * FROM friends;
+#SELECT * FROM friends WHERE user_name = "davey";
 #SELECT * FROM pending_requests;
 #SELECT * FROM comments;
 #SELECT * FROM shareshare.groups;
@@ -15,11 +20,12 @@
 #SELECT * FROM notifications;
 #SELECT * FROM pending_requests 
 #SELECT * FROM user_profile;
+#SELECT * FROM user_login;
 #SELECT * FROM folders;
 #SELECT * FROM user_profile;
 
 
-#DELETE FROM friends WHERE post_id = 792;
+#DELETE FROM friends WHERE friends_id > 0;
 #DELETE FROM pending_requests WHERE request_id > 0;
 
 #DELETE FROM items WHERE item_id > 0;
@@ -34,7 +40,7 @@
 #UPDATE items SET purchased_by = "sam" WHERE item_id >0;
 #UPDATE friends SET request_pending = 0 WHERE friends_id > 898;
 
-#DELETE FROM posts WHERE post_id = 792;
+#DELETE FROM posts WHERE post_id = 839;
 #DELETE FROM shareshare.groups WHERE group_id > 500;
 #DELETE FROM group_users WHERE primary_id > 2074;
 #DELETE FROM notifications WHERE notification_id > 0;
@@ -49,7 +55,7 @@
 #ITEMS
 #UPDATE posts SET file_url = "http://localhost:3003/kite-us-west-two/posts/postImage-1760223872278-186100521-ff_tactics.jpg" WHERE post_id = 831;
 
-SELECT * FROM posts WHERE post_type = "item";
+#SELECT * FROM posts WHERE post_type = "item";
 #SELECT * FROM items; 
 #UPDATE items SET purchased_by = "sam" WHERE item_id >0;
 #UPDATE posts SET post_to = 723 WHERE post_id = 826;
