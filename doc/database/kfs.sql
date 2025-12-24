@@ -1,5 +1,107 @@
 #SELECT * FROM pur_vndr_hdr_t LIMIT 20 vndr_us_tax_nbr
 
+SELECT COUNT(*) AS row_count
+FROM
+    KFS.pdp_pmt_dtl_t pdt
+    INNER JOIN KFS.pdp_pmt_grp_t grp
+        ON grp.pmt_grp_id = pdt.pmt_grp_id
+    INNER JOIN KFS.pdp_pmt_acct_dtl_t pad
+        ON pad.pmt_dtl_id = pdt.pmt_dtl_id
+    INNER JOIN KFS.fp_dv_doc_t ddt2
+        ON ddt2.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fs_doc_header_t fdh
+        ON fdh.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fp_dv_doc_ext_t extdd
+        ON ddt2.fdoc_nbr = extdd.fdoc_nbr
+    INNER JOIN KFS.pur_vndr_hdr_t vht
+        ON vht.vndr_hdr_gnrtd_id = SUBSTRING_INDEX(grp.payee_id, '-', 1)
+WHERE
+    pad.fin_object_cd BETWEEN '6500' AND '6593'
+    AND pdt.fdoc_typ_cd LIKE 'DV%'
+    AND grp.disb_ts >= STR_TO_DATE('01-09-2025', '%d-%m-%Y')
+    AND grp.disb_ts < DATE_ADD(STR_TO_DATE('30-09-2025', '%d-%m-%Y'), INTERVAL 1 DAY);
+
+
+-- Query 10: Check row counts by date to find which date range has 76 rows
+-- This helps identify the exact dates the API is using
+SELECT 
+    DATE(grp.disb_ts) AS disbursement_date,
+    COUNT(*) AS row_count
+FROM
+    KFS.pdp_pmt_dtl_t pdt
+    INNER JOIN KFS.pdp_pmt_grp_t grp
+        ON grp.pmt_grp_id = pdt.pmt_grp_id
+    INNER JOIN KFS.pdp_pmt_acct_dtl_t pad
+        ON pad.pmt_dtl_id = pdt.pmt_dtl_id
+    INNER JOIN KFS.fp_dv_doc_t ddt2
+        ON ddt2.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fs_doc_header_t fdh
+        ON fdh.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fp_dv_doc_ext_t extdd
+        ON ddt2.fdoc_nbr = extdd.fdoc_nbr
+    INNER JOIN KFS.pur_vndr_hdr_t vht
+        ON vht.vndr_hdr_gnrtd_id = SUBSTRING_INDEX(grp.payee_id, '-', 1)
+WHERE
+    pad.fin_object_cd BETWEEN '6500' AND '6593'
+    AND pdt.fdoc_typ_cd LIKE 'DV%'
+    AND grp.disb_ts >= STR_TO_DATE('01-09-2025', '%d-%m-%Y')
+    AND grp.disb_ts < DATE_ADD(STR_TO_DATE('30-09-2025', '%d-%m-%Y'), INTERVAL 1 DAY)
+GROUP BY DATE(grp.disb_ts)
+ORDER BY disbursement_date DESC;
+/*
+SELECT
+    pdt.cust_pmt_doc_nbr,
+    grp.payee_id,
+    grp.pmt_payee_nm,
+    pad.account_nbr,
+    pad.fin_object_cd,
+    grp.disb_ts,
+    pdt.fdoc_typ_cd
+FROM
+    KFS.pdp_pmt_dtl_t pdt
+    INNER JOIN KFS.pdp_pmt_grp_t grp ON grp.pmt_grp_id = pdt.pmt_grp_id
+    INNER JOIN KFS.pdp_pmt_acct_dtl_t pad ON pad.pmt_dtl_id = pdt.pmt_dtl_id
+    INNER JOIN KFS.fp_dv_doc_t ddt2 ON ddt2.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fs_doc_header_t fdh ON fdh.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fp_dv_doc_ext_t extdd ON ddt2.fdoc_nbr = extdd.fdoc_nbr
+    INNER JOIN KFS.pur_vndr_hdr_t vht ON vht.vndr_hdr_gnrtd_id = SUBSTRING_INDEX(grp.payee_id, '-', 1)
+WHERE
+    pad.fin_object_cd BETWEEN '6500' AND '6593'
+    AND pdt.fdoc_typ_cd LIKE 'DV%'
+    AND grp.disb_ts >= STR_TO_DATE('01-09-2025', '%d-%m-%Y')
+    AND grp.disb_ts < DATE_ADD(STR_TO_DATE('15-09-2025', '%d-%m-%Y'), INTERVAL 1 DAY)
+    AND grp.payee_id = '79272-0'
+ORDER BY grp.disb_ts DESC;
+
+SELECT
+    pdt.cust_pmt_doc_nbr,
+    grp.payee_id,
+    grp.pmt_payee_nm,
+    pad.account_nbr,
+    pad.fin_object_cd,
+    grp.disb_ts,
+    pdt.fdoc_typ_cd
+FROM
+    KFS.pdp_pmt_dtl_t pdt
+    INNER JOIN KFS.pdp_pmt_grp_t grp ON grp.pmt_grp_id = pdt.pmt_grp_id
+    INNER JOIN KFS.pdp_pmt_acct_dtl_t pad ON pad.pmt_dtl_id = pdt.pmt_dtl_id
+    INNER JOIN KFS.fp_dv_doc_t ddt2 ON ddt2.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fs_doc_header_t fdh ON fdh.fdoc_nbr = pdt.cust_pmt_doc_nbr
+    LEFT OUTER JOIN KFS.fp_dv_doc_ext_t extdd ON ddt2.fdoc_nbr = extdd.fdoc_nbr
+    INNER JOIN KFS.pur_vndr_hdr_t vht ON vht.vndr_hdr_gnrtd_id = SUBSTRING_INDEX(grp.payee_id, '-', 1)
+WHERE
+    pad.fin_object_cd BETWEEN '6500' AND '6593'
+    AND pdt.fdoc_typ_cd LIKE 'DV%'
+    AND grp.disb_ts >= STR_TO_DATE('01-09-2025', '%d-%m-%Y')
+    AND grp.disb_ts < DATE_ADD(STR_TO_DATE('15-09-2025', '%d-%m-%Y'), INTERVAL 1 DAY)
+    -- REMOVED: AND grp.payee_id = '79272-0'
+ORDER BY grp.disb_ts DESC;
+
+*/
+
+
+
+
 
 #SELECT * FROM CA_UH_ACCT_SPRVSR_DLGT_T LIMIT 10;
 #SELECT COUNT(*) FROM CA_UH_ACCT_SPRVSR_DLGT_T;
@@ -9,12 +111,27 @@
 #SELECT 'CA_UH_ACCT_SPRVSR_DLGT_T' as TABLE_NAME, COUNT(*) as ROW_COUNT FROM CA_UH_ACCT_SPRVSR_DLGT_T;
 #SELECT * FROM KRCR_PARM_T LIMIT 10;
 
-SELECT COLUMN_NAME 
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-AND TABLE_NAME = 'CA_ACCT_DELEGATE_T'
-AND COLUMN_NAME LIKE '%END%';
+#SELECT COUNT(*) as TOTAL_ROWS FROM ca_uh_acct_sprvsr_dlgt_gbl_t;
 
+#SELECT * FROM CA_UH_ACCT_SPRVSR_DLGT_T LIMIT 10;
+/*
+FIN_COA_CD, ACCOUNT_NBR, FDOC_TYP_CD, ACCT_SPRVSR_DLGT_UNVL_ID, OBJ_ID, VER_NBR, 
+FDOC_APRV_FROM_AMT, ACCT_SPRVSR_DLGT_PRMRT_CD, ACCT_SPRVSR_DLGT_ACTV_CD, 
+ACCT_SPRVSR_DLGT_START_DT, FDOC_APRV_TO_AMT, ACCT_SPRVSR_DLGT_END_DT
+
+*/
+#select count(*) from kfs.ca_acct_delegate_t where acct_dlgt_typ_cd='AS';
+
+#SELECT * FROM kfs.ca_acct_delegate_t where acct_dlgt_typ_cd='AS';
+/*
+select * from kfs.ca_acct_delegate_t where acct_dlgt_typ_cd='AS';
+
+FIN_COA_CD, ACCOUNT_NBR, FDOC_TYP_CD, ACCT_DLGT_UNVL_ID, OBJ_ID, VER_NBR, 
+FDOC_APRV_FROM_AMT, ACCT_DLGT_PRMRT_CD, ACCT_DLGT_ACTV_CD, 
+ACCT_DLGT_START_DT, FDOC_APRV_TO_AMT, LAST_UPDT_TS, ACCT_DLGT_TYP_CD, ACCT_DLGT_END_DT
+
+*/
+#select * from kfs.ca_acct_delegate_t where acct_dlgt_typ_cd='AS';
 /*
 SELECT 
     TABLE_NAME,
