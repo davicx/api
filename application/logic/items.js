@@ -38,7 +38,7 @@ FUNCTIONS B: All Functions Related to getting Items
 
 
 */
-//In items.js postItemLocal I 
+//In items.js postItemLocal
 
 //FUNCTIONS A: All Functions Related to Posts
 //Function A1: Post Item
