@@ -10,6 +10,7 @@ const friendFunctions = require('../functions/friendFunctions');
 const profileFunctions = require('../functions/profileFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const userFunctions = require('../functions/userFunctions');
+const groupFunctions = require('../functions/groupFunctions');
 const timeFunctions = require('../functions/timeFunctions');
 const fileFunctions = require('../functions/fileFunctions');
 const likeFunctions = require('../functions/likeFunctions');
@@ -119,9 +120,41 @@ async function postItemLocal(req, res) {
 
 			  //console.log(uploadFile)
 		}
-	
-		//POST
-		let newPostOutcome = await Post.createPostItem(req, uploadFile);
+
+		//STEP 4: Get Group Post Information
+		console.log("STEP 4: Get Group Post Information")
+		
+		// Get user image
+		let userImage = null;
+		try {
+			const userImageResult = await profileFunctions.getUserImage(currentUser);
+			if (userImageResult.success) {
+				userImage = userImageResult.userProfileImage;
+			}
+		} catch (error) {
+			console.log("Error getting user image for " + currentUser + ": " + error);
+		}
+
+		// Get group information
+		let groupInfo = {
+			groupName: "needGroupName",
+			groupImage: "needGroupImage"
+		};
+		if (groupID) {
+			try {
+				const groupInfoResult = await Group.getGroupInformation(groupID);
+				if (groupInfoResult.status === 200) {
+					groupInfo.groupName = groupInfoResult.groupName;
+					groupInfo.groupImage = groupInfoResult.groupImage;
+				}
+			} catch (error) {
+				console.log("Error getting group information for " + groupID + ": " + error);
+			}
+		}
+
+		//STEP 5: Create Post with all information
+		console.log("STEP 5: Create Post with all information")
+		let newPostOutcome = await Post.createPostItem(req, uploadFile, userImage, groupInfo);
 
         console.log("newPostOutcome")
         console.log(newPostOutcome)

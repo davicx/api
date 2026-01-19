@@ -247,7 +247,6 @@ async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupI
 	Requests.newGroupRequest(request);
 }
 
-
 module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, getUserGroupCount, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
 
 

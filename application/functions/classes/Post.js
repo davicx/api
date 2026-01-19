@@ -1,6 +1,5 @@
 const db = require('./../conn');
 const timeFunctions = require('../timeFunctions');
-const profileFunctions = require('../profileFunctions');
 const validationFunctions = require('../validationFunctions');
 const dayjs = require('dayjs')
 var relativeTime = require('dayjs/plugin/relativeTime')
@@ -105,7 +104,7 @@ class Post {
     }
 
     //Method A2: Make a Photo Post
-    static async createPostPhoto(req, uploadFile)  {
+    static async createPostPhoto(req, uploadFile, userImage, groupInfo)  {
         console.log("POST: createPostPhoto")
         const connection = db.getConnection(); 
         const masterSite = req.body.masterSite 
@@ -129,24 +128,17 @@ class Post {
         console.log(cloudKey)
         console.log("cloudKey")
         console.log("cloudKey")
-  
-        // Get user image
-        let userImage = null;
-        try {
-            const userImageResult = await profileFunctions.getUserImage(postFrom);
-            if (userImageResult.success) {
-                userImage = userImageResult.userProfileImage;
-            }
-        } catch (error) {
-            console.log("Error getting user image for " + postFrom + ": " + error);
-        }
+
+        // Default values if not provided
+        const groupName = groupInfo?.groupName || "needGroupName";
+        const groupImage = groupInfo?.groupImage || "needGroupImage";
 
         var createdPost = {
             postID: 0,
             postType: postType,
             groupID: Number(groupID),
-            groupName: "needGroupName",
-            groupImage: "needGroupImage",
+            groupName: groupName,
+            groupImage: groupImage,
             listID: Number(listID),
             postFrom: postFrom,
             postFromImage: userImage,
@@ -280,13 +272,12 @@ class Post {
 
 
     // Method A4: Make a Post With Item
-    static async createPostItem(req, uploadFile)  {
+    static async createPostItem(req, uploadFile, userImage, groupInfo)  {
         console.log("POST: createPostItem")
         const connection = db.getConnection(); 
         const masterSite = req.body.masterSite 
         const postType = req.body.postType 
         const postFrom = req.body.postFrom 
-        const postFromImage= "Need"
         const postTo = req.body.postTo 
         const groupID = req.body.groupID 
         const listID = req.body.listID 
@@ -310,23 +301,16 @@ class Post {
 
         console.log("POST " + bucket)
 
-        // Get user image
-        let userImage = null;
-        try {
-            const userImageResult = await profileFunctions.getUserImage(postFrom);
-            if (userImageResult.success) {
-                userImage = userImageResult.userProfileImage;
-            }
-        } catch (error) {
-            console.log("Error getting user image for " + postFrom + ": " + error);
-        }
+        // Default values if not provided
+        const groupName = groupInfo?.groupName || "needGroupName";
+        const groupImage = groupInfo?.groupImage || "needGroupImage";
 
         var createdPost = {
             postID: 0,
             postType: postType,
             groupID: Number(groupID),
-            groupName: "needGroupName",
-            groupImage: "needGroupImage",
+            groupName: groupName,
+            groupImage: groupImage,
             listID: Number(listID),
             postFrom: postFrom,
             postFromImage: userImage,
