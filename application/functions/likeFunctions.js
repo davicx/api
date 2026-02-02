@@ -106,10 +106,6 @@ async function unlikePost(postID, currentUser)  {
 
                 connection.query(queryString, [postID, currentUser], (err, results) => {
                     if (!err) {
-                        //console.log(results)
-                        //console.log("You added " + groupUser)
-                        //addGroupUserStatus.userAdded = 1;
-                        //console.log(results)
                         postUnlikeOutcome.success = true;
    
                         resolve(postUnlikeOutcome);
