@@ -64,7 +64,25 @@ app.get("/hiya", (req, res) => {
   res.end()
 })
 
+app.post("/api/kuali", (req, res) => {
+  const vendorHeaderIds = req.body;
+  // 3 IDs treated as unknown for testing: 59998, 65764, 78271
+  const knownIds = [80194, 83655, 80945, 83595, 77354, 83847, 79272, 43929, 41707, 83859, 83968, 83759, 83748, 83739, 83736, 83995, 19315, 83994, 79328, 79326, 79356, 79591, 79337, 83855, 79669, 83993, 83991, 79921, 79372, 84075, 84041, 84068, 79976, 84069, 84089, 82862, 82213, 77949, 78564, 78350, 78288, 83244];
 
+  const knownVendors = {};
+  const unknownVendors = [];
+
+  for (const id of vendorHeaderIds) {
+    const numId = typeof id === "string" ? parseInt(id, 10) : id;
+    if (knownIds.includes(numId)) {
+      knownVendors[numId] = `*****${String(numId).slice(-4)}`;
+    } else {
+      unknownVendors.push(numId);
+    }
+  }
+
+  res.json({ knownVendors, unknownVendors });
+});
 
 
 //SIMPLE

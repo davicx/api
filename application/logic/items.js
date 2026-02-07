@@ -11,6 +11,7 @@ const profileFunctions = require('../functions/profileFunctions');
 const PostFunctions = require('../functions/postFunctions');
 const userFunctions = require('../functions/userFunctions');
 const groupFunctions = require('../functions/groupFunctions');
+const itemFunctions = require('../functions/itemFunctions');
 const timeFunctions = require('../functions/timeFunctions');
 const fileFunctions = require('../functions/fileFunctions');
 const likeFunctions = require('../functions/likeFunctions');
@@ -368,9 +369,9 @@ async function getAllGroupItems(req, res) {
 //Function C1: Purchase an Item
 async function purchaseItem(req, res) {
 	const connection = db.getConnection(); 
-	var currentUser = req.body.userName
+	var currentUser = req.body.currentUser
 	var postID = req.body.postID
-	var itemID = req.body.itemID
+	var showPurchased = req.body.showPurchased || []
 
 	var purchaseItemResponse = {
 		data: {},
@@ -383,18 +384,27 @@ async function purchaseItem(req, res) {
 
 	var purchasedItem = {}
 
-	var headerMessage = "HEADER: Item Purchase: " + itemID + " by " + currentUser
+	var headerMessage = "HEADER: Item Purchase: post " + postID + " by " + currentUser
 	Functions.addHeader(headerMessage)
 
-	//STEP 1: Check User Exists
+	//STEP 1: Look up item_id from post (post has one item)
+	var itemsOutcome = await Item.getItemsByPostID(postID);
+	if (!itemsOutcome.items || itemsOutcome.items.length === 0) {
+		purchaseItemResponse.message = "No item found for this post";
+		Functions.addFooter();
+		return res.json(purchaseItemResponse);
+	}
+	var itemID = itemsOutcome.items[0].itemID;
+
+	//STEP 2: Check User Exists
 	var userExists = await profileFunctions.getSimpleUserProfile(currentUser);
 
 	if(userExists.userFound == true) {
 
-		//STEP 2: Check if Item is already purchased
+		//STEP 3: Check if Item is already purchased
 		var itemPurchaseStatus = await Item.checkItemPurchaseStatus(itemID);
 
-		//STEP 3: If item is not already purchased then purchase the Item
+		//STEP 4: If item is not already purchased then purchase the Item
 		if(itemPurchaseStatus.purchased == 0) {
 			var purchaseItemOutcome = await Item.purchaseItem(itemID, currentUser, postID) 
 			
@@ -411,6 +421,12 @@ async function purchaseItem(req, res) {
 				purchaseItemResponse.message = "You purchased this item!";
 				purchaseItemResponse.success = true;
 				purchaseItemResponse.data = purchasedItem;
+
+				//STEP 5: Record purchase in group_purchases (who can see that this item was purchased)
+				var groupPurchaseOutcome = await itemFunctions.insertGroupPurchase(postID, currentUser, itemID, showPurchased);
+				if (!groupPurchaseOutcome.success) {
+					console.log("insertGroupPurchase: " + groupPurchaseOutcome.message);
+				}
 
 			} else {
 				purchaseItemResponse.message = "Failed to purchase item";
@@ -485,6 +501,8 @@ async function removePurchase(req, res) {
 		var removePurchaseOutcome = await Item.removePurchase(itemID, currentUser)
 		
 		if(removePurchaseOutcome.success == true) {
+			// Clear group_purchases visibility rows for this item
+			await itemFunctions.deleteGroupPurchaseVisibility(itemID, currentUser);
 			removePurchaseResponse.message = "The item purchase was removed"
 			removePurchaseResponse.success = true 
 			removePurchaseResponse.data = unpurchasedItem
