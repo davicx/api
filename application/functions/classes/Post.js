@@ -799,7 +799,8 @@ class Post {
                                     purchased: row.purchased,
                                     purchased_by: row.purchased_by,
                                     store: row.store,
-                                    multiple_stores: row.multiple_stores
+                                    multiple_stores: row.multiple_stores,
+                                    purchased_viewers: []
                                 };
                             }
 

@@ -348,7 +348,8 @@ async function getAllGroupItems(req, res) {
 	//STEP 4: Get Image URL
 	var posts = await PostFunctions.addSignedURLPostsArray(postsLikes);
 
-	//let signedURL = await cloudFunctions.getSignedURL("images/postImage-1716851490721-546172183-59045070_p0.jpg")
+	//STEP 5: Add purchased_viewers to each item (always include, empty array if none)
+	posts = await itemFunctions.addPurchaseViewersToItems(posts);
 
 	var postsResponse = {
 		data: posts,
@@ -468,9 +469,9 @@ async function purchaseItem(req, res) {
 
 //Function C2: Remove Purchase from an Item 
 async function removePurchase(req, res) {
-	var currentUser = req.body.userName
-	var postID = req.body.postID
-	var itemID = req.body.itemID
+	var currentUser = req.body.currentUser || req.body.userName;
+	var postID = req.body.postID;
+	var itemID = req.body.itemID;
 
 	var removePurchaseResponse = {
 		data: {},
@@ -489,39 +490,54 @@ async function removePurchase(req, res) {
 		message: "Purchase removed"
 	}
 
-	var headerMessage = "HEADER: Remove Item Purchase: " + itemID + " by " + currentUser
+	var headerMessage = "HEADER: Remove Item Purchase: item " + itemID + " by " + currentUser
 	Functions.addHeader(headerMessage)
 
-	//STEP 1: Check if Item is currently purchased
-	var currentPurchaseStatus = await Item.checkItemPurchaseStatus(itemID);
+	//STEP 1: Validate request body (currentUser, postID, itemID)
+	console.log("STEP 1: Validate request body Outcome: currentUser=" + currentUser + " postID=" + postID + " itemID=" + itemID);
+	if (!currentUser || !postID || !itemID) {
+		removePurchaseResponse.message = "Missing required fields: currentUser (or userName), postID, itemID";
+		removePurchaseResponse.data = unpurchasedItem;
+		console.log("STEP 1 (ERROR): Missing required fields");
+		Functions.addFooter();
+		return res.json(removePurchaseResponse);
+	}
 
-	//STEP 2: Remove Purchase if it is currently purchased
+	//STEP 2: Check if Item is currently purchased
+	var currentPurchaseStatus = await Item.checkItemPurchaseStatus(itemID);
+	console.log("STEP 2: Check item purchase status Outcome: purchased=" + currentPurchaseStatus.purchased + " purchasedBy=" + currentPurchaseStatus.purchasedBy);
+
+	//STEP 3: Remove Purchase if it is currently purchased
 	if(currentPurchaseStatus.purchased == 1) {
 
-		var removePurchaseOutcome = await Item.removePurchase(itemID, currentUser)
+		var removePurchaseOutcome = await Item.removePurchase(itemID, currentUser);
+		console.log("STEP 3: Remove from items table Outcome: success=" + removePurchaseOutcome.success + " message=" + (removePurchaseOutcome.message || ""));
 		
 		if(removePurchaseOutcome.success == true) {
-			// Clear group_purchases visibility rows for this item
+			//STEP 4: Clear item_purchases visibility rows for this item
 			await itemFunctions.deleteGroupPurchaseVisibility(itemID, currentUser);
-			removePurchaseResponse.message = "The item purchase was removed"
-			removePurchaseResponse.success = true 
-			removePurchaseResponse.data = unpurchasedItem
+			console.log("STEP 4: Clear item_purchases visibility Outcome: complete");
+			removePurchaseResponse.message = "The item purchase was removed";
+			removePurchaseResponse.success = true;
+			removePurchaseResponse.data = unpurchasedItem;
 		} else {
-			removePurchaseResponse.message = "Failed to remove item purchase"
-			removePurchaseResponse.success = false
-			removePurchaseResponse.data = unpurchasedItem
+			removePurchaseResponse.message = "Failed to remove item purchase - " + (removePurchaseOutcome.message || "purchased_by does not match current user");
+			removePurchaseResponse.success = false;
+			removePurchaseResponse.data = unpurchasedItem;
+			console.log("STEP 3 (ERROR): Item.removePurchase failed - user may not be the purchaser (purchased_by must match exactly)");
 		}
 
 	} else {
-		removePurchaseResponse.data = unpurchasedItem
+		removePurchaseResponse.data = unpurchasedItem;
 		removePurchaseResponse.message = "The item is not currently purchased";
+		console.log("STEP 3: Item not purchased Outcome: skip remove");
 	}
 	
-	console.log("Item purchase removal at " + timeFunctions.getCurrentTime().postTime);
-	console.log(removePurchaseResponse)
-	Functions.addFooter()
+	console.log("Remove purchase outcome at " + timeFunctions.getCurrentTime().postTime);
+	console.log(removePurchaseResponse);
+	Functions.addFooter();
 
-	res.json(removePurchaseResponse)
+	res.json(removePurchaseResponse);
 }
 
 module.exports = { postItemLocal, postItemLocalAWS, getAllGroupItems, purchaseItem, removePurchase };

@@ -4,6 +4,7 @@ const db = require('./conn');
 FUNCTIONS A: All Functions Related to Item Purchase Records
 	1) Function A1: Insert Group Purchase - Records who can see that a user purchased an item (for item_purchases table)
 	2) Function A2: Delete Group Purchase Visibility - Removes visibility rows when a purchase is removed
+	3) Function A3: Add Purchase Viewers to Items - Adds purchased_viewers array to each item in posts
 
 */
 
@@ -119,4 +120,60 @@ async function deleteGroupPurchaseVisibility(itemID, userName) {
 	});
 }
 
-module.exports = { insertGroupPurchase, deleteGroupPurchaseVisibility };
+//Function A3: Add Purchase Viewers to Items - Adds purchased_viewers array to each item in posts
+async function addPurchaseViewersToItems(posts) {
+	const connection = db.getConnection();
+
+	var itemIds = [];
+	for (var i = 0; i < posts.length; i++) {
+		if (posts[i].item && posts[i].item.item_id) {
+			itemIds.push(posts[i].item.item_id);
+		}
+	}
+
+	if (itemIds.length === 0) {
+		// Ensure every item has purchased_viewers (empty array) even when no item_purchases rows
+		for (var j = 0; j < posts.length; j++) {
+			if (posts[j].item) {
+				posts[j].item.purchased_viewers = posts[j].item.purchased_viewers || [];
+			}
+		}
+		return posts;
+	}
+
+	var placeholders = itemIds.map(function() { return "?"; }).join(",");
+	var queryString = "SELECT item_id, visible_to_user_name FROM item_purchases WHERE item_id IN (" + placeholders + ")";
+
+	return new Promise(function(resolve, reject) {
+		connection.query(queryString, itemIds, function(err, rows) {
+			if (err) {
+				for (var j = 0; j < posts.length; j++) {
+					if (posts[j].item) {
+						posts[j].item.purchased_viewers = [];
+					}
+				}
+				return resolve(posts);
+			}
+
+			var viewerMap = {};
+			for (var k = 0; k < rows.length; k++) {
+				var itemId = parseInt(rows[k].item_id, 10);
+				if (!viewerMap[itemId]) {
+					viewerMap[itemId] = [];
+				}
+				viewerMap[itemId].push(rows[k].visible_to_user_name);
+			}
+
+			for (var m = 0; m < posts.length; m++) {
+				if (posts[m].item) {
+					var lookupId = parseInt(posts[m].item.item_id, 10);
+					posts[m].item.purchased_viewers = viewerMap[lookupId] || [];
+				}
+			}
+
+			resolve(posts);
+		});
+	});
+}
+
+module.exports = { insertGroupPurchase, deleteGroupPurchaseVisibility, addPurchaseViewersToItems };
