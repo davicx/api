@@ -637,6 +637,7 @@ async function getGroup(req, res) {
 //Function A8: Get Group Users
 async function getGroupUsers(req, res) {
 	const groupID = req.params.groupID;
+	const currentUser = req.currentUser;
 	const groupOutcome = await Group.getGroupUsers(groupID);
 	console.log(" You got " +  groupID);
 
@@ -646,7 +647,7 @@ async function getGroupUsers(req, res) {
 		success: true,
 		statusCode: 200,
 		errors: [], 
-		currentUser: req.body.currentUser
+		currentUser: currentUser
 	}
 
 	const groupUsers = {

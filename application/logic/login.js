@@ -324,7 +324,6 @@ async function userRegister(req, res) {
       registrationValidation.usernameAvailableStatus = 0
       registrationValidation.usernameAvailableMessage = "The username " + userName + " is NOT available."
       masterUsernameAvailable = false
-      registrationOutcome.message = "NEED MORE registrationOutcome.messageUser name " + userName + "  is taken!"
       console.log("The user name is taken!")
     }
   }
@@ -361,7 +360,7 @@ async function userRegister(req, res) {
       //Update API response
       registrationOutcome.success = true
       registrationOutcome.statusCode = 200
-      registrationOutcome.message = " NEED TO FIX You successfully Registered " + userName + "!"
+      registrationOutcome.message = "You successfully registered " + userName + "!"
 
       //Add new User to API Response
       registeredUser.userName = newUser.userName
@@ -375,7 +374,7 @@ async function userRegister(req, res) {
     } else {
       //TO DO: Roll back any inserted data that failed 
       console.log("STEP 4: nope!")
-      registrationOutcome.message = "NEED TO FIX There was an error with registering " + userName + "!"
+      registrationOutcome.message = "Registration could not be completed. Please try again."
     }
     
   } else {
@@ -392,6 +391,26 @@ async function userRegister(req, res) {
   console.log(" ")
 
   registrationOutcome.data.registrationValidation = registrationValidation
+
+  // Build a single clear message for failures (all validation + username-taken issues)
+  if (!registrationOutcome.success) {
+    var messageParts = [];
+    if (registrationValidation.emailStatus === 0) {
+      messageParts.push(registrationValidation.emailMessage);
+    }
+    if (registrationValidation.usernameStatus === 0) {
+      messageParts.push(registrationValidation.usernameMessage);
+    }
+    if (registrationValidation.passwordStatus === 0) {
+      messageParts.push(registrationValidation.passwordMessage);
+    }
+    if (registrationValidation.usernameAvailableStatus === 0 && registrationValidation.usernameAvailableMessage) {
+      messageParts.push("Username is already taken.");
+    }
+    if (messageParts.length > 0) {
+      registrationOutcome.message = messageParts.join(" ");
+    }
+  }
   
   res.json(registrationOutcome)
 
