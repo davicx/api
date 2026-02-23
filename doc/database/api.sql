@@ -7,9 +7,12 @@
 
 #UPDATE posts SET post_caption = "I really want to get Secret of Mana you can find it at a couple of stores and it would be so awesome!!" WHERE post_id = 838;
 
-SELECT * FROM posts;
+#SELECT * FROM posts;
+#DELETE FROM comments WHERE comment_id > 244;
+#SELECT * FROM comments;
 
 #SELECT * FROM items;
+
 #SELECT * FROM items;
 #SELECT * FROM friends;
 #SELECT * FROM friends WHERE user_name = "davey";
