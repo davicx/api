@@ -416,13 +416,7 @@ async function userRegister(req, res) {
 
 } 
 
-/*
-Added try-catch error handling around the entire function
-Converted callback-based JWT verification to use try-catch with async/await
-Added better token validation (checking for "undefined" strings, better null handling)
-Added error handling around the database refresh token verification
-Added proper error response structure for unexpected errors
-*/
+
 //Function A4: Login Status 
 async function loginStatus(req, res) {
   try {
