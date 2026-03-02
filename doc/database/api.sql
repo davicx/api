@@ -13,6 +13,8 @@
 
 #SELECT * FROM items;
 
+
+SELECT * FROM item_purchases;
 #SELECT * FROM items;
 #SELECT * FROM friends;
 #SELECT * FROM friends WHERE user_name = "davey";
