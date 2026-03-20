@@ -42,7 +42,7 @@ npm start
 
 ## Project Structure
 ### Routes:
-Routes is the entry point for the application. I have a postman collection I can share upon request for every route. 
+Routes is the entry point for the application. I have a postman collection I can share upon request for every route. This should always be as simple as possible
 For example the login route is 
 
 POST: http://localhost:3003/user/login
@@ -57,14 +57,17 @@ BODY:
 `
 
 ### Logic:
-Logic is where I have all the code related to a request. So every route will call a logic method. In here we may call multiple different functions to handle a request. For instance after you make a post you may also want to make a notification.
+Logic is where I have all the code related to a request we get from a route above. So every route will call a logic method. In here we may call multiple different functions or classes to handle a request. For instance after you make a post you may also want to make a notification. After adding a friend we would call Requests and Notifications.
 
 ### Functions:
 Functions are basically helper functions specific to handling a request. These functions may get called in other parts of the code to handle a request. For instance timeFunctions.js is how I handle all the time related needs in a lot of requests.
 
 #### Classes:
-Classes are where I handle most of the database operations and interaction with my MySQL (RDS) database. 
+Classes are where I handle most of the database operations for a single thing like a Post or Friend. This is where we mostly interact with my MySQL (RDS) database and handle very specific logic to this thing like Friend -> Add Friend or Post -> Make a Photo Post. 
 
+#### FLOW:
+So the flow is 
+route -> logic -> handle all things that we need calling different functions and classes to satisfy that request.
 
 ### Project Structure
 #### Backend 

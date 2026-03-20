@@ -13,7 +13,7 @@ app.use(express.static('public'));
 app.use(
   cors({
       credentials: true,
-      origin: ["http://localhost:3003", "http://localhost:3000"]
+      origin: ["http://localhost:3003", "http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3003"]
   })
 );
 
@@ -31,6 +31,7 @@ const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
 const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
 const items = require('./application/routes/itemRoutes.js');
+const messages = require('./application/routes/messageRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -45,6 +46,7 @@ app.use(uploadLearning);
 app.use(profile);
 app.use(simple);
 app.use(items);
+app.use(messages);
 
 //Server Login 
 app.listen(PORT, () => {
