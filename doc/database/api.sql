@@ -1,6 +1,11 @@
 #USE shareshare;
 
 
+
+ALTER TABLE `messages`
+  ADD KEY `lookup_messages_by_group_and_conversation` (`group_id`, `conversation_id`);
+
+
 #########
 #ALL#
 #########
@@ -14,7 +19,7 @@
 #SELECT * FROM items;
 
 
-SELECT * FROM item_purchases;
+#SELECT * FROM item_purchases;
 #SELECT * FROM items;
 #SELECT * FROM friends;
 #SELECT * FROM friends WHERE user_name = "davey";
