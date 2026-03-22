@@ -2,10 +2,6 @@
 
 
 
-ALTER TABLE `messages`
-  ADD KEY `lookup_messages_by_group_and_conversation` (`group_id`, `conversation_id`);
-
-
 #########
 #ALL#
 #########

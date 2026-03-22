@@ -1,6 +1,26 @@
 const db = require('./../conn');
 
 class Conversation {
+    static async createConversation({ masterSite, groupID, conversationTitle, createdBy }) {
+        const connection = db.getConnection();
+        const site = masterSite || 'kite';
+        const title = (conversationTitle && String(conversationTitle).trim()) || 'New conversation';
+        const by = createdBy || '';
+
+        const queryString =
+            'INSERT INTO conversations (master_site, group_id, conversation_title, created_by) VALUES (?, ?, ?, ?)';
+
+        return new Promise((resolve, reject) => {
+            connection.query(queryString, [site, groupID, title, by], (err, results) => {
+                if (err) {
+                    console.log('Conversation.createConversation failed', err);
+                    return reject(err);
+                }
+                resolve({ success: true, conversationID: results.insertId });
+            });
+        });
+    }
+
     static async getConversationsByGroup(groupID) {
         const connection = db.getConnection();
         const queryString =

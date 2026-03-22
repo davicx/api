@@ -3,6 +3,10 @@ const conversationRouter = express.Router();
 const conversations = require('../logic/conversations');
 const middlewares = require('../functions/middlewareFunctions');
 
+conversationRouter.post('/conversation/create', middlewares.verifyUser, (req, res) => {
+    conversations.createConversation(req, res);
+});
+
 conversationRouter.get(
     '/conversations/group/:group_id',
     middlewares.verifyUser,

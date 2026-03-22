@@ -1,5 +1,16 @@
 # API Project
 
+## CloudPilot / Atlas split (planned shape)
+
+| Layer | Role | Examples |
+|--------|------|----------|
+| **Atlas (Python)** | **Detection** — rules and scanners find problems (low CPU, old instances, unused resources, etc.). | Structured **findings** (IDs, metrics, rule metadata). |
+| **This API (Node)** | **Interpret + guide** (when you use it) — AI and app logic that explain findings, suggest actions, and (later) use **org context** (RAG, history, user/group). | Chat, notifications, “what should I do?”, orchestration for web or **future iOS** clients. |
+
+Atlas stays the **source of truth for what’s wrong**; Node focuses on **how users understand and act on it**. **Python AI in Atlas** may still run occasional calls but is expected to be **mostly idle** for now.
+
+---
+
 This project is a Node.js Express application. A good place to start would be looking at **posts** or **profile**.This project is very much in development (sorry!). My work at Amazon and Nike have been in Java and this is just a small backend for my iOS app I am making. I plan to add a lot more including things like.  
 * Test coverage 
 * Regression testing 
