@@ -32,6 +32,7 @@ const upload = require('./application/routes/uploadRoutes.js');
 const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
 const items = require('./application/routes/itemRoutes.js');
 const messages = require('./application/routes/messageRoutes.js');
+const conversations = require('./application/routes/conversationRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -47,6 +48,7 @@ app.use(profile);
 app.use(simple);
 app.use(items);
 app.use(messages);
+app.use(conversations);
 
 //Server Login 
 app.listen(PORT, () => {
