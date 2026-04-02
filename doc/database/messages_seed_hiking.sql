@@ -25,7 +25,7 @@ SELECT
   'chat',
   'Anyone up for the Misty Mountains trail this weekend?'
 FROM `conversations` c
-WHERE c.group_id = 70 AND c.conversation_title = 'Hiking'
+WHERE c.group_id = 70 AND c.conversation_title = 'Sailing'
 LIMIT 1;
 
 INSERT INTO `messages` (
@@ -48,7 +48,7 @@ SELECT
   'chat',
   'Second breakfast first — then I''m in.'
 FROM `conversations` c
-WHERE c.group_id = 70 AND c.conversation_title = 'Hiking'
+WHERE c.group_id = 70 AND c.conversation_title = 'Sailing'
 LIMIT 1;
 
 INSERT INTO `messages` (
@@ -71,5 +71,5 @@ SELECT
   'chat',
   'Perfect. I''ll bring the crampons.'
 FROM `conversations` c
-WHERE c.group_id = 70 AND c.conversation_title = 'Hiking'
+WHERE c.group_id = 70 AND c.conversation_title = 'Sailing'
 LIMIT 1;
