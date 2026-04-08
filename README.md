@@ -35,7 +35,20 @@ The post, profile, login and groups routes are pretty good. I would suggest look
    ```
 
 3. Configure environment variables:
-   - Create a new `.env` and update the values as needed.
+   - Use **`api/.env`** (same folder as `app.js`). It is gitignored — never commit it.
+   - For **`POST /chat/`**, set **`OPENAI_API_KEY=`** to your key from [OpenAI API keys](https://platform.openai.com/api-keys) (no quotes needed unless your tooling requires them).
+
+## Atlas-organized routes (same API, folder only)
+
+Some routes live under **`application/atlas/routes/`** only for file organization; they are still part of this Express app.
+
+- **`POST http://localhost:3003/chat/`** — optional JSON body `{ "body": "your greeting" }`. Calls **ChatGPT** (`gpt-4o-mini`); response **`message`** is at most **three words** (keeps **output** cost tiny). For **billing**, also set a **monthly spend limit** in your [OpenAI billing settings](https://platform.openai.com/settings/organization/limits).
+
+Example:
+
+```bash
+curl -s -X POST http://localhost:3003/chat/ -H "Content-Type: application/json" -d '{"body":"Good morning"}'
+```
 
 ## Running the Application
 

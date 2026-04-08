@@ -29,10 +29,10 @@ const search = require('./application/routes/searchRoutes.js');
 const simple = require('./application/routes/simpleRoutes.js');
 const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
-const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
 const items = require('./application/routes/itemRoutes.js');
 const messages = require('./application/routes/messageRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');
+const chat = require('./application/atlas/routes/chatRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -43,12 +43,17 @@ app.use(requests);
 app.use(friends);
 app.use(search);
 app.use(upload);
-app.use(uploadLearning);
 app.use(profile);
 app.use(simple);
 app.use(items);
 app.use(messages);
 app.use(conversations);
+app.use('/chat', chat);
+
+//Moved to doc backup
+//const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
+//app.use(uploadLearning);
+
 
 //Server Login 
 app.listen(PORT, () => {
