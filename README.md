@@ -36,18 +36,18 @@ The post, profile, login and groups routes are pretty good. I would suggest look
 
 3. Configure environment variables:
    - Use **`api/.env`** (same folder as `app.js`). It is gitignored — never commit it.
-   - For **`POST /chat/`**, set **`OPENAI_API_KEY=`** to your key from [OpenAI API keys](https://platform.openai.com/api-keys) (no quotes needed unless your tooling requires them).
+   - **`OPENAI_API_KEY`** is optional until you add OpenAI-backed features again.
 
 ## Atlas-organized routes (same API, folder only)
 
 Some routes live under **`application/atlas/routes/`** only for file organization; they are still part of this Express app.
 
-- **`POST http://localhost:3003/chat/`** — optional JSON body `{ "body": "your greeting" }`. Calls **ChatGPT** (`gpt-4o-mini`); response **`message`** is at most **three words** (keeps **output** cost tiny). For **billing**, also set a **monthly spend limit** in your [OpenAI billing settings](https://platform.openai.com/settings/organization/limits).
+- **`POST http://localhost:3003/chat/`** — optional JSON body `{ "body": "text" }`. Deterministic **intent → guardrails → action** (see `application/atlas/functions/chatFunctions.js` + `logic/chat.js`). Example phrases: **scan my ec2**, **switch instances**; unknown text returns a short EC2-only message.
 
 Example:
 
 ```bash
-curl -s -X POST http://localhost:3003/chat/ -H "Content-Type: application/json" -d '{"body":"Good morning"}'
+curl -s -X POST http://localhost:3003/chat/ -H "Content-Type: application/json" -d '{"body":"scan my ec2"}'
 ```
 
 ## Running the Application
