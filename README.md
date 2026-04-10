@@ -38,17 +38,22 @@ The post, profile, login and groups routes are pretty good. I would suggest look
    - Use **`api/.env`** (same folder as `app.js`). It is gitignored — never commit it.
    - **`OPENAI_API_KEY`** is optional until you add OpenAI-backed features again.
 
-## Atlas-organized routes (same API, folder only)
+## Messages — Kite vs Atlas (duplicate, toggle in `app.js`)
 
-Some routes live under **`application/atlas/routes/`** only for file organization; they are still part of this Express app.
+`messageRoutes.js` and `logic/messages.js` exist in **two** places and should stay in sync:
 
-- **`POST http://localhost:3003/chat/`** — optional JSON body `{ "body": "text" }`. Deterministic **intent → guardrails → action** (see `application/atlas/functions/chatFunctions.js` + `logic/chat.js`). Example phrases: **scan my ec2**, **switch instances**; unknown text returns a short EC2-only message.
+- **`application/routes/messageRoutes.js`** + **`application/logic/messages.js`**
+- **`application/atlas/routes/messageRoutes.js`** + **`application/atlas/logic/messages.js`**
 
-Example:
+**Only one** is mounted — switch the `require` in **`app.js`** (see comment there):
 
-```bash
-curl -s -X POST http://localhost:3003/chat/ -H "Content-Type: application/json" -d '{"body":"scan my ec2"}'
+```js
+//const messages = require('./application/routes/messageRoutes.js');
+const messages = require('./application/atlas/routes/messageRoutes.js');
+app.use(messages);
 ```
+
+Same URLs either way: **`POST /message`**, **`GET /messages/group/:group_id`**, etc.
 
 ## Running the Application
 

@@ -30,9 +30,10 @@ const simple = require('./application/routes/simpleRoutes.js');
 const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
 const items = require('./application/routes/itemRoutes.js');
-const messages = require('./application/routes/messageRoutes.js');
+// Messages: toggle between Kite copy (application/routes) and Atlas duplicate (application/atlas/routes) — keep in sync.
+//const messages = require('./application/routes/messageRoutes.js');
+const messages = require('./application/atlas/routes/messageRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');
-const chat = require('./application/atlas/routes/chatRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -48,7 +49,6 @@ app.use(simple);
 app.use(items);
 app.use(messages);
 app.use(conversations);
-app.use('/chat', chat);
 
 //Moved to doc backup
 //const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
