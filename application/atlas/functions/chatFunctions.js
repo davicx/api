@@ -1,89 +1,146 @@
+const OpenAI = require('openai');
+const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('./config/chatGPTconfig');
+
 /*
-FUNCTIONS A: Detect Intent
-FUNCTIONS B: Guardrails
-FUNCTIONS C: Build Action Object
+FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./messageFunctions for that)
+
+    1) getOpenAIClient — lazy singleton; null if OPENAI_API_KEY unset
+    2) normalizeUserMessageForModel — trim / empty guard for one user string
+    3) createOpenAiChatCompletion — low-level chat.completions.create + outcome shape
+    4) sendChatWithAction — CloudPilot reply using intent action JSON in system prompt
 */
 
-// FUNCTIONS A: Detect Intent
-function detectIntent(text) {
-	const raw = String(text || '')
-	const t = raw.toLowerCase()
-	console.log('detectIntent: ' + raw)
+let openaiClient = null;
 
-	if (t.includes('scan') && t.includes('ec2')) {
-		console.log('detectIntent: result scan_ec2')
-		return 'scan_ec2'
-	}
-
-	if (t.includes('toggle') || t.includes('switch')) {
-		console.log('detectIntent: result toggle_ec2')
-		return 'toggle_ec2'
-	}
-
-	console.log('detectIntent: result unknown')
-	return 'unknown'
+/** Lazy singleton OpenAI client; returns null if OPENAI_API_KEY is unset. */
+function getOpenAIClient() {
+    if (!process.env.OPENAI_API_KEY) {
+        return null;
+    }
+    if (!openaiClient) {
+        openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    }
+    return openaiClient;
 }
 
-// FUNCTIONS B: Guardrails
-function checkGuardrails(intent) {
-	console.log('checkGuardrails: ' + intent)
-	const allowed = ['scan_ec2', 'toggle_ec2']
-
-	if (!allowed.includes(intent)) {
-		console.log('checkGuardrails: blocked')
-		return {
-			allowed: false,
-			message: 'I can only help with EC2 right now.',
-		}
-	}
-
-	console.log('checkGuardrails: allowed')
-	return { allowed: true }
+/** @returns {{ ok: true, text: string, message: '' } | { ok: false, text: '', message: string }}} */
+function normalizeUserMessageForModel(raw) {
+    const text = typeof raw === 'string' ? raw.trim() : '';
+    if (!text) {
+        return { ok: false, text: '', message: 'message is required' };
+    }
+    return { ok: true, text, message: '' };
 }
 
-// FUNCTIONS C: Build Action Object
-function buildAction(intent, guardrailResult) {
-	console.log('buildAction: ' + intent + ' allowed=' + !!guardrailResult.allowed)
-	if (!guardrailResult.allowed) {
-		const action = {
-			type: 'none',
-			allowed: false,
-			message: guardrailResult.message,
-		}
-		console.log('buildAction: type none (guardrail)')
-		return action
-	}
+/**
+ * @param {import('openai').OpenAI} client
+ * @param {{ model: string, messages: Array<{ role: string, content: string }>, max_tokens: number, temperature: number }} params
+ * @returns {Promise<{ success: true, data: string|null, usage: object|null } | { success: false, message: string, data: null, error?: string }>}
+ */
+async function createOpenAiChatCompletion(client, params) {
+    if (!client) {
+        return { success: false, message: 'OpenAI client is missing', data: null };
+    }
 
-	if (intent === 'scan_ec2') {
-		console.log('buildAction: type scan_ec2')
-		return {
-			type: 'scan_ec2',
-			allowed: true,
-			requiresExecution: false,
-			message: 'Scanning EC2 now.',
-		}
-	}
+    const { model, messages, temperature } = params;
+    const ceiling = OPENAI_SAFE_DEFAULTS.MAX_COMPLETION_TOKENS_CEILING;
+    const requested = Number(params.max_tokens);
+    const max_tokens = Number.isFinite(requested) && requested > 0
+        ? Math.min(requested, ceiling)
+        : Math.min(64, ceiling);
 
-	if (intent === 'toggle_ec2') {
-		console.log('buildAction: type toggle_ec2')
-		return {
-			type: 'toggle_ec2',
-			allowed: true,
-			requiresExecution: false,
-			message: 'Switching instances.',
-		}
-	}
+    try {
+        const response = await client.chat.completions.create({
+            model,
+            messages,
+            max_tokens,
+            temperature
+        });
 
-	console.log('buildAction: type none (fallback)')
-	return {
-		type: 'none',
-		allowed: false,
-		message: 'Unknown request.',
-	}
+        const choice = response.choices && response.choices[0] && response.choices[0].message;
+        const data = choice && choice.content != null ? choice.content : null;
+
+        return {
+            success: true,
+            data,
+            usage: response.usage || null
+        };
+    } catch (error) {
+        console.error('[createOpenAiChatCompletion] ChatGPT error:', error.message || error);
+        return {
+            success: false,
+            message: 'ChatGPT request failed',
+            data: null,
+            error: error.message || String(error)
+        };
+    }
+}
+
+/**
+ * One completion: system rules + serialized action + user text.
+ * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
+ */
+async function sendChatWithAction(userMessage, action) {
+    const norm = normalizeUserMessageForModel(userMessage);
+    if (!norm.ok) {
+        return { success: false, message: norm.message, data: null };
+    }
+
+    const text = norm.text;
+    const maxIn = OPENAI_SAFE_DEFAULTS.MAX_USER_INPUT_CHARS;
+    if (text.length > maxIn) {
+        return {
+            success: false,
+            message: 'message too long (max ' + maxIn + ' characters)',
+            data: null
+        };
+    }
+
+    const client = getOpenAIClient();
+    if (!client) {
+        console.warn('[sendChatWithAction] OPENAI_API_KEY is not set');
+        return { success: false, message: 'OPENAI_API_KEY is not configured', data: null };
+    }
+
+    const config = CHAT_CONFIG.LOW;
+    const systemPrompt =
+        'You are CloudPilot.\n\n' +
+        'RULES:\n' +
+        '- Help with AWS EC2 when the user is asking about it; otherwise reply briefly and naturally.\n' +
+        '- Keep responses under 10 words unless you need one short question (e.g. region or confirmation).\n' +
+        '- Do not say you executed anything; nothing runs on AWS yet.\n' +
+        '- If action.type is scan_ec2, ask which region if missing.\n' +
+        '- If action.type is toggle_ec2, ask for confirmation before acting.\n\n' +
+        'ACTION:\n' +
+        JSON.stringify(action);
+
+    console.log('[sendChatWithAction] model=%s max_tokens=20 temperature=%s', config.model, config.temperature);
+
+    const result = await createOpenAiChatCompletion(client, {
+        model: config.model,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: text }
+        ],
+        max_tokens: 20,
+        temperature: config.temperature
+    });
+
+    if (result.success && result.usage) {
+        console.log(
+            '[sendChatWithAction] usage prompt=%s completion=%s total=%s',
+            result.usage.prompt_tokens,
+            result.usage.completion_tokens,
+            result.usage.total_tokens
+        );
+    }
+
+    return result;
 }
 
 module.exports = {
-	detectIntent,
-	checkGuardrails,
-	buildAction,
-}
+    getOpenAIClient,
+    normalizeUserMessageForModel,
+    createOpenAiChatCompletion,
+    sendChatWithAction
+};
