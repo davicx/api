@@ -12,13 +12,18 @@ FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./message
 
 let openaiClient = null;
 
+const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS) || 10000;
+
 /** Lazy singleton OpenAI client; returns null if OPENAI_API_KEY is unset. */
 function getOpenAIClient() {
     if (!process.env.OPENAI_API_KEY) {
         return null;
     }
     if (!openaiClient) {
-        openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        openaiClient = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+            timeout: OPENAI_TIMEOUT_MS
+        });
     }
     return openaiClient;
 }

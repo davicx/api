@@ -11,124 +11,108 @@ const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatG
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
-    1) Function A1: Say Hello
-    2) Function A2: Scan path — intent → guardrails → action → ChatGPT
-
-FUNCTIONS B: All Functions Related to Messages
-    1) Function B1: Post Message
+    1) Function B1: Post Message — intent → guardrails → action → ChatGPT (no Atlas execution)
     2) Function B2: Delete Message
     3) Function B3: Edit Message
+    4) Function A1: Say Hello — OpenAI smoke test
 
 FUNCTIONS C: All Functions Related to getting Messages
     1) Function C1: Get all Group Messages
     2) Function C2: Get all Conversation Messages
 */
 
+
 //FUNCTIONS A: Messages + external API (ChatGPT)
-//Helper for A1: OpenAI completion (short, cost-controlled; no history)
-async function sayHello(userMessage) {
+// Route A1: POST /message/hello — OpenAI hello test (short completion; no history). Body: { "message": "hi" } (or messageCaption)
+async function postMessageHello(req, res) {
+    console.log('postMessageHello: incoming body keys', req.body && Object.keys(req.body));
+    const raw = req.body && (req.body.message ?? req.body.messageCaption);
+    const userText = raw == null ? '' : typeof raw === 'string' ? raw : String(raw);
+
     //STEP 1: Validate user message
     console.log('STEP 1: Validate user message');
-    const text = typeof userMessage === 'string' ? userMessage.trim() : '';
+    const text = typeof userText === 'string' ? userText.trim() : '';
     if (!text) {
-        return { success: false, message: 'message is required', data: null };
+        return res.status(400).json({
+            success: false,
+            data: null,
+            message: 'message is required'
+        });
     }
 
     const maxIn = OPENAI_SAFE_DEFAULTS.MAX_USER_INPUT_CHARS;
     if (text.length > maxIn) {
-        return {
+        return res.status(502).json({
             success: false,
-            message: 'message too long (max ' + maxIn + ' characters)',
-            data: null
-        };
+            data: null,
+            message: 'message too long (max ' + maxIn + ' characters)'
+        });
     }
 
     //STEP 2: Get OpenAI client and config
     console.log('STEP 2: Get OpenAI client and config');
     const client = chatFunctions.getOpenAIClient();
     if (!client) {
-        console.warn('[sayHello] OPENAI_API_KEY is not set');
-        return { success: false, message: 'OPENAI_API_KEY is not configured', data: null };
+        console.warn('[postMessageHello] OPENAI_API_KEY is not set');
+        return res.status(502).json({
+            success: false,
+            data: null,
+            message: 'OPENAI_API_KEY is not configured'
+        });
     }
 
     const config = CHAT_CONFIG.LOW;
-    console.log('[sayHello] model=%s max_tokens=%s temperature=%s', config.model, config.max_tokens, config.temperature);
+    console.log('[postMessageHello] model=%s max_tokens=%s temperature=%s', config.model, config.max_tokens, config.temperature);
 
     //STEP 3: Call ChatGPT
     console.log('STEP 3: Call ChatGPT');
-    try {
-        const response = await client.chat.completions.create({
-            model: config.model,
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are CloudPilot. Respond in under 5 words. Be concise.'
-                },
-                {
-                    role: 'user',
-                    content: text
-                }
-            ],
-            max_tokens: config.max_tokens,
-            temperature: config.temperature
-        });
+    const completion = await chatFunctions.createOpenAiChatCompletion(client, {
+        model: config.model,
+        messages: [
+            {
+                role: 'system',
+                content: 'You are CloudPilot. Respond in under 5 words. Be concise.'
+            },
+            {
+                role: 'user',
+                content: text
+            }
+        ],
+        max_tokens: config.max_tokens,
+        temperature: config.temperature
+    });
 
-        const usage = response.usage;
-        if (usage) {
-            console.log('[sayHello] usage prompt=%s completion=%s total=%s', usage.prompt_tokens, usage.completion_tokens, usage.total_tokens);
+    if (completion.success) {
+        if (completion.usage) {
+            console.log(
+                '[postMessageHello] usage prompt=%s completion=%s total=%s',
+                completion.usage.prompt_tokens,
+                completion.usage.completion_tokens,
+                completion.usage.total_tokens
+            );
         }
-
-        //STEP 4: New hello outcome
         console.log('STEP 4: New hello outcome');
-        return {
-            success: true,
-            data: response.choices[0].message.content
-        };
-    } catch (error) {
-        console.error('[sayHello] ChatGPT error:', error.message || error);
-        console.log('STEP 4: Something went wrong with hello ChatGPT');
-        return {
-            success: false,
-            message: 'ChatGPT request failed',
-            data: null,
-            error: error.message || String(error)
-        };
-    }
-}
-
-//Function A1: Say Hello
-async function postMessageTest(req, res) {
-    //STEP 1: Read incoming message
-    console.log('STEP 1: Read incoming message');
-    const { message } = req.body;
-
-    console.log('message API test — incoming:', message);
-
-    //STEP 2: Call sayHello (ChatGPT)
-    console.log('STEP 2: Call sayHello (ChatGPT)');
-    const result = await sayHello(message);
-
-    console.log('message API test — result:', result);
-
-    //STEP 3: Hello test outcome
-    console.log('STEP 3: Hello test outcome');
-    if (result.success) {
+        console.log('postMessageHello: result success=true');
         return res.json({
             success: true,
-            data: result.data
+            data: completion.data
         });
     }
 
+    console.log('STEP 4: Something went wrong with hello ChatGPT');
+    console.log('postMessageHello: result success=false');
     return res.status(502).json({
         success: false,
         data: null,
-        message: result.message || 'ChatGPT request failed'
+        message: completion.message || 'ChatGPT request failed',
+        error: completion.error
     });
 }
 
-//Function A2: Scan — intent → guardrails → action → ChatGPT (no Atlas execution)
+
+// Scan pipeline — intent → guardrails → action → ChatGPT (no Atlas execution)
 async function processScanMessage(userMessage) {
-    console.log('\n--- message/scan ---');
+    console.log('\n--- postMessage: scan pipeline ---');
     console.log('User:', userMessage);
 
     //STEP 1: Normalize and validate the user message
@@ -192,30 +176,6 @@ async function processScanMessage(userMessage) {
     };
 }
 
-//Route handler: POST /message/scan
-async function postMessageScan(req, res) {
-    //STEP 1: Read incoming message
-    console.log('STEP 1: Read incoming message');
-    const { message } = req.body;
-
-    //STEP 2: Run scan pipeline (intent → guardrails → action → ChatGPT)
-    console.log('STEP 2: Run scan pipeline (intent → guardrails → action → ChatGPT)');
-    const result = await processScanMessage(message);
-
-    //STEP 3: Scan route outcome
-    console.log('STEP 3: Scan route outcome');
-    if (result.success) {
-        return res.json(result);
-    }
-
-    return res.status(502).json({
-        success: false,
-        data: null,
-        message: result.message || 'ChatGPT request failed',
-        error: result.error
-    });
-}
-
 //FUNCTIONS B: Create / Update / Delete
 //Function B1: Post Message
 async function postMessage(req, res) {
@@ -251,59 +211,18 @@ async function postMessage(req, res) {
         messageOutcome.success = true;
         var messageID = newMessageOutcome.messageID || 0;
 
-        //STEP 3: Add notifications (like posts)
-        console.log('STEP 3: Add notifications (like posts)');
-        if (groupID > 0) {
-            const groupUsersOutcome = await Group.getGroupUsers(groupID);
-            const groupUsers = groupUsersOutcome.groupUsers || [];
-
-            if (groupUsers.length > 0) {
-                var notification = {
-                    masterSite: masterSite,
-                    notificationFrom: messageFrom,
-                    notificationMessage: messageCaption || "New message",
-                    notificationTo: groupUsers,
-                    notificationLink: "http://localhost:3003/chat",
-                    notificationType: "new_message",
-                    groupID: groupID,
-                    postID: 0
-                };
-                Notification.createGroupNotification(notification);
-            }
-        } else if (messageTo && messageTo !== 'chat' && messageTo !== messageFrom) {
-            var notification = {
-                masterSite: masterSite,
-                notificationFrom: messageFrom,
-                notificationMessage: messageCaption || "New message",
-                notificationTo: messageTo,
-                notificationLink: "http://localhost:3003/chat",
-                notificationType: "new_message",
-                groupID: 0,
-                postID: 0
-            };
-            Notification.createSingleNotification(notification);
-        }
-
-        console.log('STEP 4: New message outcome');
-        console.log('YOU SENT A NEW MESSAGE!');
 
         try {
-            //STEP 5: Attach CloudPilot metadata (intent, policy, action)
-            console.log('STEP 5: Attach CloudPilot metadata (intent, policy, action)');
-            const intent = intentPipeline.detectIntent(messageCaption);
-            const intentPolicy = intentPipeline.checkIntentPolicy(intent);
-            const action = intentPipeline.buildAction(intent, intentPolicy);
-            messageOutcome.cloudPilot = {
-                intent,
-                intentPolicy,
-                action,
-            };
+           //STEP 3: 
+            console.log('STEP 5: Scan pipeline (intent → guardrails → action → ChatGPT)');
+            const scanResult = await processScanMessage(messageCaption);
+            console.log('postMessage: scan pipeline result:', JSON.stringify(scanResult, null, 2));
+            messageOutcome.cloudPilot = scanResult;
         } catch (err) {
-            console.error('cloudPilot (post-save):', err);
-            console.log('STEP 5: Something went wrong attaching CloudPilot metadata');
+            console.error('cloudPilot (post-save scan pipeline):', err);
             messageOutcome.cloudPilot = {
                 error: true,
-                message: 'CloudPilot metadata could not be attached.',
+                message: 'CloudPilot scan pipeline could not run.',
             };
         }
     } else {
@@ -456,13 +375,157 @@ async function getConversationMessages(req, res) {
 }
 
 module.exports = {
-    sayHello,
-    postMessageTest,
-    processScanMessage,
-    postMessageScan,
+    postMessageHello,
     postMessage,
     deleteMessage,
     editMessage,
     getGroupMessages,
     getConversationMessages
 };
+
+
+//APPENDIX
+
+/*
+async function sayHello(userMessage) {
+    //STEP 1: Validate user message
+    console.log('STEP 1: Validate user message');
+    const text = typeof userMessage === 'string' ? userMessage.trim() : '';
+    if (!text) {
+        return { success: false, message: 'message is required', data: null };
+    }
+
+    const maxIn = OPENAI_SAFE_DEFAULTS.MAX_USER_INPUT_CHARS;
+    if (text.length > maxIn) {
+        return {
+            success: false,
+            message: 'message too long (max ' + maxIn + ' characters)',
+            data: null
+        };
+    }
+
+    //STEP 2: Get OpenAI client and config
+    console.log('STEP 2: Get OpenAI client and config');
+    const client = chatFunctions.getOpenAIClient();
+    if (!client) {
+        console.warn('[sayHello] OPENAI_API_KEY is not set');
+        return { success: false, message: 'OPENAI_API_KEY is not configured', data: null };
+    }
+
+    const config = CHAT_CONFIG.LOW;
+    console.log('[sayHello] model=%s max_tokens=%s temperature=%s', config.model, config.max_tokens, config.temperature);
+
+    //STEP 3: Call ChatGPT
+    console.log('STEP 3: Call ChatGPT');
+    const completion = await chatFunctions.createOpenAiChatCompletion(client, {
+        model: config.model,
+        messages: [
+            {
+                role: 'system',
+                content: 'You are CloudPilot. Respond in under 5 words. Be concise.'
+            },
+            {
+                role: 'user',
+                content: text
+            }
+        ],
+        max_tokens: config.max_tokens,
+        temperature: config.temperature
+    });
+
+    if (completion.success) {
+        if (completion.usage) {
+            console.log(
+                '[sayHello] usage prompt=%s completion=%s total=%s',
+                completion.usage.prompt_tokens,
+                completion.usage.completion_tokens,
+                completion.usage.total_tokens
+            );
+        }
+        console.log('STEP 4: New hello outcome');
+        return { success: true, data: completion.data };
+    }
+
+    console.log('STEP 4: Something went wrong with hello ChatGPT');
+    return {
+        success: false,
+        message: completion.message || 'ChatGPT request failed',
+        data: null,
+        error: completion.error
+    };
+}
+*/
+
+/*
+// OLD: dedicated POST /message/scan — pipeline now runs inside POST /message (postMessage)
+async function postMessageScanPROBABLYOLD(req, res) {
+    const { message } = req.body;
+    const result = await processScanMessage(message);
+    if (result.success) {
+        return res.json(result);
+    }
+    return res.status(502).json({
+        success: false,
+        data: null,
+        message: result.message || 'ChatGPT request failed',
+        error: result.error
+    });
+}
+*/
+
+
+/*
+// OLD: duplicate of POST /message/hello — remove when ready
+async function postMessageTestPROBABLYOLD(req, res) {
+    const { message } = req.body;
+    const result = await sayHello(message);
+    if (result.success) {
+        return res.json({ success: true, data: result.data });
+    }
+    return res.status(502).json({
+        success: false,
+        data: null,
+        message: result.message || 'ChatGPT request failed'
+    });
+}
+*/
+
+
+        //STEP 3: Add notifications (like posts)
+        /*
+        console.log('STEP 3: Add notifications (like posts)');
+        if (groupID > 0) {
+            const groupUsersOutcome = await Group.getGroupUsers(groupID);
+            const groupUsers = groupUsersOutcome.groupUsers || [];
+
+            if (groupUsers.length > 0) {
+                var notification = {
+                    masterSite: masterSite,
+                    notificationFrom: messageFrom,
+                    notificationMessage: messageCaption || "New message",
+                    notificationTo: groupUsers,
+                    notificationLink: "http://localhost:3003/chat",
+                    notificationType: "new_message",
+                    groupID: groupID,
+                    postID: 0
+                };
+                Notification.createGroupNotification(notification);
+            }
+        } else if (messageTo && messageTo !== 'chat' && messageTo !== messageFrom) {
+            var notification = {
+                masterSite: masterSite,
+                notificationFrom: messageFrom,
+                notificationMessage: messageCaption || "New message",
+                notificationTo: messageTo,
+                notificationLink: "http://localhost:3003/chat",
+                notificationType: "new_message",
+                groupID: 0,
+                postID: 0
+            };
+            Notification.createSingleNotification(notification);
+        }
+
+        console.log('STEP 4: New message outcome');
+        console.log('YOU SENT A NEW MESSAGE!');
+        */
+

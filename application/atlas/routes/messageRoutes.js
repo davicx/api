@@ -5,31 +5,17 @@ const middlewares = require('../../functions/middlewareFunctions');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
-    1) Function A1: Say Hello
-    2) Function A2: Scan (intent → guardrails → action → ChatGPT)
-
-FUNCTIONS B: All Functions Related to Messages
-    1) Function B1: Post Message
+    1) Function B1: Post Message — intent → guardrails → action → ChatGPT (no Atlas execution)
     2) Function B2: Delete Message
     3) Function B3: Edit Message
+    4) Function A1: Say Hello — OpenAI smoke test
 
 FUNCTIONS C: All Functions Related to getting Messages
     1) Function C1: Get all Group Messages
     2) Function C2: Get all Conversation Messages
 */
 
-//FUNCTIONS A: Messages with an API (ChatGPT)
-//Route A1: Say Hello — POST /message/hello
-messageRouter.post('/message/hello', function (req, res) {
-    messages.postMessageTest(req, res);
-});
-
-//Route A2: Scan — POST /message/scan (before POST /message)
-messageRouter.post('/message/scan', function (req, res) {
-    messages.postMessageScan(req, res);
-});
-
-//FUNCTIONS B: Create / Update / Delete
+//FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
 //Route B1: Post Message
 messageRouter.post('/message', function (req, res) {
     messages.postMessage(req, res);
@@ -45,7 +31,12 @@ messageRouter.post('/message/edit', function (req, res) {
     messages.editMessage(req, res);
 });
 
-//FUNCTIONS C: Get Messages
+//Route A1: Say Hello — POST /message/hello
+messageRouter.post('/message/hello', function (req, res) {
+    messages.postMessageHello(req, res);
+});
+
+//FUNCTIONS C: All Functions Related to getting Messages
 //Route C1: Get all Group Messages
 messageRouter.get('/messages/group/:group_id', middlewares.verifyUser, (req, res) => {
     messages.getGroupMessages(req, res);
