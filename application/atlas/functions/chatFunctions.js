@@ -2,12 +2,13 @@ const OpenAI = require('openai');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('./config/chatGPTconfig');
 
 /*
-FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./messageFunctions for that)
+FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPilotMessageFunctions for that)
 
     1) getOpenAIClient — lazy singleton; null if OPENAI_API_KEY unset
     2) normalizeUserMessageForModel — trim / empty guard for one user string
     3) createOpenAiChatCompletion — low-level chat.completions.create + outcome shape
     4) sendChatWithAction — CloudPilot reply using intent action JSON in system prompt
+    5) sendGeneralChat — normal CloudPilot chat (no action JSON)
 */
 
 let openaiClient = null;
@@ -143,9 +144,68 @@ async function sendChatWithAction(userMessage, action) {
     return result;
 }
 
+/**
+ * General conversation (unknown intent / type none). Same outcome shape as sendChatWithAction.
+ * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
+ */
+async function sendGeneralChat(userMessage) {
+    const norm = normalizeUserMessageForModel(userMessage);
+    if (!norm.ok) {
+        return { success: false, message: norm.message, data: null };
+    }
+
+    const text = norm.text;
+    const maxIn = OPENAI_SAFE_DEFAULTS.MAX_USER_INPUT_CHARS;
+    if (text.length > maxIn) {
+        return {
+            success: false,
+            message: 'message too long (max ' + maxIn + ' characters)',
+            data: null
+        };
+    }
+
+    const client = getOpenAIClient();
+    if (!client) {
+        console.warn('[sendGeneralChat] OPENAI_API_KEY is not set');
+        return { success: false, message: 'OPENAI_API_KEY is not configured', data: null };
+    }
+
+    const config = CHAT_CONFIG.LOW;
+    console.log('[sendGeneralChat] model=%s max_tokens=%s temperature=%s', config.model, config.max_tokens, config.temperature);
+
+    const result = await createOpenAiChatCompletion(client, {
+        model: config.model,
+        messages: [
+            {
+                role: 'system',
+                content:
+                    'You are CloudPilot.\n' +
+                    '- Reply briefly and naturally.\n' +
+                    '- Keep responses under 15 words unless one short follow-up question is needed.\n' +
+                    '- Do not say you executed anything on AWS unless the user is clearly asking about EC2; stay conversational.'
+            },
+            { role: 'user', content: text }
+        ],
+        max_tokens: config.max_tokens,
+        temperature: config.temperature
+    });
+
+    if (result.success && result.usage) {
+        console.log(
+            '[sendGeneralChat] usage prompt=%s completion=%s total=%s',
+            result.usage.prompt_tokens,
+            result.usage.completion_tokens,
+            result.usage.total_tokens
+        );
+    }
+
+    return result;
+}
+
 module.exports = {
     getOpenAIClient,
     normalizeUserMessageForModel,
     createOpenAiChatCompletion,
-    sendChatWithAction
+    sendChatWithAction,
+    sendGeneralChat
 };

@@ -2,28 +2,161 @@ const db = require('../../functions/conn');
 const Message = require('../../functions/classes/Message');
 const Group = require('../../functions/classes/Group');
 const Notification = require('../../functions/classes/Notification');
-const MessageFunctions = require('../../functions/messageFunctions');
+const messageFunctions = require('../../functions/messageFunctions');
+const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
 const chatFunctions = require('../functions/chatFunctions');
-// Atlas: intent + guardrails + buildAction (not ../../functions/messageFunctions — that is DB helpers only)
-const intentPipeline = require('../functions/messageFunctions');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
-    1) Function B1: Post Message — intent → guardrails → action → ChatGPT (no Atlas execution)
-    2) Function B2: Delete Message
-    3) Function B3: Edit Message
-    4) Function A1: Say Hello — OpenAI smoke test
+    1) Function A1: Post Message 
+    2) Function A2: Delete Message
+    3) Function A3: Edit Message
+    4) Function A4: Say Hello
 
-FUNCTIONS C: All Functions Related to getting Messages
-    1) Function C1: Get all Group Messages
-    2) Function C2: Get all Conversation Messages
+FUNCTIONS B: All Functions Related to getting Messages
+    1) Function B1: Get all Group Messages
+    2) Function B2: Get all Conversation Messages
 */
 
 
 //FUNCTIONS A: Messages + external API (ChatGPT)
-// Route A1: POST /message/hello — OpenAI hello test (short completion; no history). Body: { "message": "hi" } (or messageCaption)
+//Function B1: Post Message
+async function postMessage(req, res) {
+    const masterSite = req.body.masterSite || 'kite';
+    const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
+    const messageTo = req.body.messageTo || req.body.postTo || 'chat';
+    const groupID = Number(req.body.groupID || 0);
+    const conversationID = Number(req.body.conversationID || 0);
+    const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
+
+    var headerMessage = "NEW MESSAGE: Post Message";
+    Functions.addHeader(headerMessage);
+
+    var messageOutcome = {
+        data: {},
+        message: "",
+        success: false,
+        statusCode: 500,
+        errors: [],
+        currentUser: messageFrom
+    };
+
+    //STEP 1: Make a new message
+    console.log('STEP 1: Make a new message');
+    var newMessageOutcome = await Message.createMessageText(req);
+
+    if (newMessageOutcome.outcome == 200) {
+        messageOutcome.data = newMessageOutcome.newMessage;
+        messageOutcome.message = "You sent a message!";
+        messageOutcome.statusCode = 200;
+        messageOutcome.success = true;
+        var messageID = newMessageOutcome.messageID || 0;
+
+
+        try {
+            //STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)
+            console.log('STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)');
+            const cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
+            console.log('postMessage: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
+            messageOutcome.cloudPilot = cloudPilotResult;
+        } catch (err) {
+            console.error('cloudPilot (post-save process pipeline):', err);
+            messageOutcome.cloudPilot = {
+                error: true,
+                message: 'CloudPilot process pipeline could not run.',
+            };
+        }
+    } else {
+        messageOutcome.message = "There was a problem sending your message!";
+        messageOutcome.statusCode = 500;
+        messageOutcome.success = false;
+        console.log('STEP 2: Something went wrong sending this message!');
+    }
+
+    Functions.addFooter();
+    res.json(messageOutcome);
+}
+
+//Function B2: Delete Message
+async function deleteMessage(req, res) {
+    //STEP 1: Read delete request fields
+    console.log('STEP 1: Read delete request fields');
+    const messageID = req.body.messageID;
+    const currentUser = req.body.currentUser || req.body.messageFrom;
+
+    var deleteMessageOutcome = {
+        data: [],
+        success: false,
+        message: "",
+        statusCode: 200,
+        errors: [],
+        currentUser: currentUser
+    };
+
+    //STEP 2: Delete the message
+    console.log('STEP 2: Delete the message');
+    var deleteOutcome = await Message.deleteMessage(messageID, currentUser);
+
+    //STEP 3: Delete message outcome
+    console.log('STEP 3: Delete message outcome');
+    if (deleteOutcome.success) {
+        deleteMessageOutcome.data.push({ messageID: messageID, currentUser: currentUser });
+        deleteMessageOutcome.success = true;
+        deleteMessageOutcome.message = "Successfully deleted message " + messageID;
+    } else {
+        deleteMessageOutcome.message = deleteOutcome.message || "Could not delete message " + messageID;
+        deleteMessageOutcome.statusCode = 400;
+    }
+
+    res.json(deleteMessageOutcome);
+}
+
+//Function B3: Edit Message
+async function editMessage(req, res) {
+    //STEP 1: Read edit request fields
+    console.log('STEP 1: Read edit request fields');
+    const currentUser = req.body.currentUser || req.body.messageFrom;
+    const messageID = req.body.messageID;
+    const newMessageCaption = req.body.newMessageCaption || req.body.messageCaption;
+
+    var editMessageOutcome = {
+        data: [],
+        success: false,
+        message: "",
+        statusCode: 200,
+        errors: [],
+        currentUser: currentUser
+    };
+
+    //STEP 2: Check if message exists
+    console.log('STEP 2: Check if message exists');
+    const messageExistsOutcome = await messageFunctions.checkMessageExists(messageID);
+
+    //STEP 3: Update caption
+    console.log('STEP 3: Update caption');
+    if (messageExistsOutcome.messageExists) {
+        const updateOutcome = await Message.updateMessageCaption(messageID, newMessageCaption, currentUser);
+        if (updateOutcome.success) {
+            editMessageOutcome.data.push({ messageID: messageID, newMessageCaption: newMessageCaption });
+            editMessageOutcome.success = true;
+            editMessageOutcome.message = "Message updated!";
+        } else {
+            editMessageOutcome.message = updateOutcome.message;
+            editMessageOutcome.statusCode = 400;
+        }
+    } else {
+        editMessageOutcome.message = "Message not found";
+        editMessageOutcome.statusCode = 404;
+    }
+
+    //STEP 4: Edit message outcome
+    console.log('STEP 4: Edit message outcome');
+    res.json(editMessageOutcome);
+}
+
+//Function A4: Say Hello
 async function postMessageHello(req, res) {
     console.log('postMessageHello: incoming body keys', req.body && Object.keys(req.body));
     const raw = req.body && (req.body.message ?? req.body.messageCaption);
@@ -110,211 +243,8 @@ async function postMessageHello(req, res) {
 }
 
 
-// Scan pipeline — intent → guardrails → action → ChatGPT (no Atlas execution)
-async function processScanMessage(userMessage) {
-    console.log('\n--- postMessage: scan pipeline ---');
-    console.log('User:', userMessage);
-
-    //STEP 1: Normalize and validate the user message
-    console.log('STEP 1: Normalize and validate the user message');
-    const norm = chatFunctions.normalizeUserMessageForModel(userMessage);
-    if (!norm.ok) {
-        return { success: false, message: norm.message, data: null };
-    }
-
-    const text = norm.text;
-
-    //STEP 2: Detect intent from message
-    console.log('STEP 2: Detect intent from message');
-    const intent = intentPipeline.detectIntent(text);
-
-    //STEP 3: Check guardrails (intent policy)
-    console.log('STEP 3: Check guardrails (intent policy)');
-    const policy = intentPipeline.checkIntentPolicy(intent);
-
-    if (!policy.allowed) {
-        console.log('STEP 4: Guardrail blocked — no ChatGPT call');
-        return {
-            success: true,
-            data: policy.message,
-            action: { type: 'none', allowed: false, message: policy.message },
-            intent,
-            policy
-        };
-    }
-
-    //STEP 4: Build action object
-    console.log('STEP 4: Build action object');
-    const action = intentPipeline.buildAction(intent, policy);
-    console.log('Action:', action);
-
-    //STEP 5: Call ChatGPT with action context
-    console.log('STEP 5: Call ChatGPT with action context');
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        console.log('STEP 6: Something went wrong with scan ChatGPT');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent,
-            policy,
-            error: chatResult.error
-        };
-    }
-
-    //STEP 6: New scan outcome
-    console.log('STEP 6: New scan outcome');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent,
-        policy
-    };
-}
-
-//FUNCTIONS B: Create / Update / Delete
-//Function B1: Post Message
-async function postMessage(req, res) {
-    //STEP 1: Gather post fields from request
-    console.log('STEP 1: Gather post fields from request');
-    const masterSite = req.body.masterSite || 'kite';
-    const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
-    const messageTo = req.body.messageTo || req.body.postTo || 'chat';
-    const groupID = Number(req.body.groupID || 0);
-    const conversationID = Number(req.body.conversationID || 0);
-    const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
-
-    var headerMessage = "NEW MESSAGE: Post Message";
-    Functions.addHeader(headerMessage);
-
-    var messageOutcome = {
-        data: {},
-        message: "",
-        success: false,
-        statusCode: 500,
-        errors: [],
-        currentUser: messageFrom
-    };
-
-    //STEP 2: Make a new message
-    console.log('STEP 2: Make a new message');
-    var newMessageOutcome = await Message.createMessageText(req);
-
-    if (newMessageOutcome.outcome == 200) {
-        messageOutcome.data = newMessageOutcome.newMessage;
-        messageOutcome.message = "You sent a message!";
-        messageOutcome.statusCode = 200;
-        messageOutcome.success = true;
-        var messageID = newMessageOutcome.messageID || 0;
-
-
-        try {
-           //STEP 3: 
-            console.log('STEP 5: Scan pipeline (intent → guardrails → action → ChatGPT)');
-            const scanResult = await processScanMessage(messageCaption);
-            console.log('postMessage: scan pipeline result:', JSON.stringify(scanResult, null, 2));
-            messageOutcome.cloudPilot = scanResult;
-        } catch (err) {
-            console.error('cloudPilot (post-save scan pipeline):', err);
-            messageOutcome.cloudPilot = {
-                error: true,
-                message: 'CloudPilot scan pipeline could not run.',
-            };
-        }
-    } else {
-        messageOutcome.message = "There was a problem sending your message!";
-        messageOutcome.statusCode = 500;
-        messageOutcome.success = false;
-        console.log('STEP 4: Something went wrong sending this message!');
-    }
-
-    Functions.addFooter();
-    res.json(messageOutcome);
-}
-
-//Function B2: Delete Message
-async function deleteMessage(req, res) {
-    //STEP 1: Read delete request fields
-    console.log('STEP 1: Read delete request fields');
-    const messageID = req.body.messageID;
-    const currentUser = req.body.currentUser || req.body.messageFrom;
-
-    var deleteMessageOutcome = {
-        data: [],
-        success: false,
-        message: "",
-        statusCode: 200,
-        errors: [],
-        currentUser: currentUser
-    };
-
-    //STEP 2: Delete the message
-    console.log('STEP 2: Delete the message');
-    var deleteOutcome = await Message.deleteMessage(messageID, currentUser);
-
-    //STEP 3: Delete message outcome
-    console.log('STEP 3: Delete message outcome');
-    if (deleteOutcome.success) {
-        deleteMessageOutcome.data.push({ messageID: messageID, currentUser: currentUser });
-        deleteMessageOutcome.success = true;
-        deleteMessageOutcome.message = "Successfully deleted message " + messageID;
-    } else {
-        deleteMessageOutcome.message = deleteOutcome.message || "Could not delete message " + messageID;
-        deleteMessageOutcome.statusCode = 400;
-    }
-
-    res.json(deleteMessageOutcome);
-}
-
-//Function B3: Edit Message
-async function editMessage(req, res) {
-    //STEP 1: Read edit request fields
-    console.log('STEP 1: Read edit request fields');
-    const currentUser = req.body.currentUser || req.body.messageFrom;
-    const messageID = req.body.messageID;
-    const newMessageCaption = req.body.newMessageCaption || req.body.messageCaption;
-
-    var editMessageOutcome = {
-        data: [],
-        success: false,
-        message: "",
-        statusCode: 200,
-        errors: [],
-        currentUser: currentUser
-    };
-
-    //STEP 2: Check if message exists
-    console.log('STEP 2: Check if message exists');
-    const messageExistsOutcome = await MessageFunctions.checkMessageExists(messageID);
-
-    //STEP 3: Update caption
-    console.log('STEP 3: Update caption');
-    if (messageExistsOutcome.messageExists) {
-        const updateOutcome = await Message.updateMessageCaption(messageID, newMessageCaption, currentUser);
-        if (updateOutcome.success) {
-            editMessageOutcome.data.push({ messageID: messageID, newMessageCaption: newMessageCaption });
-            editMessageOutcome.success = true;
-            editMessageOutcome.message = "Message updated!";
-        } else {
-            editMessageOutcome.message = updateOutcome.message;
-            editMessageOutcome.statusCode = 400;
-        }
-    } else {
-        editMessageOutcome.message = "Message not found";
-        editMessageOutcome.statusCode = 404;
-    }
-
-    //STEP 4: Edit message outcome
-    console.log('STEP 4: Edit message outcome');
-    res.json(editMessageOutcome);
-}
-
-//FUNCTIONS C: Get Messages
-//Function C1: Get all Group Messages
+//FUNCTIONS B: Get Messages
+//Function B1: Get all Group Messages
 async function getGroupMessages(req, res) {
     //STEP 1: Read group id and current user
     console.log('STEP 1: Read group id and current user');
@@ -344,7 +274,7 @@ async function getGroupMessages(req, res) {
     res.json(messagesResponse);
 }
 
-//Function C2: Get all Conversation Messages
+//Function B2: Get all Conversation Messages
 async function getConversationMessages(req, res) {
     //STEP 1: Read conversation id and current user
     console.log('STEP 1: Read conversation id and current user');
@@ -460,7 +390,7 @@ async function sayHello(userMessage) {
 // OLD: dedicated POST /message/scan — pipeline now runs inside POST /message (postMessage)
 async function postMessageScanPROBABLYOLD(req, res) {
     const { message } = req.body;
-    const result = await processScanMessage(message);
+    const result = await cloudPilotMessageFunctions.processMessage(message);
     if (result.success) {
         return res.json(result);
     }
