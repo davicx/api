@@ -1,0 +1,52 @@
+{
+    "data": {
+        "currentUserMessage": {
+            "messageID": 24,
+            "messageType": "text",
+            "groupID": 0,
+            "conversationID": 0,
+            "messageFrom": "davey",
+            "messageTo": "CloudPilot",
+            "messageCaption": "Hello scan EC2",
+            "messageDate": "04/16/2026",
+            "messageTime": "2:33 pm",
+            "timeMessage": "a few seconds ago",
+            "created": "2026-04-16T21:33:08.758Z"
+        },
+        "CloudPilotResponseMessage": {
+            "messageID": ?,
+            "messageType": "text",
+            "groupID": 0,
+            "conversationID": 0,
+            "messageFrom": "davey",
+            "messageTo": "CloudPilot",
+            "messageCaption": "Hello scan EC2", //SOURCE OF TRUTH THIS GOES IN CHAT WINDOW
+            "messageDate": "04/16/2026",
+            "messageTime": "2:33 pm",
+            "timeMessage": "a few seconds ago",
+            "created": "2026-04-16T21:33:08.758Z"
+        }, 
+    },
+    "message": "You sent a message!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}
+
+
+//What should I do with this data
+    "CloudPilot": {
+        "success": true,
+        "data": "Which region do you want to scan?",
+        "action": {
+            "type": "scan_ec2",
+            "allowed": true,
+            "requiresExecution": false,
+            "message": "Preparing EC2 scan."
+        },
+        "intent": "scan_ec2",
+        "policy": {
+            "allowed": true
+        }
+    }

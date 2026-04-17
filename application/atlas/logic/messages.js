@@ -23,6 +23,8 @@ FUNCTIONS B: All Functions Related to getting Messages
 
 //FUNCTIONS A: Messages + external API (ChatGPT)
 //Function B1: Post Message
+//ORIGINAL CODE:
+/*
 async function postMessage(req, res) {
     const masterSite = req.body.masterSite || 'kite';
     const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
@@ -68,6 +70,136 @@ async function postMessage(req, res) {
                 message: 'CloudPilot process pipeline could not run.',
             };
         }
+    } else {
+        messageOutcome.message = "There was a problem sending your message!";
+        messageOutcome.statusCode = 500;
+        messageOutcome.success = false;
+        console.log('STEP 2: Something went wrong sending this message!');
+    }
+
+    Functions.addFooter();
+    res.json(messageOutcome);
+}
+*/
+
+// TODO: Replace synthetic `req` shaping for assistant inserts.
+// Today we reuse `Message.createMessageText(req)` by building a request-like object so the DB insert path stays identical to user messages.
+// Long-term: extract a shared `createMessage({...fields})` (or pass a plain message DTO) so controllers do not mimic HTTP request shapes for internal writes.
+async function postMessage(req, res) {
+    const masterSite = req.body.masterSite || 'kite';
+    const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
+    const messageTo = req.body.messageTo || req.body.postTo || 'chat';
+    const groupID = Number(req.body.groupID || 0);
+    const conversationID = Number(req.body.conversationID || 0);
+    const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
+
+    var headerMessage = "NEW MESSAGE: Post Message";
+    Functions.addHeader(headerMessage);
+
+    var messageOutcome = {
+        data: {},
+        message: "",
+        success: false,
+        statusCode: 500,
+        errors: [],
+        currentUser: messageFrom
+    };
+
+    //STEP 1: Make a new message
+    console.log('STEP 1: Make a new message');
+    var newMessageOutcome = await Message.createMessageText(req);
+
+    if (newMessageOutcome.outcome == 200) {
+        messageOutcome.message = "You sent a message!";
+        messageOutcome.statusCode = 200;
+        messageOutcome.success = true;
+
+        const userMessage = newMessageOutcome.newMessage;
+        const messages = [userMessage];
+
+        let cloudPilotMeta = null;
+
+        try {
+            //STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)
+            console.log('STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)');
+            const cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);
+            console.log('postMessage: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
+
+            cloudPilotMeta = {
+                intent: cloudPilotResult && cloudPilotResult.intent != null ? cloudPilotResult.intent : null,
+                action: cloudPilotResult && cloudPilotResult.action ? cloudPilotResult.action : null,
+                policy: cloudPilotResult && cloudPilotResult.policy ? cloudPilotResult.policy : null,
+                conversationID: cloudPilotResult && cloudPilotResult.conversationID != null ? cloudPilotResult.conversationID : null,
+                conversationState: cloudPilotResult && cloudPilotResult.conversationState ? cloudPilotResult.conversationState : null
+            };
+
+            const policyAllowed = !(cloudPilotResult && cloudPilotResult.policy && cloudPilotResult.policy.allowed === false);
+            const actionMessage =
+                cloudPilotResult &&
+                cloudPilotResult.action &&
+                typeof cloudPilotResult.action.message === 'string'
+                    ? cloudPilotResult.action.message.trim()
+                    : '';
+
+            const dataText =
+                cloudPilotResult && cloudPilotResult.success && typeof cloudPilotResult.data === 'string'
+                    ? cloudPilotResult.data.trim()
+                    : '';
+
+            const failureText =
+                cloudPilotResult && !cloudPilotResult.success && typeof cloudPilotResult.message === 'string'
+                    ? cloudPilotResult.message.trim()
+                    : '';
+
+            let assistantCaption = '';
+            if (dataText) {
+                assistantCaption = dataText;
+            } else if (!policyAllowed && actionMessage) {
+                assistantCaption = actionMessage;
+            } else if (failureText) {
+                assistantCaption = failureText;
+            }
+
+            if (assistantCaption) {
+                const assistantReq = {
+                    ...req,
+                    body: {
+                        ...req.body,
+                        masterSite: masterSite,
+                        messageType: req.body.messageType || 'text',
+                        messageFrom: 'CloudPilot',
+                        messageTo: messageFrom,
+                        groupID: groupID,
+                        conversationID: conversationID,
+                        messageCaption: assistantCaption,
+                        message: assistantCaption,
+                        postCaption: assistantCaption
+                    }
+                };
+
+                const assistantOutcome = await Message.createMessageText(assistantReq);
+                if (assistantOutcome.outcome == 200) {
+                    messages.push(assistantOutcome.newMessage);
+                } else {
+                    console.error('postMessage: CloudPilot assistant message could not be saved', assistantOutcome);
+                    messageOutcome.errors.push({
+                        code: 'assistant_message_not_saved',
+                        message: 'User message saved, but CloudPilot reply could not be saved.'
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('cloudPilot (post-save process pipeline):', err);
+            cloudPilotMeta = {
+                error: true,
+                message: 'CloudPilot process pipeline could not run.'
+            };
+        }
+
+        messageOutcome.data = {
+            messages: messages,
+            cloudPilot: cloudPilotMeta
+        };
     } else {
         messageOutcome.message = "There was a problem sending your message!";
         messageOutcome.statusCode = 500;
