@@ -71,7 +71,7 @@ async function postMessage(req, res) {
         console.log('STEP 2A: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
         messageOutcome.cloudPilot = cloudPilotResult;
     } catch (err) {
-        console.error('cloudPilot error:', err);
+        console.error('STEP 2A: cloudPilot error:', err);
         messageOutcome.cloudPilot = {
             error: true,
             message: 'CloudPilot process pipeline could not run.',
