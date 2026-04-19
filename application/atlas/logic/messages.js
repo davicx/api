@@ -23,13 +23,115 @@ FUNCTIONS B: All Functions Related to getting Messages
 
 //FUNCTIONS A: Messages + external API (ChatGPT)
 //Function B1: Post Message
+//FUNCTIONS A: Messages + external API (ChatGPT)
+//Function B1: Post Message
 async function postMessage(req, res) {
     const masterSite = req.body.masterSite || 'kite';
+    const messageType = req.body.messageType || 'text';
     const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
     const messageTo = req.body.messageTo || req.body.postTo || 'chat';
     const groupID = Number(req.body.groupID || 0);
     const conversationID = Number(req.body.conversationID || 0);
     const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
+    const cloudKey = req.body.cloudKey || 'no_cloud_key';
+    const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
+    const storageType = req.body.storageType || 'local';
+    
+    var headerMessage = "NEW MESSAGE: Post Message";
+    Functions.addHeader(headerMessage);
+
+    var messageOutcome = {
+        data: {},
+        message: "",
+        success: false,
+        statusCode: 500,
+        errors: [],
+        currentUser: messageFrom
+    };
+
+    //STEP 1: Build Message 
+
+    //STEP 2: Send new message to the database
+    console.log('STEP 1: Make a new message');
+    var newMessageOutcome = await Message.createMessageText(req);
+
+    if (newMessageOutcome.outcome != 200) {
+        messageOutcome.message = "There was a problem sending your message!";
+        messageOutcome.statusCode = 500;
+        messageOutcome.success = false;
+        console.log('STEP 1 FAILED: Could not create message');
+        Functions.addFooter();
+        return res.json(messageOutcome);
+    }
+
+    messageOutcome.data = newMessageOutcome.newMessage;
+    messageOutcome.message = "You sent a message!";
+    messageOutcome.statusCode = 200;
+    messageOutcome.success = true;
+
+    //STEP 3: CloudPilot (intent → decide → handler → ChatGPT)
+    console.log('STEP 2: Have Cloud Pilot decide if the user is requesting something');
+
+    var cloudPilotResult = null;
+
+    try {
+        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
+        console.log('STEP 2A: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
+        messageOutcome.cloudPilot = cloudPilotResult;
+    } catch (err) {
+        console.error('STEP 2A: cloudPilot error:', err);
+        messageOutcome.cloudPilot = {
+            error: true,
+            message: 'CloudPilot process pipeline could not run.',
+        };
+    }
+
+    //STEP 4: Save CloudPilot message
+    console.log('STEP 3: Save CloudPilot message');
+
+    if (cloudPilotResult && cloudPilotResult.success == true) {
+
+        var cloudPilotReq = {
+            body: {
+                masterSite: masterSite,
+                messageType: 'text',
+                messageFrom: 'CloudPilot',
+                messageTo: messageFrom,
+                groupID: groupID,
+                conversationID: conversationID,
+                messageCaption: cloudPilotResult.data,
+                message: cloudPilotResult.data,
+                postCaption: cloudPilotResult.data
+            }
+        };
+
+        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotReq);
+
+        if (cloudPilotMessageOutcome.outcome == 200) {
+            console.log('STEP 3 SUCCESS: CloudPilot message saved');
+        } else {
+            console.log('STEP 3 FAILED: Could not save CloudPilot message');
+        }
+    }
+
+    Functions.addFooter();
+    res.json(messageOutcome);
+}
+/*
+async function postMessage(req, res) {
+    const masterSite = req.body.masterSite || 'kite';
+    const messageType = req.body.messageType || 'text';
+    const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
+    const messageTo = req.body.messageTo || req.body.postTo || 'chat';
+    const groupID = Number(req.body.groupID || 0);
+    const conversationID = Number(req.body.conversationID || 0);
+    const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
+    const cloudKey = req.body.cloudKey || 'no_cloud_key';
+    const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
+    const storageType = req.body.storageType || 'local';
+
+    //STEP 1: Build message
+    const newMessage = messageFunctions.buildNewMessage(req);
 
     var headerMessage = "NEW MESSAGE: Post Message";
     Functions.addHeader(headerMessage);
@@ -43,9 +145,8 @@ async function postMessage(req, res) {
         currentUser: messageFrom
     };
 
-    //STEP 1: Make a new message
-    console.log('STEP 1: Make a new message');
-    var newMessageOutcome = await Message.createMessageText(req);
+    //STEP 2: Create message
+    var newMessageOutcome = await Message.createMessageText(newMessage);
 
     if (newMessageOutcome.outcome != 200) {
         messageOutcome.message = "There was a problem sending your message!";
@@ -109,6 +210,7 @@ async function postMessage(req, res) {
     Functions.addFooter();
     res.json(messageOutcome);
 }
+*/
 
 
 /*

@@ -1,9 +1,12 @@
 const db = require('./conn');
 
 /*
+TABLE OF CONTENTS
+
 FUNCTIONS A: All Message Helper Functions
     1) Function A1: Check if Message Exists
     2) Function A2: Get Message From
+    3) Function A3: Build New Message (from HTTP req)
 */
 
 //Function A1: Check if Message Exists
@@ -67,4 +70,21 @@ async function getMessageFrom(messageID) {
     });
 }
 
-module.exports = { checkMessageExists, getMessageFrom };
+//Function A3: Build New Message (from HTTP req)
+function buildNewMessage(req) {
+    const b = req.body || {};
+    return {
+        masterSite: b.masterSite || 'kite',
+        messageType: b.messageType || 'text',
+        messageFrom: b.messageFrom || b.postFrom || b.username,
+        messageTo: b.messageTo || b.postTo || 'chat',
+        groupID: Number(b.groupID || 0),
+        conversationID: Number(b.conversationID || 0),
+        messageCaption: b.messageCaption || b.message || b.postCaption,
+        cloudKey: b.cloudKey || 'no_cloud_key',
+        cloudBucket: b.cloudBucket || 'no_cloud_bucket',
+        storageType: b.storageType || 'local'
+    };
+}
+
+module.exports = { checkMessageExists, getMessageFrom, buildNewMessage };

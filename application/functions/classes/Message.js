@@ -15,18 +15,18 @@ class Message {
 
     //METHODS A: CREATE MESSAGE
     //Method A1: Make a Text Message
-    static async createMessageText(req) {
+    static async createMessageText(newMessage) {
         const connection = db.getConnection();
-        const masterSite = req.body.masterSite || 'kite';
-        const messageType = req.body.messageType || 'text';
-        const messageFrom = req.body.messageFrom || req.body.postFrom;
-        const messageTo = req.body.messageTo || req.body.postTo || 'chat';
-        const groupID = Number(req.body.groupID || 0);
-        const conversationID = Number(req.body.conversationID || 0);
-        const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
-        const cloudKey = req.body.cloudKey || 'no_cloud_key';
-        const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
-        const storageType = req.body.storageType || 'local';
+        const masterSite = newMessage.masterSite || 'kite';
+        const messageType = newMessage.messageType || 'text';
+        const messageFrom = newMessage.messageFrom || newMessage.postFrom;
+        const messageTo = newMessage.messageTo || newMessage.postTo || 'chat';
+        const groupID = Number(newMessage.groupID || 0);
+        const conversationID = Number(newMessage.conversationID || 0);
+        const messageCaption = newMessage.messageCaption || newMessage.message || newMessage.postCaption;
+        const cloudKey = newMessage.cloudKey || 'no_cloud_key';
+        const cloudBucket = newMessage.cloudBucket || 'no_cloud_bucket';
+        const storageType = newMessage.storageType || 'local';
 
         console.log("CLASS Message: Step 1A: Create a new message from Message Class");
 
@@ -63,6 +63,8 @@ class Message {
                         messageOutcome.newMessage.messageID = results.insertId;
                         messageOutcome.newMessage.created = new Date();
                     } else {
+                        console.log("Step 1B: Error putting in database ");
+                        console.log(err)
                         messageOutcome.outcome = "no worky";
                         messageOutcome.errors.push(err);
                     }
