@@ -7,6 +7,7 @@ FUNCTIONS A: All Message Helper Functions
     1) Function A1: Check if Message Exists
     2) Function A2: Get Message From
     3) Function A3: Build New Message (from HTTP req)
+    4) Function A4: Build CloudPilot Message (from HTTP req + ChatGPT assistant text)
 */
 
 //Function A1: Check if Message Exists
@@ -87,4 +88,25 @@ function buildNewMessage(req) {
     };
 }
 
-module.exports = { checkMessageExists, getMessageFrom, buildNewMessage };
+//Function A4: Build CloudPilot message (from HTTP req + ChatGPT assistant text)
+function buildCloudPilotMessage(req, assistantText) {
+    const b = req.body || {};
+    const text =
+        assistantText == null ? '' : typeof assistantText === 'string' ? assistantText : String(assistantText);
+    return {
+        masterSite: b.masterSite || 'kite',
+        messageType: 'text',
+        messageFrom: 'CloudPilot',
+        messageTo: b.messageFrom || b.postFrom || b.username,
+        groupID: Number(b.groupID || 0),
+        conversationID: Number(b.conversationID || 0),
+        messageCaption: text,
+        message: text,
+        postCaption: text,
+        cloudKey: b.cloudKey || 'no_cloud_key',
+        cloudBucket: b.cloudBucket || 'no_cloud_bucket',
+        storageType: b.storageType || 'local',
+    };
+}
+
+module.exports = { checkMessageExists, getMessageFrom, buildNewMessage, buildCloudPilotMessage };

@@ -1,5 +1,6 @@
 const chatFunctions = require('./chatFunctions');
 const conversationStateFunctions = require('./conversationStateFunctions');
+const state = require('./state/state');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -14,6 +15,16 @@ FUNCTIONS C: Conversation State (MVP)
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(userMessage) {
+    
+    //STEP 0: Pending action — pause normal pipeline (no normalize / intent / decide)
+    if (state.pendingAction) {
+        console.log('STEP 0: Pending action exists — skipping normalize, detectIntent, decideAction');
+        return {
+            success: true,
+            data: 'Pending action in progress',
+        };
+    }
+
     console.log('--- CloudPilot: process pipeline ---');
     console.log('User:', userMessage);
 
@@ -51,22 +62,13 @@ async function processMessage(userMessage) {
 
     switch (action.type) {
         case 'scan_ec2':
-
-            //Instead of executing immediately, save state
-            state.pendingAction = {
-                type: "scan_ec2",
-                collectedFields: {},
-                missingFields: ["region"]
-            };
-
-            console.log('scan_ec2: state set, waiting for region');
-
-            // Ask user for missing info instead of calling ChatGPT
+            console.log('STEP 4: scan_ec2 — set pendingAction (no ChatGPT yet)');
+            state.pendingAction = { type: 'scan_ec2' };
             return {
                 success: true,
-                data: "Which AWS region should I scan?",
+                data: 'Started scan flow',
                 action,
-                intent
+                intent,
             };
         /*
         case 'scan_ec2':

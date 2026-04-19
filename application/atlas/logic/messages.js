@@ -39,6 +39,15 @@ async function postMessage(req, res) {
     var headerMessage = "NEW MESSAGE: Post Message";
     Functions.addHeader(headerMessage);
 
+    // STATE banner — verify in-memory CloudPilot state (see ../functions/state/state.js)
+    console.log('______________________________________________________________');
+    if (state.pendingAction) {
+        console.log('STATE: Currently scan ec2 is pending waiting on info');
+    } else {
+        console.log('STATE: Nothing going on dude');
+    }
+    console.log('______________________________________________________________');
+
     var messageOutcome = {
         data: {},
         message: "",
@@ -48,15 +57,17 @@ async function postMessage(req, res) {
         currentUser: messageFrom
     };
 
+
     //STEP 1: Check if there is an open Action (user is trying to make a change and we are gathering info)
     if (state.pendingAction) {
         console.log('STEP 1: continuing pendingAction');
 
-        // For now just return something simple so you can test
-        return {
-            success: true,
-            data: "Continuing previous request",
-        };
+        messageOutcome.success = true;
+        messageOutcome.statusCode = 200;
+        messageOutcome.message = 'Continuing previous request';
+        messageOutcome.data = { pendingFlow: true, note: 'Continuing previous request' };
+        Functions.addFooter();
+        return res.json(messageOutcome);
     }
 
     //STEP 1: Build Message 
@@ -80,17 +91,18 @@ async function postMessage(req, res) {
     messageOutcome.statusCode = 200;
     messageOutcome.success = true;
 
+
     //STEP 3: CloudPilot (intent → decide → handler → ChatGPT)
-    console.log('STEP 2: Have Cloud Pilot decide if the user is requesting something');
+    console.log('STEP 3: Have Cloud Pilot decide if the user is requesting something');
 
     var cloudPilotResult = null;
 
     try {
         cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
-        console.log('STEP 2A: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
+        console.log('STEP 3A: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
         messageOutcome.cloudPilot = cloudPilotResult;
     } catch (err) {
-        console.error('STEP 2A: cloudPilot error:', err);
+        console.error('STEP 3A: cloudPilot error:', err);
         messageOutcome.cloudPilot = {
             error: true,
             message: 'CloudPilot process pipeline could not run.',
@@ -103,20 +115,7 @@ async function postMessage(req, res) {
     if (cloudPilotResult && cloudPilotResult.success == true) {
 
         //STEP 5: Build CloudPilot message
-        var cloudPilotMessage = {
-            masterSite: masterSite,
-            messageType: 'text',
-            messageFrom: 'CloudPilot',
-            messageTo: messageFrom,
-            groupID: groupID,
-            conversationID: conversationID,
-            messageCaption: cloudPilotResult.data,
-            message: cloudPilotResult.data,
-            postCaption: cloudPilotResult.data,
-            cloudKey: cloudKey,
-            cloudBucket: cloudBucket,
-            storageType: storageType
-        };
+        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.data);
 
         var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
@@ -126,7 +125,7 @@ async function postMessage(req, res) {
             console.log('STEP 5 FAILED: Could not save CloudPilot message');
         }
     }
-
+    
     Functions.addFooter();
     res.json(messageOutcome);
 }
@@ -619,15 +618,15 @@ async function postMessageHello(req, res) {
 //Function B1: Get all Group Messages
 async function getGroupMessages(req, res) {
     //STEP 1: Read group id and current user
-    console.log('STEP 1: Read group id and current user');
+   //console.log('STEP 1: Read group id and current user');
     const groupID = req.params.group_id;
     const currentUser = req.currentUser || req.body?.currentUser;
 
-    var headerMessage = "HEADER: Get all Group Messages for Group: " + groupID;
-    Functions.addHeader(headerMessage);
+    var headerMessage = "Get all Group Messages for Group: " + groupID;
+    //Functions.addHeader(headerMessage);
 
     //STEP 2: Get all group messages
-    console.log('STEP 2: Get all group messages');
+    //console.log('STEP 2: Get all group messages');
     var messagesOutcome = await Message.getGroupMessages(groupID);
     var messages = messagesOutcome.messages || [];
 
@@ -641,23 +640,23 @@ async function getGroupMessages(req, res) {
     };
 
     //STEP 3: Group messages outcome
-    console.log('STEP 3: Group messages outcome');
-    Functions.addFooter();
+    //console.log('STEP 3: Group messages outcome');
+    //Functions.addFooter();
     res.json(messagesResponse);
 }
 
 //Function B2: Get all Conversation Messages
 async function getConversationMessages(req, res) {
     //STEP 1: Read conversation id and current user
-    console.log('STEP 1: Read conversation id and current user');
+    //console.log('STEP 1: Read conversation id and current user');
     const conversationID = req.params.conversation_id;
     const currentUser = req.currentUser || req.body?.currentUser;
 
     var headerMessage = "HEADER: Get all Conversation Messages for: " + conversationID;
-    Functions.addHeader(headerMessage);
+    //Functions.addHeader(headerMessage);
 
     //STEP 2: Get all conversation messages
-    console.log('STEP 2: Get all conversation messages');
+    //console.log('STEP 2: Get all conversation messages');
     var messagesOutcome = await Message.getConversationMessages(conversationID);
     var messages = messagesOutcome.messages || [];
 
@@ -671,8 +670,8 @@ async function getConversationMessages(req, res) {
     };
 
     //STEP 3: Conversation messages outcome
-    console.log('STEP 3: Conversation messages outcome');
-    Functions.addFooter();
+    //console.log('STEP 3: Conversation messages outcome');
+    //Functions.addFooter();
     res.json(messagesResponse);
 }
 
