@@ -51,8 +51,27 @@ async function processMessage(userMessage) {
 
     switch (action.type) {
         case 'scan_ec2':
-            return await handleScanEC2(text, action);
 
+            //Instead of executing immediately, save state
+            state.pendingAction = {
+                type: "scan_ec2",
+                collectedFields: {},
+                missingFields: ["region"]
+            };
+
+            console.log('scan_ec2: state set, waiting for region');
+
+            // Ask user for missing info instead of calling ChatGPT
+            return {
+                success: true,
+                data: "Which AWS region should I scan?",
+                action,
+                intent
+            };
+        /*
+        case 'scan_ec2':
+            return await handleScanEC2(text, action);
+        */
         case 'toggle_ec2':
             return await handleToggleEC2(text, action);
 
@@ -61,6 +80,57 @@ async function processMessage(userMessage) {
             return await handleGeneralChat(text, action);
     }
 }
+
+/*
+const state = require('./state'); // adjust path as needed
+
+async function processMessage(userMessage) {
+    console.log('--- CloudPilot: process pipeline ---');
+    console.log('User:', userMessage);
+
+    //STEP 0: Check pending action FIRST
+    if (state.pendingAction) {
+        console.log('STEP 0: Found pendingAction → continuing flow');
+        return await handlePendingAction(userMessage);
+    }
+
+    //STEP 1: Normalize
+    const norm = chatFunctions.normalizeUserMessageForModel(userMessage);
+    if (!norm.ok) {
+        return { success: false, message: norm.message, data: null };
+    }
+
+    const text = norm.text;
+
+    //STEP 2: Detect intent
+    const intent = detectIntent(text);
+
+    //STEP 3: Decide action
+    const action = decideAction(intent);
+
+    if (!action.allowed) {
+        return {
+            success: true,
+            data: action.message,
+            action,
+            intent
+        };
+    }
+
+    //STEP 4: HANDLE ACTION TYPES
+    switch (action.type) {
+
+        case 'scan_ec2':
+            return await startScanEC2Flow(text);
+
+        case 'toggle_ec2':
+            return await handleToggleEC2(text, action);
+
+        default:
+            return await handleGeneralChat(text, action);
+    }
+}
+    */
 
 //Function B1: Detect Intent
 function detectIntent(userMessage) {

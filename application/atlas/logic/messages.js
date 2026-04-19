@@ -6,6 +6,7 @@ const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
 const chatFunctions = require('../functions/chatFunctions');
+const state = require('../functions/state/state');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
 /*
@@ -21,8 +22,6 @@ FUNCTIONS B: All Functions Related to getting Messages
 */
 
 
-//FUNCTIONS A: Messages + external API (ChatGPT)
-//Function B1: Post Message
 //FUNCTIONS A: Messages + external API (ChatGPT)
 //Function B1: Post Message
 async function postMessage(req, res) {
@@ -49,11 +48,23 @@ async function postMessage(req, res) {
         currentUser: messageFrom
     };
 
+    //STEP 1: Check if there is an open Action (user is trying to make a change and we are gathering info)
+    if (state.pendingAction) {
+        console.log('STEP 1: continuing pendingAction');
+
+        // For now just return something simple so you can test
+        return {
+            success: true,
+            data: "Continuing previous request",
+        };
+    }
+
     //STEP 1: Build Message 
+    var currentUserMessage = messageFunctions.buildNewMessage(req);
 
     //STEP 2: Send new message to the database
     console.log('STEP 1: Make a new message');
-    var newMessageOutcome = await Message.createMessageText(req);
+    var newMessageOutcome = await Message.createMessageText(currentUserMessage);
 
     if (newMessageOutcome.outcome != 200) {
         messageOutcome.message = "There was a problem sending your message!";
@@ -87,36 +98,40 @@ async function postMessage(req, res) {
     }
 
     //STEP 4: Save CloudPilot message
-    console.log('STEP 3: Save CloudPilot message');
+    console.log('STEP 4: Save CloudPilot message');
 
     if (cloudPilotResult && cloudPilotResult.success == true) {
 
-        var cloudPilotReq = {
-            body: {
-                masterSite: masterSite,
-                messageType: 'text',
-                messageFrom: 'CloudPilot',
-                messageTo: messageFrom,
-                groupID: groupID,
-                conversationID: conversationID,
-                messageCaption: cloudPilotResult.data,
-                message: cloudPilotResult.data,
-                postCaption: cloudPilotResult.data
-            }
+        //STEP 5: Build CloudPilot message
+        var cloudPilotMessage = {
+            masterSite: masterSite,
+            messageType: 'text',
+            messageFrom: 'CloudPilot',
+            messageTo: messageFrom,
+            groupID: groupID,
+            conversationID: conversationID,
+            messageCaption: cloudPilotResult.data,
+            message: cloudPilotResult.data,
+            postCaption: cloudPilotResult.data,
+            cloudKey: cloudKey,
+            cloudBucket: cloudBucket,
+            storageType: storageType
         };
 
-        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotReq);
+        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
         if (cloudPilotMessageOutcome.outcome == 200) {
-            console.log('STEP 3 SUCCESS: CloudPilot message saved');
+            console.log('STEP 5 SUCCESS: CloudPilot message saved');
         } else {
-            console.log('STEP 3 FAILED: Could not save CloudPilot message');
+            console.log('STEP 5 FAILED: Could not save CloudPilot message');
         }
     }
 
     Functions.addFooter();
     res.json(messageOutcome);
 }
+
+
 /*
 async function postMessage(req, res) {
     const masterSite = req.body.masterSite || 'kite';
