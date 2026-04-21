@@ -133,7 +133,7 @@ function extractAwsRegion(userText) {
 }
 
 module.exports = {
-    STATE_TTL_MS,
+    // STATE_TTL_MS, // Unused externally — only referenced internally by isStaleState()
     MAX_SLOT_ATTEMPTS,
     normalizeConversationKey,
     getConversationState,
