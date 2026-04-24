@@ -8,6 +8,7 @@ FUNCTIONS A: All Message Helper Functions
     2) Function A2: Get Message From
     3) Function A3: Build New Message (from HTTP req)
     4) Function A4: Build CloudPilot Message (from HTTP req + ChatGPT assistant text)
+    5) Function A5: Log Current State
 */
 
 //Function A1: Check if Message Exists
@@ -109,4 +110,21 @@ function buildCloudPilotMessage(req, assistantText) {
     };
 }
 
-module.exports = { checkMessageExists, getMessageFrom, buildNewMessage, buildCloudPilotMessage };
+//Function A5: Log Current State
+function printState(currentState) {
+    console.log('______________________________________________________________');
+    console.log('STATE:');
+
+    if (currentState.pendingAction) {
+        console.log(`STATUS: ${currentState.pendingAction} is pending, waiting on info`);
+    } else {
+        console.log('STATUS: Nothing going on dude');
+    }
+
+    console.log('pendingAction:', currentState.pendingAction);
+    console.log('missing:', currentState.missing);
+
+    console.log('______________________________________________________________\n');
+}
+
+module.exports = { checkMessageExists, getMessageFrom, buildNewMessage, buildCloudPilotMessage, printState };

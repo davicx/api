@@ -36,17 +36,8 @@ async function postMessage(req, res) {
     const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
     const storageType = req.body.storageType || 'local';
     
-    var headerMessage = "NEW MESSAGE: Post Message";
+    var headerMessage = "Post Message";
     Functions.addHeader(headerMessage);
-
-    // STATE banner — verify in-memory CloudPilot state (see ../functions/state/state.js)
-    console.log('______________________________________________________________');
-    if (state.pendingAction) {
-        console.log('STATE: Currently scan ec2 is pending waiting on info');
-    } else {
-        console.log('STATE: Nothing going on dude');
-    }
-    console.log('______________________________________________________________');
 
     var messageOutcome = {
         data: {},
@@ -57,25 +48,55 @@ async function postMessage(req, res) {
         currentUser: messageFrom
     };
 
+    // TEST: manually set state
+    state.pendingAction = "scan_ec2";
+    state.missing = ["region"];
 
-    //STEP 1: Check if there is an open Action (user is trying to make a change and we are gathering info)
-    if (state.pendingAction) {
-        console.log('STEP 1: continuing pendingAction');
+    //STEP 1: Get current state (Does the user have an open request)
+    var currentState = state;
+    console.log("STEP 1: Get current state (Does the user have an open request)")
+    messageFunctions.printState(currentState);
 
-        messageOutcome.success = true;
-        messageOutcome.statusCode = 200;
-        messageOutcome.message = 'Continuing previous request';
-        messageOutcome.data = { pendingFlow: true, note: 'Continuing previous request' };
-        Functions.addFooter();
+    //STEP 2: Build Message 
+    var currentUserMessage = messageFunctions.buildNewMessage(req);
+    console.log("STEP 2: Build Message ")
+    //console.log(currentUserMessage)
+    //console.log(" ")
+
+    //STEP 3: Send user message to be stored in the database
+    console.log("STEP 3: Send user message to be stored in the database");
+    var newMessageOutcome = await Message.createMessageText(currentUserMessage);
+    console.log(newMessageOutcome)
+    console.log(" ")
+
+    //Step 3A: Add current user message to JSON output
+    messageOutcome.data.currentUserMessage = newMessageOutcome.newMessage;
+    
+    if (newMessageOutcome.outcome != 200) {
+        messageOutcome.message = "Failed to save user message";
+        messageOutcome.statusCode = 500;
+        messageOutcome.success = false;
         return res.json(messageOutcome);
     }
 
-    //STEP 1: Build Message 
-    var currentUserMessage = messageFunctions.buildNewMessage(req);
+    //STEP 4: CloudPilot processing
+    /*
+    let cloudPilotResult = null;
+    console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
-    //STEP 2: Send new message to the database
-    console.log('STEP 1: Make a new message');
-    var newMessageOutcome = await Message.createMessageText(currentUserMessage);
+    try {
+        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
+        console.log("CloudPilot Result:");
+        console.log("___________________");
+        console.log(cloudPilotResult);
+        console.log("___________________");
+    } catch (err) {
+        console.error("CloudPilot error:", err);
+    }
+        */
+    
+
+    /*
 
     if (newMessageOutcome.outcome != 200) {
         messageOutcome.message = "There was a problem sending your message!";
@@ -125,7 +146,29 @@ async function postMessage(req, res) {
             console.log('STEP 5 FAILED: Could not save CloudPilot message');
         }
     }
+    */
+
+    /*
+        //STEP 1: Check if there is an open Action (user is trying to make a change and we are gathering info)
+    if (state.pendingAction) {
+        console.log('STEP 1: continuing pendingAction');
+
+        messageOutcome.success = true;
+        messageOutcome.statusCode = 200;
+        messageOutcome.message = 'Continuing previous request';
+        messageOutcome.data = { pendingFlow: true, note: 'Continuing previous request' };
+        Functions.addFooter();
+        return res.json(messageOutcome);
+    }
+    */
     
+
+        //STEP: Add Cloud Pilot Data
+    messageOutcome.data.cloudPilotData = {
+        currentUserState: currentState
+    }
+
+
     Functions.addFooter();
     res.json(messageOutcome);
 }
