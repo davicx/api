@@ -1,0 +1,50 @@
+{
+    "data": {
+        "currentUserMessage": {
+            "messageID": 25,
+            "messageType": "text",
+            "groupID": 0,
+            "conversationID": 0,
+            "messageFrom": "davey",
+            "messageTo": "CloudPilot",
+            "messageCaption": "Scan S3 buckets",
+            "messageDate": "04/16/2026",
+            "messageTime": "2:35 pm",
+            "timeMessage": "a few seconds ago",
+            "created": "2026-04-16T21:35:08.758Z"
+        },
+        "CloudPilotResponseMessage": {
+            "messageID": 2,
+            "messageType": "text",
+            "groupID": 0,
+            "conversationID": 0,
+            "messageFrom": "CloudPilot",
+            "messageTo": "davey",
+            "messageCaption": "You do not have permission to access S3 bucket data.",
+            "messageDate": "04/16/2026",
+            "messageTime": "2:35 pm",
+            "timeMessage": "a few seconds ago",
+            "created": "2026-04-16T21:35:08.758Z"
+        }
+    },
+    "cloudPilot": {
+        "intent": "scan_s3",
+        "policy": {
+            "allowed": false,
+            "policy_message": "NO_WRITE_PERMISSION"
+        },
+        "action": {
+            "type": "scan_s3",
+            "ready": false
+        },
+        "state": {
+            "pendingAction": null,
+            "missing": []
+        }
+    },
+    "message": "You sent a message to Cloud Pilot!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}

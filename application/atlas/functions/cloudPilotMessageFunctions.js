@@ -15,7 +15,81 @@ FUNCTIONS C: Conversation State (MVP)
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(userMessage) {
-    
+    var actionPending = state.pendingAction;
+
+    console.log(" ")
+    console.log("_______________processMessage______________________")
+
+    var processOutcome = {
+        success: false,
+        cloudPilotMessage: "",
+        cloudPilot: {
+            intent: null,
+            policy: {
+                allowed: false,
+                policy_message: null
+            },
+            action: {
+                type: null,
+                ready: false
+            },
+            state: {
+                pendingAction: null,
+                missing: []
+            }
+        },
+        error: null
+    };
+
+
+    //STEP 1: Check if user has a pending action
+    if (actionPending) {
+
+        //Step 1A: Check current message for the region
+        const region = conversationStateFunctions.extractAwsRegion(userMessage);
+
+        if (region) { 
+            console.log("Step 1A: Region Found " + region)
+        } else {
+            console.log("Step 1A: The current message did not include the region")
+        }
+
+        //Step 1C: Update State (maybe move to function)
+        //state.pendingAction.collected.region = region;
+        //state.pendingAction.missing = state.pendingAction.missing.filter(
+        //    field => field !== "region"
+        //);
+
+        //console.log(state);
+
+        //Step 1B: Set variables for processOutcome (This will most likely move)
+        processOutcome.success = true;
+        processOutcome.cloudPilotMessage = "Continuing previous request";
+
+        processOutcome.cloudPilot.intent = actionPending.type;
+        processOutcome.cloudPilot.policy.allowed = true;
+        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
+        processOutcome.cloudPilot.action.type = actionPending.type;
+        processOutcome.cloudPilot.action.ready = false;
+
+        processOutcome.cloudPilot.state.pendingAction = actionPending.type;
+        processOutcome.cloudPilot.state.missing = actionPending.missing || [];
+
+    } else {
+        console.log("STEP 1: NO Action Pending → continue normal flow");
+        processOutcome.success = true;
+        processOutcome.cloudPilotMessage = "No active request";
+
+        processOutcome.cloudPilot.intent = "none";
+        processOutcome.cloudPilot.policy.allowed = true;
+        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
+        processOutcome.cloudPilot.action.type = "none";
+        processOutcome.cloudPilot.action.ready = false;
+
+    }
+        
+
+    /*
     //STEP 1: If a scan is pending, check if this message contains the region.
     //        If yes → finish the flow. If no → just keep chatting normally.
     if (state.pendingAction && state.pendingAction.type === 'scan_ec2') {
@@ -34,10 +108,11 @@ async function processMessage(userMessage) {
 
         //console.log("STEP 1: " + userMessage + " had no region — continuing normal pipeline");
     }
-
+*/
+/*
     //console.log('--- CloudPilot: process pipeline ---');
     //console.log('User:', userMessage);
-
+//STEP 1: If a scan is pending, check if this message contains the region.
     //STEP 2: Normalize and validate the user message
     //console.log("STEP 2: " + userMessage + " normalize and validate");
     const norm = chatFunctions.normalizeUserMessageForModel(userMessage);
@@ -87,58 +162,12 @@ async function processMessage(userMessage) {
         default:
             return await handleGeneralChat(text, action);
     }
+            */
+    console.log("_______________processMessage______________________")
+    console.log(" ")
+    return processOutcome;
 }
 
-/*
-const state = require('./state'); // adjust path as needed
-
-async function processMessage(userMessage) {
-    console.log('--- CloudPilot: process pipeline ---');
-    console.log('User:', userMessage);
-
-    //STEP 0: Check pending action FIRST
-    if (state.pendingAction) {
-        console.log('STEP 0: Found pendingAction → continuing flow');
-        return await handlePendingAction(userMessage);
-    }
-
-    //STEP 1: Normalize
-    const norm = chatFunctions.normalizeUserMessageForModel(userMessage);
-    if (!norm.ok) {
-        return { success: false, message: norm.message, data: null };
-    }
-
-    const text = norm.text;
-
-    //STEP 2: Detect intent
-    const intent = detectIntent(text);
-
-    //STEP 3: Decide action
-    const action = decideAction(intent);
-
-    if (!action.allowed) {
-        return {
-            success: true,
-            data: action.message,
-            action,
-            intent
-        };
-    }
-
-    //STEP 4: HANDLE ACTION TYPES
-    switch (action.type) {
-
-        case 'scan_ec2':
-            return await startScanEC2Flow(text);
-
-        case 'toggle_ec2':
-            return await handleToggleEC2(text, action);
-
-        default:
-            return await handleGeneralChat(text, action);
-    }
-}
-    */
 
 //Function B1: Detect Intent
 function detectIntent(userMessage) {
@@ -292,6 +321,56 @@ async function handleToggleEC2(text, action) {
     };
 }
 
+/*
+const state = require('./state'); // adjust path as needed
+
+async function processMessage(userMessage) {
+    console.log('--- CloudPilot: process pipeline ---');
+    console.log('User:', userMessage);
+
+    //STEP 0: Check pending action FIRST
+    if (state.pendingAction) {
+        console.log('STEP 0: Found pendingAction → continuing flow');
+        return await handlePendingAction(userMessage);
+    }
+
+    //STEP 1: Normalize
+    const norm = chatFunctions.normalizeUserMessageForModel(userMessage);
+    if (!norm.ok) {
+        return { success: false, message: norm.message, data: null };
+    }
+
+    const text = norm.text;
+
+    //STEP 2: Detect intent
+    const intent = detectIntent(text);
+
+    //STEP 3: Decide action
+    const action = decideAction(intent);
+
+    if (!action.allowed) {
+        return {
+            success: true,
+            data: action.message,
+            action,
+            intent
+        };
+    }
+
+    //STEP 4: HANDLE ACTION TYPES
+    switch (action.type) {
+
+        case 'scan_ec2':
+            return await startScanEC2Flow(text);
+
+        case 'toggle_ec2':
+            return await handleToggleEC2(text, action);
+
+        default:
+            return await handleGeneralChat(text, action);
+    }
+}
+    */
 
 
 //V2

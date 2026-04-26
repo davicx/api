@@ -49,8 +49,11 @@ async function postMessage(req, res) {
     };
 
     // TEST: manually set state
-    state.pendingAction = "scan_ec2";
-    state.missing = ["region"];
+    state.pendingAction = {
+        type: "scan_ec2",
+        missing: ["region"],
+        collected: {}
+    };
 
     //STEP 1: Get current state (Does the user have an open request)
     var currentState = state;
@@ -60,19 +63,17 @@ async function postMessage(req, res) {
     //STEP 2: Build Message 
     var currentUserMessage = messageFunctions.buildNewMessage(req);
     console.log("STEP 2: Build Message ")
-    //console.log(currentUserMessage)
-    //console.log(" ")
 
     //STEP 3: Send user message to be stored in the database
     console.log("STEP 3: Send user message to be stored in the database");
-    var newMessageOutcome = await Message.createMessageText(currentUserMessage);
-    console.log(newMessageOutcome)
-    console.log(" ")
+    var currentUserMessageOutcome = await Message.createMessageText(currentUserMessage);
+    //console.log(newMessageOutcome)
+    //console.log(" ")
 
     //Step 3A: Add current user message to JSON output
-    messageOutcome.data.currentUserMessage = newMessageOutcome.newMessage;
+    messageOutcome.data.currentUserMessage = currentUserMessageOutcome.newMessage;
     
-    if (newMessageOutcome.outcome != 200) {
+    if (currentUserMessageOutcome.outcome != 200) {
         messageOutcome.message = "Failed to save user message";
         messageOutcome.statusCode = 500;
         messageOutcome.success = false;
@@ -80,7 +81,6 @@ async function postMessage(req, res) {
     }
 
     //STEP 4: CloudPilot processing
-    /*
     let cloudPilotResult = null;
     console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
@@ -93,7 +93,35 @@ async function postMessage(req, res) {
     } catch (err) {
         console.error("CloudPilot error:", err);
     }
-        */
+
+    /*
+    //STEP 5: Save CloudPilot message to database
+    console.log("STEP 5: Save CloudPilot message to database");
+
+    if (cloudPilotResult && cloudPilotResult.success == true) {
+
+        //STEP 5: Build CloudPilot message
+        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.data);
+        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
+
+        if (cloudPilotMessageOutcome.outcome == 200) {
+            console.log("STEP 5 SUCCESS: CloudPilot message saved");
+        } else {
+            console.log("STEP 5 FAILED: Could not save CloudPilot message");
+        }
+    }
+    
+    //Step 5A: Add current user message to JSON output
+    messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
+    */
+    //STEP 6: Return Response
+    Functions.addFooter();
+    res.json(messageOutcome);
+}
+
+
+
+    
     
 
     /*
@@ -130,24 +158,6 @@ async function postMessage(req, res) {
         };
     }
 
-    //STEP 4: Save CloudPilot message
-    console.log('STEP 4: Save CloudPilot message');
-
-    if (cloudPilotResult && cloudPilotResult.success == true) {
-
-        //STEP 5: Build CloudPilot message
-        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.data);
-
-        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
-
-        if (cloudPilotMessageOutcome.outcome == 200) {
-            console.log('STEP 5 SUCCESS: CloudPilot message saved');
-        } else {
-            console.log('STEP 5 FAILED: Could not save CloudPilot message');
-        }
-    }
-    */
-
     /*
         //STEP 1: Check if there is an open Action (user is trying to make a change and we are gathering info)
     if (state.pendingAction) {
@@ -161,18 +171,6 @@ async function postMessage(req, res) {
         return res.json(messageOutcome);
     }
     */
-    
-
-        //STEP: Add Cloud Pilot Data
-    messageOutcome.data.cloudPilotData = {
-        currentUserState: currentState
-    }
-
-
-    Functions.addFooter();
-    res.json(messageOutcome);
-}
-
 
 /*
 async function postMessage(req, res) {

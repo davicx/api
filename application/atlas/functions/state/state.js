@@ -2,9 +2,32 @@
 function createDefaultState() {
   return {
     pendingAction: null,
-    missing: []
+    missing: [],
+    collected: {} 
   };
 }
+/*
+
+state = {
+  pendingAction: {
+    type: null,
+    missing: [],
+    collected: {}
+  }
+}
+  */
+
+/*
+function createDefaultState() {
+  return {
+    pendingAction: {
+      type: null,
+      missing: [],
+      collected: {}
+    }
+  };
+}
+*/
 
 module.exports = {
   createDefaultState
