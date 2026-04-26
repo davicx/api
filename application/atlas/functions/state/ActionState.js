@@ -1,4 +1,14 @@
-// actionState.js
+/*
+//EXAMPLE
+{
+  pendingAction: "scan_ec2",
+  missing: [],
+  collected: {
+    region: "us-west-2",
+    instanceId: "i-123"
+  }
+}
+*/
 
 class ActionState {
     constructor() {

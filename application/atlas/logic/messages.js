@@ -6,7 +6,7 @@ const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
 const chatFunctions = require('../functions/chatFunctions');
-const state = require('../functions/state/state');
+const actionState = require('../functions/state/ActionState');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
 /*
@@ -49,16 +49,18 @@ async function postMessage(req, res) {
     };
 
     // TEST: manually set state
-    state.pendingAction = {
-        type: "scan_ec2",
-        missing: ["region"],
-        collected: {}
-    };
+    actionState.setPendingAction(conversationID, "scan_ec2", ["region"]);
 
     //STEP 1: Get current state (Does the user have an open request)
-    var currentState = state;
+    var currentState = actionState.getActionStatus(conversationID);
     console.log("STEP 1: Get current state (Does the user have an open request)")
-    messageFunctions.printState(currentState);
+    actionState.print(conversationID);
+
+    //TEST
+    //actionState.setRegion(conversationID, "us-east-1");
+    //console.log("TEST: Updated state after region");
+    //actionState.print(conversationID);
+    //TEST
 
     //STEP 2: Build Message 
     var currentUserMessage = messageFunctions.buildNewMessage(req);
@@ -85,7 +87,7 @@ async function postMessage(req, res) {
     console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
     try {
-        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
+        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);
         console.log("CloudPilot Result:");
         console.log("___________________");
         console.log(cloudPilotResult);

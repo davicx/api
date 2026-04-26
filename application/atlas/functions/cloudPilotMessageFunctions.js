@@ -1,6 +1,6 @@
 const chatFunctions = require('./chatFunctions');
 const conversationStateFunctions = require('./conversationStateFunctions');
-const state = require('./state/state');
+const actionState = require('./state/ActionState');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -12,15 +12,48 @@ FUNCTIONS C: Conversation State (MVP)
     1) Function C1: Get / Save / Clear per-conversation pending action state
 */
 
+        // Step 2C: Build response
+        /*
+        processMessageOutcome.success = true;
+
+        if (ready) {
+            processMessageOutcome.cloudPilotMessage = "Ready to execute request";
+        } else {
+            processMessageOutcome.cloudPilotMessage = "Still need: " + currentStateData.missing.join(", ");
+        }
+
+        processMessageOutcome.cloudPilot.intent = currentStateData.action;
+
+        processMessageOutcome.cloudPilot.policy.allowed = true;
+
+        if (ready) {
+            processMessageOutcome.cloudPilot.policy.policy_message = "READY";
+        } else {
+            processMessageOutcome.cloudPilot.policy.policy_message = "COLLECTING_INPUT";
+        }
+
+        processMessageOutcome.cloudPilot.action.type = currentStateData.action;
+        processMessageOutcome.cloudPilot.action.ready = ready;
+
+        processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+        processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+
+        return processMessageOutcome;
+        */
+
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
-async function processMessage(userMessage) {
-    var actionPending = state.pendingAction;
+async function processMessage(userMessage, conversationID) {
+    var masterUserRequestReady = false;
+    var currentStateData = actionState.getActionStatus(conversationID);
+    var actionPending = currentStateData.action;
 
     console.log(" ")
     console.log("_______________processMessage______________________")
+    actionState.print(conversationID);
 
-    var processOutcome = {
+    // STEP 1: Create outcome
+    var processMessageOutcome = {
         success: false,
         cloudPilotMessage: "",
         cloudPilot: {
@@ -41,53 +74,39 @@ async function processMessage(userMessage) {
         error: null
     };
 
-
-    //STEP 1: Check if user has a pending action
+    // STEP 2: Check if user has a pending action
     if (actionPending) {
 
-        //Step 1A: Check current message for the region
+
+        // Step 2A: Try to extract region
         const region = conversationStateFunctions.extractAwsRegion(userMessage);
 
-        if (region) { 
-            console.log("Step 1A: Region Found " + region)
+        if (region) {
+            console.log("Region found:", region);
+
+            actionState.setRegion(conversationID, region);
+            currentStateData = actionState.getActionStatus(conversationID);
         } else {
-            console.log("Step 1A: The current message did not include the region")
+            console.log("No region in message");
         }
 
-        //Step 1C: Update State (maybe move to function)
-        //state.pendingAction.collected.region = region;
-        //state.pendingAction.missing = state.pendingAction.missing.filter(
-        //    field => field !== "region"
-        //);
-
-        //console.log(state);
-
-        //Step 1B: Set variables for processOutcome (This will most likely move)
-        processOutcome.success = true;
-        processOutcome.cloudPilotMessage = "Continuing previous request";
-
-        processOutcome.cloudPilot.intent = actionPending.type;
-        processOutcome.cloudPilot.policy.allowed = true;
-        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
-        processOutcome.cloudPilot.action.type = actionPending.type;
-        processOutcome.cloudPilot.action.ready = false;
-
-        processOutcome.cloudPilot.state.pendingAction = actionPending.type;
-        processOutcome.cloudPilot.state.missing = actionPending.missing || [];
-
-    } else {
-        console.log("STEP 1: NO Action Pending → continue normal flow");
-        processOutcome.success = true;
-        processOutcome.cloudPilotMessage = "No active request";
-
-        processOutcome.cloudPilot.intent = "none";
-        processOutcome.cloudPilot.policy.allowed = true;
-        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
-        processOutcome.cloudPilot.action.type = "none";
-        processOutcome.cloudPilot.action.ready = false;
-
     }
-        
+
+    //TEMP
+    if (currentStateData.missing.length === 0 && actionPending) {
+        masterUserRequestReady = true;
+    }
+
+    if (masterUserRequestReady) {
+        console.log("Request is READY");
+
+        // go straight to your handler (STEP 5)
+    } else {
+        console.log("Request is NOT ready");
+    }
+    //TEMP
+
+
 
     /*
     //STEP 1: If a scan is pending, check if this message contains the region.
@@ -165,7 +184,9 @@ async function processMessage(userMessage) {
             */
     console.log("_______________processMessage______________________")
     console.log(" ")
-    return processOutcome;
+
+    return processMessageOutcome;
+
 }
 
 
@@ -321,6 +342,55 @@ async function handleToggleEC2(text, action) {
     };
 }
 
+
+
+    /*
+    if (actionPending) {
+
+        //Step 2A: Check current message for the region
+        const region = conversationStateFunctions.extractAwsRegion(userMessage);
+
+        if (region) { 
+            console.log("Step 1A: Region Found " + region)
+        } else {
+            console.log("Step 1A: The current message did not include the region")
+        }
+
+        //Step 1C: Update State (maybe move to function)
+        //state.pendingAction.collected.region = region;
+        //state.pendingAction.missing = state.pendingAction.missing.filter(
+        //    field => field !== "region"
+        //);
+
+        //console.log(state);
+
+        //Step 1B: Set variables for processOutcome (This will most likely move)
+        processOutcome.success = true;
+        processOutcome.cloudPilotMessage = "Continuing previous request";
+
+        processOutcome.cloudPilot.intent = actionPending.type;
+        processOutcome.cloudPilot.policy.allowed = true;
+        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
+        processOutcome.cloudPilot.action.type = actionPending.type;
+        processOutcome.cloudPilot.action.ready = false;
+
+        processOutcome.cloudPilot.state.pendingAction = actionPending.type;
+        processOutcome.cloudPilot.state.missing = actionPending.missing || [];
+
+    } else {
+        console.log("STEP 1: NO Action Pending → continue normal flow");
+        processOutcome.success = true;
+        processOutcome.cloudPilotMessage = "No active request";
+
+        processOutcome.cloudPilot.intent = "none";
+        processOutcome.cloudPilot.policy.allowed = true;
+        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
+        processOutcome.cloudPilot.action.type = "none";
+        processOutcome.cloudPilot.action.ready = false;
+
+    }
+    */
+        
 /*
 const state = require('./state'); // adjust path as needed
 
