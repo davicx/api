@@ -74,39 +74,39 @@ async function getMessageFrom(messageID) {
 
 //Function A3: Build New Message (from HTTP req)
 function buildNewMessage(req) {
-    const b = req.body || {};
+    const newMessage = req.body || {};
     return {
-        masterSite: b.masterSite || 'kite',
-        messageType: b.messageType || 'text',
-        messageFrom: b.messageFrom || b.postFrom || b.username,
-        messageTo: b.messageTo || b.postTo || 'chat',
-        groupID: Number(b.groupID || 0),
-        conversationID: Number(b.conversationID || 0),
-        messageCaption: b.messageCaption || b.message || b.postCaption,
-        cloudKey: b.cloudKey || 'no_cloud_key',
-        cloudBucket: b.cloudBucket || 'no_cloud_bucket',
-        storageType: b.storageType || 'local'
+        masterSite: newMessage.masterSite || 'kite',
+        messageType: newMessage.messageType || 'text',
+        messageFrom: newMessage.messageFrom || newMessage.postFrom || newMessage.username,
+        messageTo: newMessage.messageTo || newMessage.postTo || 'chat',
+        groupID: Number(newMessage.groupID || 0),
+        conversationID: Number(newMessage.conversationID || 0),
+        messageCaption: newMessage.messageCaption || newMessage.message || newMessage.postCaption,
+        cloudKey: newMessage.cloudKey || 'no_cloud_key',
+        cloudBucket: newMessage.cloudBucket || 'no_cloud_bucket',
+        storageType: newMessage.storageType || 'local'
     };
 }
 
 //Function A4: Build CloudPilot message (from HTTP req + ChatGPT assistant text)
 function buildCloudPilotMessage(req, assistantText) {
-    const b = req.body || {};
+    const newMessage = req.body || {};
     const text =
         assistantText == null ? '' : typeof assistantText === 'string' ? assistantText : String(assistantText);
     return {
-        masterSite: b.masterSite || 'kite',
+        masterSite: newMessage.masterSite || 'kite',
         messageType: 'text',
         messageFrom: 'CloudPilot',
-        messageTo: b.messageFrom || b.postFrom || b.username,
-        groupID: Number(b.groupID || 0),
-        conversationID: Number(b.conversationID || 0),
+        messageTo: newMessage.messageFrom || newMessage.postFrom || newMessage.username,
+        groupID: Number(newMessage.groupID || 0),
+        conversationID: Number(newMessage.conversationID || 0),
         messageCaption: text,
         message: text,
         postCaption: text,
-        cloudKey: b.cloudKey || 'no_cloud_key',
-        cloudBucket: b.cloudBucket || 'no_cloud_bucket',
-        storageType: b.storageType || 'local',
+        cloudKey: newMessage.cloudKey || 'no_cloud_key',
+        cloudBucket: newMessage.cloudBucket || 'no_cloud_bucket',
+        storageType: newMessage.storageType || 'local',
     };
 }
 

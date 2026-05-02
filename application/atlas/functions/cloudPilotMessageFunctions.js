@@ -13,7 +13,6 @@ FUNCTIONS C: Conversation State (MVP)
 */
 
 
-
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(userMessage, conversationID) {
@@ -30,59 +29,92 @@ async function processMessage(userMessage, conversationID) {
         success: false,
         cloudPilotMessage: "",
         cloudPilot: {
-            intent: null,
+            intent: null, // e.g. "scan_ec2", "toggle_ec2"
             policy: {
                 allowed: false,
-                policy_message: null
+                message: null,
+                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION"
             },
             action: {
-                type: null,
-                ready: false
+                type: null, // e.g. "scan_ec2", "toggle_ec2"
+                ready: false,
+                parameters: {}
             },
             state: {
                 pendingAction: null,
-                missing: []
+                missing: [],
+                collected: {}
             }
         },
         error: null
     };
 
-    // STEP 2: Check if user has a pending action and if they do look for missing fields
+    //STEP 2: Check if user has a pending action and if they do look for missing fields
     if (actionPending) {
 
         // Step 2A: Try to extract region (later will look for other missing data)
         const region = conversationStateFunctions.extractAwsRegion(userMessage);
 
         if (region) {
-            console.log("Region found:", region);
+            console.log("STEP 2: Region found " + region);
 
             actionState.setRegion(conversationID, region);
             currentStateData = actionState.getActionStatus(conversationID);
         } else {
-            console.log("No region in message");
+            console.log("STEP 2: No region in message");
         }
+
+        //Step 2B: Can be added for other fields we need later
     }
 
     //STEP 3: Check if the user has provided all the info now. If they have the request is ready and done. 
-    //STEP 3: For a Pending Action if there are no missing fields the request is ready 
+    //For a Pending Action if there are no missing fields the request is ready 
     //Set action: { ready: true } Skip Steps 4 and 5 and return 
     if (currentStateData.missing.length === 0 && actionPending) {
         masterUserRequestReady = true;
     }
 
     if (masterUserRequestReady) {
+        processMessageOutcome.cloudPilotMessage = "Request is READY";
         console.log("Request is READY");
 
         // go straight to your handler (STEP 5)
     } else {
         console.log("Request is NOT ready");
+        //processMessageOutcome.cloudPilotMessage = "Request is NOT ready";
     }
 
+    if(masterUserRequestReady == false) {
+
+        //STEP 4: Normalize User Intent from message
+        const normalizedText = chatFunctions.normalizeUserMessageForModel(userMessage);
+        if (!normalizedText.ok) {
+            console.log("STEP 4: Normalize text failed");
+
+            processMessageOutcome.success = false;
+            processMessageOutcome.error = normalizedText.message;
+        
+        }
+    
+        const userMessageNormalized = normalizedText.text;
+
+        //STEP 5: Detect user intent from message (are they trying to do something or just normal chat)
+        const intent = detectIntent(userMessageNormalized);
+        processMessageOutcome.cloudPilot.intent = intent;
+    
+        console.log("STEP 5: Detect user intent from message " + intent);
+    }
+
+    /*
+    //STEP 2: Normalize and validate the user message
+    //console.log("STEP 2: " + userMessage + " normalize and validate");
 
 
+    //STEP 3: Detect user intent from message
+    //console.log("STEP 3: " + text + " detect user intent");
+    const intent = detectIntent(text);
+    *
 
-
-    //STEP 4: Detect User Intent from message (are they trying to do something or just chatting)
     //STEP 5: Decide action if the user is asking to do something 
     //STEP 6: Route to handler
     //STEP 7: Put together response (including API response) and return 
@@ -90,7 +122,7 @@ async function processMessage(userMessage, conversationID) {
 
     /*
     //STEP 1: If a scan is pending, check if this message contains the region.
-    //        If yes → finish the flow. If no → just keep chatting normally.
+    //If yes → finish the flow. If no → just keep chatting normally.
     if (state.pendingAction && state.pendingAction.type === 'scan_ec2') {
         //console.log("STEP 1: " + state.pendingAction.type + " pending — looking for a region in the message");
 
@@ -172,8 +204,6 @@ async function processMessage(userMessage, conversationID) {
             return await handleGeneralChat(text, action);
     }
             */
-    console.log("_______________processMessage______________________")
-    console.log(" ")
 
     return processMessageOutcome;
 
@@ -228,7 +258,7 @@ function decideAction(intent) {
     }
 
     if (intent === 'toggle_ec2') {
-        console.log('decideAction: toggle_ec2');
+        //console.log('decideAction: toggle_ec2');
         return {
             type: 'toggle_ec2',
             allowed: true,
@@ -292,7 +322,23 @@ function decideAction(intent) {
         message: 'I can only help with EC2 right now.',
     };
 }
-    
+    */
+
+//LOGIC FLOW
+/*
+
+STEP 1: create outcome
+STEP 2: collect missing data (if pending)
+STEP 3: check if ready
+
+IF ready:
+    → skip to execution later
+
+ELSE:
+    STEP 4:
+        normalize message
+        detect intent
+        store intent
 */
 
 async function handleGeneralChat(text, action) {
@@ -374,9 +420,40 @@ async function handleToggleEC2(text, action) {
 }
 
 
+//DOC
 
+/*
+var processMessageOutcome = {
+    success: false, // true if processing completed successfully
+    cloudPilotMessage: "", // message shown to the user (final response)
 
+    cloudPilot: {
+        intent: null, // e.g. "scan_ec2", "toggle_ec2"
 
+        policy: {
+            allowed: false, // whether the action is allowed to proceed
+            message: null, // e.g. "That action is not supported", "Destructive actions are not allowed"
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION"
+        },
+
+        action: {
+            type: null, // e.g. "scan_ec2", "toggle_ec2"
+            ready: false, // true when all required fields are collected and action can run
+            parameters: {} // e.g. { region: "us-west-2" }
+        },
+
+        state: {
+            pendingAction: null, // e.g. "scan_ec2"
+            missing: [], // e.g. ["region"]
+            collected: {} // e.g. { region: "us-west-2" }
+        }
+    },
+
+    error: null // e.g. error message or object if something fails
+};
+*/
+
+//APPENDIX
 
         // Step 2C: Build response
         /*
