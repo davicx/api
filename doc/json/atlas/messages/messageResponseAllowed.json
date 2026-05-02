@@ -20,34 +20,33 @@
             "conversationID": 0,
             "messageFrom": "davey",
             "messageTo": "CloudPilot",
-            "messageCaption": "Hello scan EC2", 
+            "messageCaption": "Message caption is the response from the OpenAI API",
             "messageDate": "04/16/2026",
             "messageTime": "2:33 pm",
             "timeMessage": "a few seconds ago",
             "created": "2026-04-16T21:33:08.758Z"
-        },
-        "cloudPilotData" : {
-                "success": true,
-                "data": "Which region do you want to scan?",
-                "action": {
-                    "type": "scan_ec2",
-                    "allowed": true,
-                    "requiresExecution": false,
-                    "message": "Preparing EC2 scan."
-                },
-                "intent": "scan_ec2",
-                "policy": {
-                    "allowed": true
-                }
-            }
-        } 
+        }
     },
-    "message": "You sent a message!",
+    "cloudPilot": {
+        "intent": "scan_ec2",
+        "policy": {
+            "allowed": true,
+            "policy_message": "ACTION_ALLOWED"
+        },
+        "action": {
+            "type": "scan_ec2",
+            "ready": false
+        },
+        "state": {
+            "pendingAction": "scan_ec2",
+            "missing": [
+                "region"
+            ]
+        }
+    },
+    "message": "You sent a message to Cloud Pilot!",
     "success": true,
     "statusCode": 200,
     "errors": [],
     "currentUser": "davey"
 }
-
-
-    

@@ -28,7 +28,7 @@ class Message {
         const cloudBucket = newMessage.cloudBucket || 'no_cloud_bucket';
         const storageType = newMessage.storageType || 'local';
 
-        console.log("CLASS Message: Step 1A: Create a new message from Message Class");
+        console.log("CLASS Message: A: Create a new message from Message Class");
 
         var createdMessage = {
             messageID: 0,
@@ -57,13 +57,13 @@ class Message {
 
                 connection.query(queryString, [masterSite, messageType, groupID, conversationID, messageFrom, messageTo, messageCaption, cloudKey, cloudBucket, storageType], (err, results, fields) => {
                     if (!err) {
-                        console.log("Step 1B: You created a new Message with ID " + results.insertId);
+                        console.log("Step B: You created a new Message with ID " + results.insertId);
                         messageOutcome.outcome = 200;
                         messageOutcome.messageID = results.insertId;
                         messageOutcome.newMessage.messageID = results.insertId;
                         messageOutcome.newMessage.created = new Date();
                     } else {
-                        console.log("Step 1B: Error putting in database ");
+                        console.log("Step B: Error putting in database ");
                         console.log(err)
                         messageOutcome.outcome = "no worky";
                         messageOutcome.errors.push(err);

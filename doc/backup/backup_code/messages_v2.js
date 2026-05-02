@@ -1,12 +1,12 @@
-const db = require('../../functions/conn');
-const Message = require('../../functions/classes/Message');
-const Group = require('../../functions/classes/Group');
-const Notification = require('../../functions/classes/Notification');
-const messageFunctions = require('../../functions/messageFunctions');
-const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
-const Functions = require('../../functions/functions');
-const chatFunctions = require('../functions/chatFunctions');
-const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
+const db = require('../../../application/functions/conn');
+const Message = require('../../../application/functions/classes/Message');
+const Group = require('../../../application/functions/classes/Group');
+const Notification = require('../../../application/functions/classes/Notification');
+const messageFunctions = require('../../../application/functions/messageFunctions');
+const cloudPilotMessageFunctions = require('../../../application/atlas/functions/cloudPilotMessageFunctions');
+const Functions = require('../../../application/functions/functions');
+const chatFunctions = require('../../../application/atlas/functions/chatFunctions');
+const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../../../application/atlas/functions/config/chatGPTconfig');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
@@ -22,73 +22,11 @@ FUNCTIONS B: All Functions Related to getting Messages
 
 
 //FUNCTIONS A: Messages + external API (ChatGPT)
-//Function B1: Post Message
-//ORIGINAL CODE:
-/*
+
+//Function A1: Post Message
 async function postMessage(req, res) {
     const masterSite = req.body.masterSite || 'kite';
     const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
-    const messageTo = req.body.messageTo || req.body.postTo || 'chat';
-    const groupID = Number(req.body.groupID || 0);
-    const conversationID = Number(req.body.conversationID || 0);
-    const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
-
-    var headerMessage = "NEW MESSAGE: Post Message";
-    Functions.addHeader(headerMessage);
-
-    var messageOutcome = {
-        data: {},
-        message: "",
-        success: false,
-        statusCode: 500,
-        errors: [],
-        currentUser: messageFrom
-    };
-
-    //STEP 1: Make a new message
-    console.log('STEP 1: Make a new message');
-    var newMessageOutcome = await Message.createMessageText(req);
-
-    if (newMessageOutcome.outcome == 200) {
-        messageOutcome.data = newMessageOutcome.newMessage;
-        messageOutcome.message = "You sent a message!";
-        messageOutcome.statusCode = 200;
-        messageOutcome.success = true;
-        var messageID = newMessageOutcome.messageID || 0;
-
-
-        try {
-            //STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)
-            console.log('STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)');
-            const cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
-            console.log('postMessage: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
-            messageOutcome.cloudPilot = cloudPilotResult;
-        } catch (err) {
-            console.error('cloudPilot (post-save process pipeline):', err);
-            messageOutcome.cloudPilot = {
-                error: true,
-                message: 'CloudPilot process pipeline could not run.',
-            };
-        }
-    } else {
-        messageOutcome.message = "There was a problem sending your message!";
-        messageOutcome.statusCode = 500;
-        messageOutcome.success = false;
-        console.log('STEP 2: Something went wrong sending this message!');
-    }
-
-    Functions.addFooter();
-    res.json(messageOutcome);
-}
-*/
-
-// TODO: Replace synthetic `req` shaping for assistant inserts.
-// Today we reuse `Message.createMessageText(req)` by building a request-like object so the DB insert path stays identical to user messages.
-// Long-term: extract a shared `createMessage({...fields})` (or pass a plain message DTO) so controllers do not mimic HTTP request shapes for internal writes.
-async function postMessage(req, res) {
-    const masterSite = req.body.masterSite || 'kite';
-    const messageFrom = req.body.messageFrom || req.body.postFrom || req.body.username;
-    const messageTo = req.body.messageTo || req.body.postTo || 'chat';
     const groupID = Number(req.body.groupID || 0);
     const conversationID = Number(req.body.conversationID || 0);
     const messageCaption = req.body.messageCaption || req.body.message || req.body.postCaption;
@@ -122,15 +60,13 @@ async function postMessage(req, res) {
         try {
             //STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)
             console.log('STEP 2: CloudPilot process pipeline (intent → decide → handler → ChatGPT)');
-            const cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);
+            const cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption);
             console.log('postMessage: CloudPilot result:', JSON.stringify(cloudPilotResult, null, 2));
 
             cloudPilotMeta = {
                 intent: cloudPilotResult && cloudPilotResult.intent != null ? cloudPilotResult.intent : null,
                 action: cloudPilotResult && cloudPilotResult.action ? cloudPilotResult.action : null,
-                policy: cloudPilotResult && cloudPilotResult.policy ? cloudPilotResult.policy : null,
-                conversationID: cloudPilotResult && cloudPilotResult.conversationID != null ? cloudPilotResult.conversationID : null,
-                conversationState: cloudPilotResult && cloudPilotResult.conversationState ? cloudPilotResult.conversationState : null
+                policy: cloudPilotResult && cloudPilotResult.policy ? cloudPilotResult.policy : null
             };
 
             const policyAllowed = !(cloudPilotResult && cloudPilotResult.policy && cloudPilotResult.policy.allowed === false);

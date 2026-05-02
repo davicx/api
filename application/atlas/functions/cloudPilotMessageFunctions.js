@@ -1,6 +1,6 @@
 const chatFunctions = require('./chatFunctions');
 const conversationStateFunctions = require('./conversationStateFunctions');
-const state = require('./state/state');
+const actionState = require('./state/ActionState');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -12,24 +12,108 @@ FUNCTIONS C: Conversation State (MVP)
     1) Function C1: Get / Save / Clear per-conversation pending action state
 */
 
+
+
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
-async function processMessage(userMessage) {
-    
-    //STEP 0: Pending action — pause normal pipeline (no normalize / intent / decide)
-    if (state.pendingAction) {
-        console.log('STEP 0: Pending action exists — skipping normalize, detectIntent, decideAction');
-        return {
-            success: true,
-            data: 'Pending action in progress',
-        };
+async function processMessage(userMessage, conversationID) {
+    var masterUserRequestReady = false;
+    var currentStateData = actionState.getActionStatus(conversationID);
+    var actionPending = currentStateData.action;
+
+    console.log(" ")
+    console.log("_______________processMessage______________________")
+    actionState.print(conversationID);
+
+    // STEP 1: Create outcome
+    var processMessageOutcome = {
+        success: false,
+        cloudPilotMessage: "",
+        cloudPilot: {
+            intent: null,
+            policy: {
+                allowed: false,
+                policy_message: null
+            },
+            action: {
+                type: null,
+                ready: false
+            },
+            state: {
+                pendingAction: null,
+                missing: []
+            }
+        },
+        error: null
+    };
+
+    // STEP 2: Check if user has a pending action and if they do look for missing fields
+    if (actionPending) {
+
+        // Step 2A: Try to extract region (later will look for other missing data)
+        const region = conversationStateFunctions.extractAwsRegion(userMessage);
+
+        if (region) {
+            console.log("Region found:", region);
+
+            actionState.setRegion(conversationID, region);
+            currentStateData = actionState.getActionStatus(conversationID);
+        } else {
+            console.log("No region in message");
+        }
     }
 
-    console.log('--- CloudPilot: process pipeline ---');
-    console.log('User:', userMessage);
+    //STEP 3: Check if the user has provided all the info now. If they have the request is ready and done. 
+    //STEP 3: For a Pending Action if there are no missing fields the request is ready 
+    //Set action: { ready: true } Skip Steps 4 and 5 and return 
+    if (currentStateData.missing.length === 0 && actionPending) {
+        masterUserRequestReady = true;
+    }
 
-    //STEP 1: Normalize and validate the user message
-    console.log('STEP 1: Normalize and validate the user message');
+    if (masterUserRequestReady) {
+        console.log("Request is READY");
+
+        // go straight to your handler (STEP 5)
+    } else {
+        console.log("Request is NOT ready");
+    }
+
+
+
+
+
+    //STEP 4: Detect User Intent from message (are they trying to do something or just chatting)
+    //STEP 5: Decide action if the user is asking to do something 
+    //STEP 6: Route to handler
+    //STEP 7: Put together response (including API response) and return 
+
+
+    /*
+    //STEP 1: If a scan is pending, check if this message contains the region.
+    //        If yes → finish the flow. If no → just keep chatting normally.
+    if (state.pendingAction && state.pendingAction.type === 'scan_ec2') {
+        //console.log("STEP 1: " + state.pendingAction.type + " pending — looking for a region in the message");
+
+        const region = conversationStateFunctions.extractAwsRegion(userMessage);
+
+        if (region) {
+            //console.log("STEP 1: " + region + " region detected — ready to scan");
+            state.pendingAction = null;
+            return {
+                success: true,
+                data: 'Got it — region ' + region + '. In the future, I\'ll run the EC2 scan here.',
+            };
+        }
+
+        //console.log("STEP 1: " + userMessage + " had no region — continuing normal pipeline");
+    }
+*/
+/*
+    //console.log('--- CloudPilot: process pipeline ---');
+    //console.log('User:', userMessage);
+//STEP 1: If a scan is pending, check if this message contains the region.
+    //STEP 2: Normalize and validate the user message
+    //console.log("STEP 2: " + userMessage + " normalize and validate");
     const norm = chatFunctions.normalizeUserMessageForModel(userMessage);
     if (!norm.ok) {
         return { success: false, message: norm.message, data: null };
@@ -37,17 +121,17 @@ async function processMessage(userMessage) {
 
     const text = norm.text;
 
-    //STEP 2: Detect user intent from message
-    console.log('STEP 2: Detect user intent from message');
+    //STEP 3: Detect user intent from message
+    //console.log("STEP 3: " + text + " detect user intent");
     const intent = detectIntent(text);
 
-    //STEP 3: Decide action (guardrails + action shape)
-    console.log('STEP 3: Decide action (guardrails + action shape)');
+    //STEP 4: Decide action (guardrails + action shape)
+    //console.log("STEP 4: " + intent + " decide action (guardrails + action shape)");
     const action = decideAction(intent);
-    console.log('Intent:', intent, 'Action:', action.type);
+    //console.log('Intent:', intent, 'Action:', action.type);
 
     if (!action.allowed) {
-        console.log('STEP 4: Blocked — no ChatGPT call');
+        //console.log("STEP 5: " + action.type + " blocked — no ChatGPT call");
         return {
             success: true,
             data: action.message,
@@ -57,23 +141,29 @@ async function processMessage(userMessage) {
         };
     }
 
-    //STEP 4: Route to handler
-    console.log('STEP 4: Route to handler (action.type=' + action.type + ')');
-
+    //STEP 5: Route to handler
+    //console.log("STEP 5: " + action.type + " route to handler");
     switch (action.type) {
         case 'scan_ec2':
-            console.log('STEP 4: scan_ec2 — set pendingAction (no ChatGPT yet)');
-            state.pendingAction = { type: 'scan_ec2' };
+            return await handleScanEC2(userMessage, action);
+
+        case 'toggle_ec2':
+            return await handleToggleEC2(userMessage, action);
+
+        case 'general_chat':
+        default:
+            return await handleGeneralChat(userMessage, action);
+    }
+    switch (action.type) {
+        case 'scan_ec2':
+            //console.log("STEP 5: " + action.type + " set pendingAction and ask for region");
+            state.pendingAction = { type: 'scan_ec2', missing: ['region'] };
             return {
                 success: true,
-                data: 'Started scan flow',
+                data: 'What region should I scan? (example: us-east-1)',
                 action,
                 intent,
             };
-        /*
-        case 'scan_ec2':
-            return await handleScanEC2(text, action);
-        */
         case 'toggle_ec2':
             return await handleToggleEC2(text, action);
 
@@ -81,8 +171,288 @@ async function processMessage(userMessage) {
         default:
             return await handleGeneralChat(text, action);
     }
+            */
+    console.log("_______________processMessage______________________")
+    console.log(" ")
+
+    return processMessageOutcome;
+
 }
 
+
+//Function B1: Detect Intent
+function detectIntent(userMessage) {
+    const originalMessage = String(userMessage || '');
+    const normalizedMessage = originalMessage.toLowerCase();
+
+    //console.log('detectIntent: Received message -> ' + originalMessage);
+    //console.log('detectIntent: Normalized message -> ' + normalizedMessage);
+
+    if (normalizedMessage.includes('scan') && normalizedMessage.includes('ec2')) {
+        //console.log('detectIntent: result scan_ec2');
+        return 'scan_ec2';
+    }
+
+    if (normalizedMessage.includes('toggle') || normalizedMessage.includes('switch')) {
+        //console.log('detectIntent: result toggle_ec2');
+        return 'toggle_ec2';
+    }
+
+    //console.log('detectIntent: result unknown');
+    return 'general_chat';
+}
+
+
+//Function B2: Decide Action
+function decideAction(intent) {
+    //console.log('decideAction: intent=' + intent);
+    const allowedIntents = ['scan_ec2', 'toggle_ec2', 'general_chat'];
+
+    if (intent === 'general_chat') {
+        return {
+            type: 'general_chat',
+            allowed: true,
+            requiresExecution: false,
+            message: '',
+        };
+    }
+
+    if (intent === 'scan_ec2') {
+        //console.log('decideAction: scan_ec2');
+        return {
+            type: 'scan_ec2',
+            allowed: true,
+            requiresExecution: false,
+            message: 'Preparing EC2 scan.',
+        };
+    }
+
+    if (intent === 'toggle_ec2') {
+        console.log('decideAction: toggle_ec2');
+        return {
+            type: 'toggle_ec2',
+            allowed: true,
+            requiresExecution: false,
+            message: 'Confirm before changing EC2 instances.',
+        };
+    }
+
+    if (!allowedIntents.includes(intent)) {
+        //console.log('decideAction: blocked (unsupported intent)');
+        return {
+            type: 'none',
+            allowed: false,
+            message: 'I can only help with EC2 right now.',
+        };
+    }
+
+    //console.log('decideAction: fallback unknown request');
+    return {
+        type: 'none',
+        allowed: false,
+        message: 'Unknown request.',
+    };
+}
+
+
+//NEW 
+/*
+const actions = {
+    general_chat: {
+        type: 'general_chat',
+        allowed: true,
+        requiresExecution: false,
+        message: '',
+    },
+    scan_ec2: {
+        type: 'scan_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Preparing EC2 scan.',
+    },
+    toggle_ec2: {
+        type: 'toggle_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Confirm before changing EC2 instances.',
+    }
+};
+
+function decideAction(intent) {
+    const action = actions[intent];
+
+    if (action) {
+        return action;
+    }
+
+    return {
+        type: 'none',
+        allowed: false,
+        requiresExecution: false,
+        message: 'I can only help with EC2 right now.',
+    };
+}
+    
+*/
+
+async function handleGeneralChat(text, action) {
+    const chatResult = await chatFunctions.sendGeneralChat(text);
+
+    if (!chatResult.success) {
+        //console.log('handleGeneralChat: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleGeneralChat: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+
+async function handleScanEC2(text, action) {
+    const chatResult = await chatFunctions.sendChatWithAction(text, action);
+
+    if (!chatResult.success) {
+        //console.log('handleScanEC2: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'scan_ec2',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleScanEC2: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'scan_ec2',
+        policy: { allowed: true },
+    };
+}
+
+async function handleToggleEC2(text, action) {
+    const chatResult = await chatFunctions.sendChatWithAction(text, action);
+
+    if (!chatResult.success) {
+        //console.log('handleToggleEC2: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'toggle_ec2',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleToggleEC2: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'toggle_ec2',
+        policy: { allowed: true },
+    };
+}
+
+
+
+
+
+
+        // Step 2C: Build response
+        /*
+        processMessageOutcome.success = true;
+
+        if (ready) {
+            processMessageOutcome.cloudPilotMessage = "Ready to execute request";
+        } else {
+            processMessageOutcome.cloudPilotMessage = "Still need: " + currentStateData.missing.join(", ");
+        }
+
+        processMessageOutcome.cloudPilot.intent = currentStateData.action;
+
+        processMessageOutcome.cloudPilot.policy.allowed = true;
+
+        if (ready) {
+            processMessageOutcome.cloudPilot.policy.policy_message = "READY";
+        } else {
+            processMessageOutcome.cloudPilot.policy.policy_message = "COLLECTING_INPUT";
+        }
+
+        processMessageOutcome.cloudPilot.action.type = currentStateData.action;
+        processMessageOutcome.cloudPilot.action.ready = ready;
+
+        processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+        processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+
+        return processMessageOutcome;
+        */
+    /*
+    if (actionPending) {
+
+        //Step 2A: Check current message for the region
+        const region = conversationStateFunctions.extractAwsRegion(userMessage);
+
+        if (region) { 
+            console.log("Step 1A: Region Found " + region)
+        } else {
+            console.log("Step 1A: The current message did not include the region")
+        }
+
+        //Step 1C: Update State (maybe move to function)
+        //state.pendingAction.collected.region = region;
+        //state.pendingAction.missing = state.pendingAction.missing.filter(
+        //    field => field !== "region"
+        //);
+
+        //console.log(state);
+
+        //Step 1B: Set variables for processOutcome (This will most likely move)
+        processOutcome.success = true;
+        processOutcome.cloudPilotMessage = "Continuing previous request";
+
+        processOutcome.cloudPilot.intent = actionPending.type;
+        processOutcome.cloudPilot.policy.allowed = true;
+        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
+        processOutcome.cloudPilot.action.type = actionPending.type;
+        processOutcome.cloudPilot.action.ready = false;
+
+        processOutcome.cloudPilot.state.pendingAction = actionPending.type;
+        processOutcome.cloudPilot.state.missing = actionPending.missing || [];
+
+    } else {
+        console.log("STEP 1: NO Action Pending → continue normal flow");
+        processOutcome.success = true;
+        processOutcome.cloudPilotMessage = "No active request";
+
+        processOutcome.cloudPilot.intent = "none";
+        processOutcome.cloudPilot.policy.allowed = true;
+        processOutcome.cloudPilot.policy.policy_message = "ACTION_ALLOWED";
+        processOutcome.cloudPilot.action.type = "none";
+        processOutcome.cloudPilot.action.ready = false;
+
+    }
+    */
+        
 /*
 const state = require('./state'); // adjust path as needed
 
@@ -133,159 +503,6 @@ async function processMessage(userMessage) {
     }
 }
     */
-
-//Function B1: Detect Intent
-function detectIntent(userMessage) {
-    const originalMessage = String(userMessage || '');
-    const normalizedMessage = originalMessage.toLowerCase();
-
-    console.log('detectIntent: Received message -> ' + originalMessage);
-    console.log('detectIntent: Normalized message -> ' + normalizedMessage);
-
-    if (normalizedMessage.includes('scan') && normalizedMessage.includes('ec2')) {
-        console.log('detectIntent: result scan_ec2');
-        return 'scan_ec2';
-    }
-
-    if (normalizedMessage.includes('toggle') || normalizedMessage.includes('switch')) {
-        console.log('detectIntent: result toggle_ec2');
-        return 'toggle_ec2';
-    }
-
-    console.log('detectIntent: result unknown');
-    return 'unknown';
-}
-
-//Function B2: Decide Action
-function decideAction(intent) {
-    console.log('decideAction: intent=' + intent);
-
-    if (intent === 'unknown') {
-        console.log('decideAction: general chat (unknown)');
-        return {
-            type: 'none',
-            allowed: true,
-            requiresExecution: false,
-            message: '',
-        };
-    }
-
-    const allowedIntents = ['scan_ec2', 'toggle_ec2'];
-    if (!allowedIntents.includes(intent)) {
-        console.log('decideAction: blocked (unsupported intent)');
-        return {
-            type: 'none',
-            allowed: false,
-            message: 'I can only help with EC2 right now.',
-        };
-    }
-
-    if (intent === 'scan_ec2') {
-        console.log('decideAction: scan_ec2');
-        return {
-            type: 'scan_ec2',
-            allowed: true,
-            requiresExecution: false,
-            message: 'Preparing EC2 scan.',
-        };
-    }
-
-    if (intent === 'toggle_ec2') {
-        console.log('decideAction: toggle_ec2');
-        return {
-            type: 'toggle_ec2',
-            allowed: true,
-            requiresExecution: false,
-            message: 'Confirm before changing EC2 instances.',
-        };
-    }
-
-    console.log('decideAction: fallback unknown request');
-    return {
-        type: 'none',
-        allowed: false,
-        message: 'Unknown request.',
-    };
-}
-
-async function handleGeneralChat(text, action) {
-    const chatResult = await chatFunctions.sendGeneralChat(text);
-
-    if (!chatResult.success) {
-        console.log('handleGeneralChat: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'unknown',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    console.log('handleGeneralChat: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'unknown',
-        policy: { allowed: true },
-    };
-}
-
-async function handleScanEC2(text, action) {
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        console.log('handleScanEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'scan_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    console.log('handleScanEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'scan_ec2',
-        policy: { allowed: true },
-    };
-}
-
-async function handleToggleEC2(text, action) {
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        console.log('handleToggleEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'toggle_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    console.log('handleToggleEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'toggle_ec2',
-        policy: { allowed: true },
-    };
-}
-
 
 
 //V2
