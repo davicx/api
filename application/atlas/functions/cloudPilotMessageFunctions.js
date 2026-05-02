@@ -12,34 +12,7 @@ FUNCTIONS C: Conversation State (MVP)
     1) Function C1: Get / Save / Clear per-conversation pending action state
 */
 
-        // Step 2C: Build response
-        /*
-        processMessageOutcome.success = true;
 
-        if (ready) {
-            processMessageOutcome.cloudPilotMessage = "Ready to execute request";
-        } else {
-            processMessageOutcome.cloudPilotMessage = "Still need: " + currentStateData.missing.join(", ");
-        }
-
-        processMessageOutcome.cloudPilot.intent = currentStateData.action;
-
-        processMessageOutcome.cloudPilot.policy.allowed = true;
-
-        if (ready) {
-            processMessageOutcome.cloudPilot.policy.policy_message = "READY";
-        } else {
-            processMessageOutcome.cloudPilot.policy.policy_message = "COLLECTING_INPUT";
-        }
-
-        processMessageOutcome.cloudPilot.action.type = currentStateData.action;
-        processMessageOutcome.cloudPilot.action.ready = ready;
-
-        processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
-        processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
-
-        return processMessageOutcome;
-        */
 
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
@@ -74,11 +47,10 @@ async function processMessage(userMessage, conversationID) {
         error: null
     };
 
-    // STEP 2: Check if user has a pending action
+    // STEP 2: Check if user has a pending action and if they do look for missing fields
     if (actionPending) {
 
-
-        // Step 2A: Try to extract region
+        // Step 2A: Try to extract region (later will look for other missing data)
         const region = conversationStateFunctions.extractAwsRegion(userMessage);
 
         if (region) {
@@ -89,10 +61,11 @@ async function processMessage(userMessage, conversationID) {
         } else {
             console.log("No region in message");
         }
-
     }
 
-    //TEMP
+    //STEP 3: Check if the user has provided all the info now. If they have the request is ready and done. 
+    //STEP 3: For a Pending Action if there are no missing fields the request is ready 
+    //Set action: { ready: true } Skip Steps 4 and 5 and return 
     if (currentStateData.missing.length === 0 && actionPending) {
         masterUserRequestReady = true;
     }
@@ -104,8 +77,15 @@ async function processMessage(userMessage, conversationID) {
     } else {
         console.log("Request is NOT ready");
     }
-    //TEMP
 
+
+
+
+
+    //STEP 4: Detect User Intent from message (are they trying to do something or just chatting)
+    //STEP 5: Decide action if the user is asking to do something 
+    //STEP 6: Route to handler
+    //STEP 7: Put together response (including API response) and return 
 
 
     /*
@@ -163,7 +143,17 @@ async function processMessage(userMessage, conversationID) {
 
     //STEP 5: Route to handler
     //console.log("STEP 5: " + action.type + " route to handler");
+    switch (action.type) {
+        case 'scan_ec2':
+            return await handleScanEC2(userMessage, action);
 
+        case 'toggle_ec2':
+            return await handleToggleEC2(userMessage, action);
+
+        case 'general_chat':
+        default:
+            return await handleGeneralChat(userMessage, action);
+    }
     switch (action.type) {
         case 'scan_ec2':
             //console.log("STEP 5: " + action.type + " set pendingAction and ask for region");
@@ -209,30 +199,21 @@ function detectIntent(userMessage) {
     }
 
     //console.log('detectIntent: result unknown');
-    return 'unknown';
+    return 'general_chat';
 }
+
 
 //Function B2: Decide Action
 function decideAction(intent) {
     //console.log('decideAction: intent=' + intent);
+    const allowedIntents = ['scan_ec2', 'toggle_ec2', 'general_chat'];
 
-    if (intent === 'unknown') {
-        //console.log('decideAction: general chat (unknown)');
+    if (intent === 'general_chat') {
         return {
-            type: 'none',
+            type: 'general_chat',
             allowed: true,
             requiresExecution: false,
             message: '',
-        };
-    }
-
-    const allowedIntents = ['scan_ec2', 'toggle_ec2'];
-    if (!allowedIntents.includes(intent)) {
-        //console.log('decideAction: blocked (unsupported intent)');
-        return {
-            type: 'none',
-            allowed: false,
-            message: 'I can only help with EC2 right now.',
         };
     }
 
@@ -256,6 +237,15 @@ function decideAction(intent) {
         };
     }
 
+    if (!allowedIntents.includes(intent)) {
+        //console.log('decideAction: blocked (unsupported intent)');
+        return {
+            type: 'none',
+            allowed: false,
+            message: 'I can only help with EC2 right now.',
+        };
+    }
+
     //console.log('decideAction: fallback unknown request');
     return {
         type: 'none',
@@ -263,6 +253,47 @@ function decideAction(intent) {
         message: 'Unknown request.',
     };
 }
+
+
+//NEW 
+/*
+const actions = {
+    general_chat: {
+        type: 'general_chat',
+        allowed: true,
+        requiresExecution: false,
+        message: '',
+    },
+    scan_ec2: {
+        type: 'scan_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Preparing EC2 scan.',
+    },
+    toggle_ec2: {
+        type: 'toggle_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Confirm before changing EC2 instances.',
+    }
+};
+
+function decideAction(intent) {
+    const action = actions[intent];
+
+    if (action) {
+        return action;
+    }
+
+    return {
+        type: 'none',
+        allowed: false,
+        requiresExecution: false,
+        message: 'I can only help with EC2 right now.',
+    };
+}
+    
+*/
 
 async function handleGeneralChat(text, action) {
     const chatResult = await chatFunctions.sendGeneralChat(text);
@@ -344,6 +375,37 @@ async function handleToggleEC2(text, action) {
 
 
 
+
+
+
+        // Step 2C: Build response
+        /*
+        processMessageOutcome.success = true;
+
+        if (ready) {
+            processMessageOutcome.cloudPilotMessage = "Ready to execute request";
+        } else {
+            processMessageOutcome.cloudPilotMessage = "Still need: " + currentStateData.missing.join(", ");
+        }
+
+        processMessageOutcome.cloudPilot.intent = currentStateData.action;
+
+        processMessageOutcome.cloudPilot.policy.allowed = true;
+
+        if (ready) {
+            processMessageOutcome.cloudPilot.policy.policy_message = "READY";
+        } else {
+            processMessageOutcome.cloudPilot.policy.policy_message = "COLLECTING_INPUT";
+        }
+
+        processMessageOutcome.cloudPilot.action.type = currentStateData.action;
+        processMessageOutcome.cloudPilot.action.ready = ready;
+
+        processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+        processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+
+        return processMessageOutcome;
+        */
     /*
     if (actionPending) {
 
