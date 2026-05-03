@@ -49,7 +49,7 @@ async function postMessage(req, res) {
     };
 
     // TEST: manually set state
-    actionState.setPendingAction(conversationID, "scan_ec2", ["region"]);
+    //actionState.setPendingAction(conversationID, "scan_ec2", ["region"]);
 
     //STEP 1: Get current state (Does the user have an open request)
     var currentState = actionState.getActionStatus(conversationID);
@@ -62,7 +62,7 @@ async function postMessage(req, res) {
     //actionState.print(conversationID);
     //TEST
 
-    //STEP 2: Build Message 
+    //STEP 2: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
     console.log("STEP 2: Build Message ")
 
@@ -84,6 +84,7 @@ async function postMessage(req, res) {
 
     //STEP 4: CloudPilot processing
     let cloudPilotResult = null;
+    console.log(" ");
     console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
     try {

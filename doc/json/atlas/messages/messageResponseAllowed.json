@@ -31,17 +31,20 @@
         "intent": "scan_ec2",
         "policy": {
             "allowed": true,
-            "policy_message": "ACTION_ALLOWED"
+            "policy_message": "ACTION_ALLOWED",
+            "reasonNotAllowed": null
         },
         "action": {
             "type": "scan_ec2",
-            "ready": false
+            "ready": false,
+            "parameters": {}
         },
         "state": {
             "pendingAction": "scan_ec2",
             "missing": [
                 "region"
-            ]
+            ],
+            "collected": {}
         }
     },
     "message": "You sent a message to Cloud Pilot!",
@@ -50,3 +53,4 @@
     "errors": [],
     "currentUser": "davey"
 }
+

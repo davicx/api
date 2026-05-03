@@ -26,33 +26,38 @@ async function processMessage(userMessage, conversationID) {
 
     // STEP 1: Create outcome
     var processMessageOutcome = {
-        success: false,
-        cloudPilotMessage: "",
+        success: false, //NOT DONE
+        cloudPilotMessage: "", //NOT DONE
         cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2"
+            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
             policy: {
-                allowed: false,
-                message: null,
-                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION"
+                allowed: false, //NOT DONE
+                message: null, //NOT DONE
+                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
             },
             action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2"
-                ready: false,
-                parameters: {}
+                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+                ready: false, //NOT DONE
+                parameters: {} //NOT DONE
             },
             state: {
-                pendingAction: null,
-                missing: [],
-                collected: {}
+                pendingAction: null, //DONE
+                missing: [], //DONE
+                collected: {} //DONE
             }
         },
-        error: null
+        error: null //NOT DONE
     };
+
+    //Step 1A: Sync state from ActionState → response
+    processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+    processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+    processMessageOutcome.cloudPilot.state.collected = currentStateData.collected;
 
     //STEP 2: Check if user has a pending action and if they do look for missing fields
     if (actionPending) {
 
-        // Step 2A: Try to extract region (later will look for other missing data)
+        //Step 2A: Try to extract region (later will look for other missing data)
         const region = conversationStateFunctions.extractAwsRegion(userMessage);
 
         if (region) {
@@ -60,6 +65,12 @@ async function processMessage(userMessage, conversationID) {
 
             actionState.setRegion(conversationID, region);
             currentStateData = actionState.getActionStatus(conversationID);
+
+            //Step 2B: Re-sync updated state
+            processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+            processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+            processMessageOutcome.cloudPilot.state.collected = currentStateData.collected;
+
         } else {
             console.log("STEP 2: No region in message");
         }
@@ -76,11 +87,13 @@ async function processMessage(userMessage, conversationID) {
 
     if (masterUserRequestReady) {
         processMessageOutcome.cloudPilotMessage = "Request is READY";
-        console.log("Request is READY");
-
+        processMessageOutcome.success = true;
+        processMessageOutcome.cloudPilot.action.ready = true;
+    
         // go straight to your handler (STEP 5)
+        console.log("STEP 3: Request is READY");
     } else {
-        console.log("Request is NOT ready");
+        console.log("STEP 3: Request is NOT ready");
         //processMessageOutcome.cloudPilotMessage = "Request is NOT ready";
     }
 
@@ -88,22 +101,212 @@ async function processMessage(userMessage, conversationID) {
 
         //STEP 4: Normalize User Intent from message
         const normalizedText = chatFunctions.normalizeUserMessageForModel(userMessage);
+
+        //Handle Error
         if (!normalizedText.ok) {
             console.log("STEP 4: Normalize text failed");
 
             processMessageOutcome.success = false;
             processMessageOutcome.error = normalizedText.message;
-        
+
+            return processMessageOutcome;         
         }
-    
+
         const userMessageNormalized = normalizedText.text;
 
+        console.log("STEP 4: Normalize text Worked");
+        console.log("MESSAGE: " + userMessageNormalized)
+    
+    
         //STEP 5: Detect user intent from message (are they trying to do something or just normal chat)
         const intent = detectIntent(userMessageNormalized);
         processMessageOutcome.cloudPilot.intent = intent;
-    
-        console.log("STEP 5: Detect user intent from message " + intent);
+        
+        console.log("STEP 5: Detect user intent from message ");
+        console.log("INTENT: " + intent)
+
+        // STEP 6: Decide action
+        const action = decideAction(intent);
+
+        // store type in your structured outcome
+        processMessageOutcome.cloudPilot.action.type = action.type;
+
+        /*
+        // STEP 6A: Start new action if none exists
+        if (!actionPending && action.type === 'scan_ec2') {
+            actionState.setPendingAction(conversationID, 'scan_ec2', ['region']);
+
+            // refresh state
+            currentStateData = actionState.getActionStatus(conversationID);
+            actionPending = currentStateData.action;
+
+            // re-sync to response
+            processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+            processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+            processMessageOutcome.cloudPilot.state.collected = currentStateData.collected;
+        }
+        
+        */
+
+        // STEP 7: Handle the user message
+        if (action.type === 'scan_ec2') {
+            const result = await handleScanEC2(userMessageNormalized, action);
+
+            processMessageOutcome.success = result.success;
+            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+        } else if (action.type === 'toggle_ec2') {
+            const result = await handleToggleEC2(userMessageNormalized, action);
+
+            processMessageOutcome.success = result.success;
+            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+        } else {
+            const result = await handleGeneralChat(userMessageNormalized, action);
+
+            processMessageOutcome.success = result.success;
+            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+        }
     }
+
+    return processMessageOutcome;
+
+}
+
+
+//Function B1: Detect Intent
+function detectIntent(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+
+    if (normalizedMessage.includes('scan') && normalizedMessage.includes('ec2')) {
+        return 'scan_ec2';
+    }
+
+    if (normalizedMessage.includes('toggle') || normalizedMessage.includes('switch')) {
+        return 'toggle_ec2';
+    }
+
+    return 'general_chat';
+}
+
+//Function B2: Decide Action
+const actions = {
+    general_chat: {
+        type: 'general_chat',
+        allowed: true,
+        requiresExecution: false,
+        message: '',
+    },
+    scan_ec2: {
+        type: 'scan_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Preparing EC2 scan.',
+    },
+    toggle_ec2: {
+        type: 'toggle_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Confirm before changing EC2 instances.',
+    }
+};
+
+function decideAction(intent) {
+    const action = actions[intent];
+
+    if (action) {
+        return { ...action }; // ← copy here
+    }
+
+    return {
+        type: 'none',
+        allowed: false,
+        requiresExecution: false,
+        message: 'I can only help with EC2 right now.',
+    };
+}
+
+
+//Function B3: 
+async function handleGeneralChat(text, action) {
+    const chatResult = await chatFunctions.sendGeneralChat(text);
+
+    if (!chatResult.success) {
+        //console.log('handleGeneralChat: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleGeneralChat: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+
+async function handleScanEC2(text, action) {
+    const chatResult = await chatFunctions.sendChatWithAction(text, action);
+
+    if (!chatResult.success) {
+        //console.log('handleScanEC2: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'scan_ec2',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleScanEC2: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'scan_ec2',
+        policy: { allowed: true },
+    };
+}
+
+async function handleToggleEC2(text, action) {
+    const chatResult = await chatFunctions.sendChatWithAction(text, action);
+
+    if (!chatResult.success) {
+        //console.log('handleToggleEC2: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'toggle_ec2',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleToggleEC2: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'toggle_ec2',
+        policy: { allowed: true },
+    };
+}
+
+
 
     /*
     //STEP 2: Normalize and validate the user message
@@ -205,12 +408,10 @@ async function processMessage(userMessage, conversationID) {
     }
             */
 
-    return processMessageOutcome;
-
-}
 
 
-//Function B1: Detect Intent
+
+/*
 function detectIntent(userMessage) {
     const originalMessage = String(userMessage || '');
     const normalizedMessage = originalMessage.toLowerCase();
@@ -231,9 +432,11 @@ function detectIntent(userMessage) {
     //console.log('detectIntent: result unknown');
     return 'general_chat';
 }
+*/
 
 
 //Function B2: Decide Action
+/*
 function decideAction(intent) {
     //console.log('decideAction: intent=' + intent);
     const allowedIntents = ['scan_ec2', 'toggle_ec2', 'general_chat'];
@@ -283,45 +486,16 @@ function decideAction(intent) {
         message: 'Unknown request.',
     };
 }
+*/
 
 
+
+
+
+//DOC
 //NEW 
 /*
-const actions = {
-    general_chat: {
-        type: 'general_chat',
-        allowed: true,
-        requiresExecution: false,
-        message: '',
-    },
-    scan_ec2: {
-        type: 'scan_ec2',
-        allowed: true,
-        requiresExecution: false,
-        message: 'Preparing EC2 scan.',
-    },
-    toggle_ec2: {
-        type: 'toggle_ec2',
-        allowed: true,
-        requiresExecution: false,
-        message: 'Confirm before changing EC2 instances.',
-    }
-};
 
-function decideAction(intent) {
-    const action = actions[intent];
-
-    if (action) {
-        return action;
-    }
-
-    return {
-        type: 'none',
-        allowed: false,
-        requiresExecution: false,
-        message: 'I can only help with EC2 right now.',
-    };
-}
     */
 
 //LOGIC FLOW
@@ -340,88 +514,6 @@ ELSE:
         detect intent
         store intent
 */
-
-async function handleGeneralChat(text, action) {
-    const chatResult = await chatFunctions.sendGeneralChat(text);
-
-    if (!chatResult.success) {
-        //console.log('handleGeneralChat: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'unknown',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleGeneralChat: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'unknown',
-        policy: { allowed: true },
-    };
-}
-
-async function handleScanEC2(text, action) {
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('handleScanEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'scan_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleScanEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'scan_ec2',
-        policy: { allowed: true },
-    };
-}
-
-async function handleToggleEC2(text, action) {
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('handleToggleEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'toggle_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleToggleEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'toggle_ec2',
-        policy: { allowed: true },
-    };
-}
-
-
-//DOC
-
 /*
 var processMessageOutcome = {
     success: false, // true if processing completed successfully
