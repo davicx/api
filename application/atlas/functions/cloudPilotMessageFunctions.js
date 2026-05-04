@@ -30,11 +30,13 @@ async function processMessage(userMessage, conversationID) {
         cloudPilotMessage: "", //NOT DONE
         cloudPilot: {
             intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            /*
             policy: {
                 allowed: false, //NOT DONE
                 message: null, //NOT DONE
                 reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
             },
+            */
             action: {
                 type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
                 ready: false, //NOT DONE
@@ -43,7 +45,14 @@ async function processMessage(userMessage, conversationID) {
             state: {
                 pendingAction: null, //DONE
                 missing: [], //DONE
-                collected: {} //DONE
+                collected: {}, //DONE
+
+                execution: {
+                    inProgress: false, //NOT DONE
+                    actionId: null,    //NOT DONE
+                    startedAt: null,    //NOT DONE
+                    status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
+                }
             }
         },
         error: null //NOT DONE
@@ -65,6 +74,7 @@ async function processMessage(userMessage, conversationID) {
 
             actionState.setRegion(conversationID, region);
             currentStateData = actionState.getActionStatus(conversationID);
+            actionPending = currentStateData.action;
 
             //Step 2B: Re-sync updated state
             processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
@@ -81,6 +91,7 @@ async function processMessage(userMessage, conversationID) {
     //STEP 3: Check if the user has provided all the info now. If they have the request is ready and done. 
     //For a Pending Action if there are no missing fields the request is ready 
     //Set action: { ready: true } Skip Steps 4 and 5 and return 
+    /*
     if (currentStateData.missing.length === 0 && actionPending) {
         masterUserRequestReady = true;
     }
@@ -90,65 +101,93 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.success = true;
         processMessageOutcome.cloudPilot.action.ready = true;
     
-        // go straight to your handler (STEP 5)
         console.log("STEP 3: Request is READY");
     } else {
         console.log("STEP 3: Request is NOT ready");
-        //processMessageOutcome.cloudPilotMessage = "Request is NOT ready";
+    }
+    */
+
+    //STEP 4: Normalize User Intent from message
+    const normalizedText = chatFunctions.normalizeUserMessageForModel(userMessage);
+
+    //Handle Error
+    if (!normalizedText.ok) {
+        console.log("STEP 4: Normalize text failed");
+
+        processMessageOutcome.success = false;
+        processMessageOutcome.error = normalizedText.message;
+
+        return processMessageOutcome;         
     }
 
-    if(masterUserRequestReady == false) {
+    const userMessageNormalized = normalizedText.text;
 
-        //STEP 4: Normalize User Intent from message
-        const normalizedText = chatFunctions.normalizeUserMessageForModel(userMessage);
+    console.log("STEP 4: Normalize text Worked");
+    console.log("MESSAGE: " + userMessageNormalized)
 
-        //Handle Error
-        if (!normalizedText.ok) {
-            console.log("STEP 4: Normalize text failed");
 
-            processMessageOutcome.success = false;
-            processMessageOutcome.error = normalizedText.message;
+    //STEP 5: Detect intent
+    const intent = detectIntent(userMessageNormalized);
+    processMessageOutcome.cloudPilot.intent = intent;
 
-            return processMessageOutcome;         
+    console.log("STEP 5: INTENT:", intent);
+
+    //STEP 6: Decide action
+    const action = decideAction(intent);
+
+    //Set Data: Action
+    processMessageOutcome.cloudPilot.action.type = action.type;
+
+    //Step 6A: Start or replace an existing action
+    if (action.type === "scan_ec2" || action.type === "toggle_ec2") {
+        console.log("STEP 6A: Starting or replacing action:", action.type);
+
+        if (actionPending) {
+            console.log("STEP 6A: Dropping previous action:", actionPending);
         }
 
-        const userMessageNormalized = normalizedText.text;
+        const requiredFieldsByAction = {
+            scan_ec2: ["region"],
+            toggle_ec2: ["region"]
+        };
 
-        console.log("STEP 4: Normalize text Worked");
-        console.log("MESSAGE: " + userMessageNormalized)
-    
-    
-        //STEP 5: Detect user intent from message (are they trying to do something or just normal chat)
-        const intent = detectIntent(userMessageNormalized);
-        processMessageOutcome.cloudPilot.intent = intent;
-        
-        console.log("STEP 5: Detect user intent from message ");
-        console.log("INTENT: " + intent)
+        const requiredFields = requiredFieldsByAction[action.type] || [];
 
-        // STEP 6: Decide action
-        const action = decideAction(intent);
+        actionState.setPendingAction(conversationID, action.type, requiredFields);
 
-        // store type in your structured outcome
-        processMessageOutcome.cloudPilot.action.type = action.type;
+        //refresh state
+        currentStateData = actionState.getActionStatus(conversationID);
+        actionPending = currentStateData.action;
 
-        /*
-        // STEP 6A: Start new action if none exists
-        if (!actionPending && action.type === 'scan_ec2') {
-            actionState.setPendingAction(conversationID, 'scan_ec2', ['region']);
+        //sync to response
+        processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
+        processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
+        processMessageOutcome.cloudPilot.state.collected = currentStateData.collected;
+    }
 
-            // refresh state
-            currentStateData = actionState.getActionStatus(conversationID);
-            actionPending = currentStateData.action;
+    //Step 6B: Update ready status
+    masterUserRequestReady = currentStateData.missing.length === 0 && currentStateData.action;
 
-            // re-sync to response
-            processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
-            processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
-            processMessageOutcome.cloudPilot.state.collected = currentStateData.collected;
+    //STEP 7: Handle the user message
+    if (masterUserRequestReady) {
+
+        const actionToRun = actionPending;
+
+        if (actionToRun === 'scan_ec2') {
+            const result = await handleScanEC2(userMessageNormalized, { type: actionToRun });
+
+            processMessageOutcome.success = result.success;
+            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+        } else if (actionToRun === 'toggle_ec2') {
+            const result = await handleToggleEC2(userMessageNormalized, { type: actionToRun });
+
+            processMessageOutcome.success = result.success;
+            processMessageOutcome.cloudPilotMessage = result.data || result.message;
         }
-        
-        */
 
-        // STEP 7: Handle the user message
+    } else {
+
         if (action.type === 'scan_ec2') {
             const result = await handleScanEC2(userMessageNormalized, action);
 
@@ -169,9 +208,38 @@ async function processMessage(userMessage, conversationID) {
         }
     }
 
+
+
     return processMessageOutcome;
 
 }
+
+
+    /*
+    if (action.type === 'scan_ec2') {
+        const result = await handleScanEC2(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+    } else if (action.type === 'toggle_ec2') {
+        const result = await handleToggleEC2(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+    } else {
+        const result = await handleGeneralChat(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+    }
+    
+
+    if(masterUserRequestReady == true) {
+        //Process full
+    }
+    */
 
 
 //Function B1: Detect Intent
@@ -307,6 +375,46 @@ async function handleToggleEC2(text, action) {
 }
 
 
+//DATA EXPLANATION
+/*
+var processMessageOutcome = {
+    success: false,
+    cloudPilotMessage: "",
+
+    cloudPilot: {
+        intent: null, // e.g. "scan_ec2", "toggle_ec2"
+
+        policy: {
+            allowed: false,
+            message: null,
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION"
+        },
+
+        action: {
+            type: null, // e.g. "scan_ec2"
+            ready: false,
+            parameters: {} // e.g. { region: "us-west-2" }
+        },
+
+        state: {
+            pendingAction: null, // e.g. "scan_ec2"
+            missing: [],         // e.g. ["region"]
+            collected: {},       // e.g. { region: "us-west-2" }
+
+            execution: {
+                inProgress: false,
+                actionId: null,
+                startedAt: null,
+                status: "idle" // "idle" | "running" | "completed" | "failed"
+            }
+        }
+    },
+
+    error: null // e.g. { message: "Something went wrong" }
+};
+*/
+
+//APPENDIX
 
     /*
     //STEP 2: Normalize and validate the user message

@@ -28,18 +28,29 @@
         }
     },
     "cloudPilot": {
-        "intent": "scan_s3",
+        "intent": "scan_ec2",
         "policy": {
-            "allowed": false,
-            "policy_message": "NO_WRITE_PERMISSION"
+            "allowed": true,
+            "policy_message": "ACTION_ALLOWED",
+            "reasonNotAllowed": null
         },
         "action": {
-            "type": "scan_s3",
-            "ready": false
+            "type": "scan_ec2",
+            "ready": false,
+            "parameters": {}
         },
         "state": {
-            "pendingAction": null,
-            "missing": []
+            "pendingAction": "scan_ec2",
+            "missing": [
+                "region"
+            ],
+            "collected": {},
+            "execution": {
+                "inProgress": false,
+                "actionId": null,
+                "startedAt": null,
+                "status": "idle"
+              }
         }
     },
     "message": "You sent a message to Cloud Pilot!",

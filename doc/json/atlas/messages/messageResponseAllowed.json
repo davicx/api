@@ -30,7 +30,7 @@
     "cloudPilot": {
         "intent": "scan_ec2",
         "policy": {
-            "allowed": true,
+            "allowed": true, 
             "policy_message": "ACTION_ALLOWED",
             "reasonNotAllowed": null
         },
@@ -44,7 +44,13 @@
             "missing": [
                 "region"
             ],
-            "collected": {}
+            "collected": {},
+            "execution": {
+                "inProgress": false,
+                "actionId": null,
+                "startedAt": null,
+                "status": "idle"
+              }
         }
     },
     "message": "You sent a message to Cloud Pilot!",
@@ -53,4 +59,5 @@
     "errors": [],
     "currentUser": "davey"
 }
+
 
