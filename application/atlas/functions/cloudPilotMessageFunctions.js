@@ -69,7 +69,7 @@ async function processMessage(userMessage, conversationID) {
     //Create outcome
     var processMessageOutcome = {
         success: false, //NOT DONE
-        cloudPilotMessage: "", //NOT DONE (What chatgpt says this is the main thing)
+        cloudPilotMessage: "",
         cloudPilot: {
             intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
             action: {
@@ -219,7 +219,14 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
         processMessageOutcome.success = true;
     }
+    
+    console.log(" ");
+    console.log("processMessageOutcome");
+    console.log(processMessageOutcome);
+    console.log("processMessageOutcome");
 
+    console.log(" ");
+    
 
     return processMessageOutcome;
 

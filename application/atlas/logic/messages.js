@@ -103,7 +103,7 @@ async function postMessage(req, res) {
     if (cloudPilotResult && cloudPilotResult.success == true) {
 
         //STEP 5: Build CloudPilot message
-        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.data);
+        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.cloudPilotMessage);
         var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
         if (cloudPilotMessageOutcome.outcome == 200) {
