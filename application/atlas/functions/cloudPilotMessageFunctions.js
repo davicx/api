@@ -69,7 +69,7 @@ async function processMessage(userMessage, conversationID) {
     //Create outcome
     var processMessageOutcome = {
         success: false, //NOT DONE
-        cloudPilotMessage: "", //NOT DONE
+        cloudPilotMessage: "", //NOT DONE (What chatgpt says this is the main thing)
         cloudPilot: {
             intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
             action: {
@@ -141,6 +141,8 @@ async function processMessage(userMessage, conversationID) {
 
         // sync
         processMessageOutcome.cloudPilot.state = currentStateData;
+    } else {
+        console.log("STEP 4: Not starting or replacing an action");
     }
 
     // STEP 5: Extract region if action is pending
@@ -161,14 +163,248 @@ async function processMessage(userMessage, conversationID) {
         } else {
             console.log("STEP 5: No region found");
         }
+    } else {
+        console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
     // STEP 6: Check if ready
     if (actionPending && currentStateData.missing.length === 0) {
         console.log("STEP 6: Request is READY");
 
-        processMessageOutcome.cloudPilot.action.ready = true;
+        //processMessageOutcome.cloudPilot.action.ready = true;
+        processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
     }
+
+    // STEP 7: Route response (THIS IS THE KEY LAYER)
+    if (processMessageOutcome.cloudPilot.action.ready) {
+
+        console.log("STEP 7: READY → action handler");
+
+        let result;
+
+        //OPEN AI: Calls Open AI 
+        if (actionPending === 'scan_ec2') {
+            result = await respondToScanEC2(userMessageNormalized, { type: actionPending });
+
+        } else if (actionPending === 'toggle_ec2') {
+            result = await respondToToggleEC2(userMessageNormalized, { type: actionPending });
+        }
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+    //No API Call    
+    } else if (actionPending && currentStateData.missing.includes("region")) {
+
+        console.log("STEP 7: Missing region → system message");
+
+        processMessageOutcome.cloudPilotMessage = "Which AWS region should I use?";
+        processMessageOutcome.success = true;
+
+    //OPEN AI: Calls Open AI 
+    } else if (intent === "general_chat") {
+
+        console.log("STEP 7: General chat → ChatGPT");
+
+        const result = await handleGeneralChat(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+    //No API Call
+    } else {
+
+        console.log("STEP 7: Fallback message");
+
+        processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
+        processMessageOutcome.success = true;
+    }
+
+
+    return processMessageOutcome;
+
+}
+
+//Function B1: Detect Intent
+function detectIntent(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+
+    if (normalizedMessage.includes('scan') && normalizedMessage.includes('ec2')) {
+        return 'scan_ec2';
+    }
+
+    if (normalizedMessage.includes('toggle') || normalizedMessage.includes('switch')) {
+        return 'toggle_ec2';
+    }
+
+    return 'general_chat';
+}
+
+//Function B2: Decide Action
+const actions = {
+    general_chat: {
+        type: 'general_chat',
+        allowed: true,
+        requiresExecution: false,
+        message: '',
+    },
+    scan_ec2: {
+        type: 'scan_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Preparing EC2 scan.',
+    },
+    toggle_ec2: {
+        type: 'toggle_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Confirm before changing EC2 instances.',
+    }
+};
+
+function decideAction(intent) {
+    const action = actions[intent];
+
+    if (action) {
+        return { ...action }; // ← copy here
+    }
+
+    return {
+        type: 'none',
+        allowed: false,
+        requiresExecution: false,
+        message: 'I can only help with EC2 right now.',
+    };
+}
+
+
+//Function B3: 
+async function handleGeneralChat(text, action) {
+    const chatResult = await chatFunctions.sendGeneralChat(text);
+
+    if (!chatResult.success) {
+        //console.log('handleGeneralChat: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleGeneralChat: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+
+async function respondToScanEC2(text, action) {
+    const chatResult = await chatFunctions.sendChatWithAction(text, action);
+
+    if (!chatResult.success) {
+        //console.log('respondToScanEC2: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'scan_ec2',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('respondToScanEC2: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'scan_ec2',
+        policy: { allowed: true },
+    };
+}
+
+async function respondToToggleEC2(text, action) {
+    const chatResult = await chatFunctions.sendChatWithAction(text, action);
+
+    if (!chatResult.success) {
+        //console.log('respondToToggleEC2: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'toggle_ec2',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('respondToToggleEC2: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'toggle_ec2',
+        policy: { allowed: true },
+    };
+}
+
+
+
+
+    /*
+    if (action.type === 'scan_ec2') {
+        const result = await respondToScanEC2(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+    } else if (action.type === 'toggle_ec2') {
+        const result = await respondToToggleEC2(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+
+    } else {
+        const result = await handleGeneralChat(userMessageNormalized, action);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+    }
+    
+
+    if(masterUserRequestReady == true) {
+        //Process full
+    }
+    */
+
+
+
+/*
+    if (processMessageOutcome.cloudPilot.action.ready) {
+        processMessageOutcome.cloudPilotMessage = "Got everything I need. Ready to run " + actionPending;
+            
+        processMessageOutcome.success = true;
+
+    } else if (actionPending && currentStateData.missing.includes("region")) {
+        processMessageOutcome.cloudPilotMessage = "Which AWS region should I use?";
+            
+        processMessageOutcome.success = true;
+
+    } else {
+        processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
+            
+        processMessageOutcome.success = true;
+    }
+    */
 
     /*
 
@@ -268,13 +504,13 @@ async function processMessage(userMessage, conversationID) {
         const actionToRun = actionPending;
 
         if (actionToRun === 'scan_ec2') {
-            const result = await handleScanEC2(userMessageNormalized, { type: actionToRun });
+            const result = await respondToScanEC2(userMessageNormalized, { type: actionToRun });
 
             processMessageOutcome.success = result.success;
             processMessageOutcome.cloudPilotMessage = result.data || result.message;
 
         } else if (actionToRun === 'toggle_ec2') {
-            const result = await handleToggleEC2(userMessageNormalized, { type: actionToRun });
+            const result = await respondToToggleEC2(userMessageNormalized, { type: actionToRun });
 
             processMessageOutcome.success = result.success;
             processMessageOutcome.cloudPilotMessage = result.data || result.message;
@@ -283,13 +519,13 @@ async function processMessage(userMessage, conversationID) {
     } else {
 
         if (action.type === 'scan_ec2') {
-            const result = await handleScanEC2(userMessageNormalized, action);
+            const result = await respondToScanEC2(userMessageNormalized, action);
 
             processMessageOutcome.success = result.success;
             processMessageOutcome.cloudPilotMessage = result.data || result.message;
 
         } else if (action.type === 'toggle_ec2') {
-            const result = await handleToggleEC2(userMessageNormalized, action);
+            const result = await respondToToggleEC2(userMessageNormalized, action);
 
             processMessageOutcome.success = result.success;
             processMessageOutcome.cloudPilotMessage = result.data || result.message;
@@ -302,171 +538,6 @@ async function processMessage(userMessage, conversationID) {
         }
     }
     */
-
-
-    return processMessageOutcome;
-
-}
-
-
-    /*
-    if (action.type === 'scan_ec2') {
-        const result = await handleScanEC2(userMessageNormalized, action);
-
-        processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.data || result.message;
-
-    } else if (action.type === 'toggle_ec2') {
-        const result = await handleToggleEC2(userMessageNormalized, action);
-
-        processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.data || result.message;
-
-    } else {
-        const result = await handleGeneralChat(userMessageNormalized, action);
-
-        processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.data || result.message;
-    }
-    
-
-    if(masterUserRequestReady == true) {
-        //Process full
-    }
-    */
-
-
-//Function B1: Detect Intent
-function detectIntent(userMessage) {
-    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
-
-    if (normalizedMessage.includes('scan') && normalizedMessage.includes('ec2')) {
-        return 'scan_ec2';
-    }
-
-    if (normalizedMessage.includes('toggle') || normalizedMessage.includes('switch')) {
-        return 'toggle_ec2';
-    }
-
-    return 'general_chat';
-}
-
-//Function B2: Decide Action
-const actions = {
-    general_chat: {
-        type: 'general_chat',
-        allowed: true,
-        requiresExecution: false,
-        message: '',
-    },
-    scan_ec2: {
-        type: 'scan_ec2',
-        allowed: true,
-        requiresExecution: false,
-        message: 'Preparing EC2 scan.',
-    },
-    toggle_ec2: {
-        type: 'toggle_ec2',
-        allowed: true,
-        requiresExecution: false,
-        message: 'Confirm before changing EC2 instances.',
-    }
-};
-
-function decideAction(intent) {
-    const action = actions[intent];
-
-    if (action) {
-        return { ...action }; // ← copy here
-    }
-
-    return {
-        type: 'none',
-        allowed: false,
-        requiresExecution: false,
-        message: 'I can only help with EC2 right now.',
-    };
-}
-
-
-//Function B3: 
-async function handleGeneralChat(text, action) {
-    const chatResult = await chatFunctions.sendGeneralChat(text);
-
-    if (!chatResult.success) {
-        //console.log('handleGeneralChat: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'unknown',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleGeneralChat: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'unknown',
-        policy: { allowed: true },
-    };
-}
-
-async function handleScanEC2(text, action) {
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('handleScanEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'scan_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleScanEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'scan_ec2',
-        policy: { allowed: true },
-    };
-}
-
-async function handleToggleEC2(text, action) {
-    const chatResult = await chatFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('handleToggleEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'toggle_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleToggleEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'toggle_ec2',
-        policy: { allowed: true },
-    };
-}
 
 
 //DATA EXPLANATION
@@ -582,10 +653,10 @@ var processMessageOutcome = {
     //console.log("STEP 5: " + action.type + " route to handler");
     switch (action.type) {
         case 'scan_ec2':
-            return await handleScanEC2(userMessage, action);
+            return await respondToScanEC2(userMessage, action);
 
         case 'toggle_ec2':
-            return await handleToggleEC2(userMessage, action);
+            return await respondToToggleEC2(userMessage, action);
 
         case 'general_chat':
         default:
@@ -602,7 +673,7 @@ var processMessageOutcome = {
                 intent,
             };
         case 'toggle_ec2':
-            return await handleToggleEC2(text, action);
+            return await respondToToggleEC2(text, action);
 
         case 'none':
         default:
@@ -867,7 +938,7 @@ async function processMessage(userMessage) {
             return await startScanEC2Flow(text);
 
         case 'toggle_ec2':
-            return await handleToggleEC2(text, action);
+            return await respondToToggleEC2(text, action);
 
         default:
             return await handleGeneralChat(text, action);
@@ -928,10 +999,10 @@ async function processMessage(userMessage) {
 
     switch (action.type) {
         case 'scan_ec2':
-            return await handleScanEC2(text, action);
+            return await respondToScanEC2(text, action);
 
         case 'toggle_ec2':
-            return await handleToggleEC2(text, action);
+            return await respondToToggleEC2(text, action);
 
         case 'none':
         default:
@@ -1039,11 +1110,11 @@ async function handleGeneralChat(text, action) {
     };
 }
 
-async function handleScanEC2(text, action) {
+async function respondToScanEC2(text, action) {
     const chatResult = await chatFunctions.sendChatWithAction(text, action);
 
     if (!chatResult.success) {
-        console.log('handleScanEC2: ChatGPT request failed');
+        console.log('respondToScanEC2: ChatGPT request failed');
         return {
             success: false,
             message: chatResult.message || 'ChatGPT request failed',
@@ -1055,7 +1126,7 @@ async function handleScanEC2(text, action) {
         };
     }
 
-    console.log('handleScanEC2: outcome ok');
+    console.log('respondToScanEC2: outcome ok');
     return {
         success: true,
         data: chatResult.data,
@@ -1065,11 +1136,11 @@ async function handleScanEC2(text, action) {
     };
 }
 
-async function handleToggleEC2(text, action) {
+async function respondToToggleEC2(text, action) {
     const chatResult = await chatFunctions.sendChatWithAction(text, action);
 
     if (!chatResult.success) {
-        console.log('handleToggleEC2: ChatGPT request failed');
+        console.log('respondToToggleEC2: ChatGPT request failed');
         return {
             success: false,
             message: chatResult.message || 'ChatGPT request failed',
@@ -1081,7 +1152,7 @@ async function handleToggleEC2(text, action) {
         };
     }
 
-    console.log('handleToggleEC2: outcome ok');
+    console.log('respondToToggleEC2: outcome ok');
     return {
         success: true,
         data: chatResult.data,
@@ -1103,7 +1174,7 @@ module.exports = {
 
 //FUTURE
 /*
-async function handleToggleEC2(text, action) {
+async function respondToToggleEC2(text, action) {
 
     // STEP 1: Confirm with user (optional)
     // STEP 2: Call Engine to toggle
@@ -1176,10 +1247,10 @@ async function processMessage(userMessage, conversationID) {
 
         switch (action.type) {
             case 'scan_ec2':
-                return await handleScanEC2(text, action);
+                return await respondToScanEC2(text, action);
 
             case 'toggle_ec2':
-                return await handleToggleEC2(text, action);
+                return await respondToToggleEC2(text, action);
 
             case 'none':
             default:
@@ -1377,14 +1448,14 @@ async function processMessage(userMessage, conversationID) {
     switch (action.type) {
         case 'scan_ec2':
             return {
-                ...(await handleScanEC2(text, action)),
+                ...(await respondToScanEC2(text, action)),
                 conversationID: conversationID,
                 conversationState: conversationStateFunctions.getConversationState(conversationID)
             };
 
         case 'toggle_ec2':
             return {
-                ...(await handleToggleEC2(text, action)),
+                ...(await respondToToggleEC2(text, action)),
                 conversationID: conversationID,
                 conversationState: conversationStateFunctions.getConversationState(conversationID)
             };
@@ -1403,7 +1474,7 @@ async function processMessage(userMessage, conversationID) {
 
 //FUTURE
 /*
-async function handleToggleEC2(text, action) {
+async function respondToToggleEC2(text, action) {
 
     // STEP 1: Confirm with user (optional)
     // STEP 2: Call Engine to toggle

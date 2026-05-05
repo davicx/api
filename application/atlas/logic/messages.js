@@ -96,7 +96,7 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
-    /*
+    
     //STEP 5: Save CloudPilot message to database
     console.log("STEP 5: Save CloudPilot message to database");
 
@@ -114,8 +114,12 @@ async function postMessage(req, res) {
     }
     
     //Step 5A: Add current user message to JSON output
+    //messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
     messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
-    */
+
+    //Step 5B: Add Cloud Pilot Data to response
+    messageOutcome.data.CloudPilot = cloudPilotResult.cloudPilot;
+    
     //STEP 6: Return Response
     Functions.addFooter();
     res.json(messageOutcome);
