@@ -12,31 +12,20 @@ FUNCTIONS C: Conversation State (MVP)
     1) Function C1: Get / Save / Clear per-conversation pending action state
 */
 
-
-//FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
-//Function A1: Process Message (pipeline)
-async function processMessage(userMessage, conversationID) {
-    var masterUserRequestReady = false;
-    var currentStateData = actionState.getActionStatus(conversationID);
-    var actionPending = currentStateData.action;
-
-    console.log(" ")
-    console.log("_______________processMessage______________________")
-    actionState.print(conversationID);
-
-    // STEP 1: Create outcome
+//FULL WORKING: WILL ADD THESE SOON
+/*
     var processMessageOutcome = {
         success: false, //NOT DONE
         cloudPilotMessage: "", //NOT DONE
         cloudPilot: {
             intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-            /*
+            
             policy: {
                 allowed: false, //NOT DONE
                 message: null, //NOT DONE
                 reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
             },
-            */
+            
             action: {
                 type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
                 ready: false, //NOT DONE
@@ -46,22 +35,93 @@ async function processMessage(userMessage, conversationID) {
                 pendingAction: null, //DONE
                 missing: [], //DONE
                 collected: {}, //DONE
-
+                
                 execution: {
                     inProgress: false, //NOT DONE
                     actionId: null,    //NOT DONE
                     startedAt: null,    //NOT DONE
                     status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
                 }
+                
+            }
+        },
+        error: null //NOT DONE
+    };
+*/
+
+//FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
+//Function A1: Process Message (pipeline)
+async function processMessage(userMessage, conversationID) {
+    var masterUserRequestReady = false;
+    var currentStateData = actionState.getActionStatus(conversationID);
+    var actionPending = currentStateData.pendingAction;
+
+    console.log(" ")
+    console.log("_______________processMessage______________________")
+    
+    //TEMP
+    console.log(" ")
+    console.log("currentStateData");
+    actionState.print(conversationID);
+    console.log("currentStateData");
+    console.log(" ")
+
+    //Create outcome
+    var processMessageOutcome = {
+        success: false, //NOT DONE
+        cloudPilotMessage: "", //NOT DONE
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            action: {
+                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+                ready: false, //NOT DONE
+                parameters: {} //NOT DONE
+            },
+            state: {
+                pendingAction: null, //NOT DONE
+                missing: [], //NOT DONE
+                collected: {}, //NOT DONE
+
             }
         },
         error: null //NOT DONE
     };
 
-    //Step 1A: Sync state from ActionState → response
-    processMessageOutcome.cloudPilot.state.pendingAction = currentStateData.action;
-    processMessageOutcome.cloudPilot.state.missing = currentStateData.missing;
-    processMessageOutcome.cloudPilot.state.collected = currentStateData.collected;
+    //Sync Data
+    processMessageOutcome.cloudPilot.state = currentStateData;
+
+    //STEP 1: Normalize User Intent from message
+    const normalizedText = chatFunctions.normalizeUserMessageForModel(userMessage);
+
+    //Handle Error
+    if (!normalizedText.ok) {
+        console.log("STEP 1: Normalize text failed");
+
+        processMessageOutcome.success = false;
+        processMessageOutcome.error = normalizedText.message;
+
+        return processMessageOutcome;         
+    }
+
+    const userMessageNormalized = normalizedText.text;
+
+    console.log("STEP 1: Normalize text Worked");
+    console.log("Current User Message: " + userMessageNormalized)
+
+
+    // STEP 2: Detect intent
+    const intent = detectIntent(userMessageNormalized);
+    processMessageOutcome.cloudPilot.intent = intent;
+
+    console.log("STEP 2: INTENT:", intent);
+
+    // STEP 3: Decide action
+    const action = decideAction(intent);
+    processMessageOutcome.cloudPilot.action.type = action.type;
+
+    console.log("STEP 3: ACTION:", action.type);
+
+    /*
 
     //STEP 2: Check if user has a pending action and if they do look for missing fields
     if (actionPending) {
@@ -88,6 +148,7 @@ async function processMessage(userMessage, conversationID) {
         //Step 2B: Can be added for other fields we need later
     }
 
+    */
     //STEP 3: Check if the user has provided all the info now. If they have the request is ready and done. 
     //For a Pending Action if there are no missing fields the request is ready 
     //Set action: { ready: true } Skip Steps 4 and 5 and return 
@@ -107,23 +168,7 @@ async function processMessage(userMessage, conversationID) {
     }
     */
 
-    //STEP 4: Normalize User Intent from message
-    const normalizedText = chatFunctions.normalizeUserMessageForModel(userMessage);
-
-    //Handle Error
-    if (!normalizedText.ok) {
-        console.log("STEP 4: Normalize text failed");
-
-        processMessageOutcome.success = false;
-        processMessageOutcome.error = normalizedText.message;
-
-        return processMessageOutcome;         
-    }
-
-    const userMessageNormalized = normalizedText.text;
-
-    console.log("STEP 4: Normalize text Worked");
-    console.log("MESSAGE: " + userMessageNormalized)
+    /*
 
 
     //STEP 5: Detect intent
@@ -207,7 +252,7 @@ async function processMessage(userMessage, conversationID) {
             processMessageOutcome.cloudPilotMessage = result.data || result.message;
         }
     }
-
+    */
 
 
     return processMessageOutcome;

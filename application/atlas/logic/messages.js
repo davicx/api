@@ -79,7 +79,6 @@ async function postMessage(req, res) {
         messageOutcome.message = "Failed to save user message";
         messageOutcome.statusCode = 500;
         messageOutcome.success = false;
-        return res.json(messageOutcome);
     }
 
     //STEP 4: CloudPilot processing
