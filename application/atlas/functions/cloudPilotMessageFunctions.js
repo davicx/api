@@ -219,15 +219,18 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
         processMessageOutcome.success = true;
     }
-    
-    console.log(" ");
-    console.log("processMessageOutcome");
-    console.log(processMessageOutcome);
-    console.log("processMessageOutcome");
+
+    // Sync action.type with actual state
+    if (actionPending) {
+        processMessageOutcome.cloudPilot.action.type = actionPending;
+    }
 
     console.log(" ");
+    console.log("processMessageOutcome");
+    console.log(JSON.stringify(processMessageOutcome, null, 2));
+    console.log("processMessageOutcome");
+    console.log(" ");
     
-
     return processMessageOutcome;
 
 }
