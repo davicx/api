@@ -118,8 +118,57 @@ async function processMessage(userMessage, conversationID) {
     // STEP 3: Decide action
     const action = decideAction(intent);
     processMessageOutcome.cloudPilot.action.type = action.type;
-
+ 
     console.log("STEP 3: ACTION:", action.type);
+
+    // STEP 4: Start / replace action (simple version)
+    if (action.type === "scan_ec2" || action.type === "toggle_ec2") {
+
+        if (!actionPending) {
+            console.log("STEP 4: Starting new action:", action.type);
+
+            actionState.setPendingAction(conversationID, action.type, ["region"]);
+
+        } else if (actionPending !== action.type) {
+            console.log("STEP 4: Replacing action:", actionPending, "→", action.type);
+
+            actionState.setPendingAction(conversationID, action.type, ["region"]);
+        }
+
+        // refresh state
+        currentStateData = actionState.getActionStatus(conversationID);
+        actionPending = currentStateData.pendingAction;
+
+        // sync
+        processMessageOutcome.cloudPilot.state = currentStateData;
+    }
+
+    // STEP 5: Extract region if action is pending
+    if (actionPending) {
+        const region = conversationStateFunctions.extractAwsRegion(userMessageNormalized);
+
+        if (region) {
+            console.log("STEP 5: Region found:", region);
+
+            actionState.setRegion(conversationID, region);
+
+            // refresh state
+            currentStateData = actionState.getActionStatus(conversationID);
+            actionPending = currentStateData.pendingAction;
+
+            // sync
+            processMessageOutcome.cloudPilot.state = currentStateData;
+        } else {
+            console.log("STEP 5: No region found");
+        }
+    }
+
+    // STEP 6: Check if ready
+    if (actionPending && currentStateData.missing.length === 0) {
+        console.log("STEP 6: Request is READY");
+
+        processMessageOutcome.cloudPilot.action.ready = true;
+    }
 
     /*
 
