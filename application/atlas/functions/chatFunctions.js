@@ -175,17 +175,22 @@ async function sendGeneralChat(userMessage) {
 
     const result = await createOpenAiChatCompletion(client, {
         model: config.model,
-        messages: [
-            {
-                role: 'system',
-                content:
-                    'You are CloudPilot.\n' +
-                    '- Reply briefly and naturally.\n' +
-                    '- Keep responses under 15 words unless one short follow-up question is needed.\n' +
-                    '- Do not say you executed anything on AWS unless the user is clearly asking about EC2; stay conversational.'
-            },
-            { role: 'user', content: text }
-        ],
+            messages: [
+                {
+                    role: 'system',
+                    content:
+                        'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
+                        'Prioritize:\n' +
+                        '- AWS terminology\n' +
+                        '- operationally useful answers\n' +
+                        '- exact AWS resource names\n' +
+                        '- exact AWS region identifiers when relevant\n\n' +
+                        'Keep responses brief, practical, and natural.\n' +
+                        'Keep responses under 15 words unless a short follow-up question is needed.\n' +
+                        'Do not claim AWS actions were executed.'
+                },
+                { role: 'user', content: text }
+            ],
         max_tokens: config.max_tokens,
         temperature: config.temperature
     });
