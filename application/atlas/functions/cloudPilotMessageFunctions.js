@@ -5,11 +5,10 @@ const actionState = require('./state/ActionState');
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
     1) Function A1: Process Message (pipeline)
+
+//FUNCTIONS B: Process User Messages
     2) Function B1: Detect Intent
     3) Function B2: Decide Action
-
-FUNCTIONS C: Conversation State (MVP)
-    1) Function C1: Get / Save / Clear per-conversation pending action state
 */
 
 //FULL WORKING: WILL ADD THESE SOON
@@ -81,6 +80,7 @@ async function processMessage(userMessage, conversationID) {
                 pendingAction: null, //NOT DONE
                 missing: [], //NOT DONE
                 collected: {}, //NOT DONE
+                asked: {}, //NOT DONE
 
             }
         },
@@ -194,9 +194,25 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilotMessage = result.data || result.message;
 
     //No API Call    
-    } else if (actionPending && currentStateData.missing.includes("region")) {
+    } else if (actionPending && currentStateData.missing.includes("region") && userAskedForMissingInfo(userMessageNormalized)) {
+
+        console.log("STEP 7: Missing region → reminder message");
+
+        processMessageOutcome.cloudPilotMessage = "I still need the AWS region.";
+        processMessageOutcome.success = true;
+
+    //No API Call    
+    } else if (actionPending && currentStateData.missing.includes("region") && (!currentStateData.asked || !currentStateData.asked.region)) {
 
         console.log("STEP 7: Missing region → system message");
+
+        actionState.markAsked(conversationID, "region");
+
+        // refresh state
+        currentStateData = actionState.getActionStatus(conversationID);
+
+        // sync
+        processMessageOutcome.cloudPilot.state = currentStateData;
 
         processMessageOutcome.cloudPilotMessage = "Which AWS region should I use?";
         processMessageOutcome.success = true;
@@ -235,6 +251,7 @@ async function processMessage(userMessage, conversationID) {
 
 }
 
+//FUNCTIONS B: Process User Messages
 //Function B1: Detect Intent
 function detectIntent(userMessage) {
     const normalizedMessage = String(userMessage || '').toLowerCase().trim();
@@ -288,7 +305,7 @@ function decideAction(intent) {
 }
 
 
-//Function B3: 
+//Function B3: Handle General Chat
 async function handleGeneralChat(text, action) {
     const chatResult = await chatFunctions.sendGeneralChat(text);
 
@@ -315,6 +332,7 @@ async function handleGeneralChat(text, action) {
     };
 }
 
+//Function B4: Handle EC2
 async function respondToScanEC2(text, action) {
     const chatResult = await chatFunctions.sendChatWithAction(text, action);
 
@@ -341,6 +359,7 @@ async function respondToScanEC2(text, action) {
     };
 }
 
+//Function B4: Handle Toggle EC2
 async function respondToToggleEC2(text, action) {
     const chatResult = await chatFunctions.sendChatWithAction(text, action);
 
@@ -366,6 +385,21 @@ async function respondToToggleEC2(text, action) {
         policy: { allowed: true },
     };
 }
+
+//Function B4: Handle Request for Missing Info
+function userAskedForMissingInfo(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+
+    return (
+        normalizedMessage.includes("what am i missing") ||
+        normalizedMessage.includes("what is missing") ||
+        normalizedMessage.includes("what's missing") ||
+        normalizedMessage.includes("what else do you need") ||
+        normalizedMessage.includes("forgot what was missing") ||
+        normalizedMessage.includes("what do you still need")
+    );
+}
+
 
 
 

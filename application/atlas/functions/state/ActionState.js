@@ -3,6 +3,7 @@ EXAMPLE STATE
 {
   pendingAction: "scan_ec2",
   missing: [],
+  asked: {},
   collected: {
     region: "us-west-2",
     instanceId: "i-123"
@@ -21,11 +22,18 @@ class ActionState {
       this.store.set(conversationId, {
         pendingAction: null,
         collected: {},
-        missing: []
+        missing: [],
+        asked: {}
       });
     }
 
-    return this.store.get(conversationId);
+    const state = this.store.get(conversationId);
+
+    if (!state.asked) {
+      state.asked = {};
+    }
+
+    return state;
   }
 
   // STEP 2: Start a new action
@@ -35,6 +43,7 @@ class ActionState {
     state.pendingAction = action;
     state.missing = [...missingFields];
     state.collected = {};
+    state.asked = {};
   }
 
   // STEP 3: Get current action status (FIXED: consistent naming)
@@ -44,8 +53,16 @@ class ActionState {
     return {
       pendingAction: state.pendingAction,
       missing: state.missing,
-      collected: state.collected
+      collected: state.collected,
+      asked: state.asked
     };
+  }
+
+  // STEP 3.5: Mark missing field as already asked
+  markAsked(conversationId, field) {
+    const state = this.getState(conversationId);
+
+    state.asked[field] = true;
   }
 
   // STEP 4: Set region (specific helper)
