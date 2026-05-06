@@ -1,5 +1,6 @@
 const chatFunctions = require('./chatFunctions');
 const conversationStateFunctions = require('./conversationStateFunctions');
+const atlasFunctions = require('./atlasFunctions');
 const actionState = require('./state/ActionState');
 
 /*
@@ -44,7 +45,8 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
                 
             }
         },
-        error: null //NOT DONE
+        error: null, //NOT DONE
+        atlas: null //NOT DONE
     };
 */
 
@@ -77,7 +79,8 @@ async function processMessage(userMessage, conversationID) {
 
             }
         },
-        error: null //NOT DONE
+        error: null, //NOT DONE
+        atlas: null //NOT DONE
     };
 
     //Sync Data
@@ -166,6 +169,8 @@ async function processMessage(userMessage, conversationID) {
 
         //processMessageOutcome.cloudPilot.action.ready = true;
         processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
+    } else {
+        console.log("STEP 6: Request is NOT ready");
     }
 
     // STEP 7: Route response (THIS IS THE KEY LAYER)
@@ -175,16 +180,45 @@ async function processMessage(userMessage, conversationID) {
 
         let result;
 
-        //OPEN AI: Calls Open AI 
         if (actionPending === 'scan_ec2') {
-            result = await respondToScanEC2(userMessageNormalized, { type: actionPending });
+            //ATLAS: Calls Atlas
+            console.log("STEP 7: Calling Atlas");
+
+            try {
+                const region = currentStateData.collected.region;
+                const atlasResponse = await atlasFunctions.scanEC2(region);
+
+                console.log("Atlas Response:");
+                console.log(JSON.stringify(atlasResponse, null, 2));
+
+                actionState.clear(conversationID);
+
+                // refresh state
+                currentStateData = actionState.getActionStatus(conversationID);
+                actionPending = currentStateData.pendingAction;
+
+                // sync
+                processMessageOutcome.cloudPilot.state = currentStateData;
+
+                processMessageOutcome.success = true;
+                processMessageOutcome.cloudPilotMessage = "EC2 scan completed for " + region + ".";
+                processMessageOutcome.atlas = atlasResponse;
+            } catch (error) {
+                console.log("Atlas Error:");
+                console.log(error);
+
+                processMessageOutcome.success = false;
+                processMessageOutcome.cloudPilotMessage = "I could not complete the EC2 scan.";
+                processMessageOutcome.error = error.message;
+            }
 
         } else if (actionPending === 'toggle_ec2') {
+            //OPEN AI: Calls Open AI 
             result = await respondToToggleEC2(userMessageNormalized, { type: actionPending });
-        }
 
-        processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.data || result.message;
+            processMessageOutcome.success = result.success;
+            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+        }
 
     //No API Call    
     } else if (actionPending && currentStateData.missing.includes("region") && userAskedForMissingInfo(userMessageNormalized)) {
