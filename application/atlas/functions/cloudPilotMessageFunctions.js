@@ -1,6 +1,9 @@
 const chatFunctions = require('./chatFunctions');
 const conversationStateFunctions = require('./conversationStateFunctions');
 const atlasFunctions = require('./atlasFunctions');
+const {
+    formatAtlasEC2Output
+} = require('./atlasDataFunctions');
 const actionState = require('./state/ActionState');
 
 /*
@@ -187,11 +190,21 @@ async function processMessage(userMessage, conversationID) {
 
             try {
                 const region = currentStateData.collected.region;
-                const atlasResponse = await atlasFunctions.scanEC2(region);
+                let atlasResponseFormatted = null;
+                const atlasResponseRaw = await atlasFunctions.scanEC2(region);
+
+                console.log("_____________________________________");
+                console.log("RAW Atlas Response:");
+                console.log(JSON.stringify(atlasResponseRaw, null, 2));
+                console.log("_____________________________________");
+
+                if (atlasResponseRaw?.success === true && atlasResponseRaw?.data) {
+                    atlasResponseFormatted = formatAtlasEC2Output(atlasResponseRaw);
+                }
 
                 console.log("_____________________________________");
                 console.log("Atlas Response:");
-                console.log(JSON.stringify(atlasResponse, null, 2));
+                console.log(atlasResponseFormatted);
                 console.log("_____________________________________");
 
                 actionState.clear(conversationID);
@@ -205,6 +218,7 @@ async function processMessage(userMessage, conversationID) {
 
                 processMessageOutcome.success = true;
                 processMessageOutcome.cloudPilotMessage = "EC2 scan completed for " + region + ".";
+                processMessageOutcome.atlas = atlasResponseFormatted;
                 //processMessageOutcome.atlas = atlasResponse;
             } catch (error) {
                 console.log("Atlas Error:");
