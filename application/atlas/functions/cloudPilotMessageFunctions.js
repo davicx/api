@@ -181,6 +181,7 @@ async function processMessage(userMessage, conversationID) {
         let result;
 
         if (actionPending === 'scan_ec2') {
+
             //ATLAS: Calls Atlas
             console.log("STEP 7: Calling Atlas");
 
@@ -188,8 +189,10 @@ async function processMessage(userMessage, conversationID) {
                 const region = currentStateData.collected.region;
                 const atlasResponse = await atlasFunctions.scanEC2(region);
 
+                console.log("_____________________________________");
                 console.log("Atlas Response:");
                 console.log(JSON.stringify(atlasResponse, null, 2));
+                console.log("_____________________________________");
 
                 actionState.clear(conversationID);
 
@@ -202,7 +205,7 @@ async function processMessage(userMessage, conversationID) {
 
                 processMessageOutcome.success = true;
                 processMessageOutcome.cloudPilotMessage = "EC2 scan completed for " + region + ".";
-                processMessageOutcome.atlas = atlasResponse;
+                //processMessageOutcome.atlas = atlasResponse;
             } catch (error) {
                 console.log("Atlas Error:");
                 console.log(error);
@@ -268,12 +271,16 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilot.action.type = actionPending;
     }
 
+    //console.log(" ");
+    //console.log("processMessageOutcome");
+    //console.log(JSON.stringify(processMessageOutcome, null, 2));
+    //console.log("processMessageOutcome");
+    //console.log(" ");
+
+    console.log("_______________processMessage______________________")    
+    console.log(" ")
     console.log(" ");
-    console.log("processMessageOutcome");
-    console.log(JSON.stringify(processMessageOutcome, null, 2));
-    console.log("processMessageOutcome");
-    console.log(" ");
-    
+
     return processMessageOutcome;
 
 }

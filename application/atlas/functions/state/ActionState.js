@@ -9,6 +9,15 @@ EXAMPLE STATE
     instanceId: "i-123"
   }
 }
+
+TEST: manually set state
+actionState.setPendingAction(conversationID, "scan_ec2", ["region"]);
+
+TEST
+actionState.setRegion(conversationID, "us-east-1");
+console.log("TEST: Updated state after region");
+actionState.print(conversationID);
+
 */
 
 class ActionState {
