@@ -1,3 +1,10 @@
+/*
+FUNCTIONS A: Atlas Scanner Functions
+    1) Function A1: Scan EC2
+*/
+
+//FUNCTIONS A: Atlas Scanner
+//Function A1: Scan EC2
 async function scanEC2(region) {
 
     const response = await fetch("http://127.0.0.1:8000/scan/ec2", {
@@ -20,6 +27,4 @@ async function scanEC2(region) {
     return await response.json();
 }
 
-module.exports = {
-    scanEC2
-};
+module.exports = { scanEC2 };

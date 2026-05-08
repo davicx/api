@@ -4,17 +4,19 @@ const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('./config/chatGPTconfig');
 /*
 FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPilotMessageFunctions for that)
 
-    1) getOpenAIClient — lazy singleton; null if OPENAI_API_KEY unset
-    2) normalizeUserMessageForModel — trim / empty guard for one user string
-    3) createOpenAiChatCompletion — low-level chat.completions.create + outcome shape
-    4) sendChatWithAction — CloudPilot reply using intent action JSON in system prompt
-    5) sendGeneralChat — normal CloudPilot chat (no action JSON)
+    1) Function A1: Get OpenAI Client
+    2) Function A2: Normalize User Message For Model
+    3) Function A3: Create OpenAI Chat Completion
+    4) Function A4: Send Chat With Action
+    5) Function A5: Send General Chat
 */
 
 let openaiClient = null;
 
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS) || 10000;
 
+//FUNCTIONS A: ChatGPT / OpenAI
+//Function A1: Get OpenAI Client
 /** Lazy singleton OpenAI client; returns null if OPENAI_API_KEY is unset. */
 function getOpenAIClient() {
     if (!process.env.OPENAI_API_KEY) {
@@ -29,6 +31,7 @@ function getOpenAIClient() {
     return openaiClient;
 }
 
+//Function A2: Normalize User Message For Model
 /** @returns {{ ok: true, text: string, message: '' } | { ok: false, text: '', message: string }}} */
 function normalizeUserMessageForModel(raw) {
     const text = typeof raw === 'string' ? raw.trim() : '';
@@ -43,6 +46,7 @@ function normalizeUserMessageForModel(raw) {
  * @param {{ model: string, messages: Array<{ role: string, content: string }>, max_tokens: number, temperature: number }} params
  * @returns {Promise<{ success: true, data: string|null, usage: object|null } | { success: false, message: string, data: null, error?: string }>}
  */
+//Function A3: Create OpenAI Chat Completion
 async function createOpenAiChatCompletion(client, params) {
     if (!client) {
         return { success: false, message: 'OpenAI client is missing', data: null };
@@ -86,6 +90,7 @@ async function createOpenAiChatCompletion(client, params) {
  * One completion: system rules + serialized action + user text.
  * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
  */
+//Function A4: Send Chat With Action
 async function sendChatWithAction(userMessage, action) {
     const norm = normalizeUserMessageForModel(userMessage);
     if (!norm.ok) {
@@ -148,6 +153,7 @@ async function sendChatWithAction(userMessage, action) {
  * General conversation (unknown intent / type none). Same outcome shape as sendChatWithAction.
  * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
  */
+//Function A5: Send General Chat
 async function sendGeneralChat(userMessage) {
     const norm = normalizeUserMessageForModel(userMessage);
     if (!norm.ok) {

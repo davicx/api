@@ -1,4 +1,10 @@
-//FUNCTION: Format Atlas EC2 Output
+/*
+FUNCTIONS A: Atlas Data Formatting Functions
+    1) Function A1: Format Atlas EC2 Output
+*/
+
+//FUNCTIONS A: Atlas Data Formatting
+//Function A1: Format Atlas EC2 Output
 function formatAtlasEC2Output(atlasResponse) {
 
     //STEP 1: Safety checks
@@ -97,4 +103,3 @@ function formatAtlasEC2Output(atlasResponse) {
 module.exports = {
     formatAtlasEC2Output
 };
-//atlas data functions
