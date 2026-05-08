@@ -1,5 +1,5 @@
 const chatFunctions = require('./chatFunctions');
-const conversationStateFunctions = require('./conversationStateFunctions');
+const conversationStateFunctions = require('./state/conversationStateFunctions');
 const atlasFunctions = require('./atlasFunctions');
 const {
     formatAtlasEC2Output
