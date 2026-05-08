@@ -105,8 +105,11 @@ async function postMessage(req, res) {
     //Step 5A: Add current user message to JSON output
     messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
 
-    //Step 5B: Add Cloud Pilot Data to response
-    messageOutcome.data.CloudPilot = cloudPilotResult.cloudPilot;
+    //Step 5B: Add Cloud Pilot action status to response
+    messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
+
+    //Step 5C: Add formatted Atlas data to response
+    messageOutcome.data.atlas = cloudPilotResult?.atlas || null;
     
     //STEP 6: Return Response
     Functions.addFooter();

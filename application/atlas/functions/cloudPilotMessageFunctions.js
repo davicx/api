@@ -82,8 +82,8 @@ async function processMessage(userMessage, conversationID) {
 
             }
         },
-        error: null, //NOT DONE
-        atlas: null //NOT DONE
+        atlas: null, //NOT DONE
+        error: null //NOT DONE
     };
 
     //Sync Data
@@ -284,12 +284,6 @@ async function processMessage(userMessage, conversationID) {
     if (actionPending) {
         processMessageOutcome.cloudPilot.action.type = actionPending;
     }
-
-    //console.log(" ");
-    //console.log("processMessageOutcome");
-    //console.log(JSON.stringify(processMessageOutcome, null, 2));
-    //console.log("processMessageOutcome");
-    //console.log(" ");
 
     console.log("_______________processMessage______________________")    
     console.log(" ")
