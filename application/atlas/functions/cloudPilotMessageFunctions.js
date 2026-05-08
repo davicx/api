@@ -1,9 +1,8 @@
 const chatFunctions = require('./chatFunctions');
 const conversationStateFunctions = require('./state/conversationStateFunctions');
 const atlasFunctions = require('./atlasFunctions');
-const {
-    formatAtlasEC2Output
-} = require('./atlasDataFunctions');
+const atlasDataFunctions = require('./atlasDataFunctions');
+const buildEC2ScanMessageFunctions = require('./cloudpilot/atlas/buildEC2ScanMessage');
 const actionState = require('./state/ActionState');
 
 /*
@@ -199,7 +198,7 @@ async function processMessage(userMessage, conversationID) {
                 console.log("_____________________________________");
 
                 if (atlasResponseRaw?.success === true && atlasResponseRaw?.data) {
-                    atlasResponseFormatted = formatAtlasEC2Output(atlasResponseRaw);
+                    atlasResponseFormatted = atlasDataFunctions.formatAtlasEC2Output(atlasResponseRaw);
                 }
 
                 console.log("_____________________________________");
@@ -217,7 +216,7 @@ async function processMessage(userMessage, conversationID) {
                 processMessageOutcome.cloudPilot.state = currentStateData;
 
                 processMessageOutcome.success = true;
-                processMessageOutcome.cloudPilotMessage = "EC2 scan completed for " + region + ".";
+                processMessageOutcome.cloudPilotMessage = buildEC2ScanMessageFunctions.buildEC2ScanMessage(atlasResponseFormatted);
                 processMessageOutcome.atlas = atlasResponseFormatted;
                 //processMessageOutcome.atlas = atlasResponse;
             } catch (error) {
