@@ -109,7 +109,23 @@ async function postMessage(req, res) {
     messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
 
     //Step 5C: Add formatted Atlas data to response
-    messageOutcome.data.atlas = cloudPilotResult?.atlas || null;
+    messageOutcome.data.atlas = null;
+    if (cloudPilotResult && cloudPilotResult.atlas) {
+        messageOutcome.data.atlas = cloudPilotResult.atlas;
+    }
+
+    //Step 5D: Set final API success metadata from CloudPilot processing outcome
+    if (cloudPilotResult && cloudPilotResult.success == true) {
+        messageOutcome.success = true;
+        messageOutcome.statusCode = 200;
+        messageOutcome.errors = [];
+    } else {
+        messageOutcome.errors = [];
+        
+        if (cloudPilotResult && cloudPilotResult.error) {
+            messageOutcome.errors = [cloudPilotResult.error];
+        }
+    }
     
     //STEP 6: Return Response
     Functions.addFooter();
