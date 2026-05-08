@@ -1,9 +1,9 @@
 const chatFunctions = require('./chatFunctions');
-const conversationStateFunctions = require('./state/conversationStateFunctions');
-const atlasFunctions = require('./atlasFunctions');
-const atlasDataFunctions = require('./atlasDataFunctions');
-const buildEC2ScanMessageFunctions = require('./cloudpilot/atlas/buildEC2ScanMessage');
-const actionState = require('./state/ActionState');
+const conversationStateFunctions = require('../state/conversationStateFunctions');
+const atlasEC2Functions = require('./ec2/atlasEC2Functions');
+const atlasEC2Formatter = require('./ec2/atlasEC2Formatter');
+const atlasEC2MessageBuilder = require('./ec2/atlasEC2MessageBuilder');
+const actionState = require('../state/ActionState');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -190,7 +190,7 @@ async function processMessage(userMessage, conversationID) {
             try {
                 const region = currentStateData.collected.region;
                 let atlasResponseFormatted = null;
-                const atlasResponseRaw = await atlasFunctions.scanEC2(region);
+                const atlasResponseRaw = await atlasEC2Functions.scanEC2(region);
 
                 console.log("_____________________________________");
                 console.log("RAW Atlas Response:");
@@ -198,7 +198,7 @@ async function processMessage(userMessage, conversationID) {
                 console.log("_____________________________________");
 
                 if (atlasResponseRaw?.success === true && atlasResponseRaw?.data) {
-                    atlasResponseFormatted = atlasDataFunctions.formatAtlasEC2Output(atlasResponseRaw);
+                    atlasResponseFormatted = atlasEC2Formatter.formatAtlasEC2Output(atlasResponseRaw);
                 }
 
                 console.log("_____________________________________");
@@ -216,7 +216,7 @@ async function processMessage(userMessage, conversationID) {
                 processMessageOutcome.cloudPilot.state = currentStateData;
 
                 processMessageOutcome.success = true;
-                processMessageOutcome.cloudPilotMessage = buildEC2ScanMessageFunctions.buildEC2ScanMessage(atlasResponseFormatted);
+                processMessageOutcome.cloudPilotMessage = atlasEC2MessageBuilder.buildEC2ScanMessage(atlasResponseFormatted);
                 processMessageOutcome.atlas = atlasResponseFormatted;
                 //processMessageOutcome.atlas = atlasResponse;
             } catch (error) {

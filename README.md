@@ -101,20 +101,20 @@ route -> logic -> handle all things that we need calling different functions and
 ### Project Structure
 #### Backend 
     .
-    ├── ...
-    ├── application                   
-    │   ├── backup   
-    │   ├── functions  
-    │   ├──── AWS
-    │   ├──── classes
-    │   ├── logic  
-    │   ├── routes         
-    │   ├── upload_temp                                      
-    │   ├────                                                
-    ├── __test__                   
-    │   ├── *not started yet 
-    │   ├──── 
-    ├── app.js (Entry Point into the Application) 
+    ├── app.js                         # Entry point; mounts one `messageRoutes` stack (legacy vs atlas — see above)
+    ├── application/
+    │   ├── atlas/                     # CloudPilot / Navigator — scans, `atlas` payload on POST /message, etc.
+    │   │   ├── functions/             # e.g. cloudPilotMessageFunctions, ec2/*, chatFunctions, config
+    │   │   ├── logic/
+    │   │   ├── routes/                # Duplicate message routes (toggle in app.js)
+    │   │   └── state/                 # Conversation + pending-action state
+    │   ├── functions/                 # Route helpers; `classes/` + `aws/` live here
+    │   ├── logic/
+    │   └── routes/
+    ├── doc/                           # Sample JSON, notes, backup snippets
+    ├── images/
+    ├── public/
+    ├── uploads/
     └── ...
 
 ### Tables

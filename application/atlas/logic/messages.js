@@ -6,7 +6,7 @@ const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
 const chatFunctions = require('../functions/chatFunctions');
-const actionState = require('../functions/state/ActionState');
+const actionState = require('../state/ActionState');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
 /*

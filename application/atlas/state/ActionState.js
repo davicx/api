@@ -192,7 +192,7 @@ class ActionState {
       this.store.delete(conversationId);
     }
   
-    // STEP 8: Debug helper (you’ll use this a LOT)
+    // STEP 8: Debug helper (you'll use this a LOT)
     print(conversationId) {
       const state = this.getState(conversationId);
       console.log("STATE:", JSON.stringify(state, null, 2));
