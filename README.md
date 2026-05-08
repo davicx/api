@@ -117,6 +117,26 @@ route -> logic -> handle all things that we need calling different functions and
     ├── uploads/
     └── ...
 
+#### Atlas (`application/atlas/`)
+    .
+    ├── routes/                        # HTTP only — same URLs as legacy `application/routes/messageRoutes.js` (toggle in app.js)
+    │   └── messageRoutes.js
+    ├── logic/                         # Orchestration for POST /message (intents, guardrails, CloudPilot reply shape)
+    │   └── messages.js
+    ├── functions/                     # CloudPilot + OpenAI helpers; EC2 scan path; not the generic `application/functions/` tree
+    │   ├── cloudPilotMessageFunctions.js
+    │   ├── chatFunctions.js
+    │   ├── config/
+    │   │   └── chatGPTconfig.js
+    │   └── ec2/
+    │       ├── atlasEC2Functions.js
+    │       ├── atlasEC2Formatter.js
+    │       └── atlasEC2MessageBuilder.js
+    └── state/                         # Conversation + pending-action state for CloudPilot
+        ├── state.js
+        ├── ActionState.js
+        └── conversationStateFunctions.js
+
 ### Tables
 #### Posts 
 file_name: The original file name the user uploaded the file with 
