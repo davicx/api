@@ -1,4 +1,6 @@
 /*
+//GOAL: This is where we create messages for the user. We could ask Open AI to do this but we just do them ourselves here. 
+
 FUNCTIONS A: Atlas Message Builder Functions
     1) Function A1: Build EC2 Scan Message
 */

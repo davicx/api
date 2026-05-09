@@ -1,4 +1,5 @@
 /*
+//GOAL: This is where we call atlas. Atlas interacts and performs AWS Actions
 FUNCTIONS A: Atlas Scanner Functions
     1) Function A1: Scan EC2
 */

@@ -5,7 +5,7 @@ const Notification = require('../../functions/classes/Notification');
 const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
-const chatFunctions = require('../functions/chatFunctions');
+const openAIFunctions = require('../functions/openAIFunctions');
 const actionState = require('../state/ActionState');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
@@ -237,7 +237,7 @@ async function postMessageHello(req, res) {
 
     //STEP 2: Get OpenAI client and config
     console.log('STEP 2: Get OpenAI client and config');
-    const client = chatFunctions.getOpenAIClient();
+    const client = openAIFunctions.getOpenAIClient();
     if (!client) {
         console.warn('[postMessageHello] OPENAI_API_KEY is not set');
         return res.status(502).json({
@@ -252,7 +252,7 @@ async function postMessageHello(req, res) {
 
     //STEP 3: Call ChatGPT
     console.log('STEP 3: Call ChatGPT');
-    const completion = await chatFunctions.createOpenAiChatCompletion(client, {
+    const completion = await openAIFunctions.createOpenAiChatCompletion(client, {
         model: config.model,
         messages: [
             {

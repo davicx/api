@@ -1,4 +1,6 @@
+
 /*
+//GOAL: Take raw data from atlas and format it so it is easier to display
 FUNCTIONS A: Atlas Data Formatting Functions
     1) Function A1: Format Atlas EC2 Output
 */

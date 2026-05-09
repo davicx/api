@@ -4,7 +4,6 @@ const atlasEC2Functions = require('./ec2/atlasEC2Functions');
 const atlasEC2Formatter = require('./ec2/atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./ec2/atlasEC2MessageBuilder');
 const actionState = require('../state/ActionState');
-const actionRegistry = require('./actions/actionRegistry');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -293,35 +292,50 @@ async function processMessage(userMessage, conversationID) {
 
 }
 
+
 //FUNCTIONS B: Process User Messages
 //Function B1: Detect Intent
 function detectIntent(userMessage) {
-    const normalizedMessage =
-        String(userMessage || '')
-            .toLowerCase()
-            .trim();
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
 
-    for (const action of Object.values(actionRegistry)) {
+    if (normalizedMessage.includes('scan') && normalizedMessage.includes('ec2')) {
+        return 'scan_ec2';
+    }
 
-        if (
-            typeof action.match === 'function' &&
-            action.match(normalizedMessage)
-        ) {
-            return action.type;
-        }
+    if (normalizedMessage.includes('toggle') || normalizedMessage.includes('switch')) {
+        return 'toggle_ec2';
     }
 
     return 'general_chat';
 }
 
 //Function B2: Decide Action
+const actions = {
+    general_chat: {
+        type: 'general_chat',
+        allowed: true,
+        requiresExecution: false,
+        message: '',
+    },
+    scan_ec2: {
+        type: 'scan_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Preparing EC2 scan.',
+    },
+    toggle_ec2: {
+        type: 'toggle_ec2',
+        allowed: true,
+        requiresExecution: false,
+        message: 'Confirm before changing EC2 instances.',
+    }
+};
+
 function decideAction(intent) {
-    const action = actionRegistry[intent];
+    const action = actions[intent];
 
     if (action) {
-        const copy = { ...action };
-        delete copy.match;
-        return copy; // ← copy here
+        return { ...action }; // ← copy here
     }
 
     return {
