@@ -1,8 +1,8 @@
 const openAIFunctions = require('./openAIFunctions');
 const conversationStateFunctions = require('../state/conversationStateFunctions');
-const atlasEC2Functions = require('./ec2/atlasEC2Functions');
-const atlasEC2Formatter = require('./ec2/atlasEC2Formatter');
-const atlasEC2MessageBuilder = require('./ec2/atlasEC2MessageBuilder');
+const atlasEC2Functions = require('./actions/ec2/scanEC2/atlasEC2Functions');
+const atlasEC2Formatter = require('./actions/ec2/scanEC2/atlasEC2Formatter');
+const atlasEC2MessageBuilder = require('./actions/ec2/scanEC2/atlasEC2MessageBuilder');
 const actionState = require('../state/ActionState');
 
 /*

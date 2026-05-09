@@ -1,8 +1,5 @@
 const openAIFunctions = require('./openAIFunctions');
 const conversationStateFunctions = require('../state/conversationStateFunctions');
-const atlasEC2Functions = require('./ec2/atlasEC2Functions');
-const atlasEC2Formatter = require('./ec2/atlasEC2Formatter');
-const atlasEC2MessageBuilder = require('./ec2/atlasEC2MessageBuilder');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
 
@@ -56,7 +53,6 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(userMessage, conversationID) {
-    var masterUserRequestReady = false;
     var currentStateData = actionState.getActionStatus(conversationID);
     var actionPending = currentStateData.pendingAction;
 
@@ -121,17 +117,17 @@ async function processMessage(userMessage, conversationID) {
     console.log("STEP 3: ACTION:", action.type);
 
     // STEP 4: Start / replace action (simple version)
-    if (action.type === "scan_ec2" || action.type === "toggle_ec2") {
+    if (action.workflowEnabled) {
 
         if (!actionPending) {
             console.log("STEP 4: Starting new action:", action.type);
 
-            actionState.setPendingAction(conversationID, action.type, ["region"]);
+            actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
 
         } else if (actionPending !== action.type) {
             console.log("STEP 4: Replacing action:", actionPending, "→", action.type);
 
-            actionState.setPendingAction(conversationID, action.type, ["region"]);
+            actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
         }
 
         // refresh state
@@ -166,7 +162,7 @@ async function processMessage(userMessage, conversationID) {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    // STEP 6: Check if ready
+    // STEP 6: Check if Request is ready
     if (actionPending && currentStateData.missing.length === 0) {
         console.log("STEP 6: Request is READY");
 
@@ -177,101 +173,92 @@ async function processMessage(userMessage, conversationID) {
     }
 
     // STEP 7: Route response (THIS IS THE KEY LAYER)
+    // Step 6 turned this on when nothing was missing anymore — we are allowed to run the real action now
     if (processMessageOutcome.cloudPilot.action.ready) {
 
-        console.log("STEP 7: READY → action handler");
+        // Load this action's settings from the registry (same string as pendingAction, e.g. scan_ec2)
+        const actionDefinition = actionRegistry[actionPending];
 
-        let result;
+        // Make sure the registry actually gave us a runnable handler before we call it
+        if (actionDefinition && typeof actionDefinition.handler === 'function') {
 
-        if (actionPending === 'scan_ec2') {
+            // Tell the logs we are about to run that handler
+            console.log("STEP 7: READY → action handler");
 
-            //ATLAS: Calls Atlas
-            console.log("STEP 7: Calling Atlas");
+            // Run the action's code (Atlas scan, OpenAI toggle, etc.) and wait for its result object
+            const result = await actionDefinition.handler({ userMessage: userMessageNormalized, state: currentStateData, conversationID, action: actionDefinition });
 
-            try {
-                const region = currentStateData.collected.region;
-                let atlasResponseFormatted = null;
-                const atlasResponseRaw = await atlasEC2Functions.scanEC2(region);
-
-                console.log("_____________________________________");
-                console.log("RAW Atlas Response:");
-                console.log(JSON.stringify(atlasResponseRaw, null, 2));
-                console.log("_____________________________________");
-
-                if (atlasResponseRaw?.success === true && atlasResponseRaw?.data) {
-                    atlasResponseFormatted = atlasEC2Formatter.formatAtlasEC2Output(atlasResponseRaw);
-                }
-
-                console.log("_____________________________________");
-                console.log("Atlas Response:");
-                console.log(atlasResponseFormatted);
-                console.log("_____________________________________");
-
+            // Handler finished without throwing — if it says success, this turn is done so we wipe the in-memory workflow
+            if (result.success) {
                 actionState.clear(conversationID);
 
                 // refresh state
+                // Read the now-empty (or reset) workflow state back into this function's variables
                 currentStateData = actionState.getActionStatus(conversationID);
+
+                // Keep the local "what are we waiting on" variable in sync with storage
                 actionPending = currentStateData.pendingAction;
 
                 // sync
+                // Put that same fresh state into the JSON we will send back to the client
                 processMessageOutcome.cloudPilot.state = currentStateData;
-
-                processMessageOutcome.success = true;
-                processMessageOutcome.cloudPilotMessage = atlasEC2MessageBuilder.buildEC2ScanMessage(atlasResponseFormatted);
-                processMessageOutcome.atlas = atlasResponseFormatted;
-                //processMessageOutcome.atlas = atlasResponse;
-            } catch (error) {
-                console.log("Atlas Error:");
-                console.log(error);
-
-                processMessageOutcome.success = false;
-                processMessageOutcome.cloudPilotMessage = "I could not complete the EC2 scan.";
-                processMessageOutcome.error = error.message;
             }
 
-        } else if (actionPending === 'toggle_ec2') {
-            //OPEN AI: Calls Open AI 
-            result = await respondToToggleEC2(userMessageNormalized, { type: actionPending });
-
+            // Copy the handler's answer into the API response (works for both success and failure)
             processMessageOutcome.success = result.success;
-            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+            processMessageOutcome.cloudPilotMessage = result.cloudPilotMessage;
+            // Atlas data only exists for scans — use null when the handler did not return any
+            processMessageOutcome.atlas = result.atlas || null;
+            // Short error string from the handler, or null when there was no error
+            processMessageOutcome.error = result.error || null;
         }
 
     //No API Call    
+    // User still owes us a region but they asked what is missing — give a short reminder instead of repeating the big question
     } else if (actionPending && currentStateData.missing.includes("region") && userAskedForMissingInfo(userMessageNormalized)) {
 
         console.log("STEP 7: Missing region → reminder message");
 
+        // Plain text reply for the chat UI
         processMessageOutcome.cloudPilotMessage = "I still need the AWS region.";
         processMessageOutcome.success = true;
 
     //No API Call    
+    // First time we realize region is missing — ask the question once and mark region as "already asked"
     } else if (actionPending && currentStateData.missing.includes("region") && (!currentStateData.asked || !currentStateData.asked.region)) {
 
         console.log("STEP 7: Missing region → system message");
 
+        // Remember we already prompted for region so we do not spam the same question every message
         actionState.markAsked(conversationID, "region");
 
         // refresh state
+        // Pull state back after markAsked changed the asked flags
         currentStateData = actionState.getActionStatus(conversationID);
 
         // sync
+        // Expose that updated asked/missing state to the client payload
         processMessageOutcome.cloudPilot.state = currentStateData;
 
+        // The actual question text shown to the user
         processMessageOutcome.cloudPilotMessage = "Which AWS region should I use?";
         processMessageOutcome.success = true;
 
     //OPEN AI: Calls Open AI 
+    // Normal chit-chat — not EC2 workflow — send straight to the small OpenAI helper
     } else if (intent === "general_chat") {
 
         console.log("STEP 7: General chat → ChatGPT");
 
+        // Ask OpenAI for a short reply using the general system prompt
         const result = await handleGeneralChat(userMessageNormalized, action);
 
+        // Map the helper's old shape (data/message) into the same outcome fields the API already used
         processMessageOutcome.success = result.success;
         processMessageOutcome.cloudPilotMessage = result.data || result.message;
 
     //No API Call
+    // Nothing matched above — safe default line so the user still gets a friendly sentence
     } else {
 
         console.log("STEP 7: Fallback message");
@@ -321,6 +308,7 @@ function decideAction(intent) {
     if (action) {
         const copy = { ...action };
         delete copy.match;
+        delete copy.handler;
         return copy; // ← copy here
     }
 
@@ -331,7 +319,6 @@ function decideAction(intent) {
         message: 'I can only help with EC2 right now.',
     };
 }
-
 
 //Function B3: Handle General Chat
 async function handleGeneralChat(text, action) {
@@ -356,60 +343,6 @@ async function handleGeneralChat(text, action) {
         data: chatResult.data,
         action,
         intent: 'unknown',
-        policy: { allowed: true },
-    };
-}
-
-//Function B4: Handle EC2
-async function respondToScanEC2(text, action) {
-    const chatResult = await openAIFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('respondToScanEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'scan_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('respondToScanEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'scan_ec2',
-        policy: { allowed: true },
-    };
-}
-
-//Function B4: Handle Toggle EC2
-async function respondToToggleEC2(text, action) {
-    const chatResult = await openAIFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('respondToToggleEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'toggle_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('respondToToggleEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'toggle_ec2',
         policy: { allowed: true },
     };
 }
