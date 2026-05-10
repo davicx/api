@@ -1,7 +1,7 @@
 const openAIFunctions = require('./openAIFunctions');
-const conversationStateFunctions = require('../state/conversationStateFunctions');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
+const fieldExtractors = require('./functions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -103,7 +103,6 @@ async function processMessage(userMessage, conversationID) {
     console.log("STEP 1: Normalize text Worked");
     console.log("Current User Message: " + userMessageNormalized)
 
-
     // STEP 2: Detect intent
     const intent = detectIntent(userMessageNormalized);
     processMessageOutcome.cloudPilot.intent = intent;
@@ -140,23 +139,24 @@ async function processMessage(userMessage, conversationID) {
         console.log("STEP 4: Not starting or replacing an action");
     }
 
-    // STEP 5: Extract region if action is pending
+    // STEP 5: Extract missing fields (registry-driven missing[] + fieldExtractors)
     if (actionPending) {
-        const region = conversationStateFunctions.extractAwsRegion(userMessageNormalized);
-
-        if (region) {
-            console.log("STEP 5: Region found:", region);
-
-            actionState.setRegion(conversationID, region);
-
+        for (const field of currentStateData.missing) {
+            const extractor = fieldExtractors[field];
+            if (!extractor) {
+                continue;
+            }
+            const value = extractor(userMessageNormalized);
+            if (!value) {
+                continue;
+            }
+            console.log("STEP 5: Found field:", field, value);
+            actionState.setField(conversationID, field, value);
             // refresh state
             currentStateData = actionState.getActionStatus(conversationID);
             actionPending = currentStateData.pendingAction;
-
             // sync
             processMessageOutcome.cloudPilot.state = currentStateData;
-        } else {
-            console.log("STEP 5: No region found");
         }
     } else {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
