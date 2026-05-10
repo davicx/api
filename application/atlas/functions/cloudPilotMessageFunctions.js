@@ -139,7 +139,7 @@ async function processMessage(userMessage, conversationID) {
         console.log("STEP 4: Not starting or replacing an action");
     }
 
-    // STEP 5: Extract missing fields (registry-driven missing[] + fieldExtractors)
+    // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
     if (actionPending) {
         for (const field of currentStateData.missing) {
             const extractor = fieldExtractors[field];
