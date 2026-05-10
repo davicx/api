@@ -1,4 +1,4 @@
-const atlasEC2Functions = require('./atlasEC2Functions');
+const atlasEC2Functions = require('../atlasEC2Functions');
 const atlasEC2Formatter = require('./atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./atlasEC2MessageBuilder');
 

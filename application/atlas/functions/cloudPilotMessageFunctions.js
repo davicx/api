@@ -10,6 +10,7 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //FUNCTIONS B: Process User Messages
     2) Function B1: Detect Intent
     3) Function B2: Decide Action
+    4) Function B5: Workflow prompt for missing field
 */
 
 //WILL ADD THESE SOON
@@ -61,25 +62,25 @@ async function processMessage(userMessage, conversationID) {
 
     //Create outcome
     var processMessageOutcome = {
-        success: false, //NOT DONE
+        success: false, 
         cloudPilotMessage: "",
         cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            intent: null, // e.g. "scan_ec2", "toggle_ec2"
             action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-                ready: false, //NOT DONE
-                parameters: {} //NOT DONE
+                type: null, // e.g. "scan_ec2", "toggle_ec2"
+                ready: false, 
+                parameters: {}
             },
             state: {
-                pendingAction: null, //NOT DONE
-                missing: [], //NOT DONE
-                collected: {}, //NOT DONE
-                asked: {}, //NOT DONE
+                pendingAction: null, 
+                missing: [], 
+                collected: {}, 
+                asked: {}, 
 
             }
         },
-        atlas: null, //NOT DONE
-        error: null //NOT DONE
+        atlas: null, 
+        error: null 
     };
 
     //Sync Data
@@ -115,7 +116,7 @@ async function processMessage(userMessage, conversationID) {
  
     console.log("STEP 3: ACTION:", action.type);
 
-    // STEP 4: Start / replace action (simple version)
+    // STEP 4: Start or replace a user requested action like Scan my EC2
     if (action.workflowEnabled) {
 
         if (!actionPending) {
@@ -129,12 +130,11 @@ async function processMessage(userMessage, conversationID) {
             actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
         }
 
-        // refresh state
+        //Refresh and sync state
         currentStateData = actionState.getActionStatus(conversationID);
         actionPending = currentStateData.pendingAction;
-
-        // sync
         processMessageOutcome.cloudPilot.state = currentStateData;
+
     } else {
         console.log("STEP 4: Not starting or replacing an action");
     }
@@ -142,19 +142,24 @@ async function processMessage(userMessage, conversationID) {
     // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
     if (actionPending) {
         for (const field of currentStateData.missing) {
+
             const extractor = fieldExtractors[field];
+
             if (!extractor) {
                 continue;
             }
             const value = extractor(userMessageNormalized);
+
             if (!value) {
                 continue;
             }
             console.log("STEP 5: Found field:", field, value);
             actionState.setField(conversationID, field, value);
+            
             // refresh state
             currentStateData = actionState.getActionStatus(conversationID);
             actionPending = currentStateData.pendingAction;
+            
             // sync
             processMessageOutcome.cloudPilot.state = currentStateData;
         }
@@ -165,27 +170,24 @@ async function processMessage(userMessage, conversationID) {
     // STEP 6: Check if Request is ready
     if (actionPending && currentStateData.missing.length === 0) {
         console.log("STEP 6: Request is READY");
-
-        //processMessageOutcome.cloudPilot.action.ready = true;
         processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
     } else {
         console.log("STEP 6: Request is NOT ready");
     }
 
-    // STEP 7: Route response (THIS IS THE KEY LAYER)
-    // Step 6 turned this on when nothing was missing anymore — we are allowed to run the real action now
-    if (processMessageOutcome.cloudPilot.action.ready) {
+    const nextMissingField = (actionPending && currentStateData.missing.length > 0) ? currentStateData.missing[0] : null;
 
-        // Load this action's settings from the registry (same string as pendingAction, e.g. scan_ec2)
+    // STEP 7: Route response (THIS IS THE KEY LAYER)
+    if (processMessageOutcome.cloudPilot.action.ready) {
         const actionDefinition = actionRegistry[actionPending];
 
-        // Make sure the registry actually gave us a runnable handler before we call it
+        //FINISHED: Now we can do actually do something. We will call a function like Scan or Toggle EC2 
         if (actionDefinition && typeof actionDefinition.handler === 'function') {
 
-            // Tell the logs we are about to run that handler
-            console.log("STEP 7: READY → action handler");
-
-            // Run the action's code (Atlas scan, OpenAI toggle, etc.) and wait for its result object
+            
+            const actionLabel = (actionDefinition && actionDefinition.actionLabel) ? actionDefinition.actionLabel : (actionPending || 'unknown');
+            console.log("STEP 7: READY → action handler (" + actionLabel + ")");
+            
             const result = await actionDefinition.handler({ userMessage: userMessageNormalized, state: currentStateData, conversationID, action: actionDefinition });
 
             // Handler finished without throwing — if it says success, this turn is done so we wipe the in-memory workflow
@@ -193,59 +195,54 @@ async function processMessage(userMessage, conversationID) {
                 actionState.clear(conversationID);
 
                 // refresh state
-                // Read the now-empty (or reset) workflow state back into this function's variables
                 currentStateData = actionState.getActionStatus(conversationID);
 
                 // Keep the local "what are we waiting on" variable in sync with storage
                 actionPending = currentStateData.pendingAction;
 
-                // sync
-                // Put that same fresh state into the JSON we will send back to the client
                 processMessageOutcome.cloudPilot.state = currentStateData;
             }
 
             // Copy the handler's answer into the API response (works for both success and failure)
             processMessageOutcome.success = result.success;
             processMessageOutcome.cloudPilotMessage = result.cloudPilotMessage;
-            // Atlas data only exists for scans — use null when the handler did not return any
             processMessageOutcome.atlas = result.atlas || null;
-            // Short error string from the handler, or null when there was no error
             processMessageOutcome.error = result.error || null;
         }
 
     //No API Call    
-    // User still owes us a region but they asked what is missing — give a short reminder instead of repeating the big question
-    } else if (actionPending && currentStateData.missing.includes("region") && userAskedForMissingInfo(userMessageNormalized)) {
+    // User still owes us a field but they asked what is missing — give a short reminder instead of repeating the big question
+    } else if (nextMissingField && userAskedForMissingInfo(userMessageNormalized)) {
 
-        console.log("STEP 7: Missing region → reminder message");
+        const actionDefinitionForPrompt = actionRegistry[actionPending];
+        const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
 
-        // Plain text reply for the chat UI
-        processMessageOutcome.cloudPilotMessage = "I still need the AWS region.";
+        console.log("STEP 7: Missing field → reminder message");
+
+        processMessageOutcome.cloudPilotMessage = workflowMessage;
         processMessageOutcome.success = true;
 
-    //No API Call    
-    // First time we realize region is missing — ask the question once and mark region as "already asked"
-    } else if (actionPending && currentStateData.missing.includes("region") && (!currentStateData.asked || !currentStateData.asked.region)) {
+    //No API Call: Ask once for missing fields
+    } else if (nextMissingField && (!currentStateData.asked || !currentStateData.asked[nextMissingField])) {
 
-        console.log("STEP 7: Missing region → system message");
+        const actionDefinitionForPrompt = actionRegistry[actionPending];
+        const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
 
-        // Remember we already prompted for region so we do not spam the same question every message
-        actionState.markAsked(conversationID, "region");
+        console.log("STEP 7: Missing field → system message");
+
+        // Remember we already prompted for this field so we do not spam the same question every message
+        actionState.markAsked(conversationID, nextMissingField);
 
         // refresh state
-        // Pull state back after markAsked changed the asked flags
         currentStateData = actionState.getActionStatus(conversationID);
 
-        // sync
-        // Expose that updated asked/missing state to the client payload
         processMessageOutcome.cloudPilot.state = currentStateData;
 
         // The actual question text shown to the user
-        processMessageOutcome.cloudPilotMessage = "Which AWS region should I use?";
+        processMessageOutcome.cloudPilotMessage = workflowMessage;
         processMessageOutcome.success = true;
 
     //OPEN AI: Calls Open AI 
-    // Normal chit-chat — not EC2 workflow — send straight to the small OpenAI helper
     } else if (intent === "general_chat") {
 
         console.log("STEP 7: General chat → ChatGPT");
@@ -258,16 +255,13 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilotMessage = result.data || result.message;
 
     //No API Call
-    // Nothing matched above — safe default line so the user still gets a friendly sentence
     } else {
-
         console.log("STEP 7: Fallback message");
 
         processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
         processMessageOutcome.success = true;
     }
 
-    // Sync action.type with actual state
     if (actionPending) {
         processMessageOutcome.cloudPilot.action.type = actionPending;
     }
@@ -309,6 +303,7 @@ function decideAction(intent) {
         const copy = { ...action };
         delete copy.match;
         delete copy.handler;
+        delete copy.defaults;
         return copy; // ← copy here
     }
 
@@ -359,6 +354,16 @@ function userAskedForMissingInfo(userMessage) {
         normalizedMessage.includes("forgot what was missing") ||
         normalizedMessage.includes("what do you still need")
     );
+}
+
+//Function B5: Workflow prompt for missing field
+function messageForMissingField(actionDefinition, nextMissingField) {
+    const fromRegistry = actionDefinition && actionDefinition.questions && actionDefinition.questions[nextMissingField];
+    const trimmed = fromRegistry != null ? String(fromRegistry).trim() : '';
+    if (trimmed) {
+        return trimmed;
+    }
+    return "I still need: " + nextMissingField;
 }
 
 
