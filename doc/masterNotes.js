@@ -29,7 +29,7 @@ storage_type: local or aws
 AWS
 "fileName": "background_1.jpg",
 "fileNameServer": "postImage-1749944860810-321769559-background_1.jpg",
-"fileURL": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/posts/postImage-1749944860810-321769559-background_1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAXZAOI335HZSDKHVN%2F20250614%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250614T234741Z&X-Amz-Expires=259200&X-Amz-Signature=a3d18ccb151ba39e2bca0f5f557900aebbe0d39219e2e1e95dec248e59a55176&X-Amz-SignedHeaders=host&x-id=GetObject",
+"fileURL": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/posts/postImage-1749944860810-321769559-background_1.jpg",
 "cloudBucket": "insta-app-bucket-tutorial",
 "cloudKey": "posts/postImage-1749944860810-321769559-background_1.jpg",
 
