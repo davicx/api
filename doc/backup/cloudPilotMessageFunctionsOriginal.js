@@ -1,9 +1,9 @@
-const openAIFunctions = require('./openAIFunctions');
-const conversationStateFunctions = require('../state/conversationStateFunctions');
-const atlasEC2Functions = require('./ec2/atlasEC2Functions');
-const atlasEC2Formatter = require('./ec2/atlasEC2Formatter');
-const atlasEC2MessageBuilder = require('./ec2/atlasEC2MessageBuilder');
-const actionState = require('../state/ActionState');
+const openAIFunctions = require('../../application/atlas/functions/openAIFunctions');
+const conversationStateFunctions = require('../../application/atlas/state/conversationStateFunctions');
+const atlasEC2Functions = require('../../application/atlas/functions/actions/ec2/scanEC2/atlasEC2Functions');
+const atlasEC2Formatter = require('../../application/atlas/functions/actions/ec2/scanEC2/atlasEC2Formatter');
+const atlasEC2MessageBuilder = require('../../application/atlas/functions/actions/ec2/scanEC2/atlasEC2MessageBuilder');
+const actionState = require('../../application/atlas/state/ActionState');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT

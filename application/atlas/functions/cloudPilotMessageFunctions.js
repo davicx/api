@@ -1,10 +1,7 @@
 const openAIFunctions = require('./openAIFunctions');
-const conversationStateFunctions = require('../state/conversationStateFunctions');
-const atlasEC2Functions = require('./ec2/atlasEC2Functions');
-const atlasEC2Formatter = require('./ec2/atlasEC2Formatter');
-const atlasEC2MessageBuilder = require('./ec2/atlasEC2MessageBuilder');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
+const fieldExtractors = require('./functions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -13,6 +10,8 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //FUNCTIONS B: Process User Messages
     2) Function B1: Detect Intent
     3) Function B2: Decide Action
+    4) Function B5: Workflow prompt for missing field
+    5) Function B6: General chat during active workflow (ChatGPT + continuation)
 */
 
 //WILL ADD THESE SOON
@@ -56,7 +55,6 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(userMessage, conversationID) {
-    var masterUserRequestReady = false;
     var currentStateData = actionState.getActionStatus(conversationID);
     var actionPending = currentStateData.pendingAction;
 
@@ -65,25 +63,25 @@ async function processMessage(userMessage, conversationID) {
 
     //Create outcome
     var processMessageOutcome = {
-        success: false, //NOT DONE
+        success: false, 
         cloudPilotMessage: "",
         cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            intent: null, // e.g. "scan_ec2", "toggle_ec2"
             action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-                ready: false, //NOT DONE
-                parameters: {} //NOT DONE
+                type: null, // e.g. "scan_ec2", "toggle_ec2"
+                ready: false, 
+                parameters: {}
             },
             state: {
-                pendingAction: null, //NOT DONE
-                missing: [], //NOT DONE
-                collected: {}, //NOT DONE
-                asked: {}, //NOT DONE
+                pendingAction: null, 
+                missing: [], 
+                collected: {}, 
+                asked: {}, 
 
             }
         },
-        atlas: null, //NOT DONE
-        error: null //NOT DONE
+        atlas: null, 
+        error: null 
     };
 
     //Sync Data
@@ -107,7 +105,6 @@ async function processMessage(userMessage, conversationID) {
     console.log("STEP 1: Normalize text Worked");
     console.log("Current User Message: " + userMessageNormalized)
 
-
     // STEP 2: Detect intent
     const intent = detectIntent(userMessageNormalized);
     processMessageOutcome.cloudPilot.intent = intent;
@@ -120,167 +117,182 @@ async function processMessage(userMessage, conversationID) {
  
     console.log("STEP 3: ACTION:", action.type);
 
-    // STEP 4: Start / replace action (simple version)
-    if (action.type === "scan_ec2" || action.type === "toggle_ec2") {
+    // STEP 4: Start or replace a user requested action like Scan my EC2
+    if (action.workflowEnabled) {
 
         if (!actionPending) {
             console.log("STEP 4: Starting new action:", action.type);
 
-            actionState.setPendingAction(conversationID, action.type, ["region"]);
+            actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
 
         } else if (actionPending !== action.type) {
             console.log("STEP 4: Replacing action:", actionPending, "→", action.type);
 
-            actionState.setPendingAction(conversationID, action.type, ["region"]);
+            actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
         }
 
-        // refresh state
+        //Refresh and sync state
         currentStateData = actionState.getActionStatus(conversationID);
         actionPending = currentStateData.pendingAction;
-
-        // sync
         processMessageOutcome.cloudPilot.state = currentStateData;
+
     } else {
         console.log("STEP 4: Not starting or replacing an action");
     }
 
-    // STEP 5: Extract region if action is pending
+    // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
     if (actionPending) {
-        const region = conversationStateFunctions.extractAwsRegion(userMessageNormalized);
+        for (const field of currentStateData.missing) {
 
-        if (region) {
-            console.log("STEP 5: Region found:", region);
+            const extractor = fieldExtractors[field];
 
-            actionState.setRegion(conversationID, region);
+            if (!extractor) {
+                continue;
+            }
+            const value = extractor(userMessageNormalized);
 
+            if (!value) {
+                continue;
+            }
+            console.log("STEP 5: Found field:", field, value);
+            actionState.setField(conversationID, field, value);
+            
             // refresh state
             currentStateData = actionState.getActionStatus(conversationID);
             actionPending = currentStateData.pendingAction;
-
+            
             // sync
             processMessageOutcome.cloudPilot.state = currentStateData;
-        } else {
-            console.log("STEP 5: No region found");
         }
     } else {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    // STEP 6: Check if ready
+    // STEP 6: Check if Request is ready
     if (actionPending && currentStateData.missing.length === 0) {
         console.log("STEP 6: Request is READY");
-
-        //processMessageOutcome.cloudPilot.action.ready = true;
         processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
     } else {
         console.log("STEP 6: Request is NOT ready");
     }
 
+    const nextMissingField = (actionPending && currentStateData.missing.length > 0) ? currentStateData.missing[0] : null;
+
     // STEP 7: Route response (THIS IS THE KEY LAYER)
     if (processMessageOutcome.cloudPilot.action.ready) {
+        const actionDefinition = actionRegistry[actionPending];
 
-        console.log("STEP 7: READY → action handler");
+        //FINISHED: Now we can do actually do something. We will call a function like Scan or Toggle EC2 
+        if (actionDefinition && typeof actionDefinition.handler === 'function') {
 
-        let result;
+            
+            const actionLabel = (actionDefinition && actionDefinition.actionLabel) ? actionDefinition.actionLabel : (actionPending || 'unknown');
+            console.log("STEP 7: READY → action handler (" + actionLabel + ")");
+            
+            const result = await actionDefinition.handler({ userMessage: userMessageNormalized, state: currentStateData, conversationID, action: actionDefinition });
 
-        if (actionPending === 'scan_ec2') {
-
-            //ATLAS: Calls Atlas
-            console.log("STEP 7: Calling Atlas");
-
-            try {
-                const region = currentStateData.collected.region;
-                let atlasResponseFormatted = null;
-                const atlasResponseRaw = await atlasEC2Functions.scanEC2(region);
-
-                console.log("_____________________________________");
-                console.log("RAW Atlas Response:");
-                console.log(JSON.stringify(atlasResponseRaw, null, 2));
-                console.log("_____________________________________");
-
-                if (atlasResponseRaw?.success === true && atlasResponseRaw?.data) {
-                    atlasResponseFormatted = atlasEC2Formatter.formatAtlasEC2Output(atlasResponseRaw);
-                }
-
-                console.log("_____________________________________");
-                console.log("Atlas Response:");
-                console.log(atlasResponseFormatted);
-                console.log("_____________________________________");
-
+            // Handler finished without throwing — if it says success, this turn is done so we wipe the in-memory workflow
+            if (result.success) {
                 actionState.clear(conversationID);
 
                 // refresh state
                 currentStateData = actionState.getActionStatus(conversationID);
+
+                // Keep the local "what are we waiting on" variable in sync with storage
                 actionPending = currentStateData.pendingAction;
 
-                // sync
                 processMessageOutcome.cloudPilot.state = currentStateData;
-
-                processMessageOutcome.success = true;
-                processMessageOutcome.cloudPilotMessage = atlasEC2MessageBuilder.buildEC2ScanMessage(atlasResponseFormatted);
-                processMessageOutcome.atlas = atlasResponseFormatted;
-                //processMessageOutcome.atlas = atlasResponse;
-            } catch (error) {
-                console.log("Atlas Error:");
-                console.log(error);
-
-                processMessageOutcome.success = false;
-                processMessageOutcome.cloudPilotMessage = "I could not complete the EC2 scan.";
-                processMessageOutcome.error = error.message;
             }
 
-        } else if (actionPending === 'toggle_ec2') {
-            //OPEN AI: Calls Open AI 
-            result = await respondToToggleEC2(userMessageNormalized, { type: actionPending });
-
+            // Copy the handler's answer into the API response (works for both success and failure)
             processMessageOutcome.success = result.success;
-            processMessageOutcome.cloudPilotMessage = result.data || result.message;
+            processMessageOutcome.cloudPilotMessage = result.cloudPilotMessage;
+            processMessageOutcome.atlas = result.atlas || null;
+            processMessageOutcome.error = result.error || null;
         }
 
     //No API Call    
-    } else if (actionPending && currentStateData.missing.includes("region") && userAskedForMissingInfo(userMessageNormalized)) {
+    // User still owes us a field but they asked what is missing — give a short reminder instead of repeating the big question
+    } else if (nextMissingField && userAskedForMissingInfo(userMessageNormalized)) {
 
-        console.log("STEP 7: Missing region → reminder message");
+        const actionDefinitionForPrompt = actionRegistry[actionPending];
+        const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
 
-        processMessageOutcome.cloudPilotMessage = "I still need the AWS region.";
+        console.log("STEP 7: Missing field → reminder message");
+
+        processMessageOutcome.cloudPilotMessage = workflowMessage;
         processMessageOutcome.success = true;
 
-    //No API Call    
-    } else if (actionPending && currentStateData.missing.includes("region") && (!currentStateData.asked || !currentStateData.asked.region)) {
+    //No API Call: Ask once for missing fields (workflow intent — not general_chat; that path handles chat + continuation)
+    } else if (nextMissingField && intent !== 'general_chat' && (!currentStateData.asked || !currentStateData.asked[nextMissingField])) {
 
-        console.log("STEP 7: Missing region → system message");
+        const actionDefinitionForPrompt = actionRegistry[actionPending];
+        const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
 
-        actionState.markAsked(conversationID, "region");
+        console.log("STEP 7: Missing field → system message");
+
+        // Remember we already prompted for this field so we do not spam the same question every message
+        actionState.markAsked(conversationID, nextMissingField);
 
         // refresh state
         currentStateData = actionState.getActionStatus(conversationID);
 
-        // sync
         processMessageOutcome.cloudPilot.state = currentStateData;
 
-        processMessageOutcome.cloudPilotMessage = "Which AWS region should I use?";
+        // The actual question text shown to the user
+        processMessageOutcome.cloudPilotMessage = workflowMessage;
         processMessageOutcome.success = true;
 
-    //OPEN AI: Calls Open AI 
-    } else if (intent === "general_chat") {
+    //OPEN AI: general_chat during an active workflow — answer tangents, then remind what is still missing
+    } else if (nextMissingField && intent === 'general_chat') {
+
+        console.log("STEP 7: General chat during workflow → ChatGPT + continuation");
+
+        const workflowChatResult = await handleWorkflowAwareGeneralChat(userMessageNormalized, action, currentStateData, actionPending);
+
+        processMessageOutcome.success = workflowChatResult.success;
+        processMessageOutcome.cloudPilotMessage = workflowChatResult.data || workflowChatResult.message;
+
+        if (!currentStateData.asked || !currentStateData.asked[nextMissingField]) {
+            actionState.markAsked(conversationID, nextMissingField);
+            currentStateData = actionState.getActionStatus(conversationID);
+            processMessageOutcome.cloudPilot.state = currentStateData;
+        }
+
+    //No API Call: workflow still incomplete but intent was not general_chat — short resume prompt
+    } else if (nextMissingField) {
+
+        const actionDefinitionForPrompt = actionRegistry[actionPending];
+        const lines = (currentStateData.missing || []).map((field) => '- ' + field).join('\n');
+        const askedFlags = currentStateData.asked || {};
+        const alreadyAskedForNext = askedFlags[nextMissingField];
+        const resumeMessage = alreadyAskedForNext ? ('I still need:\n' + lines) : (messageForMissingField(actionDefinitionForPrompt, nextMissingField) + '\n\nI still need:\n' + lines);
+
+        console.log("STEP 7: Missing field → resume prompt");
+
+        processMessageOutcome.cloudPilotMessage = resumeMessage;
+        processMessageOutcome.success = true;
+
+    //OPEN AI: Calls Open AI (no active workflow with missing fields)
+    } else if (intent === 'general_chat') {
 
         console.log("STEP 7: General chat → ChatGPT");
 
+        // Ask OpenAI for a short reply using the general system prompt
         const result = await handleGeneralChat(userMessageNormalized, action);
 
+        // Map the helper's old shape (data/message) into the same outcome fields the API already used
         processMessageOutcome.success = result.success;
         processMessageOutcome.cloudPilotMessage = result.data || result.message;
 
     //No API Call
     } else {
-
         console.log("STEP 7: Fallback message");
 
         processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
         processMessageOutcome.success = true;
     }
 
-    // Sync action.type with actual state
     if (actionPending) {
         processMessageOutcome.cloudPilot.action.type = actionPending;
     }
@@ -321,6 +333,8 @@ function decideAction(intent) {
     if (action) {
         const copy = { ...action };
         delete copy.match;
+        delete copy.handler;
+        delete copy.defaults;
         return copy; // ← copy here
     }
 
@@ -331,7 +345,6 @@ function decideAction(intent) {
         message: 'I can only help with EC2 right now.',
     };
 }
-
 
 //Function B3: Handle General Chat
 async function handleGeneralChat(text, action) {
@@ -360,60 +373,6 @@ async function handleGeneralChat(text, action) {
     };
 }
 
-//Function B4: Handle EC2
-async function respondToScanEC2(text, action) {
-    const chatResult = await openAIFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('respondToScanEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'scan_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('respondToScanEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'scan_ec2',
-        policy: { allowed: true },
-    };
-}
-
-//Function B4: Handle Toggle EC2
-async function respondToToggleEC2(text, action) {
-    const chatResult = await openAIFunctions.sendChatWithAction(text, action);
-
-    if (!chatResult.success) {
-        //console.log('respondToToggleEC2: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'toggle_ec2',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('respondToToggleEC2: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'toggle_ec2',
-        policy: { allowed: true },
-    };
-}
-
 //Function B4: Handle Request for Missing Info
 function userAskedForMissingInfo(userMessage) {
     const normalizedMessage = String(userMessage || '').toLowerCase().trim();
@@ -422,10 +381,59 @@ function userAskedForMissingInfo(userMessage) {
         normalizedMessage.includes("what am i missing") ||
         normalizedMessage.includes("what is missing") ||
         normalizedMessage.includes("what's missing") ||
+        normalizedMessage.includes("what else am i missing") ||
         normalizedMessage.includes("what else do you need") ||
         normalizedMessage.includes("forgot what was missing") ||
         normalizedMessage.includes("what do you still need")
     );
+}
+
+//Function B5: Workflow prompt for missing field
+function messageForMissingField(actionDefinition, nextMissingField) {
+    const fromRegistry = actionDefinition && actionDefinition.questions && actionDefinition.questions[nextMissingField];
+    const trimmed = fromRegistry != null ? String(fromRegistry).trim() : '';
+    if (trimmed) {
+        return trimmed;
+    }
+    return "I still need: " + nextMissingField;
+}
+
+function buildWorkflowContinuationAppendix(actionPending, currentStateData) {
+    const missing = currentStateData.missing || [];
+    const lines = missing.map((field) => '- ' + field).join('\n');
+    return '\n\nI still need:\n' + lines;
+}
+
+async function handleWorkflowAwareGeneralChat(text, action, currentStateData, actionPending) {
+    const workflowContext = {
+        pendingAction: actionPending,
+        missing: currentStateData.missing || [],
+        collected: currentStateData.collected || {}
+    };
+    const chatResult = await openAIFunctions.sendGeneralChatDuringWorkflow(text, workflowContext);
+    const appendix = buildWorkflowContinuationAppendix(actionPending, currentStateData);
+
+    if (!chatResult.success) {
+        const fallback = 'I could not reach ChatGPT right now.' + appendix;
+        return {
+            success: true,
+            data: fallback,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    const body = (chatResult.data != null && chatResult.data !== '') ? String(chatResult.data).trim() : '';
+    const combined = body ? (body + appendix) : appendix.trim();
+    return {
+        success: true,
+        data: combined,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
 }
 
 
