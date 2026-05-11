@@ -9,6 +9,7 @@ FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPi
     3) Function A3: Create OpenAI Chat Completion
     4) Function A4: Send Chat With Action
     5) Function A5: Send General Chat
+    6) Function A6: Send general chat during active workflow
 */
 
 let openaiClient = null;
@@ -213,10 +214,82 @@ async function sendGeneralChat(userMessage) {
     return result;
 }
 
+/**
+ * General chat while a CloudPilot workflow is waiting on fields (same outcome shape as sendGeneralChat).
+ * @param {string} userMessage
+ * @param {{ pendingAction: string|null, missing: string[], collected: object }} workflowContext
+ */
+//Function A6: Send general chat during active workflow
+async function sendGeneralChatDuringWorkflow(userMessage, workflowContext) {
+    const norm = normalizeUserMessageForModel(userMessage);
+    if (!norm.ok) {
+        return { success: false, message: norm.message, data: null };
+    }
+
+    const text = norm.text;
+    const maxIn = OPENAI_SAFE_DEFAULTS.MAX_USER_INPUT_CHARS;
+    if (text.length > maxIn) {
+        return {
+            success: false,
+            message: 'message too long (max ' + maxIn + ' characters)',
+            data: null
+        };
+    }
+
+    const client = getOpenAIClient();
+    if (!client) {
+        console.warn('[sendGeneralChatDuringWorkflow] OPENAI_API_KEY is not set');
+        return { success: false, message: 'OPENAI_API_KEY is not configured', data: null };
+    }
+
+    const config = CHAT_CONFIG.LOW;
+    const pending = String(workflowContext && workflowContext.pendingAction ? workflowContext.pendingAction : '');
+    const missingList = workflowContext && Array.isArray(workflowContext.missing) ? workflowContext.missing : [];
+    const missingStr = missingList.length ? missingList.join(', ') : 'none';
+    const collectedStr = JSON.stringify((workflowContext && workflowContext.collected) ? workflowContext.collected : {});
+
+    const systemPrompt =
+        'You are CloudPilot.\n' +
+        'The user has an active workflow.\n' +
+        'pendingAction: ' + pending + '\n' +
+        'Collected: ' + collectedStr + '\n' +
+        'Still missing fields: ' + missingStr + '.\n\n' +
+        'Answer the user message helpfully and briefly (AWS-aware when relevant).\n' +
+        'If they greet you, greet back in one short phrase then continue.\n' +
+        'Do not say the workflow was cancelled or that AWS changes were applied.\n' +
+        'Do not repeat the same slot question the app already asked; missing fields are listed after your reply.\n' +
+        'Do not contradict the checklist after your reply (field ids still listed are still missing).\n' +
+        'Stay under about 60 words.';
+
+    const maxTokens = Math.min(120, OPENAI_SAFE_DEFAULTS.MAX_COMPLETION_TOKENS_CEILING);
+
+    const result = await createOpenAiChatCompletion(client, {
+        model: config.model,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: text }
+        ],
+        max_tokens: maxTokens,
+        temperature: config.temperature
+    });
+
+    if (result.success && result.usage) {
+        console.log(
+            '[sendGeneralChatDuringWorkflow] usage prompt=%s completion=%s total=%s',
+            result.usage.prompt_tokens,
+            result.usage.completion_tokens,
+            result.usage.total_tokens
+        );
+    }
+
+    return result;
+}
+
 module.exports = {
     getOpenAIClient,
     normalizeUserMessageForModel,
     createOpenAiChatCompletion,
     sendChatWithAction,
-    sendGeneralChat
+    sendGeneralChat,
+    sendGeneralChatDuringWorkflow
 };

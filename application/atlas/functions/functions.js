@@ -38,6 +38,16 @@ function extractName(text) {
     if (match) {
         return String(match[1]).trim();
     }
+    const trimmed = s.trim();
+    const lower = trimmed.toLowerCase();
+    if (/^(hello|hi|hey|thanks|thank you|yes|no|ok)\s*$/i.test(lower)) {
+        return null;
+    }
+    const afterLeadIn = trimmed.replace(/^(ok|yes|sure|thanks)[,.\s]+/i, '').trim();
+    const candidate = afterLeadIn.length ? afterLeadIn : trimmed;
+    if (/^[a-z0-9][a-z0-9._-]{1,62}$/i.test(candidate) && (candidate.includes('-') || candidate.includes('_') || candidate.includes('.'))) {
+        return candidate;
+    }
     return null;
 }
 

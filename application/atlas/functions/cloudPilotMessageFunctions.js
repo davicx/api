@@ -11,6 +11,7 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
     2) Function B1: Detect Intent
     3) Function B2: Decide Action
     4) Function B5: Workflow prompt for missing field
+    5) Function B6: General chat during active workflow (ChatGPT + continuation)
 */
 
 //WILL ADD THESE SOON
@@ -222,8 +223,8 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilotMessage = workflowMessage;
         processMessageOutcome.success = true;
 
-    //No API Call: Ask once for missing fields
-    } else if (nextMissingField && (!currentStateData.asked || !currentStateData.asked[nextMissingField])) {
+    //No API Call: Ask once for missing fields (workflow intent — not general_chat; that path handles chat + continuation)
+    } else if (nextMissingField && intent !== 'general_chat' && (!currentStateData.asked || !currentStateData.asked[nextMissingField])) {
 
         const actionDefinitionForPrompt = actionRegistry[actionPending];
         const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
@@ -242,8 +243,38 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilotMessage = workflowMessage;
         processMessageOutcome.success = true;
 
-    //OPEN AI: Calls Open AI 
-    } else if (intent === "general_chat") {
+    //OPEN AI: general_chat during an active workflow — answer tangents, then remind what is still missing
+    } else if (nextMissingField && intent === 'general_chat') {
+
+        console.log("STEP 7: General chat during workflow → ChatGPT + continuation");
+
+        const workflowChatResult = await handleWorkflowAwareGeneralChat(userMessageNormalized, action, currentStateData, actionPending);
+
+        processMessageOutcome.success = workflowChatResult.success;
+        processMessageOutcome.cloudPilotMessage = workflowChatResult.data || workflowChatResult.message;
+
+        if (!currentStateData.asked || !currentStateData.asked[nextMissingField]) {
+            actionState.markAsked(conversationID, nextMissingField);
+            currentStateData = actionState.getActionStatus(conversationID);
+            processMessageOutcome.cloudPilot.state = currentStateData;
+        }
+
+    //No API Call: workflow still incomplete but intent was not general_chat — short resume prompt
+    } else if (nextMissingField) {
+
+        const actionDefinitionForPrompt = actionRegistry[actionPending];
+        const lines = (currentStateData.missing || []).map((field) => '- ' + field).join('\n');
+        const askedFlags = currentStateData.asked || {};
+        const alreadyAskedForNext = askedFlags[nextMissingField];
+        const resumeMessage = alreadyAskedForNext ? ('I still need:\n' + lines) : (messageForMissingField(actionDefinitionForPrompt, nextMissingField) + '\n\nI still need:\n' + lines);
+
+        console.log("STEP 7: Missing field → resume prompt");
+
+        processMessageOutcome.cloudPilotMessage = resumeMessage;
+        processMessageOutcome.success = true;
+
+    //OPEN AI: Calls Open AI (no active workflow with missing fields)
+    } else if (intent === 'general_chat') {
 
         console.log("STEP 7: General chat → ChatGPT");
 
@@ -350,6 +381,7 @@ function userAskedForMissingInfo(userMessage) {
         normalizedMessage.includes("what am i missing") ||
         normalizedMessage.includes("what is missing") ||
         normalizedMessage.includes("what's missing") ||
+        normalizedMessage.includes("what else am i missing") ||
         normalizedMessage.includes("what else do you need") ||
         normalizedMessage.includes("forgot what was missing") ||
         normalizedMessage.includes("what do you still need")
@@ -364,6 +396,44 @@ function messageForMissingField(actionDefinition, nextMissingField) {
         return trimmed;
     }
     return "I still need: " + nextMissingField;
+}
+
+function buildWorkflowContinuationAppendix(actionPending, currentStateData) {
+    const missing = currentStateData.missing || [];
+    const lines = missing.map((field) => '- ' + field).join('\n');
+    return '\n\nI still need:\n' + lines;
+}
+
+async function handleWorkflowAwareGeneralChat(text, action, currentStateData, actionPending) {
+    const workflowContext = {
+        pendingAction: actionPending,
+        missing: currentStateData.missing || [],
+        collected: currentStateData.collected || {}
+    };
+    const chatResult = await openAIFunctions.sendGeneralChatDuringWorkflow(text, workflowContext);
+    const appendix = buildWorkflowContinuationAppendix(actionPending, currentStateData);
+
+    if (!chatResult.success) {
+        const fallback = 'I could not reach ChatGPT right now.' + appendix;
+        return {
+            success: true,
+            data: fallback,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    const body = (chatResult.data != null && chatResult.data !== '') ? String(chatResult.data).trim() : '';
+    const combined = body ? (body + appendix) : appendix.trim();
+    return {
+        success: true,
+        data: combined,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
 }
 
 
