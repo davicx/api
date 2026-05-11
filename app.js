@@ -13,7 +13,7 @@ app.use(express.static('public'));
 app.use(
   cors({
       credentials: true,
-      origin: ["http://localhost:3003", "http://localhost:3000"]
+      origin: ["http://localhost:3003", "http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3003"]
   })
 );
 
@@ -29,8 +29,11 @@ const search = require('./application/routes/searchRoutes.js');
 const simple = require('./application/routes/simpleRoutes.js');
 const profile = require('./application/routes/profileRoutes.js');
 const upload = require('./application/routes/uploadRoutes.js');
-const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
 const items = require('./application/routes/itemRoutes.js');
+// Messages: toggle between Kite copy (application/routes) and Atlas duplicate (application/atlas/routes) — keep in sync.
+//const messages = require('./application/routes/messageRoutes.js');
+const messages = require('./application/atlas/routes/messageRoutes.js');
+const conversations = require('./application/routes/conversationRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -41,10 +44,16 @@ app.use(requests);
 app.use(friends);
 app.use(search);
 app.use(upload);
-app.use(uploadLearning);
 app.use(profile);
 app.use(simple);
 app.use(items);
+app.use(messages);
+app.use(conversations);
+
+//Moved to doc backup
+//const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
+//app.use(uploadLearning);
+
 
 //Server Login 
 app.listen(PORT, () => {
@@ -64,7 +73,25 @@ app.get("/hiya", (req, res) => {
   res.end()
 })
 
+app.post("/api/kuali", (req, res) => {
+  const vendorHeaderIds = req.body;
+  // 3 IDs treated as unknown for testing: 59998, 65764, 78271
+  const knownIds = [80194, 83655, 80945, 83595, 77354, 83847, 79272, 43929, 41707, 83859, 83968, 83759, 83748, 83739, 83736, 83995, 19315, 83994, 79328, 79326, 79356, 79591, 79337, 83855, 79669, 83993, 83991, 79921, 79372, 84075, 84041, 84068, 79976, 84069, 84089, 82862, 82213, 77949, 78564, 78350, 78288, 83244];
 
+  const knownVendors = {};
+  const unknownVendors = [];
+
+  for (const id of vendorHeaderIds) {
+    const numId = typeof id === "string" ? parseInt(id, 10) : id;
+    if (knownIds.includes(numId)) {
+      knownVendors[numId] = `*****${String(numId).slice(-4)}`;
+    } else {
+      unknownVendors.push(numId);
+    }
+  }
+
+  res.json({ knownVendors, unknownVendors });
+});
 
 
 //SIMPLE

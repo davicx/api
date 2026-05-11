@@ -221,8 +221,6 @@ async function addPostComments(currentUser, posts, groupID)  {
 
 	return posts;
 }
-
-
 //Function A6: Add Post Likes to an Array of Posts
 async function addPostLikes(currentUser, posts)  {
 
@@ -272,24 +270,6 @@ async function getSignedURL(post) {
 
     return post;
 }
-
-async function getImage(input) {
-    //Could be local or AWS 
-    /*
-    if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
-        let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
-        console.log("getSignedURL: IF");
-        console.log(signedURL);
-        post.fileURL = signedURL;
-    } else {
-        console.log("getSignedURL: ELSE");
-        post.fileUrl = "#"
-    }
-
-    return post;
-    */
-}
-
 
 //Function A8: Add Signed URLS to an Array of Posts
 async function addSignedURLPostsArray(posts)  {
@@ -351,7 +331,7 @@ async function getUserPostCount(userName)  {
     const connection = db.getConnection(); 
  
     //const queryString = "SELECT * FROM posts WHERE group_id = ? ";
-    const queryString = "SELECT COUNT(post_id) AS post_count FROM posts WHERE post_to = ? AND post_status = 1";
+    const queryString = "SELECT COUNT(post_id) AS post_count FROM posts WHERE post_from = ? AND post_status = 1";
 
     var postsOutcome = {
         success: false,
@@ -483,7 +463,7 @@ async function getPostFrom(postID)  {
     
 }
 
-module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, addPostComments, addPostLikes, addSignedURLPostsArray, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
+module.exports = { getAllPosts, getUserPosts, getPostLikes, getGroupPostCount, getUserPostCount, addPostComments, addPostLikes, addSignedURLPostsArray, getSignedURL, checkPostExists, getPostCreated, getPostFrom }
 
 
 /*

@@ -1,0 +1,63 @@
+{
+    "data": {
+        "currentUserMessage": {
+            "messageID": 24,
+            "messageType": "text",
+            "groupID": 0,
+            "conversationID": 0,
+            "messageFrom": "davey",
+            "messageTo": "CloudPilot",
+            "messageCaption": "Hello scan EC2",
+            "messageDate": "04/16/2026",
+            "messageTime": "2:33 pm",
+            "timeMessage": "a few seconds ago",
+            "created": "2026-04-16T21:33:08.758Z"
+        },
+        "CloudPilotResponseMessage": {
+            "messageID": 1,
+            "messageType": "text",
+            "groupID": 0,
+            "conversationID": 0,
+            "messageFrom": "davey",
+            "messageTo": "CloudPilot",
+            "messageCaption": "Message caption is the response from the OpenAI API",
+            "messageDate": "04/16/2026",
+            "messageTime": "2:33 pm",
+            "timeMessage": "a few seconds ago",
+            "created": "2026-04-16T21:33:08.758Z"
+        }
+    },
+    "cloudPilot": {
+        "intent": "scan_ec2",
+        "policy": {
+            "allowed": true, 
+            "policy_message": "ACTION_ALLOWED",
+            "reasonNotAllowed": null
+        },
+        "action": {
+            "type": "scan_ec2",
+            "ready": false,
+            "parameters": {}
+        },
+        "state": {
+            "pendingAction": "scan_ec2",
+            "missing": [
+                "region"
+            ],
+            "collected": {},
+            "execution": {
+                "inProgress": false,
+                "actionId": null,
+                "startedAt": null,
+                "status": "idle"
+              }
+        }
+    },
+    "message": "You sent a message to Cloud Pilot!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}
+
+

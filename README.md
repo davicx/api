@@ -1,5 +1,16 @@
 # API Project
 
+## CloudPilot / Atlas split (planned shape)
+
+| Layer | Role | Examples |
+|--------|------|----------|
+| **Atlas (Python)** | **Detection** — rules and scanners find problems (low CPU, old instances, unused resources, etc.). | Structured **findings** (IDs, metrics, rule metadata). |
+| **This API (Node)** | **Interpret + guide** (when you use it) — AI and app logic that explain findings, suggest actions, and (later) use **org context** (RAG, history, user/group). | Chat, notifications, “what should I do?”, orchestration for web or **future iOS** clients. |
+
+Atlas stays the **source of truth for what’s wrong**; Node focuses on **how users understand and act on it**. **Python AI in Atlas** may still run occasional calls but is expected to be **mostly idle** for now.
+
+---
+
 This project is a Node.js Express application. A good place to start would be looking at **posts** or **profile**.This project is very much in development (sorry!). My work at Amazon and Nike have been in Java and this is just a small backend for my iOS app I am making. I plan to add a lot more including things like.  
 * Test coverage 
 * Regression testing 
@@ -24,7 +35,25 @@ The post, profile, login and groups routes are pretty good. I would suggest look
    ```
 
 3. Configure environment variables:
-   - Create a new `.env` and update the values as needed.
+   - Use **`api/.env`** (same folder as `app.js`). It is gitignored — never commit it.
+   - **`OPENAI_API_KEY`** is optional until you add OpenAI-backed features again.
+
+## Messages — Kite vs Atlas (duplicate, toggle in `app.js`)
+
+`messageRoutes.js` and `logic/messages.js` exist in **two** places and should stay in sync:
+
+- **`application/routes/messageRoutes.js`** + **`application/logic/messages.js`**
+- **`application/atlas/routes/messageRoutes.js`** + **`application/atlas/logic/messages.js`**
+
+**Only one** is mounted — switch the `require` in **`app.js`** (see comment there):
+
+```js
+//const messages = require('./application/routes/messageRoutes.js');
+const messages = require('./application/atlas/routes/messageRoutes.js');
+app.use(messages);
+```
+
+Same URLs either way: **`POST /message`**, **`GET /messages/group/:group_id`**, etc.
 
 ## Running the Application
 
@@ -42,7 +71,7 @@ npm start
 
 ## Project Structure
 ### Routes:
-Routes is the entry point for the application. I have a postman collection I can share upon request for every route. 
+Routes is the entry point for the application. I have a postman collection I can share upon request for every route. This should always be as simple as possible
 For example the login route is 
 
 POST: http://localhost:3003/user/login
@@ -57,33 +86,56 @@ BODY:
 `
 
 ### Logic:
-Logic is where I have all the code related to a request. So every route will call a logic method. In here we may call multiple different functions to handle a request. For instance after you make a post you may also want to make a notification.
+Logic is where I have all the code related to a request we get from a route above. So every route will call a logic method. In here we may call multiple different functions or classes to handle a request. For instance after you make a post you may also want to make a notification. After adding a friend we would call Requests and Notifications.
 
 ### Functions:
 Functions are basically helper functions specific to handling a request. These functions may get called in other parts of the code to handle a request. For instance timeFunctions.js is how I handle all the time related needs in a lot of requests.
 
 #### Classes:
-Classes are where I handle most of the database operations and interaction with my MySQL (RDS) database. 
+Classes are where I handle most of the database operations for a single thing like a Post or Friend. This is where we mostly interact with my MySQL (RDS) database and handle very specific logic to this thing like Friend -> Add Friend or Post -> Make a Photo Post. 
 
+#### FLOW:
+So the flow is 
+route -> logic -> handle all things that we need calling different functions and classes to satisfy that request.
 
 ### Project Structure
 #### Backend 
     .
-    ├── ...
-    ├── application                   
-    │   ├── backup   
-    │   ├── functions  
-    │   ├──── AWS
-    │   ├──── classes
-    │   ├── logic  
-    │   ├── routes         
-    │   ├── upload_temp                                      
-    │   ├────                                                
-    ├── __test__                   
-    │   ├── *not started yet 
-    │   ├──── 
-    ├── app.js (Entry Point into the Application) 
+    ├── app.js                         # Entry point; mounts one `messageRoutes` stack (legacy vs atlas — see above)
+    ├── application/
+    │   ├── atlas/                     # CloudPilot / Navigator — scans, `atlas` payload on POST /message, etc.
+    │   │   ├── functions/             # e.g. cloudPilotMessageFunctions, ec2/*, chatFunctions, config
+    │   │   ├── logic/
+    │   │   ├── routes/                # Duplicate message routes (toggle in app.js)
+    │   │   └── state/                 # Conversation + pending-action state
+    │   ├── functions/                 # Route helpers; `classes/` + `aws/` live here
+    │   ├── logic/
+    │   └── routes/
+    ├── doc/                           # Sample JSON, notes, backup snippets
+    ├── images/
+    ├── public/
+    ├── uploads/
     └── ...
+
+#### Atlas (`application/atlas/`)
+    .
+    ├── routes/                        # HTTP only — same URLs as legacy `application/routes/messageRoutes.js` (toggle in app.js)
+    │   └── messageRoutes.js
+    ├── logic/                         # Orchestration for POST /message (intents, guardrails, CloudPilot reply shape)
+    │   └── messages.js
+    ├── functions/                     # CloudPilot + OpenAI helpers; EC2 scan path; not the generic `application/functions/` tree
+    │   ├── cloudPilotMessageFunctions.js
+    │   ├── chatFunctions.js
+    │   ├── config/
+    │   │   └── chatGPTconfig.js
+    │   └── ec2/
+    │       ├── atlasEC2Functions.js
+    │       ├── atlasEC2Formatter.js
+    │       └── atlasEC2MessageBuilder.js
+    └── state/                         # Conversation + pending-action state for CloudPilot
+        ├── state.js
+        ├── ActionState.js
+        └── conversationStateFunctions.js
 
 ### Tables
 #### Posts 

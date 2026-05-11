@@ -7,8 +7,7 @@ const db = require('./conn');
 FUNCTIONS A: All Functions Related to User
 	1) Function A1: Get Simple User Information  
 	2) Function A2: Get User ID from Username 
-	3) Function A2: Get all User Friends
-
+	3) Function A3: Get a count for all Active User Friends
 
 */
 
@@ -58,7 +57,6 @@ async function getUserInformation(userName) {
 
 }
 
-
 //Function A2: Get User ID from Username
 async function getUserID(userName) {
     const connection = db.getConnection(); 
@@ -98,6 +96,5 @@ async function getUserID(userName) {
     })
 
 }
-
 
 module.exports = { getUserInformation, getUserID };

@@ -20,6 +20,7 @@ FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Check if users are already in the group
 	2) Function A2: Check if Group exists (by ID)
 	3) Function A3: Check if a User is in a Group
+	10) Function A10: Get a users total Groups Count
 
 */
 
@@ -143,6 +144,41 @@ async function checkUserInGroup(userName, groupID)  {
 
 }
 
+//Function A10: Get a users total Groups Count
+async function getUserGroupCount(userName) {
+    const connection = db.getConnection();
+    
+    var userGroupCountOutcome = {
+        userName: userName,
+        groupCount: 0,
+        success: false,
+        errors: []
+    }
+
+    return new Promise(function(resolve, reject) {
+        try {
+            const queryString = "SELECT COUNT(group_users.primary_id) AS group_count FROM group_users INNER JOIN shareshare.groups ON group_users.group_id = shareshare.groups.group_id WHERE group_users.user_name = ? AND group_users.active_member = 1 AND shareshare.groups.group_deleted = 0";
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    if(rows && rows.length > 0) {
+                        userGroupCountOutcome.groupCount = rows[0].group_count;
+                        userGroupCountOutcome.success = true;
+                    } else {
+                        userGroupCountOutcome.errors.push("Could not get group count for " + userName);
+                    }
+                    resolve(userGroupCountOutcome);
+                } else {
+                    userGroupCountOutcome.errors.push(err);
+                    resolve(userGroupCountOutcome);
+                }
+            });
+        } catch(err) {
+            userGroupCountOutcome.errors.push(err);
+            reject(userGroupCountOutcome);
+        }
+    });
+}
+
 function processGroupUsers(req) {
     let newGroupUsersRaw;
 
@@ -211,8 +247,7 @@ async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupI
 	Requests.newGroupRequest(request);
 }
 
-
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, getUserGroupCount, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
 
 
 

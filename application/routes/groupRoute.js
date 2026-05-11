@@ -9,6 +9,7 @@ var jwt = require('jsonwebtoken');
 var jwt_decode = require('jwt-decode');
 const db = require('../functions/conn');
 
+//ADD GROUP DESCRIPTION
 /*
 FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Create a New Group

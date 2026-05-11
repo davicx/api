@@ -13,6 +13,7 @@ METHODS A: Group RELATED
     7) Method A9: Update Group Information
 */
 
+
 class Group {
     constructor(groupID) {
         this.groupID = groupID;

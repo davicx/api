@@ -1,9 +1,8 @@
 require('dotenv').config()
 const express = require('express')
 const app = express()
-var cors = require('cors')
 const uploadRouter = express.Router();
-uploadRouter.use(cors())
+// CORS handled at app level (app.js) - cors() here overrides with * and breaks credentials
 
 const uploads = require('./uploads')
 

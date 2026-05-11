@@ -1,0 +1,41 @@
+{
+    "action": "scan_ec2",
+    "parameters": {  
+      "region": null,
+      "scope": {
+        "type": "full",
+        "resourceId": null,
+        "tags": {}
+      },
+      "rules": []
+    }
+  }
+  
+  
+{
+    "action": "scan_ec2",   // fixed: only "scan_ec2" for this flow  
+    "parameters": {  
+      "region": null,       // REQUIRED before execution
+                            // allowed values (start small for MVP):
+                            // "us-east-1"
+                            // "us-west-1"
+                            // "us-west-2"
+                            // "eu-west-1"
+                            // (you can expand later)
+      "scope": {
+        "type": "full",     // allowed values:
+                            // "full"      -> scan all instances in region
+                            // "resource"  -> scan one instance (requires resourceId)
+                            // (skip "tag" for now like you said)
+        "resourceId": null, // REQUIRED only if type = "resource"
+                            // example:
+                            // "i-123abc456def789gh"
+        "tags": {}          // NOT USED for MVP (leave empty)
+      },
+      "rules": []           // allowed values (MVP):
+                            // [] = run ALL rules
+                            // OR specific rules:
+                            // ["low_cpu"]
+                            // (later: ["low_cpu", "stopped_instance", etc.])
+    }
+  }

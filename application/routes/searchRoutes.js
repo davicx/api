@@ -14,10 +14,32 @@ FUNCTIONS B: All Functions Related to Searching for Information
 
 */
 
-//FUNCTIONS A: All Functions Related to Searching for Friends 
+//FUNCTIONS A: All Functions Related to Searching for Site Information 
 //Function A1: Search for your Active Friends 
 searchRouter.get('/search/user/:user_name/string/:search_string/', function(req, res) {
     search.searchActiveFriends(req, res);
+})
+
+/*
+searchRouter.get('/search/user/:user_name/string/:search_string/', function(req, res) {
+    search.searchActiveFriends(req, res);
+})
+*/
+
+//Function A2: Search for Groups
+searchRouter.post('/search/group/', function(req, res) {
+    search.searchGroups(req, res);
+})
+
+//Function A3: Search All Site Users
+searchRouter.post('/search/users/', function(req, res) {
+    search.searchUsers(req, res);
+})
+
+
+//Function A4: Search All Site
+searchRouter.post('/search/all/', function(req, res) {
+    search.searchAll(req, res);
 })
 
 //FUNCTIONS B: All Functions Related to Searching for Information 

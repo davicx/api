@@ -17,9 +17,7 @@ const multer = require('multer')
 const upload = multer({ dest: './uploads' })
 //const { uploadFile, getFileStream } = require('../functions/uploadFunctions')
 var mime = require('mime-types')
-var cors = require('cors')
-uploadRouter.use(cors())
-
+// CORS handled at app level (app.js) - cors() here overrides with * and breaks credentials
 const postFunctions = require('../functions/postFunctions')
 const posts = require('../logic/posts')
 

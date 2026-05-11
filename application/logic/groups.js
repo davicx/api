@@ -24,7 +24,6 @@ const multer = require('multer')
 var mime = require('mime-types')
 
 //NEED: Group Type kite, list, etc
-
 /*
 FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Create a New Group
@@ -36,6 +35,8 @@ FUNCTIONS A: All Functions Related to Groups
 	7) Function A7: Get Single Group by ID 
 	8) Function A8: Get Group Users
 	9) Function A9: Update Group Information
+	10) Function A10: Get a users total Groups Count
+	
 */
 
 //Function A1: Create a New Group (local to local) 
@@ -636,6 +637,7 @@ async function getGroup(req, res) {
 //Function A8: Get Group Users
 async function getGroupUsers(req, res) {
 	const groupID = req.params.groupID;
+	const currentUser = req.currentUser;
 	const groupOutcome = await Group.getGroupUsers(groupID);
 	console.log(" You got " +  groupID);
 
@@ -645,7 +647,7 @@ async function getGroupUsers(req, res) {
 		success: true,
 		statusCode: 200,
 		errors: [], 
-		currentUser: req.body.currentUser
+		currentUser: currentUser
 	}
 
 	const groupUsers = {

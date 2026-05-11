@@ -7,6 +7,8 @@ const fileFunctions = require('../functions/fileFunctions');
 const userFunctions = require('../functions/userFunctions');
 const profileFunctions = require('../functions/profileFunctions')
 const friendFunctions = require('../functions/friendFunctions');
+const postFunctions = require('../functions/postFunctions');
+const groupFunctions = require('../functions/groupFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const cloudFunctions = require('../functions/cloudFunctions');
@@ -29,7 +31,14 @@ var mime = require('mime-types')
 FUNCTIONS A: All Functions Related to User Profile
 	1) Function A1: Get User Profile
 	2) Function A2: Get Simple User Profile
-	3) Function A3: Update User Profile
+    3) Function A3: Update User Profile
+    4) Function A4: Update Full User Profile (Image Optional)
+    5) Function A5: Update Full User Profile Local to AWS
+    6) Function A6: Update Full User Profile AWS
+
+FUNCTIONS B: All Functions Related to User Info
+	1) Function B1: Get total User Posts, Groups and Friends
+
 */
 
 /*
@@ -296,6 +305,8 @@ async function updateFullUserProfileLocal(req, res) {
 
 }
 
+
+//Function A5: Update Full User Profile Local to AWS
 async function updateFullUserProfileLocalAWS(req, res) {
     uploadFunctions.uploadProfilePhotoLocal(req, res, async function (err) {
         var uploadSuccess = false
@@ -420,11 +431,87 @@ async function updateFullUserProfileLocalAWS(req, res) {
 
 }
 
-
 //Function A6: Update Full User Profile AWS
 
+//FUNCTIONS B: All Functions Related to User Info
+//Function B1: Get total User Posts, Groups and Friends
+async function getUserProfileInformation(req, res) {
+    const userName = req.params.user_name;
+    const currentUser = req.currentUser;
+    
+    var headerMessage = "Get User Profile Information for " + userName;
+    Functions.addHeader(headerMessage);
+    
+    var userProfileInfoOutcome = {
+		data: [],
+		message: "", 
+		success: false,
+		statusCode: 500,
+		errors: [], 
+		currentUser: currentUser
+	}
 
-module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS };
+    try {
+        // STEP 1: Get User ID
+        var userIDResult = await userFunctions.getUserID(userName);
+        var userID = userIDResult.userID || -1;
+        
+        if (!userIDResult.userFound) {
+            userProfileInfoOutcome.message = "User not found";
+            userProfileInfoOutcome.statusCode = 404;
+            Functions.addFooter();
+            return res.json(userProfileInfoOutcome);
+        }
+
+        // STEP 2: Get all counts in parallel
+        const [postsResult, friendsResult, groupsResult] = await Promise.allSettled([
+            postFunctions.getUserPostCount(userName),
+            friendFunctions.getUserFriendCount(userName),
+            groupFunctions.getUserGroupCount(userName)
+        ]);
+
+        // STEP 3: Extract counts (use -1 if failed)
+        var totalPosts = -1;
+        if (postsResult.status === 'fulfilled' && postsResult.value && postsResult.value.groupPostCount !== undefined) {
+            totalPosts = postsResult.value.groupPostCount;
+        }
+
+        var totalFriends = -1;
+        if (friendsResult.status === 'fulfilled' && friendsResult.value && friendsResult.value.success === true) {
+            totalFriends = friendsResult.value.friendCount;
+        }
+
+        var totalGroups = -1;
+        if (groupsResult.status === 'fulfilled' && groupsResult.value && groupsResult.value.success === true) {
+            totalGroups = groupsResult.value.groupCount;
+        }
+
+        // STEP 4: Build response
+        var userInfo = {
+            userName: userName,
+            userID: userID,
+            totalFriends: totalFriends,
+            totalGroups: totalGroups,
+            totalPosts: totalPosts
+        };
+
+        userProfileInfoOutcome.data = [userInfo];
+        userProfileInfoOutcome.message = "We got your profile information!";
+        userProfileInfoOutcome.success = true;
+        userProfileInfoOutcome.statusCode = 200;
+
+    } catch (error) {
+        console.error("Error in getUserProfileInformation:", error);
+        userProfileInfoOutcome.message = "Internal server error while getting profile information";
+        userProfileInfoOutcome.errors.push(error.message || error.toString());
+        userProfileInfoOutcome.statusCode = 500;
+    }
+    
+    Functions.addFooter();
+    res.json(userProfileInfoOutcome);
+}
+
+module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS, getUserProfileInformation };
 
 
 //APPENDIX

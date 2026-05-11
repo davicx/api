@@ -15,8 +15,8 @@ FUNCTIONS A: All Middleware Functions
 
 //Function A1: Verify User
 function verifyUser(req, res, next) {
-    console.log("____________________________________________")
-    console.log("MIDDLEWARE: verifyUser")
+    //console.log("____________________________________________")
+    //console.log("MIDDLEWARE: verifyUser")
     var currentUser = "EMPTY"
   
     var token = null;
@@ -104,8 +104,8 @@ function verifyUser(req, res, next) {
         if(!err) {
             //SUCCESS
             //console.log("STEP 5: The token was a good one!")
-            console.log("Validated User!")
-            console.log("____________________________________________")
+            //console.log("Validated User!")
+            //console.log("____________________________________________")
             req.authorizationData = authorizationData
             req.currentUser = authorizationData.currentUser
 
