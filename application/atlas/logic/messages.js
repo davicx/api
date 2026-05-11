@@ -5,7 +5,7 @@ const Notification = require('../../functions/classes/Notification');
 const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
-const openAIFunctions = require('../functions/openAIFunctions');
+const openAIFunctions = require('../functions/openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
@@ -86,6 +86,7 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
+    /*
     //STEP 5: Save CloudPilot message to database
     console.log("STEP 5: Save CloudPilot message to database");
 
@@ -126,11 +127,14 @@ async function postMessage(req, res) {
             messageOutcome.errors = [cloudPilotResult.error];
         }
     }
+    */
+    
     
     //STEP 6: Return Response
     Functions.addFooter();
     res.json(messageOutcome);
 }
+
 
 //Function B2: Delete Message
 async function deleteMessage(req, res) {
@@ -357,12 +361,5 @@ async function getConversationMessages(req, res) {
     res.json(messagesResponse);
 }
 
-module.exports = {
-    postMessageHello,
-    postMessage,
-    deleteMessage,
-    editMessage,
-    getGroupMessages,
-    getConversationMessages
-};
+module.exports = { postMessageHello, postMessage, deleteMessage, editMessage, getGroupMessages, getConversationMessages };
 

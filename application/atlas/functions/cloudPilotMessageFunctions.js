@@ -1,4 +1,4 @@
-const openAIFunctions = require('./openAIFunctions');
+const openAIFunctions = require('./openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
 const fieldExtractors = require('./functions');
@@ -54,7 +54,7 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
-async function processMessage(userMessage, conversationID) {
+async function processMessage(rawUserMessage, conversationID) {
     var currentStateData = actionState.getActionStatus(conversationID);
     var actionPending = currentStateData.pendingAction;
 
@@ -87,30 +87,33 @@ async function processMessage(userMessage, conversationID) {
     //Sync Data
     processMessageOutcome.cloudPilot.state = currentStateData;
 
-    //STEP 1: Normalize User Intent from message
-    const normalizedText = openAIFunctions.normalizeUserMessageForModel(userMessage);
+    //STEP 1: Normalize user message → normalizedMessageOutcome (ok, text, message)
+    const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
 
     //Handle Error
-    if (!normalizedText.ok) {
-        console.log("STEP 1: Normalize text failed");
+    if (!normalizedMessageOutcome.ok) {
+        console.log("STEP 1: Normalize message outcome failed");
 
         processMessageOutcome.success = false;
-        processMessageOutcome.error = normalizedText.message;
+        processMessageOutcome.error = normalizedMessageOutcome.message;
 
         return processMessageOutcome;         
     }
 
-    const userMessageNormalized = normalizedText.text;
+    const currentUserMessage = normalizedMessageOutcome.text;
 
-    console.log("STEP 1: Normalize text Worked");
-    console.log("Current User Message: " + userMessageNormalized)
+    console.log("STEP 1: Normalize message outcome OK");
+    console.log("Current user message (text): " + currentUserMessage);
 
+    
     // STEP 2: Detect intent
-    const intent = detectIntent(userMessageNormalized);
+    const intent = detectIntent(currentUserMessage);
     processMessageOutcome.cloudPilot.intent = intent;
 
     console.log("STEP 2: INTENT:", intent);
 
+
+    /*
     // STEP 3: Decide action
     const action = decideAction(intent);
     processMessageOutcome.cloudPilot.action.type = action.type;
@@ -149,7 +152,7 @@ async function processMessage(userMessage, conversationID) {
             if (!extractor) {
                 continue;
             }
-            const value = extractor(userMessageNormalized);
+            const value = extractor(currentUserMessage);
 
             if (!value) {
                 continue;
@@ -189,7 +192,7 @@ async function processMessage(userMessage, conversationID) {
             const actionLabel = (actionDefinition && actionDefinition.actionLabel) ? actionDefinition.actionLabel : (actionPending || 'unknown');
             console.log("STEP 7: READY → action handler (" + actionLabel + ")");
             
-            const result = await actionDefinition.handler({ userMessage: userMessageNormalized, state: currentStateData, conversationID, action: actionDefinition });
+            const result = await actionDefinition.handler({ userMessage: currentUserMessage, state: currentStateData, conversationID, action: actionDefinition });
 
             // Handler finished without throwing — if it says success, this turn is done so we wipe the in-memory workflow
             if (result.success) {
@@ -213,7 +216,7 @@ async function processMessage(userMessage, conversationID) {
 
     //No API Call    
     // User still owes us a field but they asked what is missing — give a short reminder instead of repeating the big question
-    } else if (nextMissingField && userAskedForMissingInfo(userMessageNormalized)) {
+    } else if (nextMissingField && userAskedForMissingInfo(currentUserMessage)) {
 
         const actionDefinitionForPrompt = actionRegistry[actionPending];
         const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
@@ -248,7 +251,7 @@ async function processMessage(userMessage, conversationID) {
 
         console.log("STEP 7: General chat during workflow → ChatGPT + continuation");
 
-        const workflowChatResult = await handleWorkflowAwareGeneralChat(userMessageNormalized, action, currentStateData, actionPending);
+        const workflowChatResult = await handleWorkflowAwareGeneralChat(currentUserMessage, action, currentStateData, actionPending);
 
         processMessageOutcome.success = workflowChatResult.success;
         processMessageOutcome.cloudPilotMessage = workflowChatResult.data || workflowChatResult.message;
@@ -279,7 +282,7 @@ async function processMessage(userMessage, conversationID) {
         console.log("STEP 7: General chat → ChatGPT");
 
         // Ask OpenAI for a short reply using the general system prompt
-        const result = await handleGeneralChat(userMessageNormalized, action);
+        const result = await handleGeneralChat(currentUserMessage, action);
 
         // Map the helper's old shape (data/message) into the same outcome fields the API already used
         processMessageOutcome.success = result.success;
@@ -297,6 +300,7 @@ async function processMessage(userMessage, conversationID) {
         processMessageOutcome.cloudPilot.action.type = actionPending;
     }
 
+    */
     console.log("_______________processMessage______________________")    
     console.log(" ")
     console.log(" ");
