@@ -26,6 +26,8 @@ FUNCTIONS D: User message helpers
 
 */
 
+//WHAT IS THIS WHAT A MESS MAYBE CLEAN
+
 // TODO: Replace in-memory Map with DB/Redis for multi-process + durable workflows.
 const stateStore = new Map();
 

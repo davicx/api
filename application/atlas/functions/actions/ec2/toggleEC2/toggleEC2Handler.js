@@ -1,4 +1,4 @@
-const openAIFunctions = require('../../../openAIFunctions');
+const openAIFunctions = require('../../../openAI/openAIFunctions');
 
 async function toggleEC2Handler(context) {
     const chatResult = await openAIFunctions.sendChatWithAction(context.userMessage, context.action);

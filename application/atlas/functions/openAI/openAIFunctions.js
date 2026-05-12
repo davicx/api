@@ -1,5 +1,5 @@
 const OpenAI = require('openai');
-const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('./config/chatGPTconfig');
+const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../config/chatGPTconfig');
 
 /*
 FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPilotMessageFunctions for that)
