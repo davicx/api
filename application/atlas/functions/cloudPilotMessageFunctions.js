@@ -104,7 +104,6 @@ async function processMessage(rawUserMessage, conversationID) {
 
     console.log("STEP 1: Normalize message outcome OK");
     console.log("Current user message (text): " + currentUserMessage);
-
     
     // STEP 2: Detect intent
     const intent = detectIntent(currentUserMessage);
@@ -312,17 +311,19 @@ async function processMessage(rawUserMessage, conversationID) {
 //FUNCTIONS B: Process User Messages
 //Function B1: Detect Intent
 function detectIntent(userMessage) {
-    const normalizedMessage =
-        String(userMessage || '')
-            .toLowerCase()
-            .trim();
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
 
+    // TEMP: remove when done debugging intent / registry
+    const availableActionTypes = Object.keys(actionRegistry);
+    console.log(" ")
+    console.log("Step 2A: Available Actions from ActionRegistry");
+    console.log("[" + availableActionTypes.join(", ") + "]");
+    console.log(" ")
+
+    
     for (const action of Object.values(actionRegistry)) {
 
-        if (
-            typeof action.match === 'function' &&
-            action.match(normalizedMessage)
-        ) {
+        if ( typeof action.match === 'function' && action.match(normalizedMessage)) {
             return action.type;
         }
     }

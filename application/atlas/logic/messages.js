@@ -36,7 +36,7 @@ async function postMessage(req, res) {
     const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
     const storageType = req.body.storageType || 'local';
     
-    var headerMessage = "Post Message";
+    var headerMessage = "Message Cloud Pilot";
     Functions.addHeader(headerMessage);
 
     var messageOutcome = {
