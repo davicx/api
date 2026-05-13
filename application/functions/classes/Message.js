@@ -28,7 +28,7 @@ class Message {
         const cloudBucket = newMessage.cloudBucket || 'no_cloud_bucket';
         const storageType = newMessage.storageType || 'local';
 
-        console.log("CLASS Message: A: Create a new message from Message Class");
+        //console.log("CLASS Message: A: Create a new message from Message Class");
 
         var createdMessage = {
             messageID: 0,

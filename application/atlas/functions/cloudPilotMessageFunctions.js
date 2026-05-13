@@ -57,8 +57,8 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 async function processMessage(rawUserMessage, conversationID) {
     var currentStateData = actionState.getActionStatus(conversationID);
     var actionPending = currentStateData.pendingAction;
+    let cloudPilotShouldRespond = false;
 
-    console.log(" ")
     console.log("_______________processMessage______________________")
 
     //Create outcome
@@ -87,6 +87,10 @@ async function processMessage(rawUserMessage, conversationID) {
     //Sync Data
     processMessageOutcome.cloudPilot.state = currentStateData;
 
+    //STATE TEMP
+    printState(conversationID);
+    //STATE TEMP
+
     //STEP 1: Normalize user message → normalizedMessageOutcome (ok, text, message)
     const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
 
@@ -104,26 +108,31 @@ async function processMessage(rawUserMessage, conversationID) {
 
     console.log("STEP 1: Normalize message outcome OK");
     console.log("Current user message (text): " + currentUserMessage);
-    
+    console.log(" ");
+
     // STEP 2: Detect intent
     const intent = detectIntent(currentUserMessage);
     processMessageOutcome.cloudPilot.intent = intent;
 
     console.log("STEP 2: INTENT:", intent);
+    console.log(" ");
 
     // STEP 3: Check if user is requesting an action
     const action = getActionDefinition(intent);
     console.log("STEP 3: ACTION ");
     console.log(action)
+    console.log(" ");
     
 
     // STEP 4: Start or replace workflow action
     if (action.requiresWorkflow) {
+        cloudPilotShouldRespond = true;
 
         // User requested a new workflow if(no action pending OR its a different action)
         if (!actionPending || actionPending !== action.type) {
 
             console.log("STEP 4: Starting workflow");
+            console.log(" ");
 
             actionState.setPendingAction(
                 conversationID,
@@ -136,89 +145,6 @@ async function processMessage(rawUserMessage, conversationID) {
         currentStateData = actionState.getActionStatus(conversationID);
         actionPending = currentStateData.pendingAction;
         processMessageOutcome.cloudPilot.state =currentStateData;
-    }
-
-
-
-/*
-
-// STEP 4: Start or replace workflow action
-if (action.requiresWorkflow) {
-
-    // Start new workflow
-    if (!actionPending) {
-
-        console.log("STEP 4A: Starting workflow");
-
-    // Replace existing workflow
-    } else if (actionPending !== action.type) {
-
-        console.log("STEP 4B: Replacing workflow");
-
-    // Same workflow already active
-    } else {
-
-        console.log("STEP 4C: Workflow already active");
-    }
-
-    // Only start/replace if needed
-    if (!actionPending || actionPending !== action.type) {
-
-        actionState.setPendingAction(
-            conversationID,
-            action.type,
-            action.requiredFields || []
-        );
-    }
-
-    // Refresh state
-    currentStateData = actionState.getActionStatus(conversationID);
-    actionPending = currentStateData.pendingAction;
-    processMessageOutcome.cloudPilot.state = currentStateData;
-}
-    */
-
-
-    // STEP 5: Workflow or normal mode
-    /*
-    if (actionPending) {
-
-        console.log("STEP 5: WORKFLOW MODE");
-
-        printState(conversationID);
-
-    } else {
-
-        console.log("STEP 5: GENERAL CHAT MODE");
-    }
-        */
-    /*
-    
-    processMessageOutcome.cloudPilot.action.type = action.type;
- 
-    console.log("STEP 3: ACTION:", action.type);
-
-    // STEP 4: Start or replace a user requested action like Scan my EC2
-    if (action.requiresWorkflow) {
-
-        if (!actionPending) {
-            console.log("STEP 4: Starting new action:", action.type);
-
-            actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
-
-        } else if (actionPending !== action.type) {
-            console.log("STEP 4: Replacing action:", actionPending, "→", action.type);
-
-            actionState.setPendingAction(conversationID, action.type, action.requiredFields || []);
-        }
-
-        //Refresh and sync state
-        currentStateData = actionState.getActionStatus(conversationID);
-        actionPending = currentStateData.pendingAction;
-        processMessageOutcome.cloudPilot.state = currentStateData;
-
-    } else {
-        console.log("STEP 4: Not starting or replacing an action");
     }
 
     // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
@@ -248,6 +174,254 @@ if (action.requiresWorkflow) {
     } else {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
+
+    // STEP 6: Check if Request is ready
+    if (actionPending && currentStateData.missing.length === 0) {
+        console.log("STEP 6: Request is READY");
+        cloudPilotShouldRespond = true;
+        //processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
+    } else {
+        console.log("STEP 6: Request is NOT ready");
+    }
+
+    //STEP 7: Chat Response
+    if (cloudPilotShouldRespond) {
+        const result = await handleCloudPilotChat({
+            currentUserMessage,
+            intent,
+            action,
+            currentStateData,
+            actionPending
+        });
+
+        console.log("STEP 7: CLOUD_PILOT selected");
+
+    } else {
+
+        const result = await handleGeneralChat({
+            currentUserMessage,
+            intent,
+            action,
+            currentStateData,
+            actionPending
+        });
+
+        console.log("STEP 7: OPEN_AI selected");
+    }
+
+    //STATE TEMP
+    //printState(conversationID);
+    //STATE TEMP
+    
+
+
+    console.log("_______________processMessage______________________")    
+    console.log(" ")
+    console.log(" ");
+
+    return processMessageOutcome;
+
+}
+
+//FUNCTIONS B: Process User Messages
+//Function B1: Detect Intent
+function detectIntent(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+
+    // TEMP: remove when done debugging intent / registry
+    const availableActionTypes = Object.keys(actionRegistry);
+    console.log(" ")
+    console.log("Step 2A: Available Actions from ActionRegistry");
+    console.log("[" + availableActionTypes.join(", ") + "]");
+    console.log(" ")
+
+    
+    for (const action of Object.values(actionRegistry)) {
+
+        if ( typeof action.match === 'function' && action.match(normalizedMessage)) {
+            return action.type;
+        }
+    }
+
+    return 'general_chat';
+}
+
+//Function B2: Get Action Definition
+function getActionDefinition(intent) {
+    const action = actionRegistry[intent];
+
+    if (action) {
+        const copy = { ...action };
+        delete copy.match;
+        delete copy.handler;
+        delete copy.defaults;
+        return copy; 
+    }
+
+    return {
+        type: 'none',
+        allowed: false,
+        requiresExecution: false,
+        message: 'I can only help with EC2 right now.',
+    };
+}
+
+//Function B3: Handle General Chat
+async function handleGeneralChat(payload) {
+
+    console.log(" ");
+    console.log("OPEN_AI FUNCTION CALLED");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(" ");
+
+    return {
+        success: true,
+        message: "OPEN_AI_RESPONSE"
+    };
+}
+
+//Function B3: Handle Cloud Pilot Chat
+async function handleCloudPilotChat(payload) {
+
+    console.log(" ");
+    console.log("CLOUD_PILOT FUNCTION CALLED");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(" ");
+
+    return {
+        success: true,
+        message: "CLOUD_PILOT_RESPONSE"
+    };
+}
+
+
+
+/*
+async function handleGeneralChat(text, action) {
+    const chatResult = await openAIFunctions.sendGeneralChat(text);
+
+    if (!chatResult.success) {
+        //console.log('handleGeneralChat: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleGeneralChat: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+*/
+
+/*
+//Function B4: Handle Request for Missing Info
+function userAskedForMissingInfo(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+
+    return (
+        normalizedMessage.includes("what am i missing") ||
+        normalizedMessage.includes("what is missing") ||
+        normalizedMessage.includes("what's missing") ||
+        normalizedMessage.includes("what else am i missing") ||
+        normalizedMessage.includes("what else do you need") ||
+        normalizedMessage.includes("forgot what was missing") ||
+        normalizedMessage.includes("what do you still need")
+    );
+}
+
+//Function B5: Workflow prompt for missing field
+function messageForMissingField(actionDefinition, nextMissingField) {
+    const fromRegistry = actionDefinition && actionDefinition.questions && actionDefinition.questions[nextMissingField];
+    const trimmed = fromRegistry != null ? String(fromRegistry).trim() : '';
+    if (trimmed) {
+        return trimmed;
+    }
+    return "I still need: " + nextMissingField;
+}
+
+function buildWorkflowContinuationAppendix(actionPending, currentStateData) {
+    const missing = currentStateData.missing || [];
+    const lines = missing.map((field) => '- ' + field).join('\n');
+    return '\n\nI still need:\n' + lines;
+}
+
+async function handleWorkflowAwareGeneralChat(text, action, currentStateData, actionPending) {
+    const workflowContext = {
+        pendingAction: actionPending,
+        missing: currentStateData.missing || [],
+        collected: currentStateData.collected || {}
+    };
+    const chatResult = await openAIFunctions.sendGeneralChatDuringWorkflow(text, workflowContext);
+    const appendix = buildWorkflowContinuationAppendix(actionPending, currentStateData);
+
+    if (!chatResult.success) {
+        const fallback = 'I could not reach ChatGPT right now.' + appendix;
+        return {
+            success: true,
+            data: fallback,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    const body = (chatResult.data != null && chatResult.data !== '') ? String(chatResult.data).trim() : '';
+    const combined = body ? (body + appendix) : appendix.trim();
+    return {
+        success: true,
+        data: combined,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+*/
+//TEMP: Debug current action state
+function printState(conversationID) {
+    console.log(" ");
+    console.log("currentStateData");
+    actionState.print(conversationID);
+    console.log("currentStateData");
+    console.log(" ");
+}
+
+
+module.exports = { processMessage, detectIntent, getActionDefinition };
+
+
+
+
+
+
+    
+
+    // STEP 5: Workflow or normal mode
+    /*
+    if (actionPending) {
+
+        console.log("STEP 5: WORKFLOW MODE");
+
+        printState(conversationID);
+
+    } else {
+
+        console.log("STEP 5: GENERAL CHAT MODE");
+    }
+        */
+    /*
+ 
 
     // STEP 6: Check if Request is ready
     if (actionPending && currentStateData.missing.length === 0) {
@@ -379,159 +553,44 @@ if (action.requiresWorkflow) {
     }
 
     */
-    console.log("_______________processMessage______________________")    
-    console.log(" ")
-    console.log(" ");
 
-    return processMessageOutcome;
 
-}
 
-//FUNCTIONS B: Process User Messages
-//Function B1: Detect Intent
-function detectIntent(userMessage) {
-    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
 
-    // TEMP: remove when done debugging intent / registry
-    const availableActionTypes = Object.keys(actionRegistry);
-    console.log(" ")
-    console.log("Step 2A: Available Actions from ActionRegistry");
-    console.log("[" + availableActionTypes.join(", ") + "]");
-    console.log(" ")
+/*
 
-    
-    for (const action of Object.values(actionRegistry)) {
+// STEP 4: Start or replace workflow action
+if (action.requiresWorkflow) {
 
-        if ( typeof action.match === 'function' && action.match(normalizedMessage)) {
-            return action.type;
-        }
+    // Start new workflow
+    if (!actionPending) {
+
+        console.log("STEP 4A: Starting workflow");
+
+    // Replace existing workflow
+    } else if (actionPending !== action.type) {
+
+        console.log("STEP 4B: Replacing workflow");
+
+    // Same workflow already active
+    } else {
+
+        console.log("STEP 4C: Workflow already active");
     }
 
-    return 'general_chat';
-}
+    // Only start/replace if needed
+    if (!actionPending || actionPending !== action.type) {
 
-//Function B2: Get Action Definition
-function getActionDefinition(intent) {
-    const action = actionRegistry[intent];
-
-    if (action) {
-        const copy = { ...action };
-        delete copy.match;
-        delete copy.handler;
-        delete copy.defaults;
-        return copy; 
+        actionState.setPendingAction(
+            conversationID,
+            action.type,
+            action.requiredFields || []
+        );
     }
 
-    return {
-        type: 'none',
-        allowed: false,
-        requiresExecution: false,
-        message: 'I can only help with EC2 right now.',
-    };
+    // Refresh state
+    currentStateData = actionState.getActionStatus(conversationID);
+    actionPending = currentStateData.pendingAction;
+    processMessageOutcome.cloudPilot.state = currentStateData;
 }
-
-//Function B3: Handle General Chat
-async function handleGeneralChat(text, action) {
-    const chatResult = await openAIFunctions.sendGeneralChat(text);
-
-    if (!chatResult.success) {
-        //console.log('handleGeneralChat: ChatGPT request failed');
-        return {
-            success: false,
-            message: chatResult.message || 'ChatGPT request failed',
-            data: null,
-            action,
-            intent: 'unknown',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    //console.log('handleGeneralChat: outcome ok');
-    return {
-        success: true,
-        data: chatResult.data,
-        action,
-        intent: 'unknown',
-        policy: { allowed: true },
-    };
-}
-
-//Function B4: Handle Request for Missing Info
-function userAskedForMissingInfo(userMessage) {
-    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
-
-    return (
-        normalizedMessage.includes("what am i missing") ||
-        normalizedMessage.includes("what is missing") ||
-        normalizedMessage.includes("what's missing") ||
-        normalizedMessage.includes("what else am i missing") ||
-        normalizedMessage.includes("what else do you need") ||
-        normalizedMessage.includes("forgot what was missing") ||
-        normalizedMessage.includes("what do you still need")
-    );
-}
-
-//Function B5: Workflow prompt for missing field
-function messageForMissingField(actionDefinition, nextMissingField) {
-    const fromRegistry = actionDefinition && actionDefinition.questions && actionDefinition.questions[nextMissingField];
-    const trimmed = fromRegistry != null ? String(fromRegistry).trim() : '';
-    if (trimmed) {
-        return trimmed;
-    }
-    return "I still need: " + nextMissingField;
-}
-
-function buildWorkflowContinuationAppendix(actionPending, currentStateData) {
-    const missing = currentStateData.missing || [];
-    const lines = missing.map((field) => '- ' + field).join('\n');
-    return '\n\nI still need:\n' + lines;
-}
-
-async function handleWorkflowAwareGeneralChat(text, action, currentStateData, actionPending) {
-    const workflowContext = {
-        pendingAction: actionPending,
-        missing: currentStateData.missing || [],
-        collected: currentStateData.collected || {}
-    };
-    const chatResult = await openAIFunctions.sendGeneralChatDuringWorkflow(text, workflowContext);
-    const appendix = buildWorkflowContinuationAppendix(actionPending, currentStateData);
-
-    if (!chatResult.success) {
-        const fallback = 'I could not reach ChatGPT right now.' + appendix;
-        return {
-            success: true,
-            data: fallback,
-            action,
-            intent: 'unknown',
-            policy: { allowed: true },
-            error: chatResult.error,
-        };
-    }
-
-    const body = (chatResult.data != null && chatResult.data !== '') ? String(chatResult.data).trim() : '';
-    const combined = body ? (body + appendix) : appendix.trim();
-    return {
-        success: true,
-        data: combined,
-        action,
-        intent: 'unknown',
-        policy: { allowed: true },
-    };
-}
-
-//TEMP: Debug current action state
-function printState(conversationID) {
-    console.log(" ");
-    console.log("currentStateData");
-    actionState.print(conversationID);
-    console.log("currentStateData");
-    console.log(" ");
-}
-
-
-module.exports = {
-    processMessage,
-    detectIntent,
-    getActionDefinition,
-};
+    */

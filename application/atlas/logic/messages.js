@@ -78,10 +78,10 @@ async function postMessage(req, res) {
 
     try {
         cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);
-        console.log("CloudPilot Result:");
-        console.log("___________________");
-        console.log(cloudPilotResult);
-        console.log("___________________");
+        //console.log("CloudPilot Result:");
+        //console.log("___________________");
+        //console.log(cloudPilotResult);
+        //console.log("___________________");
     } catch (err) {
         console.error("CloudPilot error:", err);
     }
