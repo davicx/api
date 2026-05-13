@@ -19,7 +19,7 @@ const actionRegistry = {
         actionLabel: 'Scan EC2',
         allowed: true,
         requiresExecution: false,
-        workflowEnabled: true,
+        requiresWorkflow: true,
 
         //Detect user intent
         match: (text) =>
@@ -49,7 +49,7 @@ const actionRegistry = {
         actionLabel: 'Toggle EC2',
         allowed: true,
         requiresExecution: false,
-        workflowEnabled: true,
+        requiresWorkflow: true,
 
         //Detect user intent
         match: (text) =>
@@ -79,7 +79,7 @@ const actionRegistry = {
         actionLabel: 'Create EC2',
         allowed: true,
         requiresExecution: false,
-        workflowEnabled: true,
+        requiresWorkflow: true,
 
         match: (text) =>
             text.includes('create') &&

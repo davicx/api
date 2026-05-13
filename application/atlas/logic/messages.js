@@ -36,7 +36,7 @@ async function postMessage(req, res) {
     const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
     const storageType = req.body.storageType || 'local';
     
-    var headerMessage = "Message Cloud Pilot";
+    var headerMessage = "New Message";
     Functions.addHeader(headerMessage);
 
     var messageOutcome = {
@@ -50,16 +50,16 @@ async function postMessage(req, res) {
 
 
     //STEP 1: Get current state (Does the user have an open request)
-    var currentState = actionState.getActionStatus(conversationID);
-    console.log("STEP 1: Get current state (Does the user have an open request)")
-    actionState.print(conversationID);
+    //var currentState = actionState.getActionStatus(conversationID);
+    //console.log("STEP 1: Get current state (Does the user have an open request)")
+    //actionState.print(conversationID);
 
     //STEP 2: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    console.log("STEP 2: Build Message ")
+    //console.log("STEP 2: Build Message ")
 
     //STEP 3: Send user message to be stored in the database
-    console.log("STEP 3: Send user message to be stored in the database");
+    //console.log("STEP 3: Send user message to be stored in the database");
     var currentUserMessageOutcome = await Message.createMessageText(currentUserMessage);
 
     //Step 3A: Add current user message to JSON output
@@ -73,8 +73,8 @@ async function postMessage(req, res) {
 
     //STEP 4: CloudPilot processing
     let cloudPilotResult = null;
-    console.log(" ");
-    console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
+    //console.log(" ");
+    //console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
     try {
         cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);

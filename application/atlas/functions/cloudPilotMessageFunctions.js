@@ -111,16 +111,95 @@ async function processMessage(rawUserMessage, conversationID) {
 
     console.log("STEP 2: INTENT:", intent);
 
+    // STEP 3: Check if user is requesting an action
+    const action = getActionDefinition(intent);
+    console.log("STEP 3: ACTION ");
+    console.log(action)
+    
 
+    // STEP 4: Start or replace workflow action
+    if (action.requiresWorkflow) {
+
+        // User requested a new workflow if(no action pending OR its a different action)
+        if (!actionPending || actionPending !== action.type) {
+
+            console.log("STEP 4: Starting workflow");
+
+            actionState.setPendingAction(
+                conversationID,
+                action.type,
+                action.requiredFields || []
+            );
+        }
+
+        // Refresh workflow state
+        currentStateData = actionState.getActionStatus(conversationID);
+        actionPending = currentStateData.pendingAction;
+        processMessageOutcome.cloudPilot.state =currentStateData;
+    }
+
+
+
+/*
+
+// STEP 4: Start or replace workflow action
+if (action.requiresWorkflow) {
+
+    // Start new workflow
+    if (!actionPending) {
+
+        console.log("STEP 4A: Starting workflow");
+
+    // Replace existing workflow
+    } else if (actionPending !== action.type) {
+
+        console.log("STEP 4B: Replacing workflow");
+
+    // Same workflow already active
+    } else {
+
+        console.log("STEP 4C: Workflow already active");
+    }
+
+    // Only start/replace if needed
+    if (!actionPending || actionPending !== action.type) {
+
+        actionState.setPendingAction(
+            conversationID,
+            action.type,
+            action.requiredFields || []
+        );
+    }
+
+    // Refresh state
+    currentStateData = actionState.getActionStatus(conversationID);
+    actionPending = currentStateData.pendingAction;
+    processMessageOutcome.cloudPilot.state = currentStateData;
+}
+    */
+
+
+    // STEP 5: Workflow or normal mode
     /*
-    // STEP 3: Decide action
-    const action = decideAction(intent);
+    if (actionPending) {
+
+        console.log("STEP 5: WORKFLOW MODE");
+
+        printState(conversationID);
+
+    } else {
+
+        console.log("STEP 5: GENERAL CHAT MODE");
+    }
+        */
+    /*
+    
     processMessageOutcome.cloudPilot.action.type = action.type;
  
     console.log("STEP 3: ACTION:", action.type);
 
     // STEP 4: Start or replace a user requested action like Scan my EC2
-    if (action.workflowEnabled) {
+    if (action.requiresWorkflow) {
 
         if (!actionPending) {
             console.log("STEP 4: Starting new action:", action.type);
@@ -331,8 +410,8 @@ function detectIntent(userMessage) {
     return 'general_chat';
 }
 
-//Function B2: Decide Action
-function decideAction(intent) {
+//Function B2: Get Action Definition
+function getActionDefinition(intent) {
     const action = actionRegistry[intent];
 
     if (action) {
@@ -340,7 +419,7 @@ function decideAction(intent) {
         delete copy.match;
         delete copy.handler;
         delete copy.defaults;
-        return copy; // ← copy here
+        return copy; 
     }
 
     return {
@@ -441,9 +520,18 @@ async function handleWorkflowAwareGeneralChat(text, action, currentStateData, ac
     };
 }
 
+//TEMP: Debug current action state
+function printState(conversationID) {
+    console.log(" ");
+    console.log("currentStateData");
+    actionState.print(conversationID);
+    console.log("currentStateData");
+    console.log(" ");
+}
+
 
 module.exports = {
     processMessage,
     detectIntent,
-    decideAction,
+    getActionDefinition,
 };
