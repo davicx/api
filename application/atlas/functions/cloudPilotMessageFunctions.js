@@ -58,6 +58,7 @@ async function processMessage(rawUserMessage, conversationID) {
     var currentStateData = actionState.getActionStatus(conversationID);
     var actionPending = currentStateData.pendingAction;
     let cloudPilotShouldRespond = false;
+    let requestJustBecameReady = false;
 
     console.log("_______________processMessage______________________")
 
@@ -147,6 +148,8 @@ async function processMessage(rawUserMessage, conversationID) {
         processMessageOutcome.cloudPilot.state =currentStateData;
     }
 
+    const hadMissingFieldsBefore = actionPending && currentStateData.missing.length > 0;
+
     // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
     if (actionPending) {
         for (const field of currentStateData.missing) {
@@ -175,13 +178,23 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    // STEP 6: Check if Request is ready
-    if (actionPending && currentStateData.missing.length === 0) {
-        console.log("STEP 6: Request is READY");
-        cloudPilotShouldRespond = true;
-        //processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
+    const requestReadyNow =
+        actionPending &&
+        currentStateData.missing.length === 0;
+
+    if (hadMissingFieldsBefore && requestReadyNow) {
+        console.log("STEP 6: Request JUST became READY");
+
+        requestJustBecameReady = true;
+    }
+
+    // STEP 6: Check if Request just became ready
+    if (requestJustBecameReady) {
+        console.log("STEP 6A: Request JUST became READY");
+    } else if (requestReadyNow) {
+        console.log("STEP 6B: Request already READY");
     } else {
-        console.log("STEP 6: Request is NOT ready");
+        console.log("STEP 6C: Request NOT ready");
     }
 
     //STEP 7: Chat Response
