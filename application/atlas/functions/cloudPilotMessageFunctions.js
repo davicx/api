@@ -293,22 +293,6 @@ async function handleGeneralChat(payload) {
     };
 }
 
-//Function B3: Handle Cloud Pilot Chat
-async function handleCloudPilotChat(payload) {
-
-    console.log(" ");
-    console.log("CLOUD_PILOT FUNCTION CALLED");
-    console.log(JSON.stringify(payload, null, 2));
-    console.log(" ");
-
-    return {
-        success: true,
-        message: "CLOUD_PILOT_RESPONSE"
-    };
-}
-
-
-
 /*
 async function handleGeneralChat(text, action) {
     const chatResult = await openAIFunctions.sendGeneralChat(text);
@@ -336,6 +320,24 @@ async function handleGeneralChat(text, action) {
     };
 }
 */
+
+//Function B3: Handle Cloud Pilot Chat
+async function handleCloudPilotChat(payload) {
+
+    console.log(" ");
+    console.log("CLOUD_PILOT FUNCTION CALLED");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(" ");
+
+    return {
+        success: true,
+        message: "CLOUD_PILOT_RESPONSE"
+    };
+}
+
+
+
+
 
 /*
 //Function B4: Handle Request for Missing Info
