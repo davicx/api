@@ -193,7 +193,7 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 6: Request JUST became READY");
         cloudPilotShouldRespond = true;
     } else if (requestReadyNow) {
-        console.log("STEP 6B: Request already READY");
+        console.log("STEP 6B: There is a Request and it was READY before and is still READY");
     } else {
         console.log("STEP 6C: Request NOT ready");
     }
@@ -226,7 +226,7 @@ async function processMessage(rawUserMessage, conversationID) {
     }
 
     //STATE TEMP
-    //printState(conversationID);
+    printState(conversationID);
     //STATE TEMP
 
     console.log("_______________processMessage______________________")    
@@ -276,7 +276,14 @@ function getActionDefinition(intent) {
         type: 'none',
         allowed: false,
         requiresExecution: false,
-        message: 'I can only help with EC2 right now.',
+        messages: {
+            started: 'I can only help with EC2 right now.',
+            missingFields: {},
+            ready: '',
+            executing: '',
+            success: '',
+            failed: ''
+        },
     };
 }
 
@@ -359,7 +366,7 @@ function userAskedForMissingInfo(userMessage) {
 
 //Function B5: Workflow prompt for missing field
 function messageForMissingField(actionDefinition, nextMissingField) {
-    const fromRegistry = actionDefinition && actionDefinition.questions && actionDefinition.questions[nextMissingField];
+    const fromRegistry = actionDefinition && actionDefinition.messages && actionDefinition.messages.missingFields && actionDefinition.messages.missingFields[nextMissingField];
     const trimmed = fromRegistry != null ? String(fromRegistry).trim() : '';
     if (trimmed) {
         return trimmed;
@@ -420,194 +427,3 @@ module.exports = { processMessage, detectIntent, getActionDefinition };
 
 
 
-
-
-    
-
-    // STEP 5: Workflow or normal mode
-    /*
-    if (actionPending) {
-
-        console.log("STEP 5: WORKFLOW MODE");
-
-        printState(conversationID);
-
-    } else {
-
-        console.log("STEP 5: GENERAL CHAT MODE");
-    }
-        */
-    /*
- 
-
-    // STEP 6: Check if Request is ready
-    if (actionPending && currentStateData.missing.length === 0) {
-        console.log("STEP 6: Request is READY");
-        processMessageOutcome.cloudPilot.action.ready = actionPending && currentStateData.missing.length === 0;
-    } else {
-        console.log("STEP 6: Request is NOT ready");
-    }
-
-    const nextMissingField = (actionPending && currentStateData.missing.length > 0) ? currentStateData.missing[0] : null;
-
-    // STEP 7: Route response (THIS IS THE KEY LAYER)
-    if (processMessageOutcome.cloudPilot.action.ready) {
-        const actionDefinition = actionRegistry[actionPending];
-
-        //FINISHED: Now we can do actually do something. We will call a function like Scan or Toggle EC2 
-        if (actionDefinition && typeof actionDefinition.handler === 'function') {
-
-            
-            const actionLabel = (actionDefinition && actionDefinition.actionLabel) ? actionDefinition.actionLabel : (actionPending || 'unknown');
-            console.log("STEP 7: READY → action handler (" + actionLabel + ")");
-            
-            const result = await actionDefinition.handler({ userMessage: currentUserMessage, state: currentStateData, conversationID, action: actionDefinition });
-
-            // Handler finished without throwing — if it says success, this turn is done so we wipe the in-memory workflow
-            if (result.success) {
-                actionState.clear(conversationID);
-
-                // refresh state
-                currentStateData = actionState.getActionStatus(conversationID);
-
-                // Keep the local "what are we waiting on" variable in sync with storage
-                actionPending = currentStateData.pendingAction;
-
-                processMessageOutcome.cloudPilot.state = currentStateData;
-            }
-
-            // Copy the handler's answer into the API response (works for both success and failure)
-            processMessageOutcome.success = result.success;
-            processMessageOutcome.cloudPilotMessage = result.cloudPilotMessage;
-            processMessageOutcome.atlas = result.atlas || null;
-            processMessageOutcome.error = result.error || null;
-        }
-
-    //No API Call    
-    // User still owes us a field but they asked what is missing — give a short reminder instead of repeating the big question
-    } else if (nextMissingField && userAskedForMissingInfo(currentUserMessage)) {
-
-        const actionDefinitionForPrompt = actionRegistry[actionPending];
-        const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
-
-        console.log("STEP 7: Missing field → reminder message");
-
-        processMessageOutcome.cloudPilotMessage = workflowMessage;
-        processMessageOutcome.success = true;
-
-    //No API Call: Ask once for missing fields (workflow intent — not general_chat; that path handles chat + continuation)
-    } else if (nextMissingField && intent !== 'general_chat' && (!currentStateData.asked || !currentStateData.asked[nextMissingField])) {
-
-        const actionDefinitionForPrompt = actionRegistry[actionPending];
-        const workflowMessage = messageForMissingField(actionDefinitionForPrompt, nextMissingField);
-
-        console.log("STEP 7: Missing field → system message");
-
-        // Remember we already prompted for this field so we do not spam the same question every message
-        actionState.markAsked(conversationID, nextMissingField);
-
-        // refresh state
-        currentStateData = actionState.getActionStatus(conversationID);
-
-        processMessageOutcome.cloudPilot.state = currentStateData;
-
-        // The actual question text shown to the user
-        processMessageOutcome.cloudPilotMessage = workflowMessage;
-        processMessageOutcome.success = true;
-
-    //OPEN AI: general_chat during an active workflow — answer tangents, then remind what is still missing
-    } else if (nextMissingField && intent === 'general_chat') {
-
-        console.log("STEP 7: General chat during workflow → ChatGPT + continuation");
-
-        const workflowChatResult = await handleWorkflowAwareGeneralChat(currentUserMessage, action, currentStateData, actionPending);
-
-        processMessageOutcome.success = workflowChatResult.success;
-        processMessageOutcome.cloudPilotMessage = workflowChatResult.data || workflowChatResult.message;
-
-        if (!currentStateData.asked || !currentStateData.asked[nextMissingField]) {
-            actionState.markAsked(conversationID, nextMissingField);
-            currentStateData = actionState.getActionStatus(conversationID);
-            processMessageOutcome.cloudPilot.state = currentStateData;
-        }
-
-    //No API Call: workflow still incomplete but intent was not general_chat — short resume prompt
-    } else if (nextMissingField) {
-
-        const actionDefinitionForPrompt = actionRegistry[actionPending];
-        const lines = (currentStateData.missing || []).map((field) => '- ' + field).join('\n');
-        const askedFlags = currentStateData.asked || {};
-        const alreadyAskedForNext = askedFlags[nextMissingField];
-        const resumeMessage = alreadyAskedForNext ? ('I still need:\n' + lines) : (messageForMissingField(actionDefinitionForPrompt, nextMissingField) + '\n\nI still need:\n' + lines);
-
-        console.log("STEP 7: Missing field → resume prompt");
-
-        processMessageOutcome.cloudPilotMessage = resumeMessage;
-        processMessageOutcome.success = true;
-
-    //OPEN AI: Calls Open AI (no active workflow with missing fields)
-    } else if (intent === 'general_chat') {
-
-        console.log("STEP 7: General chat → ChatGPT");
-
-        // Ask OpenAI for a short reply using the general system prompt
-        const result = await handleGeneralChat(currentUserMessage, action);
-
-        // Map the helper's old shape (data/message) into the same outcome fields the API already used
-        processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.data || result.message;
-
-    //No API Call
-    } else {
-        console.log("STEP 7: Fallback message");
-
-        processMessageOutcome.cloudPilotMessage = "How can I help with your AWS setup?";
-        processMessageOutcome.success = true;
-    }
-
-    if (actionPending) {
-        processMessageOutcome.cloudPilot.action.type = actionPending;
-    }
-
-    */
-
-
-
-
-/*
-
-// STEP 4: Start or replace workflow action
-if (action.requiresWorkflow) {
-
-    // Start new workflow
-    if (!actionPending) {
-
-        console.log("STEP 4A: Starting workflow");
-
-    // Replace existing workflow
-    } else if (actionPending !== action.type) {
-
-        console.log("STEP 4B: Replacing workflow");
-
-    // Same workflow already active
-    } else {
-
-        console.log("STEP 4C: Workflow already active");
-    }
-
-    // Only start/replace if needed
-    if (!actionPending || actionPending !== action.type) {
-
-        actionState.setPendingAction(
-            conversationID,
-            action.type,
-            action.requiredFields || []
-        );
-    }
-
-    // Refresh state
-    currentStateData = actionState.getActionStatus(conversationID);
-    actionPending = currentStateData.pendingAction;
-    processMessageOutcome.cloudPilot.state = currentStateData;
-}
-    */
