@@ -190,34 +190,37 @@ async function processMessage(rawUserMessage, conversationID) {
 
     // STEP 6: Check if Request just became ready
     if (requestJustBecameReady) {
-        console.log("STEP 6A: Request JUST became READY");
+        console.log("STEP 6: Request JUST became READY");
+        cloudPilotShouldRespond = true;
     } else if (requestReadyNow) {
         console.log("STEP 6B: Request already READY");
     } else {
         console.log("STEP 6C: Request NOT ready");
     }
 
+    const chatPayload = {
+        currentUserMessage,
+        intent,
+        action,
+
+        requestReady: requestReadyNow,
+
+        requestedAction: {
+            pendingAction: actionPending,
+            missing: currentStateData.missing || [],
+            collected: currentStateData.collected || {}
+        }
+    };
+
     //STEP 7: Chat Response
     if (cloudPilotShouldRespond) {
-        const result = await handleCloudPilotChat({
-            currentUserMessage,
-            intent,
-            action,
-            currentStateData,
-            actionPending
-        });
+        const result = await handleCloudPilotChat(chatPayload);
 
         console.log("STEP 7: CLOUD_PILOT selected");
 
     } else {
 
-        const result = await handleGeneralChat({
-            currentUserMessage,
-            intent,
-            action,
-            currentStateData,
-            actionPending
-        });
+        const result = await handleGeneralChat(chatPayload);
 
         console.log("STEP 7: OPEN_AI selected");
     }
@@ -225,8 +228,6 @@ async function processMessage(rawUserMessage, conversationID) {
     //STATE TEMP
     //printState(conversationID);
     //STATE TEMP
-    
-
 
     console.log("_______________processMessage______________________")    
     console.log(" ")
@@ -293,6 +294,22 @@ async function handleGeneralChat(payload) {
     };
 }
 
+
+//Function B3: Handle Cloud Pilot Chat
+async function handleCloudPilotChat(payload) {
+
+    console.log(" ");
+    console.log("CLOUD_PILOT FUNCTION CALLED");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(" ");
+
+    return {
+        success: true,
+        message: "CLOUD_PILOT_RESPONSE"
+    };
+}
+
+
 /*
 async function handleGeneralChat(text, action) {
     const chatResult = await openAIFunctions.sendGeneralChat(text);
@@ -320,21 +337,6 @@ async function handleGeneralChat(text, action) {
     };
 }
 */
-
-//Function B3: Handle Cloud Pilot Chat
-async function handleCloudPilotChat(payload) {
-
-    console.log(" ");
-    console.log("CLOUD_PILOT FUNCTION CALLED");
-    console.log(JSON.stringify(payload, null, 2));
-    console.log(" ");
-
-    return {
-        success: true,
-        message: "CLOUD_PILOT_RESPONSE"
-    };
-}
-
 
 
 
