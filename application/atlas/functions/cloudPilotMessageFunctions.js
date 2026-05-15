@@ -83,7 +83,7 @@ cloudPilot: {
 /*
 cloudPilot: {
 
-    userMessageRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+    userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
 
     requestStatus: {
         requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2", ) null if it is just general_chat
@@ -167,7 +167,7 @@ async function processMessage(rawUserMessage, conversationID) {
     let cloudPilotShouldRespond = false;
     let requestJustBecameReady = false;
 
-    console.log("_______________processMessage______________________")
+    //console.log("_______________processMessage______________________")
 
     //Create outcome
     var processMessageOutcome = {
@@ -198,60 +198,54 @@ async function processMessage(rawUserMessage, conversationID) {
     };
 
     //Sync Data
-    processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, null, false);
 
-    //STATE TEMP
-    printState(conversationID);
-    //STATE TEMP
-
-    //STEP 1: Normalize user message → normalizedMessageOutcome (ok, text, message)
-    const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
+    printState(conversationID, "INITIAL STATE:");
+ 
+    //STEP 1: Normalize user message
+    const currentUserMessageOutcome = getCurrentUserMessage(rawUserMessage);
 
     //Handle Error
-    if (!normalizedMessageOutcome.ok) {
-        console.log("STEP 1: Normalize message outcome failed");
-
+    if (!currentUserMessageOutcome.success) {
         processMessageOutcome.success = false;
-        processMessageOutcome.error = normalizedMessageOutcome.message;
+        processMessageOutcome.error = currentUserMessageOutcome.error;
 
         return processMessageOutcome;         
     }
 
-    const currentUserMessage = normalizedMessageOutcome.text;
+    const currentUserMessage = currentUserMessageOutcome.currentUserMessage;
 
-    console.log("STEP 1: Normalize message outcome OK");
-    console.log("Current user message (text): " + currentUserMessage);
-    //console.log(" ");
+    // STEP 2: Detect user request
+    const userRequest = detectUserRequest(currentUserMessage); //available: general_chat, scan_ec2, toggle_ec2, create_ec2
+    processMessageOutcome.cloudPilot.userRequest = userRequest;
+    processMessageOutcome.cloudPilot.requestStatus.requestedAction = userRequest === "general_chat" ? null : userRequest;
 
-    /*
-    // STEP 2: Detect intent
-    const intent = detectIntent(currentUserMessage);
-    processMessageOutcome.cloudPilot.intent = intent;
-
-    console.log("STEP 2: INTENT:", intent);
-    console.log(" ");
-
-    // STEP 3: Check if user is requesting an action
-    const action = getActionDefinition(intent);
-    console.log("STEP 3: ACTION ");
-    console.log(action)
+    console.log("STEP 2: USER REQUEST:", userRequest);
     console.log(" ");
     
+    
 
+    // STEP 3: Check if user is requesting an action not just general chat
+    const requestedAction = getActionDefinition(userRequest);
+    console.log("STEP 3: ACTION- Full from Action Registry ");
+    console.log(requestedAction)
+    console.log(" ");
+    
+    
     // STEP 4: Start or replace workflow action
-    if (action.requiresWorkflow) {
+    if (requestedAction.requiresWorkflow) {
         cloudPilotShouldRespond = true;
 
         // User requested a new workflow if(no action pending OR its a different action)
-        if (!actionPending || actionPending !== action.type || currentStateData.status === "completed" || currentStateData.status === "failed") {
+        if (!actionPending || actionPending !== requestedAction.type || currentStateData.status === "completed" || currentStateData.status === "failed") {
 
             console.log("STEP 4: Starting workflow");
             console.log(" ");
 
             actionState.setPendingAction(
                 conversationID,
-                action.type,
-                action.requiredFields || []
+                requestedAction.type,
+                requestedAction.requiredFields || []
             );
         }
 
@@ -263,6 +257,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
     const hadMissingFieldsBefore = actionPending && currentStateData.missing.length > 0;
 
+    /*
     // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
     if (actionPending) {
         for (const field of currentStateData.missing) {
@@ -366,22 +361,27 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 7: OPEN_AI selected");
     }
 
-    //STATE TEMP
-    printState(conversationID);
-    //STATE TEMP
 
-    console.log("_______________processMessage______________________")    
-    console.log(" ")
+  */
+
+    //STATE TEMP
+    printState(conversationID, "FINAL STATE:");
+    //STATE TEMP
+    //console.log("_______________processMessage______________________")    
+    console.log("FINAL END OF FUNCTION: processMessageOutcome ")
+    console.log(processMessageOutcome)
+    console.log(" processMessageOutcome ")
+
     console.log(" ");
-    */
+  
 
     return processMessageOutcome;
 
 }
 
 //FUNCTIONS B: Process User Messages
-//Function B1: Detect Intent
-function detectIntent(userMessage) {
+//Function B1: Detect User Request
+function detectUserRequest(userMessage) {
     const normalizedMessage = String(userMessage || '').toLowerCase().trim();
 
     // TEMP: remove when done debugging intent / registry
@@ -590,11 +590,12 @@ async function handleCloudPilotChat(payload) {
 }
 
 //TEMP: Debug current action state
-function printState(conversationID) {
-    console.log(" ");
-    console.log("currentStateData");
-    actionState.print(conversationID);
-    console.log("currentStateData");
+function printState(conversationID, messageVar) {
+    console.log(" ")
+    console.log("_____________________________________")
+    console.log(messageVar);
+    actionState.print(conversationID);        
+    console.log("_____________________________________")
     console.log(" ");
 }
 
@@ -607,12 +608,47 @@ function cloneOperationState(state) {
     };
 }
 
+function cloneRequestStatus(state, requestedAction, ready) {
+    return {
+        requestedAction: requestedAction,
+        ready: Boolean(ready),
+        missingFields: [...(state.missing || [])],
+        collectedFields: { ...(state.collected || {}) },
+        askedForFields: { ...(state.asked || {}) }
+    };
+}
+
+function getCurrentUserMessage(rawUserMessage) {
+    const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
+
+    if (!normalizedMessageOutcome.ok) {
+        console.log("STEP 1: Normalize message outcome failed");
+
+        return {
+            success: false,
+            currentUserMessage: null,
+            error: normalizedMessageOutcome.message
+        };
+    }
+
+    const currentUserMessage = normalizedMessageOutcome.text;
+
+    console.log("STEP 1: Normalize message outcome OK");
+    console.log("Current user message (text): " + currentUserMessage);
+
+    return {
+        success: true,
+        currentUserMessage: currentUserMessage,
+        error: null
+    };
+}
+
 function logCloudPilotMessage(message) {
     console.log("CLOUD PILOT MESSAGE: " + (message || ""));
 }
 
 
-module.exports = { processMessage, detectIntent, getActionDefinition };
+module.exports = { processMessage, detectUserRequest, getActionDefinition };
 
 
 

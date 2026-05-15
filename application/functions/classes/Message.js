@@ -57,7 +57,7 @@ class Message {
 
                 connection.query(queryString, [masterSite, messageType, groupID, conversationID, messageFrom, messageTo, messageCaption, cloudKey, cloudBucket, storageType], (err, results, fields) => {
                     if (!err) {
-                        console.log("Step B: You created a new Message with ID " + results.insertId);
+                        //console.log("Step B: You created a new Message with ID " + results.insertId);
                         messageOutcome.outcome = 200;
                         messageOutcome.messageID = results.insertId;
                         messageOutcome.newMessage.messageID = results.insertId;
