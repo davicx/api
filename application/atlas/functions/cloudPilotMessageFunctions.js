@@ -163,8 +163,8 @@ const cloudPilotFINAL = {
 //Function A1: Process Message (pipeline)
 async function processMessage(rawUserMessage, conversationID) {
     var currentStateData = actionState.getActionStatus(conversationID);
-    var actionPending = currentStateData.pendingAction;
-    let cloudPilotShouldRespond = false;
+    var activeRequestedAction = currentStateData.pendingAction;
+    let cloudPilotShouldRespond = false; //Other is we send to Open AI
     let requestJustBecameReady = false;
 
     //console.log("_______________processMessage______________________")
@@ -232,14 +232,16 @@ async function processMessage(rawUserMessage, conversationID) {
     console.log(" ");
     
     
-    // STEP 4: Start or replace workflow action
+    // STEP 4: Start or replace active request
     if (requestedAction.requiresWorkflow) {
         cloudPilotShouldRespond = true;
 
-        // User requested a new workflow if(no action pending OR its a different action)
-        if (!actionPending || actionPending !== requestedAction.type || currentStateData.status === "completed" || currentStateData.status === "failed") {
+        // Start a new requested action when there is no matching active request.
+        const shouldStartNewRequest = shouldStartNewRequestWorkflow(activeRequestedAction, requestedAction, currentStateData);
+        
+        if (shouldStartNewRequest) {
 
-            console.log("STEP 4: Starting workflow");
+            console.log("STEP 4: Starting active request");
             console.log(" ");
 
             actionState.setPendingAction(
@@ -249,17 +251,23 @@ async function processMessage(rawUserMessage, conversationID) {
             );
         }
 
-        // Refresh workflow state
+        // Refresh active request state
         currentStateData = actionState.getActionStatus(conversationID);
-        actionPending = currentStateData.pendingAction;
-        processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+        activeRequestedAction = currentStateData.pendingAction;
+        //processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+    } else {
+        console.log("STEP 4: NOT Starting active request just chattin dude");
     }
 
-    const hadMissingFieldsBefore = actionPending && currentStateData.missing.length > 0;
+    const hadMissingFieldsBefore = activeRequestedAction && currentStateData.missing.length > 0;
 
+    //TO DO: Move requestStatus syncing to the end of processMessage after all state changes run.
+    //Also maybe set all manually one by one this is confusing
+    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, activeRequestedAction, false);
+    
     /*
     // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
-    if (actionPending) {
+    if (activeRequestedAction) {
         for (const field of currentStateData.missing) {
 
             const extractor = fieldExtractors[field];
@@ -277,7 +285,7 @@ async function processMessage(rawUserMessage, conversationID) {
             
             // refresh state
             currentStateData = actionState.getActionStatus(conversationID);
-            actionPending = currentStateData.pendingAction;
+            activeRequestedAction = currentStateData.pendingAction;
             
             // sync
             processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
@@ -287,7 +295,7 @@ async function processMessage(rawUserMessage, conversationID) {
     }
 
     const requestReadyNow = Boolean(
-        actionPending &&
+        activeRequestedAction &&
         currentStateData.missing.length === 0 &&
         currentStateData.status !== "completed" &&
         currentStateData.status !== "failed"
@@ -297,7 +305,7 @@ async function processMessage(rawUserMessage, conversationID) {
         actionState.setStatus(conversationID, "ready");
 
         currentStateData = actionState.getActionStatus(conversationID);
-        actionPending = currentStateData.pendingAction;
+        activeRequestedAction = currentStateData.pendingAction;
         processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
     }
 
@@ -317,7 +325,7 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 6C: Request NOT ready");
     }
 
-    processMessageOutcome.cloudPilot.action.type = actionPending;
+    processMessageOutcome.cloudPilot.action.type = activeRequestedAction;
     processMessageOutcome.cloudPilot.action.ready = Boolean(requestReadyNow);
     processMessageOutcome.cloudPilot.action.parameters = { ...(currentStateData.collected || {}) };
 
@@ -330,7 +338,7 @@ async function processMessage(rawUserMessage, conversationID) {
         requestReady: requestReadyNow,
 
         requestedAction: {
-            pendingAction: actionPending,
+            pendingAction: activeRequestedAction,
             status: currentStateData.status,
             missing: [...(currentStateData.missing || [])],
             collected: { ...(currentStateData.collected || {}) }
@@ -616,6 +624,22 @@ function cloneRequestStatus(state, requestedAction, ready) {
         collectedFields: { ...(state.collected || {}) },
         askedForFields: { ...(state.asked || {}) }
     };
+}
+
+function shouldStartNewRequestWorkflow(activeRequestedAction, requestedAction, currentStateData) {
+    // No active request exists yet
+    const noRequestActive = !activeRequestedAction;
+
+    // User asked for a different requested action than the active one
+    const requestedActionChanged = activeRequestedAction !== requestedAction.type;
+
+    // Previous active request already completed
+    const previousRequestCompleted = currentStateData.status === "completed";
+
+    // Previous active request already failed
+    const previousRequestFailed = currentStateData.status === "failed";
+
+    return noRequestActive || requestedActionChanged || previousRequestCompleted || previousRequestFailed;
 }
 
 function getCurrentUserMessage(rawUserMessage) {
