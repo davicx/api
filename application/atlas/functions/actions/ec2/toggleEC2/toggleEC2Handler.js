@@ -8,7 +8,7 @@ async function toggleEC2Handler(context) {
             success: false,
             cloudPilotMessage: chatResult.message || 'ChatGPT request failed',
             error: chatResult.error || null,
-            atlas: null
+            atlasResponse: null
         };
     }
 
@@ -21,7 +21,7 @@ async function toggleEC2Handler(context) {
         success: true,
         cloudPilotMessage: cloudPilotMessage,
         error: null,
-        atlas: null
+        atlasResponse: null
     };
 }
 

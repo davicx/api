@@ -42,7 +42,7 @@ async function scanEC2Handler(context) {
                     atlasResponseFormatted
                 ),
             error: null,
-            atlas: atlasResponseFormatted
+            atlasResponse: atlasResponseFormatted
         };
 
     } catch (error) {
@@ -55,7 +55,7 @@ async function scanEC2Handler(context) {
             cloudPilotMessage:
                 "I could not complete the EC2 scan.",
             error: error.message,
-            atlas: null
+            atlasResponse: null
         };
     }
 }

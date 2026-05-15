@@ -48,9 +48,69 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
             }
         },
         error: null, //NOT DONE
-        atlas: null //NOT DONE
+        atlasResponse: null //NOT DONE
     };
 */
+
+/*
+cloudPilot: {
+
+    intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    action: {
+        type: null, // current workflow/action type
+        ready: false, // true when all required fields are collected
+        parameters: {} // normalized execution-ready values
+    },
+
+    state: {
+        pendingAction: null, // active workflow being collected
+        missing: [], // fields still needed
+        collected: {}, // collected workflow values
+        asked: {} // tracks which questions were already asked
+    },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+}
+*/
+
+
+    cloudPilot: {
+            userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+            action: {
+                type: null, // current workflow/action type
+                ready: false, // true when all required fields are collected
+                parameters: {} // normalized execution-ready values
+            },
+            requestStatus: {
+                pendingAction: null, // active workflow being collected
+                missing: [], // fields still needed
+                collected: {}, // collected workflow values
+                asked: {} // tracks which questions were already asked
+            },
+        }
+
+cloudPilot: {
+
+    userMessageRequest: null, // what the user appears to want
+
+    requestStatus: {
+        type: null, // active workflow
+        ready: false,
+
+        missingFields: [],
+        collectedFileds: {},
+        askedForFields: {},
+
+        parameters: {}
+    }
+}
 
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
@@ -67,22 +127,27 @@ async function processMessage(rawUserMessage, conversationID) {
         success: false, 
         cloudPilotMessage: "",
         cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2"
+            intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
             action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2"
-                ready: false, 
-                parameters: {}
+                type: null, // current workflow/action type
+                ready: false, // true when all required fields are collected
+                parameters: {} // normalized execution-ready values
             },
             state: {
-                pendingAction: null, 
-                status: null,
-                missing: [], 
-                collected: {}, 
-                asked: {}, 
-
+                pendingAction: null, // active workflow being collected
+                missing: [], // fields still needed
+                collected: {}, // collected workflow values
+                asked: {} // tracks which questions were already asked
+            },
+            atlasExecution: { //This is when we ask Atlas to interact with AWS it may take some time to finish
+                status: "idle", // "idle" | "running" | "completed" | "failed"
+                actionId: null, // Atlas execution ID
+                startedAt: null,
+                completedAt: null,
+                error: null
             }
         },
-        atlas: null, 
+        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
         error: null 
     };
 
@@ -236,7 +301,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
         processMessageOutcome.success = result.success;
         processMessageOutcome.cloudPilotMessage = result.message;
-        processMessageOutcome.atlas = result.atlas || null;
+        processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
         processMessageOutcome.cloudPilot.state = cloneOperationState(actionState.getActionStatus(conversationID));
 
@@ -248,7 +313,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
         processMessageOutcome.success = result.success;
         processMessageOutcome.cloudPilotMessage = result.message;
-        processMessageOutcome.atlas = result.atlas || null;
+        processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
 
         console.log("STEP 7: OPEN_AI selected");
@@ -350,7 +415,7 @@ async function handleCloudPilotChat(payload) {
         const response = {
             success: false,
             message: "I could not find that CloudPilot action.",
-            atlas: null,
+            atlasResponse: null,
             error: "missing_action_definition"
         };
 
@@ -368,7 +433,7 @@ async function handleCloudPilotChat(payload) {
             const response = {
                 success: false,
                 message: "That CloudPilot action is not executable yet.",
-                atlas: null,
+                atlasResponse: null,
                 error: "missing_action_handler"
             };
 
@@ -401,7 +466,7 @@ async function handleCloudPilotChat(payload) {
             const response = {
                 success: false,
                 message: actionDefinition.messages.failed || "That CloudPilot action failed.",
-                atlas: null,
+                atlasResponse: null,
                 error: error.message || String(error)
             };
 
@@ -420,7 +485,7 @@ async function handleCloudPilotChat(payload) {
         const response = {
             success: result.success,
             message: result.cloudPilotMessage || result.message || '',
-            atlas: result.atlas || null,
+            atlasResponse: result.atlasResponse || null,
             error: result.error || null
         };
 
@@ -437,7 +502,7 @@ async function handleCloudPilotChat(payload) {
         const response = {
             success: true,
             message: actionDefinition.messages.started || "I need more information to continue.",
-            atlas: null,
+            atlasResponse: null,
             error: null
         };
 
@@ -468,13 +533,44 @@ async function handleCloudPilotChat(payload) {
     const response = {
         success: true,
         message: question,
-        atlas: null,
+        atlasResponse: null,
         error: null
     };
 
     logCloudPilotMessage(response.message);
     return response;
 }
+
+//TEMP: Debug current action state
+function printState(conversationID) {
+    console.log(" ");
+    console.log("currentStateData");
+    actionState.print(conversationID);
+    console.log("currentStateData");
+    console.log(" ");
+}
+
+function cloneOperationState(state) {
+    return {
+        pendingAction: state.pendingAction,
+        missing: [...(state.missing || [])],
+        collected: { ...(state.collected || {}) },
+        asked: { ...(state.asked || {}) }
+    };
+}
+
+function logCloudPilotMessage(message) {
+    console.log("CLOUD PILOT MESSAGE: " + (message || ""));
+}
+
+
+module.exports = { processMessage, detectIntent, getActionDefinition };
+
+
+
+
+
+
 
 
 /*
@@ -572,32 +668,3 @@ async function handleWorkflowAwareGeneralChat(text, action, currentStateData, ac
     };
 }
 */
-//TEMP: Debug current action state
-function printState(conversationID) {
-    console.log(" ");
-    console.log("currentStateData");
-    actionState.print(conversationID);
-    console.log("currentStateData");
-    console.log(" ");
-}
-
-function cloneOperationState(state) {
-    return {
-        pendingAction: state.pendingAction,
-        status: state.status,
-        missing: [...(state.missing || [])],
-        collected: { ...(state.collected || {}) },
-        asked: { ...(state.asked || {}) }
-    };
-}
-
-function logCloudPilotMessage(message) {
-    console.log("CLOUD PILOT MESSAGE: " + (message || ""));
-}
-
-
-module.exports = { processMessage, detectIntent, getActionDefinition };
-
-
-
-

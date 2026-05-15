@@ -24,7 +24,7 @@ async function createEC2Handler(context) {
                 success: false,
                 cloudPilotMessage: "I am missing name, region, or instance type to create the instance.",
                 error: "missing_collected_fields",
-                atlas: null
+                atlasResponse: null
             };
         }
 
@@ -57,7 +57,7 @@ async function createEC2Handler(context) {
                 success: true,
                 cloudPilotMessage: "Created EC2 instance " + instanceId + " in " + regionOut + ".",
                 error: null,
-                atlas: atlasResponseRaw.data
+                atlasResponse: atlasResponseRaw.data
             };
         }
 
@@ -68,7 +68,7 @@ async function createEC2Handler(context) {
             success: false,
             cloudPilotMessage: "I could not create the EC2 instance.",
             error: errCode || errMsg,
-            atlas: null
+            atlasResponse: null
         };
 
     } catch (error) {
@@ -80,7 +80,7 @@ async function createEC2Handler(context) {
             success: false,
             cloudPilotMessage: "I could not create the EC2 instance.",
             error: error.message,
-            atlas: null
+            atlasResponse: null
         };
     }
 }
