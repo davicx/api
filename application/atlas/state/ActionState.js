@@ -30,6 +30,7 @@ class ActionState {
     if (!this.store.has(conversationId)) {
       this.store.set(conversationId, {
         pendingAction: null,
+        status: null,
         collected: {},
         missing: [],
         asked: {}
@@ -50,6 +51,7 @@ class ActionState {
     const state = this.getState(conversationId);
 
     state.pendingAction = action;
+    state.status = "pending";
     state.missing = [...missingFields];
     state.collected = {};
     state.asked = {};
@@ -61,10 +63,18 @@ class ActionState {
 
     return {
       pendingAction: state.pendingAction,
+      status: state.status,
       missing: state.missing,
       collected: state.collected,
       asked: state.asked
     };
+  }
+
+  // STEP 3.25: Set workflow lifecycle status
+  setStatus(conversationId, status) {
+    const state = this.getState(conversationId);
+
+    state.status = status;
   }
 
   // STEP 3.5: Mark missing field as already asked

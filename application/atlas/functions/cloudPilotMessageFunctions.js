@@ -75,6 +75,7 @@ async function processMessage(rawUserMessage, conversationID) {
             },
             state: {
                 pendingAction: null, 
+                status: null,
                 missing: [], 
                 collected: {}, 
                 asked: {}, 
@@ -86,7 +87,7 @@ async function processMessage(rawUserMessage, conversationID) {
     };
 
     //Sync Data
-    processMessageOutcome.cloudPilot.state = currentStateData;
+    processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
 
     //STATE TEMP
     printState(conversationID);
@@ -130,7 +131,7 @@ async function processMessage(rawUserMessage, conversationID) {
         cloudPilotShouldRespond = true;
 
         // User requested a new workflow if(no action pending OR its a different action)
-        if (!actionPending || actionPending !== action.type) {
+        if (!actionPending || actionPending !== action.type || currentStateData.status === "completed" || currentStateData.status === "failed") {
 
             console.log("STEP 4: Starting workflow");
             console.log(" ");
@@ -145,7 +146,7 @@ async function processMessage(rawUserMessage, conversationID) {
         // Refresh workflow state
         currentStateData = actionState.getActionStatus(conversationID);
         actionPending = currentStateData.pendingAction;
-        processMessageOutcome.cloudPilot.state =currentStateData;
+        processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
     }
 
     const hadMissingFieldsBefore = actionPending && currentStateData.missing.length > 0;
@@ -172,15 +173,26 @@ async function processMessage(rawUserMessage, conversationID) {
             actionPending = currentStateData.pendingAction;
             
             // sync
-            processMessageOutcome.cloudPilot.state = currentStateData;
+            processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
         }
     } else {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    const requestReadyNow =
+    const requestReadyNow = Boolean(
         actionPending &&
-        currentStateData.missing.length === 0;
+        currentStateData.missing.length === 0 &&
+        currentStateData.status !== "completed" &&
+        currentStateData.status !== "failed"
+    );
+
+    if (requestReadyNow && currentStateData.status !== "ready") {
+        actionState.setStatus(conversationID, "ready");
+
+        currentStateData = actionState.getActionStatus(conversationID);
+        actionPending = currentStateData.pendingAction;
+        processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+    }
 
     if (hadMissingFieldsBefore && requestReadyNow) {
         console.log("STEP 6: Request JUST became READY");
@@ -198,7 +210,12 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 6C: Request NOT ready");
     }
 
+    processMessageOutcome.cloudPilot.action.type = actionPending;
+    processMessageOutcome.cloudPilot.action.ready = Boolean(requestReadyNow);
+    processMessageOutcome.cloudPilot.action.parameters = { ...(currentStateData.collected || {}) };
+
     const chatPayload = {
+        conversationID,
         currentUserMessage,
         intent,
         action,
@@ -207,8 +224,9 @@ async function processMessage(rawUserMessage, conversationID) {
 
         requestedAction: {
             pendingAction: actionPending,
-            missing: currentStateData.missing || [],
-            collected: currentStateData.collected || {}
+            status: currentStateData.status,
+            missing: [...(currentStateData.missing || [])],
+            collected: { ...(currentStateData.collected || {}) }
         }
     };
 
@@ -216,11 +234,22 @@ async function processMessage(rawUserMessage, conversationID) {
     if (cloudPilotShouldRespond) {
         const result = await handleCloudPilotChat(chatPayload);
 
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.message;
+        processMessageOutcome.atlas = result.atlas || null;
+        processMessageOutcome.error = result.error || null;
+        processMessageOutcome.cloudPilot.state = cloneOperationState(actionState.getActionStatus(conversationID));
+
         console.log("STEP 7: CLOUD_PILOT selected");
 
     } else {
 
         const result = await handleGeneralChat(chatPayload);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.message;
+        processMessageOutcome.atlas = result.atlas || null;
+        processMessageOutcome.error = result.error || null;
 
         console.log("STEP 7: OPEN_AI selected");
     }
@@ -310,10 +339,141 @@ async function handleCloudPilotChat(payload) {
     console.log(JSON.stringify(payload, null, 2));
     console.log(" ");
 
-    return {
+    //STEP 1: Get the full action definition
+    //NOTE: We use actionRegistry directly here because getActionDefinition()
+    //removes internal fields like handler/defaults.
+    const pendingAction = payload.requestedAction && payload.requestedAction.pendingAction;
+    const actionDefinition = actionRegistry[pendingAction];
+
+    //STEP 2: Make sure the requested action exists
+    if (!actionDefinition) {
+        const response = {
+            success: false,
+            message: "I could not find that CloudPilot action.",
+            atlas: null,
+            error: "missing_action_definition"
+        };
+
+        logCloudPilotMessage(response.message);
+        return response;
+    }
+
+    //STEP 3: If the request has all required fields, execute the handler
+    if (payload.requestReady === true) {
+
+        //STEP 3A: Make sure this action has an executable handler
+        if (typeof actionDefinition.handler !== 'function') {
+            actionState.setStatus(payload.conversationID, "failed");
+
+            const response = {
+                success: false,
+                message: "That CloudPilot action is not executable yet.",
+                atlas: null,
+                error: "missing_action_handler"
+            };
+
+            logCloudPilotMessage(response.message);
+            return response;
+        }
+
+        //STEP 3B: Mark workflow as running before the handler starts
+        actionState.setStatus(payload.conversationID, "running");
+
+        let result;
+
+        try {
+            //STEP 3C: Execute the action using the registry-defined handler
+            result = await actionDefinition.handler({
+                userMessage: payload.currentUserMessage,
+                action: actionDefinition,
+                state: {
+                    pendingAction,
+                    status: "running",
+                    missing: payload.requestedAction.missing || [],
+                    collected: payload.requestedAction.collected || {}
+                },
+                conversationID: payload.conversationID
+            });
+        } catch (error) {
+            //STEP 3D: Handler threw before returning a normal result
+            actionState.setStatus(payload.conversationID, "failed");
+
+            const response = {
+                success: false,
+                message: actionDefinition.messages.failed || "That CloudPilot action failed.",
+                atlas: null,
+                error: error.message || String(error)
+            };
+
+            logCloudPilotMessage(response.message);
+            return response;
+        }
+
+        //STEP 3E: Handler finished, so set final workflow status
+        if (result.success) {
+            actionState.setStatus(payload.conversationID, "completed");
+        } else {
+            actionState.setStatus(payload.conversationID, "failed");
+        }
+
+        //STEP 3F: Convert handler result into CloudPilot's response shape
+        const response = {
+            success: result.success,
+            message: result.cloudPilotMessage || result.message || '',
+            atlas: result.atlas || null,
+            error: result.error || null
+        };
+
+        logCloudPilotMessage(response.message);
+        return response;
+    }
+
+    //STEP 4: Request is not ready, so ask for the next missing field
+    const missing = payload.requestedAction && payload.requestedAction.missing ? payload.requestedAction.missing : [];
+    const nextMissingField = missing[0];
+
+    //STEP 4A: Fallback if CloudPilot has no specific missing field
+    if (!nextMissingField) {
+        const response = {
+            success: true,
+            message: actionDefinition.messages.started || "I need more information to continue.",
+            atlas: null,
+            error: null
+        };
+
+        logCloudPilotMessage(response.message);
+        return response;
+    }
+
+    //STEP 4B: Get the missing-field question from the registry
+    const missingFieldMessages =
+        actionDefinition.messages &&
+        actionDefinition.messages.missingFields
+            ? actionDefinition.messages.missingFields
+            : {};
+
+    const fromRegistry = missingFieldMessages[nextMissingField];
+
+    const question =
+        fromRegistry
+            ? String(fromRegistry).trim()
+            : ("I still need: " + nextMissingField);
+
+    //STEP 4C: Only mark asked{} when we are actually sending the question
+    if (question) {
+        actionState.markAsked(payload.conversationID, nextMissingField);
+    }
+
+    //STEP 4D: Return the missing-field question
+    const response = {
         success: true,
-        message: "CLOUD_PILOT_RESPONSE"
+        message: question,
+        atlas: null,
+        error: null
     };
+
+    logCloudPilotMessage(response.message);
+    return response;
 }
 
 
@@ -419,6 +579,20 @@ function printState(conversationID) {
     actionState.print(conversationID);
     console.log("currentStateData");
     console.log(" ");
+}
+
+function cloneOperationState(state) {
+    return {
+        pendingAction: state.pendingAction,
+        status: state.status,
+        missing: [...(state.missing || [])],
+        collected: { ...(state.collected || {}) },
+        asked: { ...(state.asked || {}) }
+    };
+}
+
+function logCloudPilotMessage(message) {
+    console.log("CLOUD PILOT MESSAGE: " + (message || ""));
 }
 
 
