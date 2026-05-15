@@ -80,49 +80,32 @@ cloudPilot: {
 }
 */
 
-
-    cloudPilot: {
-            userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
-            action: {
-                type: null, // current workflow/action type
-                ready: false, // true when all required fields are collected
-                parameters: {} // normalized execution-ready values
-            },
-            requestStatus: {
-                pendingAction: null, // active workflow being collected
-                missing: [], // fields still needed
-                collected: {}, // collected workflow values
-                asked: {} // tracks which questions were already asked
-            },
-        }
-
+/*
 cloudPilot: {
 
-    userMessageRequest: null, // what the user appears to want
+    userMessageRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
 
     requestStatus: {
-        type: null, // active workflow
-        ready: false,
+        requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2", ) null if it is just general_chat
+        ready: false, 
 
         missingFields: [],
-        collectedFileds: {},
-        askedForFields: {},
-
-        parameters: {}
+        collectedFields: {},
+        askedForFields: {}
     }
 }
 
-//FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
-//Function A1: Process Message (pipeline)
-async function processMessage(rawUserMessage, conversationID) {
-    var currentStateData = actionState.getActionStatus(conversationID);
-    var actionPending = currentStateData.pendingAction;
-    let cloudPilotShouldRespond = false;
-    let requestJustBecameReady = false;
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+*/
 
-    console.log("_______________processMessage______________________")
-
-    //Create outcome
+//OLD
+/*
     var processMessageOutcome = {
         success: false, 
         cloudPilotMessage: "",
@@ -140,6 +123,69 @@ async function processMessage(rawUserMessage, conversationID) {
                 asked: {} // tracks which questions were already asked
             },
             atlasExecution: { //This is when we ask Atlas to interact with AWS it may take some time to finish
+                status: "idle", // "idle" | "running" | "completed" | "failed"
+                actionId: null, // Atlas execution ID
+                startedAt: null,
+                completedAt: null,
+                error: null
+            }
+        },
+        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
+        error: null 
+    };
+    */
+//FINAL
+const cloudPilotFINAL = {
+
+    cloudPilot: {
+
+        userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+        requestStatus: {
+            requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2") null if it is just general_chat
+            ready: false,
+
+            missingFields: [],
+            collectedFields: {},
+            askedForFields: {}
+        },
+        atlasExecution: {
+            status: "idle", // "idle" | "running" | "completed" | "failed"
+            actionId: null, // Atlas execution ID
+            startedAt: null,
+            completedAt: null,
+            error: null
+        }
+    }
+}
+
+//FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
+//Function A1: Process Message (pipeline)
+async function processMessage(rawUserMessage, conversationID) {
+    var currentStateData = actionState.getActionStatus(conversationID);
+    var actionPending = currentStateData.pendingAction;
+    let cloudPilotShouldRespond = false;
+    let requestJustBecameReady = false;
+
+    console.log("_______________processMessage______________________")
+
+    //Create outcome
+    var processMessageOutcome = {
+        success: false, 
+        cloudPilotMessage: "",
+        cloudPilot: { 
+            userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+            //Later Add Policy
+
+            requestStatus: {
+                requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2") null if it is just general_chat
+                ready: false,
+
+                missingFields: [],
+                collectedFields: {},
+                askedForFields: {}
+            },
+            atlasExecution: {
                 status: "idle", // "idle" | "running" | "completed" | "failed"
                 actionId: null, // Atlas execution ID
                 startedAt: null,
@@ -175,8 +221,9 @@ async function processMessage(rawUserMessage, conversationID) {
 
     console.log("STEP 1: Normalize message outcome OK");
     console.log("Current user message (text): " + currentUserMessage);
-    console.log(" ");
+    //console.log(" ");
 
+    /*
     // STEP 2: Detect intent
     const intent = detectIntent(currentUserMessage);
     processMessageOutcome.cloudPilot.intent = intent;
@@ -326,6 +373,7 @@ async function processMessage(rawUserMessage, conversationID) {
     console.log("_______________processMessage______________________")    
     console.log(" ")
     console.log(" ");
+    */
 
     return processMessageOutcome;
 
