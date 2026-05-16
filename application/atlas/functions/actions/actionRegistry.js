@@ -50,7 +50,7 @@ const actionRegistry = {
         defaults: {},
 
         //Execution
-        handler: null,
+        executionFunction: null,
 
         //User-Facing System Messages
         messages: {
@@ -91,7 +91,7 @@ const actionRegistry = {
         defaults: {},
 
         //Execution
-        handler: scanEC2Handler,
+        executionFunction: scanEC2Handler,
 
         //User-Facing System Messages
         messages: {
@@ -134,7 +134,7 @@ const actionRegistry = {
         defaults: {},
 
         //Execution
-        handler: toggleEC2Handler,
+        executionFunction: toggleEC2Handler,
 
         //User-Facing System Messages
         messages: {
@@ -185,7 +185,7 @@ const actionRegistry = {
         },
 
         //Execution
-        handler: createEC2Handler,
+        executionFunction: createEC2Handler,
 
         //User-Facing System Messages
         messages: {

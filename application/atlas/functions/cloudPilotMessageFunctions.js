@@ -14,150 +14,6 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
     5) Function B6: General chat during active workflow (ChatGPT + continuation)
 */
 
-//WILL ADD THESE SOON
-/*
-    var processMessageOutcome = {
-        success: false, //NOT DONE
-        cloudPilotMessage: "", //NOT DONE
-        cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-            
-            policy: {
-                allowed: false, //NOT DONE
-                message: null, //NOT DONE
-                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
-            },
-            
-            action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-                ready: false, //NOT DONE
-                parameters: {} //NOT DONE
-            },
-            state: {
-                pendingAction: null, //DONE
-                missing: [], //DONE
-                collected: {}, //DONE
-                
-                execution: {
-                    inProgress: false, //NOT DONE
-                    actionId: null,    //NOT DONE
-                    startedAt: null,    //NOT DONE
-                    status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
-                }
-                
-            }
-        },
-        error: null, //NOT DONE
-        atlasResponse: null //NOT DONE
-    };
-*/
-
-/*
-cloudPilot: {
-
-    intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
-
-    action: {
-        type: null, // current workflow/action type
-        ready: false, // true when all required fields are collected
-        parameters: {} // normalized execution-ready values
-    },
-
-    state: {
-        pendingAction: null, // active workflow being collected
-        missing: [], // fields still needed
-        collected: {}, // collected workflow values
-        asked: {} // tracks which questions were already asked
-    },
-
-    atlasExecution: {
-        status: "idle", // "idle" | "running" | "completed" | "failed"
-        actionId: null, // Atlas execution ID
-        startedAt: null,
-        completedAt: null,
-        error: null
-    }
-}
-*/
-
-/*
-cloudPilot: {
-
-    userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
-
-    requestStatus: {
-        requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2", ) null if it is just general_chat
-        ready: false, 
-
-        missingFields: [],
-        collectedFields: {},
-        askedForFields: {}
-    }
-}
-
-    atlasExecution: {
-        status: "idle", // "idle" | "running" | "completed" | "failed"
-        actionId: null, // Atlas execution ID
-        startedAt: null,
-        completedAt: null,
-        error: null
-    }
-*/
-
-//OLD
-/*
-    var processMessageOutcome = {
-        success: false, 
-        cloudPilotMessage: "",
-        cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
-            action: {
-                type: null, // current workflow/action type
-                ready: false, // true when all required fields are collected
-                parameters: {} // normalized execution-ready values
-            },
-            state: {
-                pendingAction: null, // active workflow being collected
-                missing: [], // fields still needed
-                collected: {}, // collected workflow values
-                asked: {} // tracks which questions were already asked
-            },
-            atlasExecution: { //This is when we ask Atlas to interact with AWS it may take some time to finish
-                status: "idle", // "idle" | "running" | "completed" | "failed"
-                actionId: null, // Atlas execution ID
-                startedAt: null,
-                completedAt: null,
-                error: null
-            }
-        },
-        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
-        error: null 
-    };
-    */
-//FINAL
-const cloudPilotFINAL = {
-
-    cloudPilot: {
-
-        userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
-
-        requestStatus: {
-            requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2") null if it is just general_chat
-            ready: false,
-
-            missingFields: [],
-            collectedFields: {},
-            askedForFields: {}
-        },
-        atlasExecution: {
-            status: "idle", // "idle" | "running" | "completed" | "failed"
-            actionId: null, // Atlas execution ID
-            startedAt: null,
-            completedAt: null,
-            error: null
-        }
-    }
-}
 
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
@@ -417,7 +273,7 @@ function getActionDefinition(intent) {
     if (action) {
         const copy = { ...action };
         delete copy.match;
-        delete copy.handler;
+        delete copy.executionFunction;
         delete copy.defaults;
         return copy; 
     }
@@ -462,7 +318,7 @@ async function handleCloudPilotChat(payload) {
 
     //STEP 1: Get the full action definition
     //NOTE: We use actionRegistry directly here because getActionDefinition()
-    //removes internal fields like handler/defaults.
+    //removes internal fields like executionFunction/defaults.
     const pendingAction = payload.requestedAction && payload.requestedAction.pendingAction;
     const actionDefinition = actionRegistry[pendingAction];
 
@@ -483,7 +339,7 @@ async function handleCloudPilotChat(payload) {
     if (payload.requestReady === true) {
 
         //STEP 3A: Make sure this action has an executable handler
-        if (typeof actionDefinition.handler !== 'function') {
+        if (typeof actionDefinition.executionFunction !== 'function') {
             actionState.setStatus(payload.conversationID, "failed");
 
             const response = {
@@ -504,7 +360,7 @@ async function handleCloudPilotChat(payload) {
 
         try {
             //STEP 3C: Execute the action using the registry-defined handler
-            result = await actionDefinition.handler({
+            result = await actionDefinition.executionFunction({
                 userMessage: payload.currentUserMessage,
                 action: actionDefinition,
                 state: {
@@ -676,7 +532,167 @@ module.exports = { processMessage, detectUserRequest, getActionDefinition };
 
 
 
+//FINAL
+/*
+const cloudPilotFINAL = {
 
+    cloudPilot: {
+
+        userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+        requestStatus: {
+            requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2") null if it is just general_chat
+            ready: false,
+
+            missingFields: [],
+            collectedFields: {},
+            askedForFields: {}
+        },
+        
+        policy: {
+            allowed: false, //NOT DONE
+            message: null, //NOT DONE
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+        },
+
+        atlasExecution: {
+            status: "idle", // "idle" | "running" | "completed" | "failed"
+            actionId: null, // Atlas execution ID
+            startedAt: null,
+            completedAt: null,
+            error: null
+        }
+    }
+}
+    */
+
+
+//APPENDIX
+
+//WILL ADD THESE SOON
+/*
+    var processMessageOutcome = {
+        success: false, //NOT DONE
+        cloudPilotMessage: "", //NOT DONE
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            
+            policy: {
+                allowed: false, //NOT DONE
+                message: null, //NOT DONE
+                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+            },
+            
+            action: {
+                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+                ready: false, //NOT DONE
+                parameters: {} //NOT DONE
+            },
+            state: {
+                pendingAction: null, //DONE
+                missing: [], //DONE
+                collected: {}, //DONE
+                
+                execution: {
+                    inProgress: false, //NOT DONE
+                    actionId: null,    //NOT DONE
+                    startedAt: null,    //NOT DONE
+                    status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
+                }
+                
+            }
+        },
+        error: null, //NOT DONE
+        atlasResponse: null //NOT DONE
+    };
+*/
+
+/*
+cloudPilot: {
+
+    intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    action: {
+        type: null, // current workflow/action type
+        ready: false, // true when all required fields are collected
+        parameters: {} // normalized execution-ready values
+    },
+
+    state: {
+        pendingAction: null, // active workflow being collected
+        missing: [], // fields still needed
+        collected: {}, // collected workflow values
+        asked: {} // tracks which questions were already asked
+    },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+}
+*/
+
+/*
+cloudPilot: {
+
+    userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    requestStatus: {
+        requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2", ) null if it is just general_chat
+        ready: false, 
+
+        missingFields: [],
+        collectedFields: {},
+        askedForFields: {}
+    }
+    policy: {
+            allowed: false, //NOT DONE
+            message: null, //NOT DONE
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+        },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+*/
+
+//OLD
+/*
+    var processMessageOutcome = {
+        success: false, 
+        cloudPilotMessage: "",
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+            action: {
+                type: null, // current workflow/action type
+                ready: false, // true when all required fields are collected
+                parameters: {} // normalized execution-ready values
+            },
+            state: {
+                pendingAction: null, // active workflow being collected
+                missing: [], // fields still needed
+                collected: {}, // collected workflow values
+                asked: {} // tracks which questions were already asked
+            },
+            atlasExecution: { //This is when we ask Atlas to interact with AWS it may take some time to finish
+                status: "idle", // "idle" | "running" | "completed" | "failed"
+                actionId: null, // Atlas execution ID
+                startedAt: null,
+                completedAt: null,
+                error: null
+            }
+        },
+        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
+        error: null 
+    };
+    */
 
 
 

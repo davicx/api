@@ -46,7 +46,7 @@ const ActionRegistry = {
     defaults: {},
 
     //EXECUTION
-    handler: Function,
+    executionFunction: Function,
 
     //USER-FACING SYSTEM MESSAGES
     messages: {
