@@ -1,7 +1,7 @@
 const openAIFunctions = require('./openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
-const fieldExtractors = require('./functions');
+const Functions = require('./functions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -96,15 +96,10 @@ async function processMessage(rawUserMessage, conversationID) {
         const shouldStartNewRequest = shouldStartNewRequestWorkflow(activeRequestedAction, requestedAction, currentStateData);
         
         if (shouldStartNewRequest) {
-
             console.log("STEP 4: Starting active request");
             console.log(" ");
 
-            actionState.setPendingAction(
-                conversationID,
-                requestedAction.type,
-                requestedAction.requiredFields || []
-            );
+            actionState.setPendingAction(conversationID, requestedAction.type, requestedAction.requiredFields || []);
         }
 
         // Refresh active request state
@@ -117,73 +112,63 @@ async function processMessage(rawUserMessage, conversationID) {
 
     const hadMissingFieldsBefore = activeRequestedAction && currentStateData.missing.length > 0;
 
-    //TO DO: Move requestStatus syncing to the end of processMessage after all state changes run.
-    //Also maybe set all manually one by one this is confusing
-    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, activeRequestedAction, false);
-    
-    /*
-    // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
+
+    // STEP 5: Extract structured workflow fields from the user message.
+    // Deterministic MVP format: region: "us-west-2"
     if (activeRequestedAction) {
-        for (const field of currentStateData.missing) {
+        const extractedFields = Functions.extractStructuredFields(currentUserMessage);
+        const missingFields = currentStateData.missing.slice();
 
-            const extractor = fieldExtractors[field];
+        for (const missingFieldName of missingFields) {
 
-            if (!extractor) {
+            const structuredFieldValue = extractedFields[missingFieldName];
+
+            if (!structuredFieldValue) {
                 continue;
             }
-            const value = extractor(currentUserMessage);
 
-            if (!value) {
-                continue;
-            }
-            console.log("STEP 5: Found field:", field, value);
-            actionState.setField(conversationID, field, value);
-            
-            // refresh state
+            console.log("STEP 5: Found field:", missingFieldName, structuredFieldValue);
+
+            actionState.setField(conversationID, missingFieldName, structuredFieldValue);
+
+            // Refresh state after updating workflow fields
             currentStateData = actionState.getActionStatus(conversationID);
             activeRequestedAction = currentStateData.pendingAction;
-            
-            // sync
-            processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
         }
+
     } else {
+
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    const requestReadyNow = Boolean(
-        activeRequestedAction &&
-        currentStateData.missing.length === 0 &&
-        currentStateData.status !== "completed" &&
-        currentStateData.status !== "failed"
-    );
+    //STEP 6: After updated missing fields check if request just became ready or is ready and waiting
+    const requestReadyNow = Functions.determineRequestReadiness(activeRequestedAction, currentStateData);
 
+    // STEP 6A: Update request status to READY
     if (requestReadyNow && currentStateData.status !== "ready") {
+        console.log("STEP 6A: Updating request status to READY");
+
         actionState.setStatus(conversationID, "ready");
 
+        // Refresh state after updating request status
         currentStateData = actionState.getActionStatus(conversationID);
+
         activeRequestedAction = currentStateData.pendingAction;
-        processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
     }
 
+    // STEP 6B: Check if all fields were just gathered and the request is ready
     if (hadMissingFieldsBefore && requestReadyNow) {
-        console.log("STEP 6: Request JUST became READY");
+        console.log("STEP 6B: Request JUST became READY");
 
         requestJustBecameReady = true;
     }
 
-    // STEP 6: Check if Request just became ready
+    // STEP 6C: CloudPilot should respond when request just became ready
     if (requestJustBecameReady) {
-        console.log("STEP 6: Request JUST became READY");
         cloudPilotShouldRespond = true;
-    } else if (requestReadyNow) {
-        console.log("STEP 6B: There is a Request and it was READY before and is still READY");
-    } else {
-        console.log("STEP 6C: Request NOT ready");
     }
 
-    processMessageOutcome.cloudPilot.action.type = activeRequestedAction;
-    processMessageOutcome.cloudPilot.action.ready = Boolean(requestReadyNow);
-    processMessageOutcome.cloudPilot.action.parameters = { ...(currentStateData.collected || {}) };
+    /*
 
     const chatPayload = {
         conversationID,
@@ -225,8 +210,12 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 7: OPEN_AI selected");
     }
 
-
   */
+
+    //TO DO: Move requestStatus syncing to the end of processMessage after all state changes run.
+    //Also maybe set all manually one by one this is confusing
+    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, activeRequestedAction, false);
+    
 
     //STATE TEMP
     printState(conversationID, "FINAL STATE:");

@@ -4,6 +4,8 @@ FUNCTIONS A: AWS Helper Functions
 	2) Function A2: Extract EC2 instance type from user text
 	3) Function A3: Extract instance name from user text (MVP phrases)
 	4) Function A4: fieldExtractors map (field name → extractor)
+	5) Function A5: Extract structured workflow fields from user message
+	6) Function A6: Determine request readiness
 
 */
 
@@ -57,5 +59,59 @@ const fieldExtractors = {
     instance_type: extractInstanceType,
     name: extractName
 };
+
+//Function A5: Extract structured workflow fields from user message
+function extractStructuredFields(message) {
+    const extractedFields = {};
+    const text = String(message || '');
+    const regex = /(\w+)\s*:\s*"([^"]+)"/g;
+
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        const missingFieldName = match[1];
+        const structuredFieldValue = match[2];
+
+        // Last duplicate match wins
+        extractedFields[missingFieldName] = structuredFieldValue;
+    }
+
+    return extractedFields;
+}
+
+//Function A6: Determine request readiness
+function determineRequestReadiness(activeRequestedAction, currentStateData) {
+
+    // No active request exists
+    if (!activeRequestedAction) {
+        console.log("STEP 6A: No active request");
+        return false;
+    }
+
+    // Request still missing fields
+    if (currentStateData.missing.length > 0) {
+        console.log("STEP 6B: Request still missing fields");
+        return false;
+    }
+
+    // Request already completed
+    if (currentStateData.status === "completed") {
+        console.log("STEP 6C: Request already completed");
+        return false;
+    }
+
+    // Request already failed
+    if (currentStateData.status === "failed") {
+        console.log("STEP 6D: Request already failed");
+        return false;
+    }
+
+    console.log("STEP 6E: Request is READY");
+
+    return true;
+}
+
+fieldExtractors.extractStructuredFields = extractStructuredFields;
+fieldExtractors.determineRequestReadiness = determineRequestReadiness;
 
 module.exports = fieldExtractors;
