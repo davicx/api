@@ -29,30 +29,30 @@ const actionRegistry = {
 
     //SERVICE: General Chat
     general_chat: {
-        //IDENTITY
+        //Identity
         type: 'general_chat',
         actionLabel: 'General Chat',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: false,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: () => false,
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {},
 
-        //EXECUTION
+        //Execution
         handler: null,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: '',
             missingFields: {},
@@ -66,34 +66,34 @@ const actionRegistry = {
     //SERVICE: EC2
     //Action: Scan EC2
     scan_ec2: {
-        //IDENTITY
+        //Identity
         type: 'scan_ec2',
         actionLabel: 'Scan EC2',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: (text) =>
             text.includes('scan') &&
             text.includes('ec2'),
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [
             'region'
         ],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {},
 
-        //EXECUTION
+        //Execution
         handler: scanEC2Handler,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 scan.',
             missingFields: {
@@ -109,34 +109,34 @@ const actionRegistry = {
     //SERVICE: EC2
     //Action: Toggle EC2
     toggle_ec2: {
-        //IDENTITY
+        //Identity
         type: 'toggle_ec2',
         actionLabel: 'Toggle EC2',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: (text) =>
             text.includes('toggle') ||
             text.includes('switch'),
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [
             'region'
         ],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {},
 
-        //EXECUTION
+        //Execution
         handler: toggleEC2Handler,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: 'Confirm before changing EC2 instances.',
             missingFields: {
@@ -152,30 +152,30 @@ const actionRegistry = {
     //SERVICE: EC2
     //Action: Create EC2
     create_ec2: {
-        //IDENTITY
+        //Identity
         type: 'create_ec2',
         actionLabel: 'Create EC2',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: (text) =>
             text.includes('create') &&
             (text.includes('ec2') || text.includes('instance')),
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [
             'name',
             'region',
             'instance_type'
         ],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {
             tags: {
                 'managed-by': 'cloudpilot',
@@ -184,10 +184,10 @@ const actionRegistry = {
             }
         },
 
-        //EXECUTION
+        //Execution
         handler: createEC2Handler,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 create.',
             missingFields: {
