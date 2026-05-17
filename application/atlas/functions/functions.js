@@ -113,17 +113,17 @@ function determineRequestReadiness(activeRequestedAction, currentStateData) {
 }
 
 //Function A7: Determine workflow event
-function determineWorkflowEvent(workflowEventData) {
+function determineActionEvent(actionEventData) {
 
-    if (workflowEventData.requestJustBecameReady) {
-        return "request_ready";
+    if (actionEventData.actionJustBecameReady) {
+        return "action_ready";
     }
 
-    if (workflowEventData.newRequestStarted) {
-        return "new_request";
+    if (actionEventData.newActionStarted) {
+        return "new_action";
     }
 
-    if (workflowEventData.fieldsUpdated) {
+    if (actionEventData.fieldsUpdated) {
         return "missing_fields_given";
     }
 
@@ -132,6 +132,6 @@ function determineWorkflowEvent(workflowEventData) {
 
 fieldExtractors.extractStructuredFields = extractStructuredFields;
 fieldExtractors.determineRequestReadiness = determineRequestReadiness;
-fieldExtractors.determineWorkflowEvent = determineWorkflowEvent;
+fieldExtractors.determineActionEvent = determineActionEvent;
 
 module.exports = fieldExtractors;
