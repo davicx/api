@@ -115,7 +115,7 @@ function determineRequestReadiness(activeRequestedAction, currentStateData) {
 //Function A7: Determine workflow event
 function determineActionEvent(actionEventData) {
 
-    if (actionEventData.actionJustBecameReady) {
+    if (actionEventData.actionTransitionedToReady) {
         return "awaiting_confirmation";
     }
 
@@ -149,7 +149,6 @@ function shouldStartExecution(executionDecisionData) {
         executionDecisionData.activeAction &&
         executionDecisionData.actionState &&
         executionDecisionData.actionState.status === "ready" &&
-        !executionDecisionData.actionJustBecameReady &&
         userConfirmedAction(executionDecisionData.currentUserMessage)
     );
 }

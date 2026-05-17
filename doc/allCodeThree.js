@@ -1381,6 +1381,231 @@ async function createOpenAiChatCompletion(client, params) {
     }
 }
 
+
+//WILL ADD THESE SOON
+/*
+    var processMessageOutcome = {
+        success: false, //NOT DONE
+        cloudPilotMessage: "", //NOT DONE
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            
+            policy: {
+                allowed: false, //NOT DONE
+                message: null, //NOT DONE
+                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+            },
+            
+            action: {
+                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+                ready: false, //NOT DONE
+                parameters: {} //NOT DONE
+            },
+            state: {
+                pendingAction: null, //DONE
+                missing: [], //DONE
+                collected: {}, //DONE
+                
+                execution: {
+                    inProgress: false, //NOT DONE
+                    actionId: null,    //NOT DONE
+                    startedAt: null,    //NOT DONE
+                    status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
+                }
+                
+            }
+        },
+        error: null, //NOT DONE
+        atlasResponse: null //NOT DONE
+    };
+*/
+
+/*
+cloudPilot: {
+
+    intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    action: {
+        type: null, // current workflow/action type
+        ready: false, // true when all required fields are collected
+        parameters: {} // normalized execution-ready values
+    },
+
+    state: {
+        pendingAction: null, // active workflow being collected
+        missing: [], // fields still needed
+        collected: {}, // collected workflow values
+        asked: {} // tracks which questions were already asked
+    },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+}
+*/
+
+/*
+cloudPilot: {
+
+    userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    requestStatus: {
+        requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2", ) null if it is just general_chat
+        ready: false, 
+
+        missingFields: [],
+        collectedFields: {},
+        askedForFields: {}
+    }
+    policy: {
+            allowed: false, //NOT DONE
+            message: null, //NOT DONE
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+        },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+*/
+
+//OLD
+/*
+    var processMessageOutcome = {
+        success: false, 
+        cloudPilotMessage: "",
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+            action: {
+                type: null, // current workflow/action type
+                ready: false, // true when all required fields are collected
+                parameters: {} // normalized execution-ready values
+            },
+            state: {
+                pendingAction: null, // active workflow being collected
+                missing: [], // fields still needed
+                collected: {}, // collected workflow values
+                asked: {} // tracks which questions were already asked
+            },
+            atlasExecution: { //This is when we ask Atlas to interact with AWS it may take some time to finish
+                status: "idle", // "idle" | "running" | "completed" | "failed"
+                actionId: null, // Atlas execution ID
+                startedAt: null,
+                completedAt: null,
+                error: null
+            }
+        },
+        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
+        error: null 
+    };
+    */
+
+
+
+
+/*
+async function handleGeneralChat(text, action) {
+    const chatResult = await openAIFunctions.sendGeneralChat(text);
+
+    if (!chatResult.success) {
+        //console.log('handleGeneralChat: ChatGPT request failed');
+        return {
+            success: false,
+            message: chatResult.message || 'ChatGPT request failed',
+            data: null,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    //console.log('handleGeneralChat: outcome ok');
+    return {
+        success: true,
+        data: chatResult.data,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+*/
+
+
+
+
+/*
+//Function B4: Handle Request for Missing Info
+function userAskedForMissingInfo(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+
+    return (
+        normalizedMessage.includes("what am i missing") ||
+        normalizedMessage.includes("what is missing") ||
+        normalizedMessage.includes("what's missing") ||
+        normalizedMessage.includes("what else am i missing") ||
+        normalizedMessage.includes("what else do you need") ||
+        normalizedMessage.includes("forgot what was missing") ||
+        normalizedMessage.includes("what do you still need")
+    );
+}
+
+//Function B5: Workflow prompt for missing field
+function messageForMissingField(actionDefinition, nextMissingField) {
+    const fromRegistry = actionDefinition && actionDefinition.messages && actionDefinition.messages.missingFields && actionDefinition.messages.missingFields[nextMissingField];
+    const trimmed = fromRegistry != null ? String(fromRegistry).trim() : '';
+    if (trimmed) {
+        return trimmed;
+    }
+    return "I still need: " + nextMissingField;
+}
+
+function buildWorkflowContinuationAppendix(actionPending, currentStateData) {
+    const missing = currentStateData.missing || [];
+    const lines = missing.map((field) => '- ' + field).join('\n');
+    return '\n\nI still need:\n' + lines;
+}
+
+async function handleWorkflowAwareGeneralChat(text, action, currentStateData, actionPending) {
+    const workflowContext = {
+        pendingAction: actionPending,
+        missing: currentStateData.missing || [],
+        collected: currentStateData.collected || {}
+    };
+    const chatResult = await openAIFunctions.sendGeneralChatDuringWorkflow(text, workflowContext);
+    const appendix = buildWorkflowContinuationAppendix(actionPending, currentStateData);
+
+    if (!chatResult.success) {
+        const fallback = 'I could not reach ChatGPT right now.' + appendix;
+        return {
+            success: true,
+            data: fallback,
+            action,
+            intent: 'unknown',
+            policy: { allowed: true },
+            error: chatResult.error,
+        };
+    }
+
+    const body = (chatResult.data != null && chatResult.data !== '') ? String(chatResult.data).trim() : '';
+    const combined = body ? (body + appendix) : appendix.trim();
+    return {
+        success: true,
+        data: combined,
+        action,
+        intent: 'unknown',
+        policy: { allowed: true },
+    };
+}
+*/
+
 /**
  * One completion: system rules + serialized action + user text.
  * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
