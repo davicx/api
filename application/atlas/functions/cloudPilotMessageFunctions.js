@@ -14,7 +14,11 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
     5) Function B6: General chat during active workflow (ChatGPT + continuation)
 */
 
-
+/*
+System Layer: activeAction
+Registry Layer: actionDefinition
+Execution Layer: execution (done by atlas)
+*/
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(rawUserMessage, conversationID) {
@@ -167,7 +171,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
         requestJustBecameReady = true;
     }
-
+    
     // STEP 6C: CloudPilot should respond when request just became ready
     if (requestJustBecameReady) {
         cloudPilotShouldRespond = true;
@@ -191,11 +195,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
     const chatPayload = {
         conversationID,
-    
-        // Current normalized user message
         currentUserMessage,
-    
-        // What the user requested THIS TURN
         userRequest,
 
         workflowEvent,
@@ -401,7 +401,6 @@ async function handleCloudPilotChat(payload) {
 }
 
 async function cloudPilotRespondNewRequest(payload) {
-
     const actionDefinition = payload.requestDefinition;
 
     const missingFields =
@@ -427,18 +426,10 @@ async function cloudPilotRespondNewRequest(payload) {
 async function cloudPilotRespondMissingFieldsGiven(payload) {
 
     const actionDefinition = payload.requestDefinition;
-
-    const missingFields =
-        payload.requestState.missingFields || [];
-
-    const collectedFields =
-        payload.requestState.collectedFields || {};
-
-    const collectedFieldNames =
-        Object.keys(collectedFields);
-
-    const latestField =
-        collectedFieldNames[collectedFieldNames.length - 1];
+    const missingFields = payload.requestState.missingFields || [];
+    const collectedFields = payload.requestState.collectedFields || {};
+    const collectedFieldNames = Object.keys(collectedFields);
+    const latestField = collectedFieldNames[collectedFieldNames.length - 1];
 
     let acknowledgement =
         "Great, I updated the workflow.";
@@ -738,6 +729,49 @@ function logCloudPilotMessage(message) {
 
 module.exports = { processMessage, detectUserRequest, getActionDefinition };
 
+//GOAL
+/*
+async function processMessage(rawUserMessage, conversationID) {
+
+    const currentUserMessage =
+        normalizeMessage(rawUserMessage);
+
+    const userRequest =
+        detectUserRequest(currentUserMessage);
+
+    const workflowResult =
+        workflowEngine({
+            conversationID,
+            currentUserMessage,
+            userRequest
+        });
+
+    const response =
+        await responseLayer(workflowResult);
+
+    return response;
+}
+
+function workflowEngine(payload) {
+
+    // load state
+
+    // determine workflow changes
+
+    // extract fields
+
+    // determine readiness
+
+    // determine transition
+
+    return {
+        workflowTransition,
+        requestReady,
+        requestState,
+        workflowDefinition
+    };
+}
+    */
 
 
 //FINAL
