@@ -2,6 +2,7 @@ const openAIFunctions = require('./openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
 const Functions = require('./functions');
+const AtlasExecution = require('./classes/AtlasExecution');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -68,7 +69,7 @@ async function processMessage(rawUserMessage, conversationID) {
     //STEP 1: Normalize user message
     const currentUserMessageOutcome = getCurrentUserMessage(rawUserMessage);
 
-    //Handle Error
+    //Handle Error from normalizing user message
     if (!currentUserMessageOutcome.success) {
         processMessageOutcome.success = false;
         processMessageOutcome.error = currentUserMessageOutcome.error;
@@ -190,6 +191,16 @@ async function processMessage(rawUserMessage, conversationID) {
         cloudPilotShouldRespond = true;
     }
 
+    if (Functions.shouldStartExecution({
+        activeAction: activeAction,
+        actionState: currentActionState,
+        actionJustBecameReady: actionJustBecameReady,
+        currentUserMessage: currentUserMessage
+    })) {
+        actionEvent = "execution_requested";
+        cloudPilotShouldRespond = true;
+    }
+
     const activeActionDefinition = getActionDefinition(activeAction || userRequest);
 
     const chatPayload = {
@@ -214,6 +225,8 @@ async function processMessage(rawUserMessage, conversationID) {
             askedForFields: { ...(currentActionState.asked || {}) }
         }
     };
+
+    let refreshedActionReady = actionReady;
 
     /*
 
@@ -268,6 +281,10 @@ async function processMessage(rawUserMessage, conversationID) {
         processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
 
+        currentActionState = actionState.getActionStatus(conversationID);
+        activeAction = currentActionState.pendingAction;
+        refreshedActionReady = Functions.determineRequestReadiness(activeAction, currentActionState);
+
         console.log("STEP 7: CLOUD_PILOT selected");
     } else {
 
@@ -281,7 +298,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
     //TO DO: Move requestStatus syncing to the end of processMessage after all state changes run.
     //Also maybe set all manually one by one this is confusing
-    processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(currentActionState, activeAction, actionReady);
+    processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(currentActionState, activeAction, refreshedActionReady);
     
 
     //STATE TEMP
@@ -390,7 +407,13 @@ async function handleCloudPilotChat(payload) {
         return await cloudPilotRespondAwaitingConfirmation(payload);
     }
 
-    // STEP 4: Fallback
+    // STEP 4: User confirmed execution
+    if (payload.actionEvent === "execution_requested") {
+
+        return await AtlasExecution.startNewAtlasExecution(payload);
+    }
+
+    // STEP 5: Fallback
     return {
         success: false,
         message: "Unknown CloudPilot workflow event.",

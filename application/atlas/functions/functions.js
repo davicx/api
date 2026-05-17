@@ -130,8 +130,34 @@ function determineActionEvent(actionEventData) {
     return null;
 }
 
+function userConfirmedAction(userMessage) {
+    const normalizedMessage = String(userMessage || '').toLowerCase().trim().replace(/[.!?]+$/g, '');
+    const confirmationMessages = [
+        "yes",
+        "confirm",
+        "run it",
+        "do it",
+        "proceed",
+        "execute"
+    ];
+
+    return confirmationMessages.includes(normalizedMessage);
+}
+
+function shouldStartExecution(executionDecisionData) {
+    return Boolean(
+        executionDecisionData.activeAction &&
+        executionDecisionData.actionState &&
+        executionDecisionData.actionState.status === "ready" &&
+        !executionDecisionData.actionJustBecameReady &&
+        userConfirmedAction(executionDecisionData.currentUserMessage)
+    );
+}
+
 fieldExtractors.extractStructuredFields = extractStructuredFields;
 fieldExtractors.determineRequestReadiness = determineRequestReadiness;
 fieldExtractors.determineActionEvent = determineActionEvent;
+fieldExtractors.userConfirmedAction = userConfirmedAction;
+fieldExtractors.shouldStartExecution = shouldStartExecution;
 
 module.exports = fieldExtractors;
