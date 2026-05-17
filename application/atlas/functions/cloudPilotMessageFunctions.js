@@ -146,7 +146,6 @@ async function processMessage(rawUserMessage, conversationID) {
         }
 
     } else {
-
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
@@ -167,7 +166,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
     // STEP 6B: Check if all fields were just gathered and the request is ready
     if (hadMissingFieldsBefore && actionReady) {
-        console.log("STEP 6B: Request JUST became READY");
+        console.log("STEP 6B: Requested Action JUST became READY");
 
         actionJustBecameReady = true;
     }
@@ -385,10 +384,10 @@ async function handleCloudPilotChat(payload) {
         return await cloudPilotRespondMissingFieldsGiven(payload);
     }
 
-    // STEP 3: Workflow is now ready
-    if (payload.actionEvent === "action_ready") {
+    // STEP 3: Workflow is now ready and waiting for confirmation
+    if (payload.actionEvent === "awaiting_confirmation") {
 
-        return await cloudPilotRespondActionReady(payload);
+        return await cloudPilotRespondAwaitingConfirmation(payload);
     }
 
     // STEP 4: Fallback
@@ -403,56 +402,37 @@ async function handleCloudPilotChat(payload) {
 async function cloudPilotRespondNewRequest(payload) {
     const actionDefinition = payload.actionDefinition;
 
-    const missingFields =
-        payload.actionState.missingFields || [];
+    const missingFields = payload.actionState.missingFields || [];
 
-    const missingFieldsMessage =
-        buildMissingFieldsMessage(
-            actionDefinition,
-            missingFields
-        );
+    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields );
 
     return {
         success: true,
-        message:
-            actionDefinition.messages.started +
-            " " +
-            missingFieldsMessage,
+        message: actionDefinition.messages.started + " " + missingFieldsMessage,
         atlasResponse: null,
         error: null
     };
 }
 
 async function cloudPilotRespondMissingFieldsGiven(payload) {
-
     const actionDefinition = payload.actionDefinition;
     const missingFields = payload.actionState.missingFields || [];
     const collectedFields = payload.actionState.collectedFields || {};
     const collectedFieldNames = Object.keys(collectedFields);
     const latestField = collectedFieldNames[collectedFieldNames.length - 1];
 
-    let acknowledgement =
-        "Great, I updated the workflow.";
+    let acknowledgement = "Great, I updated the workflow.";
 
     if (latestField) {
-        acknowledgement =
-            "Great, I now have the " +
-            latestField.replaceAll("_", " ") +
-            ".";
+        acknowledgement = "Great, I now have the " + latestField.replaceAll("_", " ") + ".";
     }
 
     // Still missing fields
     if (missingFields.length > 0) {
 
-        const missingFieldsMessage =
-            buildMissingFieldsMessage(
-                actionDefinition,
-                missingFields
-            );
+        const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
 
-        acknowledgement +=
-            " " +
-            missingFieldsMessage;
+        acknowledgement += " " + missingFieldsMessage;
     }
 
     return {
@@ -463,34 +443,28 @@ async function cloudPilotRespondMissingFieldsGiven(payload) {
     };
 }
 
-async function cloudPilotRespondActionReady(payload) {
+async function cloudPilotRespondAwaitingConfirmation(payload) {
 
     const actionDefinition = payload.actionDefinition;
+    const readyMessage =
+        actionDefinition.messages.ready ||
+        "Everything is ready.";
 
     return {
         success: true,
-        message:
-            actionDefinition.messages.ready ||
-            "Everything is ready.",
+        message: readyMessage + "\n\nWould you like me to execute this action?",
         atlasResponse: null,
         error: null
     };
 }
 
 function buildMissingFieldsMessage(actionDefinition, missingFields) {
-
     const questions = [];
 
-    const registryMessages =
-        actionDefinition.messages &&
-        actionDefinition.messages.missingFields
-            ? actionDefinition.messages.missingFields
-            : {};
+    const registryMessages = actionDefinition.messages && actionDefinition.messages.missingFields ? actionDefinition.messages.missingFields : {};
 
     for (const fieldName of missingFields) {
-
-        const question =
-            registryMessages[fieldName];
+        const question = registryMessages[fieldName];
 
         if (question) {
             questions.push(question);
@@ -622,18 +596,11 @@ async function handleCloudPilotChatOLD(payload) {
     }
 
     //STEP 4B: Get the missing-field question from the registry
-    const missingFieldMessages =
-        actionDefinition.messages &&
-        actionDefinition.messages.missingFields
-            ? actionDefinition.messages.missingFields
-            : {};
+    const missingFieldMessages = actionDefinition.messages && actionDefinition.messages.missingFields ? actionDefinition.messages.missingFields : {};
 
     const fromRegistry = missingFieldMessages[nextMissingField];
 
-    const question =
-        fromRegistry
-            ? String(fromRegistry).trim()
-            : ("I still need: " + nextMissingField);
+    const question = fromRegistry ? String(fromRegistry).trim() : ("I still need: " + nextMissingField);
 
     //STEP 4C: Only mark asked{} when we are actually sending the question
     if (question) {

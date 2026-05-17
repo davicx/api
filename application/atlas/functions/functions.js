@@ -116,7 +116,7 @@ function determineRequestReadiness(activeRequestedAction, currentStateData) {
 function determineActionEvent(actionEventData) {
 
     if (actionEventData.actionJustBecameReady) {
-        return "action_ready";
+        return "awaiting_confirmation";
     }
 
     if (actionEventData.newActionStarted) {
