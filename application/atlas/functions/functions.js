@@ -6,6 +6,7 @@ FUNCTIONS A: AWS Helper Functions
 	4) Function A4: fieldExtractors map (field name → extractor)
 	5) Function A5: Extract structured workflow fields from user message
 	6) Function A6: Determine request readiness
+	7) Function A7: Determine workflow event
 
 */
 
@@ -111,7 +112,26 @@ function determineRequestReadiness(activeRequestedAction, currentStateData) {
     return true;
 }
 
+//Function A7: Determine workflow event
+function determineActionEvent(actionEventData) {
+
+    if (actionEventData.actionJustBecameReady) {
+        return "action_ready";
+    }
+
+    if (actionEventData.newActionStarted) {
+        return "new_action";
+    }
+
+    if (actionEventData.fieldsUpdated) {
+        return "missing_fields_given";
+    }
+
+    return null;
+}
+
 fieldExtractors.extractStructuredFields = extractStructuredFields;
 fieldExtractors.determineRequestReadiness = determineRequestReadiness;
+fieldExtractors.determineActionEvent = determineActionEvent;
 
 module.exports = fieldExtractors;
