@@ -20,6 +20,9 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 async function processMessage(rawUserMessage, conversationID) {
     var currentStateData = actionState.getActionStatus(conversationID);
     var activeRequestedAction = currentStateData.pendingAction;
+    let workflowEvent = null;
+    let newRequestStarted = false;
+    let fieldsUpdated = false;
     let cloudPilotShouldRespond = false; //Other is we send to Open AI
     let requestJustBecameReady = false;
 
@@ -100,6 +103,7 @@ async function processMessage(rawUserMessage, conversationID) {
             console.log(" ");
 
             actionState.setPendingAction(conversationID, requestedAction.type, requestedAction.requiredFields || []);
+            newRequestStarted = true;
         }
 
         // Refresh active request state
@@ -115,7 +119,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
     // STEP 5: Extract structured workflow fields from the user message.
     // Deterministic MVP format: region: "us-west-2"
-    if (activeRequestedAction) {
+    if (activeRequestedAction && currentStateData.missing.length > 0) {
         const extractedFields = Functions.extractStructuredFields(currentUserMessage);
         const missingFields = currentStateData.missing.slice();
 
@@ -130,6 +134,7 @@ async function processMessage(rawUserMessage, conversationID) {
             console.log("STEP 5: Found field:", missingFieldName, structuredFieldValue);
 
             actionState.setField(conversationID, missingFieldName, structuredFieldValue);
+            fieldsUpdated = true;
 
             // Refresh state after updating workflow fields
             currentStateData = actionState.getActionStatus(conversationID);
@@ -168,6 +173,22 @@ async function processMessage(rawUserMessage, conversationID) {
         cloudPilotShouldRespond = true;
     }
 
+    workflowEvent = Functions.determineWorkflowEvent({
+        requestedAction: requestedAction,
+        activeRequestedAction: activeRequestedAction,
+        currentStateData: currentStateData,
+        hadMissingFieldsBefore: hadMissingFieldsBefore,
+        requestJustBecameReady: requestJustBecameReady,
+        newRequestStarted: newRequestStarted,
+        fieldsUpdated: fieldsUpdated
+    });
+
+    if (workflowEvent) {
+        cloudPilotShouldRespond = true;
+    }
+
+    const requestDefinition = getActionDefinition(activeRequestedAction || userRequest);
+
     const chatPayload = {
         conversationID,
     
@@ -176,9 +197,11 @@ async function processMessage(rawUserMessage, conversationID) {
     
         // What the user requested THIS TURN
         userRequest,
+
+        workflowEvent,
     
         // Static action registry definition
-        requestDefinition: requestedAction,
+        requestDefinition: requestDefinition,
     
         // Whether the workflow is currently executable
         requestReady: requestReadyNow,
@@ -237,12 +260,23 @@ async function processMessage(rawUserMessage, conversationID) {
 
   */
 
-    //STEP 7 TEMP: Show which responder would be selected while chat handling is paused
-    processMessageOutcome.success = true;
-
+    //STEP 7: Chat Response
     if (cloudPilotShouldRespond) {
-        processMessageOutcome.cloudPilotMessage = "CLOUD_PILOT is responding";
+        const result = await handleCloudPilotChat(chatPayload);
+
+        processMessageOutcome.success = result.success;
+        processMessageOutcome.cloudPilotMessage = result.message;
+        processMessageOutcome.atlasResponse = result.atlasResponse || null;
+        processMessageOutcome.error = result.error || null;
+
+        console.log("STEP 7: CLOUD_PILOT selected");
     } else {
+
+        console.log("STEP 7: OPEN_AI selected");
+        console.log("OPEN_AI PAYLOAD:");
+        console.log(JSON.stringify(chatPayload, null, 2));
+
+        processMessageOutcome.success = true;
         processMessageOutcome.cloudPilotMessage = "OPEN_AI is responding";
     }
 
