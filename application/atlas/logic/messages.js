@@ -82,7 +82,6 @@ async function postMessage(req, res) {
 
     
     //STEP 4: Save CloudPilot message to database
-    /*
     console.log("STEP 5: Save CloudPilot message to database");
 
     if (cloudPilotResult && cloudPilotResult.success == true) {
@@ -122,7 +121,7 @@ async function postMessage(req, res) {
             messageOutcome.errors = [cloudPilotResult.error];
         }
     }
-    */
+
     
     //STEP 5: Return Response
     Functions.addFooter();

@@ -168,6 +168,31 @@ async function processMessage(rawUserMessage, conversationID) {
         cloudPilotShouldRespond = true;
     }
 
+    const chatPayload = {
+        conversationID,
+    
+        // Current normalized user message
+        currentUserMessage,
+    
+        // What the user requested THIS TURN
+        userRequest,
+    
+        // Static action registry definition
+        requestDefinition: requestedAction,
+    
+        // Whether the workflow is currently executable
+        requestReady: requestReadyNow,
+    
+        // Persisted workflow state
+        requestState: {
+            pendingAction: activeRequestedAction,
+            status: currentStateData.status,
+            missingFields: [...(currentStateData.missing || [])],
+            collectedFields: { ...(currentStateData.collected || {}) },
+            askedForFields: { ...(currentStateData.asked || {}) }
+        }
+    };
+
     /*
 
     const chatPayload = {
@@ -212,9 +237,18 @@ async function processMessage(rawUserMessage, conversationID) {
 
   */
 
+    //STEP 7 TEMP: Show which responder would be selected while chat handling is paused
+    processMessageOutcome.success = true;
+
+    if (cloudPilotShouldRespond) {
+        processMessageOutcome.cloudPilotMessage = "CLOUD_PILOT is responding";
+    } else {
+        processMessageOutcome.cloudPilotMessage = "OPEN_AI is responding";
+    }
+
     //TO DO: Move requestStatus syncing to the end of processMessage after all state changes run.
     //Also maybe set all manually one by one this is confusing
-    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, activeRequestedAction, false);
+    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, activeRequestedAction, requestReadyNow);
     
 
     //STATE TEMP
@@ -296,9 +330,160 @@ async function handleGeneralChat(payload) {
     };
 }
 
-
+//NEW 
 //Function B3: Handle Cloud Pilot Chat
 async function handleCloudPilotChat(payload) {
+
+    console.log(" ");
+    console.log("CLOUD_PILOT FUNCTION CALLED");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(" ");
+
+    // STEP 1: New workflow started
+    if (payload.workflowEvent === "new_request") {
+
+        return await cloudPilotRespondNewRequest(payload);
+    }
+
+    // STEP 2: User supplied new workflow fields
+    if (payload.workflowEvent === "missing_fields_given") {
+
+        return await cloudPilotRespondMissingFieldsGiven(payload);
+    }
+
+    // STEP 3: Workflow is now ready
+    if (payload.workflowEvent === "request_ready") {
+
+        return await cloudPilotRespondRequestReady(payload);
+    }
+
+    // STEP 4: Fallback
+    return {
+        success: false,
+        message: "Unknown CloudPilot workflow event.",
+        atlasResponse: null,
+        error: "unknown_workflow_event"
+    };
+}
+
+async function cloudPilotRespondNewRequest(payload) {
+
+    const actionDefinition = payload.requestDefinition;
+
+    const missingFields =
+        payload.requestState.missingFields || [];
+
+    const missingFieldsMessage =
+        buildMissingFieldsMessage(
+            actionDefinition,
+            missingFields
+        );
+
+    return {
+        success: true,
+        message:
+            actionDefinition.messages.started +
+            " " +
+            missingFieldsMessage,
+        atlasResponse: null,
+        error: null
+    };
+}
+
+async function cloudPilotRespondMissingFieldsGiven(payload) {
+
+    const actionDefinition = payload.requestDefinition;
+
+    const missingFields =
+        payload.requestState.missingFields || [];
+
+    const collectedFields =
+        payload.requestState.collectedFields || {};
+
+    const collectedFieldNames =
+        Object.keys(collectedFields);
+
+    const latestField =
+        collectedFieldNames[collectedFieldNames.length - 1];
+
+    let acknowledgement =
+        "Great, I updated the workflow.";
+
+    if (latestField) {
+        acknowledgement =
+            "Great, I now have the " +
+            latestField.replaceAll("_", " ") +
+            ".";
+    }
+
+    // Still missing fields
+    if (missingFields.length > 0) {
+
+        const missingFieldsMessage =
+            buildMissingFieldsMessage(
+                actionDefinition,
+                missingFields
+            );
+
+        acknowledgement +=
+            " " +
+            missingFieldsMessage;
+    }
+
+    return {
+        success: true,
+        message: acknowledgement,
+        atlasResponse: null,
+        error: null
+    };
+}
+
+async function cloudPilotRespondRequestReady(payload) {
+
+    const actionDefinition = payload.requestDefinition;
+
+    return {
+        success: true,
+        message:
+            actionDefinition.messages.ready ||
+            "Everything is ready.",
+        atlasResponse: null,
+        error: null
+    };
+}
+
+function buildMissingFieldsMessage(actionDefinition, missingFields) {
+
+    const questions = [];
+
+    const registryMessages =
+        actionDefinition.messages &&
+        actionDefinition.messages.missingFields
+            ? actionDefinition.messages.missingFields
+            : {};
+
+    for (const fieldName of missingFields) {
+
+        const question =
+            registryMessages[fieldName];
+
+        if (question) {
+            questions.push(question);
+        }
+    }
+
+    if (questions.length === 0) {
+        return "";
+    }
+
+    return (
+        questions.join(" ") +
+        '\n\nPlease use this format:\nfield: "value"'
+    );
+}
+//NEW 
+
+async function handleCloudPilotChatOLD(payload) {
 
     console.log(" ");
     console.log("CLOUD_PILOT FUNCTION CALLED");

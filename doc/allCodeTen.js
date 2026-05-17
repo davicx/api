@@ -2,7 +2,7 @@
 /**
  * Aggregated copy of all JavaScript under api/application/atlas/.
  * For reference only - not a runnable module (multiple module.exports).
- * Updated: 2026-05-14
+ * Updated: 2026-05-16
  */
 
 // ================================================================================
@@ -28,6 +28,14 @@ FUNCTIONS C: All Functions Related to getting Messages
 
 //FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
 //Route B1: Post Message
+/* 
+Still need
+policy: {
+    allowed: false, //NOT DONE
+    message: null, //NOT DONE
+    reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+},
+*/
 messageRouter.post('/message', function (req, res) {
     messages.postMessage(req, res);
 });
@@ -59,6 +67,7 @@ messageRouter.get('/messages/conversation/:conversation_id', middlewares.verifyU
 });
 
 module.exports = messageRouter;
+
 
 // ================================================================================
 // FILE: application/atlas/logic/messages.js
@@ -114,21 +123,15 @@ async function postMessage(req, res) {
         currentUser: messageFrom
     };
 
-
-    //STEP 1: Get current state (Does the user have an open request)
-    //var currentState = actionState.getActionStatus(conversationID);
-    //console.log("STEP 1: Get current state (Does the user have an open request)")
-    //actionState.print(conversationID);
-
-    //STEP 2: Build Message this is basically the JSON for a message
+    //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    //console.log("STEP 2: Build Message ")
+    //console.log("STEP 1: Build Message ")
 
-    //STEP 3: Send user message to be stored in the database
-    //console.log("STEP 3: Send user message to be stored in the database");
+    //STEP 2: Send user message to be stored in the database
+    //console.log("STEP 2: Send user message to be stored in the database");
     var currentUserMessageOutcome = await Message.createMessageText(currentUserMessage);
 
-    //Step 3A: Add current user message to JSON output
+    //Step 2A: Add current user message to JSON output
     messageOutcome.data.currentUserMessage = currentUserMessageOutcome.newMessage;
     
     if (currentUserMessageOutcome.outcome != 200) {
@@ -137,7 +140,7 @@ async function postMessage(req, res) {
         messageOutcome.success = false;
     }
 
-    //STEP 4: CloudPilot processing
+    //STEP 3: CloudPilot processing
     let cloudPilotResult = null;
     //console.log(" ");
     //console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
@@ -152,8 +155,8 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
-    /*
-    //STEP 5: Save CloudPilot message to database
+    
+    //STEP 4: Save CloudPilot message to database
     console.log("STEP 5: Save CloudPilot message to database");
 
     if (cloudPilotResult && cloudPilotResult.success == true) {
@@ -169,19 +172,19 @@ async function postMessage(req, res) {
         }
     }
     
-    //Step 5A: Add current user message to JSON output
+    //Step 4A: Add current user message to JSON output
     messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
 
-    //Step 5B: Add Cloud Pilot action status to response
+    //Step 4B: Add Cloud Pilot action status to response
     messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
 
-    //Step 5C: Add formatted Atlas data to response
-    messageOutcome.data.atlas = null;
-    if (cloudPilotResult && cloudPilotResult.atlas) {
-        messageOutcome.data.atlas = cloudPilotResult.atlas;
+    //Step 4C: Add formatted Atlas data to response
+    messageOutcome.data.atlasResponse = null;
+    if (cloudPilotResult && cloudPilotResult.atlasResponse) {
+        messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
     }
 
-    //Step 5D: Set final API success metadata from CloudPilot processing outcome
+    //Step 4D: Set final API success metadata from CloudPilot processing outcome
     if (cloudPilotResult && cloudPilotResult.success == true) {
         messageOutcome.success = true;
         messageOutcome.statusCode = 200;
@@ -193,10 +196,9 @@ async function postMessage(req, res) {
             messageOutcome.errors = [cloudPilotResult.error];
         }
     }
-    */
+
     
-    
-    //STEP 6: Return Response
+    //STEP 5: Return Response
     Functions.addFooter();
     res.json(messageOutcome);
 }
@@ -429,6 +431,8 @@ async function getConversationMessages(req, res) {
 
 module.exports = { postMessageHello, postMessage, deleteMessage, editMessage, getGroupMessages, getConversationMessages };
 
+
+
 // ================================================================================
 // FILE: application/atlas/state/ActionState.js
 // ================================================================================
@@ -647,6 +651,7 @@ class ActionState {
   module.exports = new ActionState();
   */
 
+
 // ================================================================================
 // FILE: application/atlas/state/conversationStateFunctions.js
 // ================================================================================
@@ -811,6 +816,7 @@ module.exports = {
     isCancelMessage
 };
 
+
 // ================================================================================
 // FILE: application/atlas/functions/config/chatGPTconfig.js
 // ================================================================================
@@ -850,6 +856,7 @@ const OPENAI_SAFE_DEFAULTS = {
 
 module.exports = { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS };
 
+
 // ================================================================================
 // FILE: application/atlas/functions/actions/actionRegistry.js
 // ================================================================================
@@ -885,30 +892,30 @@ const actionRegistry = {
 
     //SERVICE: General Chat
     general_chat: {
-        //IDENTITY
+        //Identity
         type: 'general_chat',
         actionLabel: 'General Chat',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: false,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: () => false,
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {},
 
-        //EXECUTION
-        handler: null,
+        //Execution
+        executionFunction: null,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: '',
             missingFields: {},
@@ -922,34 +929,34 @@ const actionRegistry = {
     //SERVICE: EC2
     //Action: Scan EC2
     scan_ec2: {
-        //IDENTITY
+        //Identity
         type: 'scan_ec2',
         actionLabel: 'Scan EC2',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: (text) =>
             text.includes('scan') &&
             text.includes('ec2'),
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [
             'region'
         ],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {},
 
-        //EXECUTION
-        handler: scanEC2Handler,
+        //Execution
+        executionFunction: scanEC2Handler,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 scan.',
             missingFields: {
@@ -965,34 +972,34 @@ const actionRegistry = {
     //SERVICE: EC2
     //Action: Toggle EC2
     toggle_ec2: {
-        //IDENTITY
+        //Identity
         type: 'toggle_ec2',
         actionLabel: 'Toggle EC2',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: (text) =>
             text.includes('toggle') ||
             text.includes('switch'),
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [
             'region'
         ],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {},
 
-        //EXECUTION
-        handler: toggleEC2Handler,
+        //Execution
+        executionFunction: toggleEC2Handler,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: 'Confirm before changing EC2 instances.',
             missingFields: {
@@ -1008,30 +1015,30 @@ const actionRegistry = {
     //SERVICE: EC2
     //Action: Create EC2
     create_ec2: {
-        //IDENTITY
+        //Identity
         type: 'create_ec2',
         actionLabel: 'Create EC2',
 
-        //POLICY
+        //Policy
         allowed: true,
 
-        //ORCHESTRATION
+        //Orchestration
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //INTENT DETECTION
+        //Intent Detection
         match: (text) =>
             text.includes('create') &&
             (text.includes('ec2') || text.includes('instance')),
 
-        //FIELDS REQUIRED BEFORE READY
+        //Fields Required Before Ready
         requiredFields: [
             'name',
             'region',
             'instance_type'
         ],
 
-        //OPTIONAL DEFAULTS
+        //Optional Defaults
         defaults: {
             tags: {
                 'managed-by': 'cloudpilot',
@@ -1040,10 +1047,10 @@ const actionRegistry = {
             }
         },
 
-        //EXECUTION
-        handler: createEC2Handler,
+        //Execution
+        executionFunction: createEC2Handler,
 
-        //USER-FACING SYSTEM MESSAGES
+        //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 create.',
             missingFields: {
@@ -1060,6 +1067,7 @@ const actionRegistry = {
 };
 
 module.exports = actionRegistry;
+
 
 // ================================================================================
 // FILE: application/atlas/functions/actions/ec2/atlasEC2Functions.js
@@ -1125,6 +1133,7 @@ async function createEC2(requestBody) {
 }
 
 module.exports = { scanEC2, createEC2 };
+
 
 // ================================================================================
 // FILE: application/atlas/functions/actions/ec2/scanEC2/atlasEC2Formatter.js
@@ -1238,6 +1247,7 @@ module.exports = {
     formatAtlasEC2Output
 };
 
+
 // ================================================================================
 // FILE: application/atlas/functions/actions/ec2/scanEC2/atlasEC2MessageBuilder.js
 // ================================================================================
@@ -1288,6 +1298,7 @@ module.exports = {
     buildEC2ScanMessage
 };
 
+
 // ================================================================================
 // FILE: application/atlas/functions/actions/ec2/scanEC2/scanEC2Handler.js
 // ================================================================================
@@ -1336,7 +1347,7 @@ async function scanEC2Handler(context) {
                     atlasResponseFormatted
                 ),
             error: null,
-            atlas: atlasResponseFormatted
+            atlasResponse: atlasResponseFormatted
         };
 
     } catch (error) {
@@ -1349,12 +1360,13 @@ async function scanEC2Handler(context) {
             cloudPilotMessage:
                 "I could not complete the EC2 scan.",
             error: error.message,
-            atlas: null
+            atlasResponse: null
         };
     }
 }
 
 module.exports = scanEC2Handler;
+
 
 // ================================================================================
 // FILE: application/atlas/functions/actions/ec2/toggleEC2/toggleEC2Handler.js
@@ -1370,7 +1382,7 @@ async function toggleEC2Handler(context) {
             success: false,
             cloudPilotMessage: chatResult.message || 'ChatGPT request failed',
             error: chatResult.error || null,
-            atlas: null
+            atlasResponse: null
         };
     }
 
@@ -1383,11 +1395,12 @@ async function toggleEC2Handler(context) {
         success: true,
         cloudPilotMessage: cloudPilotMessage,
         error: null,
-        atlas: null
+        atlasResponse: null
     };
 }
 
 module.exports = toggleEC2Handler;
+
 
 // ================================================================================
 // FILE: application/atlas/functions/actions/ec2/createEC2/createEC2Handler.js
@@ -1419,7 +1432,7 @@ async function createEC2Handler(context) {
                 success: false,
                 cloudPilotMessage: "I am missing name, region, or instance type to create the instance.",
                 error: "missing_collected_fields",
-                atlas: null
+                atlasResponse: null
             };
         }
 
@@ -1452,7 +1465,7 @@ async function createEC2Handler(context) {
                 success: true,
                 cloudPilotMessage: "Created EC2 instance " + instanceId + " in " + regionOut + ".",
                 error: null,
-                atlas: atlasResponseRaw.data
+                atlasResponse: atlasResponseRaw.data
             };
         }
 
@@ -1463,7 +1476,7 @@ async function createEC2Handler(context) {
             success: false,
             cloudPilotMessage: "I could not create the EC2 instance.",
             error: errCode || errMsg,
-            atlas: null
+            atlasResponse: null
         };
 
     } catch (error) {
@@ -1475,12 +1488,13 @@ async function createEC2Handler(context) {
             success: false,
             cloudPilotMessage: "I could not create the EC2 instance.",
             error: error.message,
-            atlas: null
+            atlasResponse: null
         };
     }
 }
 
 module.exports = createEC2Handler;
+
 
 // ================================================================================
 // FILE: application/atlas/functions/functions.js
@@ -1492,6 +1506,8 @@ FUNCTIONS A: AWS Helper Functions
 	2) Function A2: Extract EC2 instance type from user text
 	3) Function A3: Extract instance name from user text (MVP phrases)
 	4) Function A4: fieldExtractors map (field name → extractor)
+	5) Function A5: Extract structured workflow fields from user message
+	6) Function A6: Determine request readiness
 
 */
 
@@ -1546,7 +1562,62 @@ const fieldExtractors = {
     name: extractName
 };
 
+//Function A5: Extract structured workflow fields from user message
+function extractStructuredFields(message) {
+    const extractedFields = {};
+    const text = String(message || '');
+    const regex = /(\w+)\s*:\s*"([^"]+)"/g;
+
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        const missingFieldName = match[1];
+        const structuredFieldValue = match[2];
+
+        // Last duplicate match wins
+        extractedFields[missingFieldName] = structuredFieldValue;
+    }
+
+    return extractedFields;
+}
+
+//Function A6: Determine request readiness
+function determineRequestReadiness(activeRequestedAction, currentStateData) {
+
+    // No active request exists
+    if (!activeRequestedAction) {
+        console.log("STEP 6A: No active request");
+        return false;
+    }
+
+    // Request still missing fields
+    if (currentStateData.missing.length > 0) {
+        console.log("STEP 6B: Request still missing fields");
+        return false;
+    }
+
+    // Request already completed
+    if (currentStateData.status === "completed") {
+        console.log("STEP 6C: Request already completed");
+        return false;
+    }
+
+    // Request already failed
+    if (currentStateData.status === "failed") {
+        console.log("STEP 6D: Request already failed");
+        return false;
+    }
+
+    console.log("STEP 6E: Request is READY");
+
+    return true;
+}
+
+fieldExtractors.extractStructuredFields = extractStructuredFields;
+fieldExtractors.determineRequestReadiness = determineRequestReadiness;
+
 module.exports = fieldExtractors;
+
 
 // ================================================================================
 // FILE: application/atlas/functions/openAI/openAIFunctions.js
@@ -1848,6 +1919,7 @@ module.exports = {
     sendGeneralChatDuringWorkflow
 };
 
+
 // ================================================================================
 // FILE: application/atlas/functions/cloudPilotMessageFunctions.js
 // ================================================================================
@@ -1855,7 +1927,7 @@ module.exports = {
 const openAIFunctions = require('./openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
-const fieldExtractors = require('./functions');
+const Functions = require('./functions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -1868,204 +1940,161 @@ FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
     5) Function B6: General chat during active workflow (ChatGPT + continuation)
 */
 
-//WILL ADD THESE SOON
-/*
-    var processMessageOutcome = {
-        success: false, //NOT DONE
-        cloudPilotMessage: "", //NOT DONE
-        cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-            
-            policy: {
-                allowed: false, //NOT DONE
-                message: null, //NOT DONE
-                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
-            },
-            
-            action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
-                ready: false, //NOT DONE
-                parameters: {} //NOT DONE
-            },
-            state: {
-                pendingAction: null, //DONE
-                missing: [], //DONE
-                collected: {}, //DONE
-                
-                execution: {
-                    inProgress: false, //NOT DONE
-                    actionId: null,    //NOT DONE
-                    startedAt: null,    //NOT DONE
-                    status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
-                }
-                
-            }
-        },
-        error: null, //NOT DONE
-        atlas: null //NOT DONE
-    };
-*/
 
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(rawUserMessage, conversationID) {
     var currentStateData = actionState.getActionStatus(conversationID);
-    var actionPending = currentStateData.pendingAction;
-    let cloudPilotShouldRespond = false;
+    var activeRequestedAction = currentStateData.pendingAction;
+    let cloudPilotShouldRespond = false; //Other is we send to Open AI
     let requestJustBecameReady = false;
 
-    console.log("_______________processMessage______________________")
+    //console.log("_______________processMessage______________________")
 
     //Create outcome
     var processMessageOutcome = {
         success: false, 
         cloudPilotMessage: "",
-        cloudPilot: {
-            intent: null, // e.g. "scan_ec2", "toggle_ec2"
-            action: {
-                type: null, // e.g. "scan_ec2", "toggle_ec2"
-                ready: false, 
-                parameters: {}
-            },
-            state: {
-                pendingAction: null, 
-                status: null,
-                missing: [], 
-                collected: {}, 
-                asked: {}, 
+        cloudPilot: { 
+            userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+            //Later Add Policy
 
+            requestStatus: {
+                requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2") null if it is just general_chat
+                ready: false,
+
+                missingFields: [],
+                collectedFields: {},
+                askedForFields: {}
+            },
+            atlasExecution: {
+                status: "idle", // "idle" | "running" | "completed" | "failed"
+                actionId: null, // Atlas execution ID
+                startedAt: null,
+                completedAt: null,
+                error: null
             }
         },
-        atlas: null, 
+        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
         error: null 
     };
 
     //Sync Data
-    processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, null, false);
 
-    //STATE TEMP
-    printState(conversationID);
-    //STATE TEMP
-
-    //STEP 1: Normalize user message → normalizedMessageOutcome (ok, text, message)
-    const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
+    printState(conversationID, "INITIAL STATE:");
+ 
+    //STEP 1: Normalize user message
+    const currentUserMessageOutcome = getCurrentUserMessage(rawUserMessage);
 
     //Handle Error
-    if (!normalizedMessageOutcome.ok) {
-        console.log("STEP 1: Normalize message outcome failed");
-
+    if (!currentUserMessageOutcome.success) {
         processMessageOutcome.success = false;
-        processMessageOutcome.error = normalizedMessageOutcome.message;
+        processMessageOutcome.error = currentUserMessageOutcome.error;
 
         return processMessageOutcome;         
     }
 
-    const currentUserMessage = normalizedMessageOutcome.text;
+    const currentUserMessage = currentUserMessageOutcome.currentUserMessage;
 
-    console.log("STEP 1: Normalize message outcome OK");
-    console.log("Current user message (text): " + currentUserMessage);
-    console.log(" ");
+    // STEP 2: Detect user request
+    const userRequest = detectUserRequest(currentUserMessage); //available: general_chat, scan_ec2, toggle_ec2, create_ec2
+    processMessageOutcome.cloudPilot.userRequest = userRequest;
+    processMessageOutcome.cloudPilot.requestStatus.requestedAction = userRequest === "general_chat" ? null : userRequest;
 
-    // STEP 2: Detect intent
-    const intent = detectIntent(currentUserMessage);
-    processMessageOutcome.cloudPilot.intent = intent;
-
-    console.log("STEP 2: INTENT:", intent);
-    console.log(" ");
-
-    // STEP 3: Check if user is requesting an action
-    const action = getActionDefinition(intent);
-    console.log("STEP 3: ACTION ");
-    console.log(action)
+    console.log("STEP 2: USER REQUEST:", userRequest);
     console.log(" ");
     
+    
 
-    // STEP 4: Start or replace workflow action
-    if (action.requiresWorkflow) {
+    // STEP 3: Check if user is requesting an action not just general chat
+    const requestedAction = getActionDefinition(userRequest);
+    console.log("STEP 3: ACTION- Full from Action Registry ");
+    console.log(requestedAction)
+    console.log(" ");
+    
+    
+    // STEP 4: Start or replace active request
+    if (requestedAction.requiresWorkflow) {
         cloudPilotShouldRespond = true;
 
-        // User requested a new workflow if(no action pending OR its a different action)
-        if (!actionPending || actionPending !== action.type || currentStateData.status === "completed" || currentStateData.status === "failed") {
-
-            console.log("STEP 4: Starting workflow");
+        // Start a new requested action when there is no matching active request.
+        const shouldStartNewRequest = shouldStartNewRequestWorkflow(activeRequestedAction, requestedAction, currentStateData);
+        
+        if (shouldStartNewRequest) {
+            console.log("STEP 4: Starting active request");
             console.log(" ");
 
-            actionState.setPendingAction(
-                conversationID,
-                action.type,
-                action.requiredFields || []
-            );
+            actionState.setPendingAction(conversationID, requestedAction.type, requestedAction.requiredFields || []);
         }
 
-        // Refresh workflow state
+        // Refresh active request state
         currentStateData = actionState.getActionStatus(conversationID);
-        actionPending = currentStateData.pendingAction;
-        processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+        activeRequestedAction = currentStateData.pendingAction;
+        //processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+    } else {
+        console.log("STEP 4: NOT Starting active request just chattin dude");
     }
 
-    const hadMissingFieldsBefore = actionPending && currentStateData.missing.length > 0;
+    const hadMissingFieldsBefore = activeRequestedAction && currentStateData.missing.length > 0;
 
-    // STEP 5: Extract missing fields like region, tags, instance types, etc (registry-driven missing[] + fieldExtractors)
-    if (actionPending) {
-        for (const field of currentStateData.missing) {
 
-            const extractor = fieldExtractors[field];
+    // STEP 5: Extract structured workflow fields from the user message.
+    // Deterministic MVP format: region: "us-west-2"
+    if (activeRequestedAction) {
+        const extractedFields = Functions.extractStructuredFields(currentUserMessage);
+        const missingFields = currentStateData.missing.slice();
 
-            if (!extractor) {
+        for (const missingFieldName of missingFields) {
+
+            const structuredFieldValue = extractedFields[missingFieldName];
+
+            if (!structuredFieldValue) {
                 continue;
             }
-            const value = extractor(currentUserMessage);
 
-            if (!value) {
-                continue;
-            }
-            console.log("STEP 5: Found field:", field, value);
-            actionState.setField(conversationID, field, value);
-            
-            // refresh state
+            console.log("STEP 5: Found field:", missingFieldName, structuredFieldValue);
+
+            actionState.setField(conversationID, missingFieldName, structuredFieldValue);
+
+            // Refresh state after updating workflow fields
             currentStateData = actionState.getActionStatus(conversationID);
-            actionPending = currentStateData.pendingAction;
-            
-            // sync
-            processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+            activeRequestedAction = currentStateData.pendingAction;
         }
+
     } else {
+
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    const requestReadyNow =
-        actionPending &&
-        currentStateData.missing.length === 0 &&
-        currentStateData.status !== "completed" &&
-        currentStateData.status !== "failed";
+    //STEP 6: After updated missing fields check if request just became ready or is ready and waiting
+    const requestReadyNow = Functions.determineRequestReadiness(activeRequestedAction, currentStateData);
 
+    // STEP 6A: Update request status to READY
     if (requestReadyNow && currentStateData.status !== "ready") {
+        console.log("STEP 6A: Updating request status to READY");
+
         actionState.setStatus(conversationID, "ready");
 
+        // Refresh state after updating request status
         currentStateData = actionState.getActionStatus(conversationID);
-        actionPending = currentStateData.pendingAction;
-        processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+
+        activeRequestedAction = currentStateData.pendingAction;
     }
 
+    // STEP 6B: Check if all fields were just gathered and the request is ready
     if (hadMissingFieldsBefore && requestReadyNow) {
-        console.log("STEP 6: Request JUST became READY");
+        console.log("STEP 6B: Request JUST became READY");
 
         requestJustBecameReady = true;
     }
 
-    // STEP 6: Check if Request just became ready
+    // STEP 6C: CloudPilot should respond when request just became ready
     if (requestJustBecameReady) {
-        console.log("STEP 6: Request JUST became READY");
         cloudPilotShouldRespond = true;
-    } else if (requestReadyNow) {
-        console.log("STEP 6B: There is a Request and it was READY before and is still READY");
-    } else {
-        console.log("STEP 6C: Request NOT ready");
     }
 
-    processMessageOutcome.cloudPilot.action.type = actionPending;
-    processMessageOutcome.cloudPilot.action.ready = Boolean(requestReadyNow);
-    processMessageOutcome.cloudPilot.action.parameters = { ...(currentStateData.collected || {}) };
+    /*
 
     const chatPayload = {
         conversationID,
@@ -2076,7 +2105,7 @@ async function processMessage(rawUserMessage, conversationID) {
         requestReady: requestReadyNow,
 
         requestedAction: {
-            pendingAction: actionPending,
+            pendingAction: activeRequestedAction,
             status: currentStateData.status,
             missing: [...(currentStateData.missing || [])],
             collected: { ...(currentStateData.collected || {}) }
@@ -2089,7 +2118,7 @@ async function processMessage(rawUserMessage, conversationID) {
 
         processMessageOutcome.success = result.success;
         processMessageOutcome.cloudPilotMessage = result.message;
-        processMessageOutcome.atlas = result.atlas || null;
+        processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
         processMessageOutcome.cloudPilot.state = cloneOperationState(actionState.getActionStatus(conversationID));
 
@@ -2101,27 +2130,46 @@ async function processMessage(rawUserMessage, conversationID) {
 
         processMessageOutcome.success = result.success;
         processMessageOutcome.cloudPilotMessage = result.message;
-        processMessageOutcome.atlas = result.atlas || null;
+        processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
 
         console.log("STEP 7: OPEN_AI selected");
     }
 
-    //STATE TEMP
-    printState(conversationID);
-    //STATE TEMP
+  */
 
-    console.log("_______________processMessage______________________")    
-    console.log(" ")
+    //STEP 7 TEMP: Show which responder would be selected while chat handling is paused
+    processMessageOutcome.success = true;
+
+    if (cloudPilotShouldRespond) {
+        processMessageOutcome.cloudPilotMessage = "CLOUD_PILOT is responding";
+    } else {
+        processMessageOutcome.cloudPilotMessage = "OPEN_AI is responding";
+    }
+
+    //TO DO: Move requestStatus syncing to the end of processMessage after all state changes run.
+    //Also maybe set all manually one by one this is confusing
+    processMessageOutcome.cloudPilot.requestStatus = cloneRequestStatus(currentStateData, activeRequestedAction, requestReadyNow);
+    
+
+    //STATE TEMP
+    printState(conversationID, "FINAL STATE:");
+    //STATE TEMP
+    //console.log("_______________processMessage______________________")    
+    console.log("FINAL END OF FUNCTION: processMessageOutcome ")
+    console.log(processMessageOutcome)
+    console.log(" processMessageOutcome ")
+
     console.log(" ");
+  
 
     return processMessageOutcome;
 
 }
 
 //FUNCTIONS B: Process User Messages
-//Function B1: Detect Intent
-function detectIntent(userMessage) {
+//Function B1: Detect User Request
+function detectUserRequest(userMessage) {
     const normalizedMessage = String(userMessage || '').toLowerCase().trim();
 
     // TEMP: remove when done debugging intent / registry
@@ -2149,7 +2197,7 @@ function getActionDefinition(intent) {
     if (action) {
         const copy = { ...action };
         delete copy.match;
-        delete copy.handler;
+        delete copy.executionFunction;
         delete copy.defaults;
         return copy; 
     }
@@ -2192,14 +2240,18 @@ async function handleCloudPilotChat(payload) {
     console.log(JSON.stringify(payload, null, 2));
     console.log(" ");
 
+    //STEP 1: Get the full action definition
+    //NOTE: We use actionRegistry directly here because getActionDefinition()
+    //removes internal fields like executionFunction/defaults.
     const pendingAction = payload.requestedAction && payload.requestedAction.pendingAction;
     const actionDefinition = actionRegistry[pendingAction];
 
+    //STEP 2: Make sure the requested action exists
     if (!actionDefinition) {
         const response = {
             success: false,
             message: "I could not find that CloudPilot action.",
-            atlas: null,
+            atlasResponse: null,
             error: "missing_action_definition"
         };
 
@@ -2207,14 +2259,17 @@ async function handleCloudPilotChat(payload) {
         return response;
     }
 
+    //STEP 3: If the request has all required fields, execute the handler
     if (payload.requestReady === true) {
-        if (typeof actionDefinition.handler !== 'function') {
+
+        //STEP 3A: Make sure this action has an executable handler
+        if (typeof actionDefinition.executionFunction !== 'function') {
             actionState.setStatus(payload.conversationID, "failed");
 
             const response = {
                 success: false,
                 message: "That CloudPilot action is not executable yet.",
-                atlas: null,
+                atlasResponse: null,
                 error: "missing_action_handler"
             };
 
@@ -2222,12 +2277,14 @@ async function handleCloudPilotChat(payload) {
             return response;
         }
 
+        //STEP 3B: Mark workflow as running before the handler starts
         actionState.setStatus(payload.conversationID, "running");
 
         let result;
 
         try {
-            result = await actionDefinition.handler({
+            //STEP 3C: Execute the action using the registry-defined handler
+            result = await actionDefinition.executionFunction({
                 userMessage: payload.currentUserMessage,
                 action: actionDefinition,
                 state: {
@@ -2239,12 +2296,13 @@ async function handleCloudPilotChat(payload) {
                 conversationID: payload.conversationID
             });
         } catch (error) {
+            //STEP 3D: Handler threw before returning a normal result
             actionState.setStatus(payload.conversationID, "failed");
 
             const response = {
                 success: false,
                 message: actionDefinition.messages.failed || "That CloudPilot action failed.",
-                atlas: null,
+                atlasResponse: null,
                 error: error.message || String(error)
             };
 
@@ -2252,16 +2310,18 @@ async function handleCloudPilotChat(payload) {
             return response;
         }
 
+        //STEP 3E: Handler finished, so set final workflow status
         if (result.success) {
             actionState.setStatus(payload.conversationID, "completed");
         } else {
             actionState.setStatus(payload.conversationID, "failed");
         }
 
+        //STEP 3F: Convert handler result into CloudPilot's response shape
         const response = {
             success: result.success,
             message: result.cloudPilotMessage || result.message || '',
-            atlas: result.atlas || null,
+            atlasResponse: result.atlasResponse || null,
             error: result.error || null
         };
 
@@ -2269,14 +2329,16 @@ async function handleCloudPilotChat(payload) {
         return response;
     }
 
+    //STEP 4: Request is not ready, so ask for the next missing field
     const missing = payload.requestedAction && payload.requestedAction.missing ? payload.requestedAction.missing : [];
     const nextMissingField = missing[0];
 
+    //STEP 4A: Fallback if CloudPilot has no specific missing field
     if (!nextMissingField) {
         const response = {
             success: true,
             message: actionDefinition.messages.started || "I need more information to continue.",
-            atlas: null,
+            atlasResponse: null,
             error: null
         };
 
@@ -2284,27 +2346,279 @@ async function handleCloudPilotChat(payload) {
         return response;
     }
 
-    const fromRegistry =
+    //STEP 4B: Get the missing-field question from the registry
+    const missingFieldMessages =
         actionDefinition.messages &&
-        actionDefinition.messages.missingFields &&
-        actionDefinition.messages.missingFields[nextMissingField];
+        actionDefinition.messages.missingFields
+            ? actionDefinition.messages.missingFields
+            : {};
 
-    const question = fromRegistry ? String(fromRegistry).trim() : ("I still need: " + nextMissingField);
+    const fromRegistry = missingFieldMessages[nextMissingField];
 
+    const question =
+        fromRegistry
+            ? String(fromRegistry).trim()
+            : ("I still need: " + nextMissingField);
+
+    //STEP 4C: Only mark asked{} when we are actually sending the question
     if (question) {
         actionState.markAsked(payload.conversationID, nextMissingField);
     }
 
+    //STEP 4D: Return the missing-field question
     const response = {
         success: true,
         message: question,
-        atlas: null,
+        atlasResponse: null,
         error: null
     };
 
     logCloudPilotMessage(response.message);
     return response;
 }
+
+//TEMP: Debug current action state
+function printState(conversationID, messageVar) {
+    console.log(" ")
+    console.log("_____________________________________")
+    console.log(messageVar);
+    actionState.print(conversationID);        
+    console.log("_____________________________________")
+    console.log(" ");
+}
+
+function cloneOperationState(state) {
+    return {
+        pendingAction: state.pendingAction,
+        missing: [...(state.missing || [])],
+        collected: { ...(state.collected || {}) },
+        asked: { ...(state.asked || {}) }
+    };
+}
+
+function cloneRequestStatus(state, requestedAction, ready) {
+    return {
+        requestedAction: requestedAction,
+        ready: Boolean(ready),
+        missingFields: [...(state.missing || [])],
+        collectedFields: { ...(state.collected || {}) },
+        askedForFields: { ...(state.asked || {}) }
+    };
+}
+
+function shouldStartNewRequestWorkflow(activeRequestedAction, requestedAction, currentStateData) {
+    // No active request exists yet
+    const noRequestActive = !activeRequestedAction;
+
+    // User asked for a different requested action than the active one
+    const requestedActionChanged = activeRequestedAction !== requestedAction.type;
+
+    // Previous active request already completed
+    const previousRequestCompleted = currentStateData.status === "completed";
+
+    // Previous active request already failed
+    const previousRequestFailed = currentStateData.status === "failed";
+
+    return noRequestActive || requestedActionChanged || previousRequestCompleted || previousRequestFailed;
+}
+
+function getCurrentUserMessage(rawUserMessage) {
+    const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
+
+    if (!normalizedMessageOutcome.ok) {
+        console.log("STEP 1: Normalize message outcome failed");
+
+        return {
+            success: false,
+            currentUserMessage: null,
+            error: normalizedMessageOutcome.message
+        };
+    }
+
+    const currentUserMessage = normalizedMessageOutcome.text;
+
+    console.log("STEP 1: Normalize message outcome OK");
+    console.log("Current user message (text): " + currentUserMessage);
+
+    return {
+        success: true,
+        currentUserMessage: currentUserMessage,
+        error: null
+    };
+}
+
+function logCloudPilotMessage(message) {
+    console.log("CLOUD PILOT MESSAGE: " + (message || ""));
+}
+
+
+module.exports = { processMessage, detectUserRequest, getActionDefinition };
+
+
+
+//FINAL
+/*
+const cloudPilotFINAL = {
+
+    cloudPilot: {
+
+        userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+        requestStatus: {
+            requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2") null if it is just general_chat
+            ready: false,
+
+            missingFields: [],
+            collectedFields: {},
+            askedForFields: {}
+        },
+        
+        policy: {
+            allowed: false, //NOT DONE
+            message: null, //NOT DONE
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+        },
+
+        atlasExecution: {
+            status: "idle", // "idle" | "running" | "completed" | "failed"
+            actionId: null, // Atlas execution ID
+            startedAt: null,
+            completedAt: null,
+            error: null
+        }
+    }
+}
+    */
+
+
+//APPENDIX
+
+//WILL ADD THESE SOON
+/*
+    var processMessageOutcome = {
+        success: false, //NOT DONE
+        cloudPilotMessage: "", //NOT DONE
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+            
+            policy: {
+                allowed: false, //NOT DONE
+                message: null, //NOT DONE
+                reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+            },
+            
+            action: {
+                type: null, // e.g. "scan_ec2", "toggle_ec2" //NOT DONE
+                ready: false, //NOT DONE
+                parameters: {} //NOT DONE
+            },
+            state: {
+                pendingAction: null, //DONE
+                missing: [], //DONE
+                collected: {}, //DONE
+                
+                execution: {
+                    inProgress: false, //NOT DONE
+                    actionId: null,    //NOT DONE
+                    startedAt: null,    //NOT DONE
+                    status: "idle"    //NOT DONE ("idle" | "running" | "completed" | "failed")
+                }
+                
+            }
+        },
+        error: null, //NOT DONE
+        atlasResponse: null //NOT DONE
+    };
+*/
+
+/*
+cloudPilot: {
+
+    intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    action: {
+        type: null, // current workflow/action type
+        ready: false, // true when all required fields are collected
+        parameters: {} // normalized execution-ready values
+    },
+
+    state: {
+        pendingAction: null, // active workflow being collected
+        missing: [], // fields still needed
+        collected: {}, // collected workflow values
+        asked: {} // tracks which questions were already asked
+    },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+}
+*/
+
+/*
+cloudPilot: {
+
+    userRequest: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+
+    requestStatus: {
+        requestedAction: null, // What action the user asked for ("scan_ec2", "toggle_ec2", ) null if it is just general_chat
+        ready: false, 
+
+        missingFields: [],
+        collectedFields: {},
+        askedForFields: {}
+    }
+    policy: {
+            allowed: false, //NOT DONE
+            message: null, //NOT DONE
+            reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+        },
+
+    atlasExecution: {
+        status: "idle", // "idle" | "running" | "completed" | "failed"
+        actionId: null, // Atlas execution ID
+        startedAt: null,
+        completedAt: null,
+        error: null
+    }
+*/
+
+//OLD
+/*
+    var processMessageOutcome = {
+        success: false, 
+        cloudPilotMessage: "",
+        cloudPilot: {
+            intent: null, // e.g. "scan_ec2", "toggle_ec2", "general_chat"
+            action: {
+                type: null, // current workflow/action type
+                ready: false, // true when all required fields are collected
+                parameters: {} // normalized execution-ready values
+            },
+            state: {
+                pendingAction: null, // active workflow being collected
+                missing: [], // fields still needed
+                collected: {}, // collected workflow values
+                asked: {} // tracks which questions were already asked
+            },
+            atlasExecution: { //This is when we ask Atlas to interact with AWS it may take some time to finish
+                status: "idle", // "idle" | "running" | "completed" | "failed"
+                actionId: null, // Atlas execution ID
+                startedAt: null,
+                completedAt: null,
+                error: null
+            }
+        },
+        atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
+        error: null 
+    };
+    */
+
+
 
 
 /*
@@ -2402,28 +2716,3 @@ async function handleWorkflowAwareGeneralChat(text, action, currentStateData, ac
     };
 }
 */
-//TEMP: Debug current action state
-function printState(conversationID) {
-    console.log(" ");
-    console.log("currentStateData");
-    actionState.print(conversationID);
-    console.log("currentStateData");
-    console.log(" ");
-}
-
-function cloneOperationState(state) {
-    return {
-        pendingAction: state.pendingAction,
-        status: state.status,
-        missing: [...(state.missing || [])],
-        collected: { ...(state.collected || {}) },
-        asked: { ...(state.asked || {}) }
-    };
-}
-
-function logCloudPilotMessage(message) {
-    console.log("CLOUD PILOT MESSAGE: " + (message || ""));
-}
-
-
-module.exports = { processMessage, detectIntent, getActionDefinition };
