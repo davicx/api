@@ -1,4 +1,5 @@
 const actionState = require('../../state/ActionState');
+const actionRegistry = require('../actions/actionRegistry');
 
 class AtlasExecution {
     static async startNewAtlasExecution(payload) {
@@ -6,9 +7,66 @@ class AtlasExecution {
 
         actionState.setStatus(payload.conversationID, "running");
 
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        const activeAction = payload.actionState.pendingAction;
+        const actionDefinition = actionRegistry[activeAction];
 
-        return await AtlasExecution.closeAtlasExecution(payload);
+        if (!actionDefinition) {
+            actionState.setStatus(payload.conversationID, "failed");
+
+            return {
+                success: false,
+                cloudPilotMessage: "I could not find the requested Atlas action.",
+                atlasResponse: null,
+                error: "action_not_found"
+            };
+        }
+
+        if (typeof actionDefinition.executionFunction !== "function") {
+            actionState.setStatus(payload.conversationID, "failed");
+
+            return {
+                success: false,
+                cloudPilotMessage: "This Atlas action is not executable yet.",
+                atlasResponse: null,
+                error: "execution_function_missing"
+            };
+        }
+
+        const executionContext = {
+            userMessage: payload.currentUserMessage,
+            action: actionDefinition,
+            state: {
+                pendingAction: payload.actionState.pendingAction,
+                status: "running",
+                missing: payload.actionState.missingFields || [],
+                collected: payload.actionState.collectedFields || {}
+            },
+            conversationID: payload.conversationID
+        };
+
+        try {
+            const executionResult =
+                await actionDefinition.executionFunction(executionContext);
+
+            if (executionResult.success) {
+                actionState.setStatus(payload.conversationID, "completed");
+                actionState.clear(payload.conversationID);
+            } else {
+                actionState.setStatus(payload.conversationID, "failed");
+            }
+
+            return executionResult;
+
+        } catch (error) {
+            actionState.setStatus(payload.conversationID, "failed");
+
+            return {
+                success: false,
+                cloudPilotMessage: "Atlas execution failed.",
+                atlasResponse: null,
+                error: error.message
+            };
+        }
     }
 
     static async checkAtlasExecutionStatus(executionID) {

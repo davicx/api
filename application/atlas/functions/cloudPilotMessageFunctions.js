@@ -17,15 +17,11 @@ FUNCTIONS C: Chat Handlers
     1) Function C1: Handle General Chat
     2) Function C2: Handle CloudPilot Chat (imported from ./chat/CloudPilotChat)
 
-FUNCTIONS D: Workflow State Helpers
+FUNCTIONS D: Helpers
     1) Function D1: Clone Action Status
     2) Function D2: Should Start New Action
-
-FUNCTIONS E: Message Input Helpers
-    1) Function E1: Get Current User Message
-
-FUNCTIONS F: Debug Helpers
-    1) Function F1: Print State
+    3) Function D3: Get Current User Message
+    4) Function D4: Print State
 */
 
 /*
@@ -261,7 +257,7 @@ async function processMessage(rawUserMessage, conversationID) {
         const result = await handleCloudPilotChat(chatPayload);
 
         processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.message;
+        processMessageOutcome.cloudPilotMessage = result.cloudPilotMessage || result.message || "";
         processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
 
@@ -364,7 +360,7 @@ async function handleGeneralChat(payload) {
     };
 }
 
-//FUNCTIONS D: Workflow State Helpers
+//FUNCTIONS D: Helpers
 //Function D1: Clone Action Status
 function cloneActionStatus(state, activeAction, ready) {
     return {
@@ -393,8 +389,7 @@ function shouldStartNewAction(activeAction, actionDefinition, actionState) {
     return noActionActive || actionChanged || previousActionCompleted || previousActionFailed;
 }
 
-//FUNCTIONS E: Message Input Helpers
-//Function E1: Get Current User Message
+//Function D3: Get Current User Message
 function getCurrentUserMessage(rawUserMessage) {
     const normalizedMessageOutcome = openAIFunctions.normalizeUserMessageForModel(rawUserMessage);
 
@@ -420,8 +415,7 @@ function getCurrentUserMessage(rawUserMessage) {
     };
 }
 
-//FUNCTIONS F: Debug Helpers
-//Function F1: Print State
+//Function D4: Print State
 function printState(conversationID, messageVar) {
     console.log(" ")
     console.log("_____________________________________")
