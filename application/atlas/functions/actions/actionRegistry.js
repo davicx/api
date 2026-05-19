@@ -1,6 +1,7 @@
 const scanEC2Handler = require('./ec2/scanEC2/scanEC2Handler');
 const toggleEC2Handler = require('./ec2/toggleEC2/toggleEC2Handler');
 const createEC2Handler = require('./ec2/createEC2/createEC2Handler');
+const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
 
 /*
 ===============================================================================
@@ -50,7 +51,7 @@ const actionRegistry = {
         defaults: {},
 
         //Execution
-        executionFunction: null,
+        executionFunction: inventoryAWSHandler,
 
         //User-Facing System Messages
         messages: {
@@ -60,6 +61,45 @@ const actionRegistry = {
             executing: '',
             success: '',
             failed: ''
+        }
+    },
+
+    //SERVICE: AWS
+    //Action: Inventory AWS Resources
+    inventory_aws: {
+        //Identity
+        type: 'inventory_aws',
+        actionLabel: 'Inventory AWS Resources',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('show me all my aws resources') ||
+            text.includes('show my aws resources'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: null,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing AWS inventory.',
+            missingFields: {},
+            ready: 'Everything is ready for AWS inventory.',
+            executing: 'Gathering AWS resources.',
+            success: 'Great, I found your AWS resources and added them to your dashboard.',
+            failed: 'AWS inventory failed.'
         }
     },
 
