@@ -66,6 +66,7 @@ const actionRegistry = {
 
     //SERVICE: AWS
     //Action: Inventory AWS Resources
+    //TO DO: Maybe later add regions, resource types
     inventory_aws: {
         //Identity
         type: 'inventory_aws',
