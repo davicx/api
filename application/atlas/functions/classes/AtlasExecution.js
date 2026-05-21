@@ -7,7 +7,10 @@ class AtlasExecution {
 
         actionState.setStatus(payload.conversationID, "running");
 
-        const activeAction = payload.actionState.pendingAction;
+        const activeAction =
+            payload.actionState.pendingAction ||
+            payload.userRequest;
+
         const actionDefinition = actionRegistry[activeAction];
 
         if (!actionDefinition) {
@@ -36,7 +39,7 @@ class AtlasExecution {
             userMessage: payload.currentUserMessage,
             action: actionDefinition,
             state: {
-                pendingAction: payload.actionState.pendingAction,
+                pendingAction: activeAction,
                 status: "running",
                 missing: payload.actionState.missingFields || [],
                 collected: payload.actionState.collectedFields || {}

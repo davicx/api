@@ -104,6 +104,9 @@ async function processMessage(rawUserMessage, conversationID) {
     console.log(actionDefinition)
     console.log(" ");
     
+    const shouldExecuteImmediately =
+        actionDefinition.requiresWorkflow === false &&
+        actionDefinition.requiresExecution === true;
     
     //STEP 4: Start or replace active request
     if (actionDefinition.requiresWorkflow) {
@@ -124,6 +127,12 @@ async function processMessage(rawUserMessage, conversationID) {
         currentActionState = actionState.getActionStatus(conversationID);
         activeAction = currentActionState.pendingAction;
         //processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
+    } else if (shouldExecuteImmediately) {
+        console.log("STEP 4: Immediate execution action");
+        console.log(" ");
+
+        actionEvent = "execution_requested";
+        cloudPilotShouldRespond = true;
     } else {
         console.log("STEP 4: NOT Starting active request just chattin dude");
     }
@@ -195,7 +204,7 @@ async function processMessage(rawUserMessage, conversationID) {
     }
 
     //Step 6E: Determine workflow event
-    actionEvent = Functions.determineActionEvent({
+    const workflowActionEvent = Functions.determineActionEvent({
         actionDefinition: actionDefinition,
         activeAction: activeAction,
         actionState: currentActionState,
@@ -205,7 +214,9 @@ async function processMessage(rawUserMessage, conversationID) {
         fieldsUpdated: fieldsUpdated
     });
 
-    if (actionEvent) {
+    if (workflowActionEvent) {
+        actionEvent = workflowActionEvent;
+
         console.log("Step 6E: Workflow event detected:", actionEvent);
 
         cloudPilotShouldRespond = true;

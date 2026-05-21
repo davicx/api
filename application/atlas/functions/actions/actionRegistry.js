@@ -51,7 +51,7 @@ const actionRegistry = {
         defaults: {},
 
         //Execution
-        executionFunction: inventoryAWSHandler,
+        executionFunction: null,
 
         //User-Facing System Messages
         messages: {
@@ -91,7 +91,7 @@ const actionRegistry = {
         defaults: {},
 
         //Execution
-        executionFunction: null,
+        executionFunction: inventoryAWSHandler,
 
         //User-Facing System Messages
         messages: {
