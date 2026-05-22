@@ -18,6 +18,18 @@ Do this in stages, not all at once.
 
 This is a medium architecture change, but it can be a small implementation change if Atlas raw outputs stay intact and the API adds a thin Navigator/UI-shaping layer.
 
+## Current Implementation Status
+
+Stage 1 has started only as a safe contract/helper step.
+
+Current helper:
+
+```text
+application/atlas/functions/navigatorResponseFunctions.js
+```
+
+Important: this helper is not wired into existing Atlas action handlers yet. Current API behavior should remain unchanged until the adapter stages.
+
 ## Is It Only API?
 
 Mostly yes, but not entirely.
@@ -59,6 +71,7 @@ The API/Navigator layer should transform that into generic UI primitives:
   "errors": [],
   "currentUser": "davey",
   "data": {
+    "meta": {},
     "cards": [],
     "stats": [],
     "tables": [],
@@ -75,7 +88,7 @@ Kite then renders those generic arrays.
 
 ### Stage 1: Define The Contract
 
-Decide the final UI response shape and freeze it early:
+Decide the final target UI response shape and freeze it early:
 
 ```json
 {
@@ -85,6 +98,7 @@ Decide the final UI response shape and freeze it early:
   "errors": [],
   "currentUser": "davey",
   "data": {
+    "meta": {},
     "cards": [],
     "stats": [],
     "tables": [],
@@ -113,9 +127,30 @@ Every row gets a stable row identifier:
 "row_id": "stable-id-here"
 ```
 
+Response-level context goes in `meta`, not directly in tables or stats:
+
+```json
+{
+  "meta": {
+    "region": "us-west-2",
+    "generatedAt": "2026-05-22T07:00:00Z",
+    "resourceCount": 5,
+    "pagination": {
+      "page": 1,
+      "pageSize": 25,
+      "total": 120
+    }
+  }
+}
+```
+
 This stage is mostly agreement, so behavior risk is low.
 
+Stage 1 should not force every action to return this shape immediately. It should only establish the shared helper/contract that later stages will use.
+
 ### Stage 2: Add Lightweight Column Metadata
+
+This stage means using the optional `type` metadata in real Navigator tables. The contract can support it before every adapter uses it.
 
 Columns should keep working in the existing simple form:
 
@@ -177,6 +212,8 @@ This is only simple metadata for future rendering improvements.
 
 ### Stage 3: Add Simple `view_type`
 
+This stage means consistently using `view_type` in real table responses. The contract can support it before every adapter uses it.
+
 Current table structure:
 
 ```json
@@ -235,6 +272,10 @@ Navigator should return one generic table:
 ```json
 {
   "data": {
+    "meta": {
+      "region": "us-west-2",
+      "resourceCount": 1
+    },
     "tables": [
       {
         "id": "aws_inventory",
@@ -481,7 +522,7 @@ The important thing is to avoid changing Atlas first. Let Atlas keep producing r
 
 Best order:
 
-1. Contract
+1. Contract/helper only
 2. Lightweight column metadata
 3. Simple `view_type`
 4. Inventory adapter

@@ -160,3 +160,12 @@ LOCAL
 "cloudBucket": "kite-posts-us-west-two",
 "cloudKey": "no_cloud_key",
 
+
+
+meta = response-level context
+stats = visible metrics
+tables = visible tabular data
+cards = visible summaries
+alerts = visible notices/warnings
+actions = visible user actions
+raw = optional original Atlas payload
