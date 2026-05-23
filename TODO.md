@@ -12,15 +12,11 @@ Navigator/API = UI shaping layer
 Kite = generic renderer
 ```
 
-This plan only adds lightweight extensibility so the UI can evolve later without breaking the current design.
+This plan adds lightweight extensibility so the UI can evolve later without breaking the current design.
 
-Do this in stages, not all at once.
+## Current Status
 
-This is a medium architecture change, but it can be a small implementation change if Atlas raw outputs stay intact and the API adds a thin Navigator/UI-shaping layer.
-
-## Current Implementation Status
-
-Stage 1 has started only as a safe contract/helper step.
+The API/Navigator contract and the first adapters are now in place.
 
 Current helper:
 
@@ -28,290 +24,27 @@ Current helper:
 application/atlas/functions/navigatorResponseFunctions.js
 ```
 
-Important: this helper is not wired into existing Atlas action handlers yet. Current API behavior should remain unchanged until the adapter stages.
-
-## Is It Only API?
-
-Mostly yes, but not entirely.
+Current adapters:
 
 ```text
-Atlas: ideally no major change
-API/Navigator: main change
-Kite React: small renderer change
+application/atlas/functions/actions/aws/inventoryAWS/atlasAWSInventoryNavigatorAdapter.js
+application/atlas/functions/actions/ec2/scanEC2/atlasEC2ScanNavigatorAdapter.js
 ```
 
-Atlas should keep returning raw domain truth, for example:
-
-```json
-{
-  "data": {
-    "instances": [],
-    "findings": []
-  }
-}
-```
-
-Or:
-
-```json
-{
-  "data": {
-    "items": []
-  }
-}
-```
-
-The API/Navigator layer should transform that into generic UI primitives:
-
-```json
-{
-  "success": true,
-  "message": "",
-  "statusCode": 200,
-  "errors": [],
-  "currentUser": "davey",
-  "data": {
-    "meta": {},
-    "cards": [],
-    "stats": [],
-    "tables": [],
-    "alerts": [],
-    "actions": [],
-    "raw": null
-  }
-}
-```
-
-Kite then renders those generic arrays.
-
-## Recommended Staged Plan
-
-### Stage 1: Define The Contract
-
-Decide the final target UI response shape and freeze it early:
-
-```json
-{
-  "success": true,
-  "message": "",
-  "statusCode": 200,
-  "errors": [],
-  "currentUser": "davey",
-  "data": {
-    "meta": {},
-    "cards": [],
-    "stats": [],
-    "tables": [],
-    "alerts": [],
-    "actions": [],
-    "raw": null
-  }
-}
-```
-
-Define table rules:
-
-```json
-{
-  "id": "aws_inventory",
-  "view_type": "table",
-  "title": "AWS Inventory",
-  "columns": [],
-  "rows": []
-}
-```
-
-Every row gets a stable row identifier:
-
-```json
-"row_id": "stable-id-here"
-```
-
-Response-level context goes in `meta`, not directly in tables or stats:
-
-```json
-{
-  "meta": {
-    "region": "us-west-2",
-    "generatedAt": "2026-05-22T07:00:00Z",
-    "resourceCount": 5,
-    "pagination": {
-      "page": 1,
-      "pageSize": 25,
-      "total": 120
-    }
-  }
-}
-```
-
-This stage is mostly agreement, so behavior risk is low.
-
-Stage 1 should not force every action to return this shape immediately. It should only establish the shared helper/contract that later stages will use.
-
-### Stage 2: Add Lightweight Column Metadata
-
-This stage means using the optional `type` metadata in real Navigator tables. The contract can support it before every adapter uses it.
-
-Columns should keep working in the existing simple form:
-
-```json
-{
-  "columns": [
-    {
-      "key": "service",
-      "label": "Service"
-    }
-  ]
-}
-```
-
-Columns may also optionally contain lightweight metadata:
-
-```json
-{
-  "columns": [
-    {
-      "key": "service",
-      "label": "Service",
-      "type": "text"
-    },
-    {
-      "key": "cost_estimate_monthly_usd",
-      "label": "Monthly Cost",
-      "type": "currency"
-    },
-    {
-      "key": "state",
-      "label": "State",
-      "type": "status"
-    }
-  ]
-}
-```
-
-Initial supported column types:
+Current API behavior is additive:
 
 ```text
-text
-currency
-status
-number
+existing formatted Atlas response remains
+navigatorResponse is added for generic UI rendering
 ```
 
-Important rules:
+## Current Work
 
-- Keep metadata optional.
-- Existing tables must continue working.
-- Do not require every column to have `type` immediately.
-- Default behavior should still work for plain text.
-- Do not add a formatting engine yet.
-- Do not add a plugin system.
-- Do not add dynamic registries.
+### Stage 1: Update Kite To Render Generic UI Data
 
-This is only simple metadata for future rendering improvements.
+This stage belongs in the Kite/client module, not this API module.
 
-### Stage 3: Add Simple `view_type`
-
-This stage means consistently using `view_type` in real table responses. The contract can support it before every adapter uses it.
-
-Current table structure:
-
-```json
-{
-  "id": "aws_inventory",
-  "title": "AWS Inventory",
-  "columns": [],
-  "rows": []
-}
-```
-
-Updated table structure:
-
-```json
-{
-  "id": "aws_inventory",
-  "view_type": "table",
-  "title": "AWS Inventory",
-  "columns": [],
-  "rows": []
-}
-```
-
-Purpose:
-
-- Future-proof rendering.
-- Support additional UI block types later.
-- Keep the generic rendering architecture clean.
-
-Important rules:
-
-- Only add `view_type`.
-- Do not redesign the API into a giant `views` array yet.
-- Keep the current arrays: `tables[]`, `stats[]`, `cards[]`, `alerts[]`, `actions[]`.
-
-### Stage 4: Add API/Navigator Adapter For Inventory First
-
-Start with inventory because it is simpler.
-
-Atlas currently returns:
-
-```json
-{
-  "items": [
-    {
-      "service": "ec2",
-      "id": "i-065f09252b2ea0471",
-      "name": "Kite-env"
-    }
-  ]
-}
-```
-
-Navigator should return one generic table:
-
-```json
-{
-  "data": {
-    "meta": {
-      "region": "us-west-2",
-      "resourceCount": 1
-    },
-    "tables": [
-      {
-        "id": "aws_inventory",
-        "view_type": "table",
-        "title": "AWS Inventory",
-        "columns": [
-          { "key": "service", "label": "Service", "type": "text" },
-          { "key": "name", "label": "Name", "type": "text" },
-          { "key": "region", "label": "Region", "type": "text" },
-          { "key": "type", "label": "Type", "type": "text" },
-          { "key": "state", "label": "State", "type": "status" },
-          { "key": "cost_estimate_monthly_usd", "label": "Monthly Cost", "type": "currency" }
-        ],
-        "rows": [
-          {
-            "row_id": "i-065f09252b2ea0471",
-            "service": "ec2",
-            "name": "Kite-env",
-            "region": "us-west-2",
-            "type": "t3.micro",
-            "state": "running",
-            "cost_estimate_monthly_usd": 7.49
-          }
-        ]
-      }
-    ],
-    "raw": null
-  }
-}
-```
-
-This proves the design with the least complexity.
-
-### Stage 5: Update Kite To Render Generic UI Data
-
-Kite should stop caring about inventory-specific fields and just do:
+Kite should stop caring about inventory-specific fields and render generic Navigator UI primitives:
 
 ```text
 for each stat -> render stat
@@ -320,18 +53,211 @@ for each table -> render GenericTable
 for each card -> render card
 ```
 
-This is the main frontend change, but it should be small if there is already a place where the action response is displayed.
+The API already sends data in the generic shape. Kite now needs to render it.
 
-Important rules for Kite:
+Expected data path:
 
-- Use `row.row_id` as the table row key.
-- Safely use optional column metadata when present.
-- Keep rendering generic.
-- Do not add hardcoded AWS logic.
-- Do not add service-specific rendering.
-- Tables must still work perfectly if metadata is missing.
+```text
+messageOutcome.data.atlasResponse.navigatorResponse.data
+```
 
-Possible later behavior:
+Example:
+
+```js
+const navigatorData =
+    atlasResponse &&
+    atlasResponse.navigatorResponse &&
+    atlasResponse.navigatorResponse.data;
+```
+
+### Step 1A: Find The Current Atlas Response Renderer
+
+Locate where Kite currently renders:
+
+```text
+atlasResponse
+CloudPilotActionStatus
+CloudPilotResponseMessage
+```
+
+Do not rewrite the whole screen. Find the smallest display point where the new generic blocks can be rendered.
+
+### Step 1B: Add Generic Table Rendering
+
+Create or reuse a simple `GenericTable`.
+
+It should accept:
+
+```js
+{
+    id: "aws_inventory",
+    view_type: "table",
+    title: "AWS Inventory",
+    columns: [],
+    rows: []
+}
+```
+
+Rules:
+
+- Use `row.row_id` as the row key.
+- Use `column.key` to read the row value.
+- Use `column.label` as the header.
+- If `column.type` is missing, render as text.
+- Do not add AWS-specific rendering.
+- Do not branch on EC2, S3, findings, or scan type.
+
+### Step 1C: Add Basic Type-Aware Display
+
+Keep this minimal.
+
+Supported types:
+
+```text
+text
+number
+currency
+status
+```
+
+Initial behavior:
+
+```text
+text -> normal text
+number -> normal number
+currency -> show currency if value exists, otherwise "-"
+status -> normal text or simple badge if already easy
+```
+
+Do not add a full formatting engine.
+
+### Step 1D: Render Stats
+
+Stats are simple blocks:
+
+```js
+{
+    id: "findings",
+    label: "Findings",
+    value: 1,
+    type: "number"
+}
+```
+
+Kite should render all stats generically.
+
+Do not hardcode:
+
+```text
+Resources Scanned
+Findings
+Region
+```
+
+Use whatever `label` and `value` are provided.
+
+### Step 1E: Render Empty States Safely
+
+Kite should handle:
+
+```js
+tables: []
+rows: []
+stats: []
+alerts: []
+cards: []
+actions: []
+```
+
+Tables with columns but no rows should still render safely.
+
+### Step 1F: Test With Inventory
+
+Use `inventory_aws` first.
+
+Expected:
+
+```text
+one AWS Inventory table
+row_id exists on every row
+columns render by key
+metadata types do not break rendering
+```
+
+### Step 1G: Test With EC2 Scan
+
+Use `scan_ec2` after inventory.
+
+Expected:
+
+```text
+stats render
+EC2 Instances table renders
+EC2 Findings table renders
+row_id exists on every row
+```
+
+## Future Work
+
+### Future Stage 1: Add More Navigator Adapters
+
+When Atlas adds a new response type, add a small Navigator adapter.
+
+Examples:
+
+```text
+cost response -> stats + cost table
+security response -> alerts + findings table
+compliance response -> stats + compliance table
+```
+
+Do not change Kite for every new Atlas response if the existing primitives are enough.
+
+### Future Stage 2: Add Other Atlas Actions
+
+Add adapters for future actions only when the action is real.
+
+Examples:
+
+```text
+resize_ec2
+delete_ec2
+security_scan
+cost_report
+```
+
+Follow:
+
+```text
+doc/instructions/adding_new_action.md
+doc/instructions/converting_atlas_data.md
+```
+
+### Future Stage 3: Optional Raw / Developer Mode
+
+The contract supports:
+
+```js
+raw: null
+```
+
+Adapters also support opt-in raw data:
+
+```js
+{
+    includeRaw: true,
+    raw: {
+        atlasAction: "scan",
+        response: {}
+    }
+}
+```
+
+Do not send raw by default forever. It can get large and may leak internal structure.
+
+### Future Stage 4: Better UI Formatting
+
+Later, Kite can improve rendering:
 
 ```text
 type = "currency" -> format numbers as currency
@@ -339,13 +265,153 @@ type = "status" -> render badge/color
 type = "number" -> right align
 ```
 
-Keep implementation minimal for now. No complex styling system yet.
+Keep this out of the API.
 
-### Stage 6: Add Scan Adapter
+### Future Stage 5: Naming Cleanup
 
-Scan is richer, so do it after inventory.
+Consider a focused naming pass later.
 
-Scan data should become:
+Example:
+
+```text
+atlasAWSInventoryFormatter.js -> inventoryAWSFormatter.js
+atlasAWSInventoryMessageBuilder.js -> inventoryAWSMessageBuilder.js
+atlasAWSInventoryNavigatorAdapter.js -> inventoryAWSNavigatorAdapter.js
+```
+
+And possibly:
+
+```text
+atlasEC2Formatter.js -> scanEC2Formatter.js
+atlasEC2MessageBuilder.js -> scanEC2MessageBuilder.js
+atlasEC2ScanNavigatorAdapter.js -> scanEC2NavigatorAdapter.js
+```
+
+Do this only as a separate cleanup pass.
+
+### Future Stage 6: Avoid Premature Abstraction
+
+Do not add:
+
+- registries
+- schema engines
+- dynamic plugins
+- universal rendering frameworks
+- giant inheritance systems
+
+Keep this understandable.
+
+## Finished
+
+### Done: Stage 1 - Define The Contract
+
+The target response contract is defined:
+
+```js
+{
+    success: true,
+    message: "",
+    statusCode: 200,
+    errors: [],
+    currentUser: "davey",
+    data: {
+        meta: {},
+        cards: [],
+        stats: [],
+        tables: [],
+        alerts: [],
+        actions: [],
+        raw: null
+    }
+}
+```
+
+Implemented in:
+
+```text
+application/atlas/functions/navigatorResponseFunctions.js
+```
+
+### Done: Stage 2 - Add Lightweight Column Metadata
+
+Supported column types:
+
+```text
+text
+currency
+status
+number
+```
+
+Columns may be simple:
+
+```js
+{
+    key: "service",
+    label: "Service"
+}
+```
+
+Or include metadata:
+
+```js
+{
+    key: "state",
+    label: "State",
+    type: "status"
+}
+```
+
+Implemented helpers:
+
+```text
+NAVIGATOR_COLUMN_TYPES
+createNavigatorTableColumn()
+normalizeNavigatorTableColumns()
+isSupportedNavigatorColumnType()
+```
+
+### Done: Stage 3 - Add Simple `view_type`
+
+Every table created through the helper includes:
+
+```js
+view_type: "table"
+```
+
+Implemented in:
+
+```text
+createEmptyNavigatorTable()
+```
+
+### Done: Stage 4 - Add API/Navigator Adapter For Inventory
+
+Inventory now maps to:
+
+```text
+meta
+tables[0] = AWS Inventory
+raw = null
+```
+
+Implemented in:
+
+```text
+application/atlas/functions/actions/aws/inventoryAWS/atlasAWSInventoryNavigatorAdapter.js
+```
+
+Wired additively in:
+
+```text
+application/atlas/functions/actions/aws/inventoryAWS/inventoryAWSHandler.js
+```
+
+The existing formatted inventory response remains intact.
+
+### Done: Stage 5 - Add Scan Adapter
+
+EC2 scan now maps to:
 
 ```text
 stats:
@@ -355,180 +421,146 @@ stats:
 - Region
 
 tables:
-- Instances
-- Findings
+- EC2 Instances
+- EC2 Findings
 ```
 
-The instances table gets rows with:
+Implemented in:
 
-```json
-"row_id": "i-065f09252b2ea0471"
+```text
+application/atlas/functions/actions/ec2/scanEC2/atlasEC2ScanNavigatorAdapter.js
 ```
 
-The findings table gets rows with:
+Wired additively in:
 
-```json
-"row_id": "ec2-lowcpu-i-065f09252b2ea0471"
+```text
+application/atlas/functions/actions/ec2/scanEC2/scanEC2Handler.js
 ```
 
-This is where the architecture starts paying off, because Kite still renders generic tables.
+The existing formatted scan response remains intact.
 
-### Stage 7: Add `raw` As Opt-In
+### Done: Stage 6 - Add `raw` As Opt-In
 
-Add `raw` to the contract now, but usually leave it as:
+Default behavior:
 
-```json
-"raw": null
+```js
+raw: null
 ```
 
-Later, for debugging or developer mode:
+Opt-in behavior:
 
-```json
-"raw": {
-  "atlasAction": "scan",
-  "response": {
-    "...": "original Atlas response"
-  }
+```js
+{
+    includeRaw: true,
+    raw: {}
 }
 ```
 
-Do not send raw by default forever. It can get large and may leak internal structure.
+Implemented in:
 
-### Stage 8: Keep Atlas Completely Unchanged
+```text
+atlasAWSInventoryNavigatorAdapter.js
+atlasEC2ScanNavigatorAdapter.js
+```
 
-Do not modify Atlas response structure as part of this UI contract work.
+### Done: Stage 7 - Keep Atlas Completely Unchanged
 
-Atlas should continue returning raw domain truth like:
+Atlas still returns raw domain truth:
 
-```json
+```js
 {
-  "items": []
+    data: {
+        items: []
+    }
 }
 ```
 
 Or:
 
-```json
+```js
 {
-  "instances": [],
-  "findings": []
+    data: {
+        instances: [],
+        findings: []
+    }
 }
 ```
 
 Navigator/API remains responsible for transforming Atlas data into generic UI primitives.
 
-## Example Final Table
-
-```json
-{
-  "id": "aws_inventory",
-  "view_type": "table",
-  "title": "AWS Inventory",
-  "columns": [
-    {
-      "key": "service",
-      "label": "Service",
-      "type": "text"
-    },
-    {
-      "key": "state",
-      "label": "State",
-      "type": "status"
-    },
-    {
-      "key": "cost_estimate_monthly_usd",
-      "label": "Monthly Cost",
-      "type": "currency"
-    }
-  ],
-  "rows": [
-    {
-      "row_id": "i-065f09252b2ea0471",
-      "service": "ec2",
-      "state": "running",
-      "cost_estimate_monthly_usd": 7.49
-    }
-  ]
-}
-```
-
-This should remain lightweight, understandable, and easy to expand later.
-
 ## Important Architecture Rules
 
-### Avoid Premature Abstraction
+### Rule 1 - Atlas Returns Raw Truth
 
-Do not add:
+Atlas should not know about:
 
-- Registries
-- Schema engines
-- Dynamic plugins
-- Universal rendering frameworks
-- Giant inheritance systems
+- tables
+- cards
+- frontend components
+- UI metadata
 
-Keep this understandable.
+### Rule 2 - Navigator/API Shapes UI Data
 
-### Additive Changes Only
+Navigator/API owns:
 
-All changes should be backward compatible.
+- meta
+- stats
+- tables
+- cards
+- alerts
+- actions
+- raw opt-in behavior
 
-### Keep Rendering Generic
+### Rule 3 - Kite Renders Generic Primitives
 
 Kite should never care about:
 
 - EC2
 - S3
-- Findings
+- findings
 - AWS-specific field names
 
 Kite should only understand:
 
-- Tables
-- Rows
-- Columns
-- Metadata
+- tables
+- rows
+- columns
+- stats
+- metadata
 
-### Keep The Mental Model Simple
-
-```text
-Atlas -> raw truth
-Navigator/API -> UI shaping
-Kite -> generic rendering
-```
-
-### Optimize For Clarity Over Cleverness
+### Rule 4 - Prefer Explicit Mappings
 
 Prefer:
 
-- Explicit structures
-- Simple objects
-- Readable transformations
+```js
+row_id: item.id,
+service: item.service,
+name: item.name
+```
 
 Avoid:
 
-- Magical behavior
-- Hidden conventions
-- Deeply nested abstractions
-
-## How Major Is This?
-
-```text
-Architecture impact: high
-Code change size: medium-small if staged
-Risk: low if additive
+```js
+Object.keys(item).map(...)
 ```
 
-The important thing is to avoid changing Atlas first. Let Atlas keep producing raw truth. Add the standard UI shape above it.
+Explicit mappings are easier to review and safer for UI contracts.
 
-Best order:
+## Design Goal
 
-1. Contract/helper only
-2. Lightweight column metadata
-3. Simple `view_type`
-4. Inventory adapter
-5. Generic Kite renderer
-6. Scan adapter
-7. Other Atlas actions
-8. Optional raw/debug behavior
+CloudPilot should scale by adding small Navigator adapters:
 
-So: not all at once. Do inventory end-to-end first, then scan, then migrate the rest.
+```text
+new Atlas data shape
+-> small API adapter
+-> same Navigator response contract
+-> same Kite generic renderer
+```
+
+This keeps the system:
+
+- predictable
+- frontend-safe
+- easy to debug
+- easy to expand
+- not over-abstracted
