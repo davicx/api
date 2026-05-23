@@ -1,6 +1,7 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
 const atlasEC2Formatter = require('./atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./atlasEC2MessageBuilder');
+const atlasEC2ScanNavigatorAdapter = require('./atlasEC2ScanNavigatorAdapter');
 
 async function scanEC2Handler(context) {
 
@@ -35,14 +36,30 @@ async function scanEC2Handler(context) {
         console.log(atlasResponseFormatted);
         console.log("_____________________________________");
 
+        const cloudPilotMessage =
+            atlasEC2MessageBuilder.buildEC2ScanMessage(
+                atlasResponseFormatted
+            );
+
+        const navigatorResponse =
+            atlasEC2ScanNavigatorAdapter.buildEC2ScanNavigatorResponse(
+                atlasResponseFormatted,
+                {
+                    success: true,
+                    message: cloudPilotMessage,
+                    statusCode: 200,
+                    errors: []
+                }
+            );
+
         return {
             success: true,
-            cloudPilotMessage:
-                atlasEC2MessageBuilder.buildEC2ScanMessage(
-                    atlasResponseFormatted
-                ),
+            cloudPilotMessage: cloudPilotMessage,
             error: null,
-            atlasResponse: atlasResponseFormatted
+            atlasResponse: {
+                ...(atlasResponseFormatted || {}),
+                navigatorResponse: navigatorResponse
+            }
         };
 
     } catch (error) {

@@ -1,6 +1,7 @@
 const atlasAWSFunctions = require('../atlasAWSFunctions');
 const atlasAWSInventoryFormatter = require('./atlasAWSInventoryFormatter');
 const atlasAWSInventoryMessageBuilder = require('./atlasAWSInventoryMessageBuilder');
+const atlasAWSInventoryNavigatorAdapter = require('./atlasAWSInventoryNavigatorAdapter');
 
 async function inventoryAWSHandler() {
 
@@ -32,14 +33,30 @@ async function inventoryAWSHandler() {
         console.log(atlasResponseFormatted);
         console.log("_____________________________________");
 
+        const cloudPilotMessage =
+            atlasAWSInventoryMessageBuilder.buildAWSInventoryMessage(
+                atlasResponseFormatted
+            );
+
+        const navigatorResponse =
+            atlasAWSInventoryNavigatorAdapter.buildAWSInventoryNavigatorResponse(
+                atlasResponseFormatted,
+                {
+                    success: true,
+                    message: cloudPilotMessage,
+                    statusCode: 200,
+                    errors: []
+                }
+            );
+
         return {
             success: true,
-            cloudPilotMessage:
-                atlasAWSInventoryMessageBuilder.buildAWSInventoryMessage(
-                    atlasResponseFormatted
-                ),
+            cloudPilotMessage: cloudPilotMessage,
             error: null,
-            atlasResponse: atlasResponseFormatted
+            atlasResponse: {
+                ...(atlasResponseFormatted || {}),
+                navigatorResponse: navigatorResponse
+            }
         };
 
     } catch (error) {
