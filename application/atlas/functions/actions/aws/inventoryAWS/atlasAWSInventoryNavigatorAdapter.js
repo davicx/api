@@ -15,7 +15,7 @@ FUNCTIONS B: All AWS Inventory Navigator Helper Functions
 
 //FUNCTIONS A: All Functions Related to AWS Inventory Navigator Data
 //Function A1: Build AWS Inventory Navigator Data
-function buildAWSInventoryNavigatorData(formattedAtlas) {
+function buildAWSInventoryNavigatorData(formattedAtlas, options = {}) {
     const summary = formattedAtlas && formattedAtlas.summary ? formattedAtlas.summary : {};
     const items = formattedAtlas && Array.isArray(formattedAtlas.items) ? formattedAtlas.items : [];
     const navigatorData = navigatorResponseFunctions.createEmptyNavigatorData();
@@ -31,7 +31,10 @@ function buildAWSInventoryNavigatorData(formattedAtlas) {
         buildAWSInventoryTable(items)
     ];
 
-    navigatorData.raw = null;
+    navigatorData.raw =
+        options.includeRaw === true
+            ? (options.raw || null)
+            : null;
 
     return navigatorData;
 }
@@ -44,7 +47,7 @@ function buildAWSInventoryNavigatorResponse(formattedAtlas, options = {}) {
         statusCode: options.statusCode || 200,
         errors: Array.isArray(options.errors) ? options.errors : [],
         currentUser: options.currentUser || null,
-        data: buildAWSInventoryNavigatorData(formattedAtlas)
+        data: buildAWSInventoryNavigatorData(formattedAtlas, options)
     });
 }
 

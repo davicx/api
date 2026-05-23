@@ -17,7 +17,7 @@ FUNCTIONS B: All EC2 Scan Navigator Table Helper Functions
 
 //FUNCTIONS A: All Functions Related to EC2 Scan Navigator Data
 //Function A1: Build EC2 Scan Navigator Data
-function buildEC2ScanNavigatorData(formattedAtlas) {
+function buildEC2ScanNavigatorData(formattedAtlas, options = {}) {
     const summary = formattedAtlas && formattedAtlas.summary ? formattedAtlas.summary : {};
     const instances = formattedAtlas && Array.isArray(formattedAtlas.instances) ? formattedAtlas.instances : [];
     const findings = formattedAtlas && Array.isArray(formattedAtlas.findings) ? formattedAtlas.findings : [];
@@ -42,7 +42,10 @@ function buildEC2ScanNavigatorData(formattedAtlas) {
         buildEC2FindingsTable(findings)
     ];
 
-    navigatorData.raw = null;
+    navigatorData.raw =
+        options.includeRaw === true
+            ? (options.raw || null)
+            : null;
 
     return navigatorData;
 }
@@ -55,7 +58,7 @@ function buildEC2ScanNavigatorResponse(formattedAtlas, options = {}) {
         statusCode: options.statusCode || 200,
         errors: Array.isArray(options.errors) ? options.errors : [],
         currentUser: options.currentUser || null,
-        data: buildEC2ScanNavigatorData(formattedAtlas)
+        data: buildEC2ScanNavigatorData(formattedAtlas, options)
     });
 }
 
