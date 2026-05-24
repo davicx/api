@@ -243,6 +243,7 @@ const actionRegistry = {
         defaults: {
             tags: {
                 'managed-by': 'cloudpilot',
+                'cloudpilot-managed': 'true',
                 'environment': 'demo',
                 'cloudpilot-role': 'secondary'
             }

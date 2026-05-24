@@ -33,28 +33,19 @@ async function scanEC2(region) {
 
 //Function A2: Create EC2 (Atlas /ec2/create)
 async function createEC2(requestBody) {
-    // TEMP: skip HTTP to Atlas (no AWS create yet)
-    // const response = await fetch(ATLAS_BASE_URL + "/ec2/create", {
-    //     method: "POST",
-    //     headers: {
-    //         "Content-Type": "application/json"
-    //     },
-    //     body: JSON.stringify(requestBody)
-    // });
-    //
-    // if (!response.ok) {
-    //     throw new Error("Atlas EC2 create failed with status " + response.status);
-    // }
-    //
-    // return await response.json();
+    const response = await fetch(ATLAS_BASE_URL + "/ec2/create", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+    });
 
-    console.log("TEMP (createEC2): requestBody:", JSON.stringify(requestBody, null, 2));
-    return {
-        success: false,
-        data: {},
-        message: "TEMP: Atlas EC2 create not called",
-        errors: ["temp_atlas_skipped"]
-    };
+    if (!response.ok) {
+        throw new Error("Atlas EC2 create failed with status " + response.status);
+    }
+
+    return await response.json();
 }
 
 module.exports = { scanEC2, createEC2 };

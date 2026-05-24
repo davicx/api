@@ -8,6 +8,24 @@ function buildTagsFromDefaults(defaults) {
     return { ...raw };
 }
 
+function buildUserProvidedTags(collected) {
+    const raw = collected && collected.tags;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return {};
+    }
+    return { ...raw };
+}
+
+function mergeCreateEc2Tags(defaults, collected) {
+    const workflowDefaultTags = buildTagsFromDefaults(defaults);
+    const userProvidedTags = buildUserProvidedTags(collected);
+
+    return {
+        ...workflowDefaultTags,
+        ...userProvidedTags
+    };
+}
+
 async function createEC2Handler(context) {
 
     const executionMode = context.state.executionMode;
@@ -63,7 +81,7 @@ async function createEC2Handler(context) {
         }
 
         const defaults = (action && action.defaults) ? action.defaults : {};
-        const tags = buildTagsFromDefaults(defaults);
+        const tags = mergeCreateEc2Tags(defaults, collected);
 
         const requestBody = {
             name: String(name).trim(),
