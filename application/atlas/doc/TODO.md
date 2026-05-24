@@ -40,7 +40,178 @@ navigatorResponse is added for generic UI rendering
 
 ## Current Work
 
-### Stage 1: Update Kite To Render Generic UI Data
+No active API/Navigator contract stage is currently queued in this document.
+
+## Future Work
+
+### Future Stage 1: Persist Navigator Data With React Query Cache
+
+Kite currently stores the latest Navigator data in React context.
+
+That works for route navigation while the app is mounted, but a better next persistence step is to use React Query cache for Navigator data.
+
+Goal:
+
+```text
+user runs inventory or scan
+-> Navigator data is cached
+-> user clicks away
+-> user returns
+-> table data is still available without refetching
+```
+
+Use React Query for server/API response state, not Redux.
+
+Recommended cache key:
+
+```js
+[
+    "navigator-data",
+    groupID,
+    conversationID
+]
+```
+
+Possible implementation:
+
+```js
+queryClient.setQueryData(
+    ["navigator-data", groupID, conversationID],
+    navigatorData
+);
+```
+
+Then Dashboard or any future Navigator screen can read:
+
+```js
+queryClient.getQueryData([
+    "navigator-data",
+    groupID,
+    conversationID
+]);
+```
+
+Rules:
+
+- Keep React Query for API/cache data.
+- Keep local/context state only for small UI state.
+- Do not add Redux yet.
+- Do not add persistence to localStorage yet unless refresh persistence becomes necessary.
+- Do not refetch just because the user navigated away and back.
+
+Helpful options later:
+
+```js
+staleTime: 5 * 60 * 1000
+cacheTime: 30 * 60 * 1000
+refetchOnWindowFocus: false
+```
+
+### Future Stage 2: Add More Navigator Adapters
+
+When Atlas adds a new response type, add a small Navigator adapter.
+
+Examples:
+
+```text
+cost response -> stats + cost table
+security response -> alerts + findings table
+compliance response -> stats + compliance table
+```
+
+Do not change Kite for every new Atlas response if the existing primitives are enough.
+
+### Future Stage 3: Add Other Atlas Actions
+
+Add adapters for future actions only when the action is real.
+
+Examples:
+
+```text
+resize_ec2
+delete_ec2
+security_scan
+cost_report
+```
+
+Follow:
+
+```text
+doc/instructions/adding_new_action.md
+doc/instructions/converting_atlas_data.md
+```
+
+### Future Stage 4: Optional Raw / Developer Mode
+
+The contract supports:
+
+```js
+raw: null
+```
+
+Adapters also support opt-in raw data:
+
+```js
+{
+    includeRaw: true,
+    raw: {
+        atlasAction: "scan",
+        response: {}
+    }
+}
+```
+
+Do not send raw by default forever. It can get large and may leak internal structure.
+
+### Future Stage 5: Better UI Formatting
+
+Later, Kite can improve rendering:
+
+```text
+type = "currency" -> format numbers as currency
+type = "status" -> render badge/color
+type = "number" -> right align
+```
+
+Keep this out of the API.
+
+### Future Stage 6: Naming Cleanup
+
+Consider a focused naming pass later.
+
+Example:
+
+```text
+atlasAWSInventoryFormatter.js -> inventoryAWSFormatter.js
+atlasAWSInventoryMessageBuilder.js -> inventoryAWSMessageBuilder.js
+atlasAWSInventoryNavigatorAdapter.js -> inventoryAWSNavigatorAdapter.js
+```
+
+And possibly:
+
+```text
+atlasEC2Formatter.js -> scanEC2Formatter.js
+atlasEC2MessageBuilder.js -> scanEC2MessageBuilder.js
+atlasEC2ScanNavigatorAdapter.js -> scanEC2NavigatorAdapter.js
+```
+
+Do this only as a separate cleanup pass.
+
+### Future Stage 7: Avoid Premature Abstraction
+
+Do not add:
+
+- registries
+- schema engines
+- dynamic plugins
+- universal rendering frameworks
+- giant inheritance systems
+
+Keep this understandable.
+
+## Finished
+
+### Done: Stage 1 - Update Kite To Render Generic UI Data
 
 This stage belongs in the Kite/client module, not this API module.
 
@@ -196,112 +367,6 @@ EC2 Instances table renders
 EC2 Findings table renders
 row_id exists on every row
 ```
-
-## Future Work
-
-### Future Stage 1: Add More Navigator Adapters
-
-When Atlas adds a new response type, add a small Navigator adapter.
-
-Examples:
-
-```text
-cost response -> stats + cost table
-security response -> alerts + findings table
-compliance response -> stats + compliance table
-```
-
-Do not change Kite for every new Atlas response if the existing primitives are enough.
-
-### Future Stage 2: Add Other Atlas Actions
-
-Add adapters for future actions only when the action is real.
-
-Examples:
-
-```text
-resize_ec2
-delete_ec2
-security_scan
-cost_report
-```
-
-Follow:
-
-```text
-doc/instructions/adding_new_action.md
-doc/instructions/converting_atlas_data.md
-```
-
-### Future Stage 3: Optional Raw / Developer Mode
-
-The contract supports:
-
-```js
-raw: null
-```
-
-Adapters also support opt-in raw data:
-
-```js
-{
-    includeRaw: true,
-    raw: {
-        atlasAction: "scan",
-        response: {}
-    }
-}
-```
-
-Do not send raw by default forever. It can get large and may leak internal structure.
-
-### Future Stage 4: Better UI Formatting
-
-Later, Kite can improve rendering:
-
-```text
-type = "currency" -> format numbers as currency
-type = "status" -> render badge/color
-type = "number" -> right align
-```
-
-Keep this out of the API.
-
-### Future Stage 5: Naming Cleanup
-
-Consider a focused naming pass later.
-
-Example:
-
-```text
-atlasAWSInventoryFormatter.js -> inventoryAWSFormatter.js
-atlasAWSInventoryMessageBuilder.js -> inventoryAWSMessageBuilder.js
-atlasAWSInventoryNavigatorAdapter.js -> inventoryAWSNavigatorAdapter.js
-```
-
-And possibly:
-
-```text
-atlasEC2Formatter.js -> scanEC2Formatter.js
-atlasEC2MessageBuilder.js -> scanEC2MessageBuilder.js
-atlasEC2ScanNavigatorAdapter.js -> scanEC2NavigatorAdapter.js
-```
-
-Do this only as a separate cleanup pass.
-
-### Future Stage 6: Avoid Premature Abstraction
-
-Do not add:
-
-- registries
-- schema engines
-- dynamic plugins
-- universal rendering frameworks
-- giant inheritance systems
-
-Keep this understandable.
-
-## Finished
 
 ### Done: Stage 1 - Define The Contract
 
