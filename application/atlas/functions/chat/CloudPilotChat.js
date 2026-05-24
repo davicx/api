@@ -21,19 +21,25 @@ async function handleCloudPilotChat(payload) {
         return await cloudPilotRespondMissingFieldsGiven(payload);
     }
 
-    // STEP 3: Workflow is now ready and waiting for confirmation
+    // STEP 3: Workflow is ready — ask how to perform the action (destructive tier)
+    if (payload.actionEvent === "awaiting_execution_mode") {
+
+        return await cloudPilotRespondAwaitingExecutionMode(payload);
+    }
+
+    // STEP 4: Workflow is now ready and waiting for confirmation
     if (payload.actionEvent === "awaiting_confirmation") {
 
         return await cloudPilotRespondAwaitingConfirmation(payload);
     }
 
-    // STEP 4: User confirmed execution
+    // STEP 5: User confirmed execution
     if (payload.actionEvent === "execution_requested") {
 
         return await AtlasExecution.startNewAtlasExecution(payload);
     }
 
-    // STEP 5: Fallback
+    // STEP 6: Fallback
     return {
         success: false,
         message: "Unknown CloudPilot workflow event.",
@@ -85,15 +91,43 @@ async function cloudPilotRespondMissingFieldsGiven(payload) {
     };
 }
 
+async function cloudPilotRespondAwaitingExecutionMode(payload) {
+
+    return {
+        success: true,
+        message:
+            "Everything is ready.\n\n" +
+            "How would you like me to perform this action?\n\n" +
+            "1. Instructions\n" +
+            "2. CLI Commands\n" +
+            "3. Pull Request\n" +
+            "4. Automatic",
+        atlasResponse: null,
+        error: null
+    };
+}
+
 async function cloudPilotRespondAwaitingConfirmation(payload) {
     const actionDefinition = payload.actionDefinition;
     const readyMessage =
         actionDefinition.messages.ready ||
         "Everything is ready.";
 
+    const executionMode = payload.actionState && payload.actionState.executionMode;
+
+    let message = readyMessage + "\n\nWould you like me to execute this action?";
+
+    if (executionMode) {
+        message =
+            readyMessage +
+            "\n\nExecution mode: " +
+            executionMode +
+            "\n\nWould you like me to execute this action?";
+    }
+
     return {
         success: true,
-        message: readyMessage + "\n\nWould you like me to execute this action?",
+        message: message,
         atlasResponse: null,
         error: null
     };

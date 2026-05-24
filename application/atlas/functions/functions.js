@@ -7,6 +7,8 @@ FUNCTIONS A: AWS Helper Functions
 	5) Function A5: Extract structured workflow fields from user message
 	6) Function A6: Determine request readiness
 	7) Function A7: Determine workflow event
+	8) Function A8: Determine execution mode workflow event
+	9) Function A9: Extract execution mode from user message (1-4)
 
 */
 
@@ -130,6 +132,35 @@ function determineActionEvent(actionEventData) {
     return null;
 }
 
+//Function A8: Determine execution mode workflow event
+function determineExecutionModeEvent(executionModeEventData) {
+
+    if (
+        executionModeEventData.actionReady &&
+        !executionModeEventData.executionMode &&
+        executionModeEventData.actionSupportsExecutionModes
+    ) {
+        return "awaiting_execution_mode";
+    }
+
+    return null;
+}
+
+//Function A9: Extract execution mode from user message (1-4)
+function extractExecutionMode(userMessage) {
+
+    const normalized = String(userMessage || "").trim();
+
+    const executionModes = {
+        "1": "instructions",
+        "2": "cli",
+        "3": "pr",
+        "4": "automatic"
+    };
+
+    return executionModes[normalized] || null;
+}
+
 function userConfirmedAction(userMessage) {
     const normalizedMessage = String(userMessage || '').toLowerCase().trim().replace(/[.!?]+$/g, '');
     const confirmationMessages = [
@@ -145,17 +176,32 @@ function userConfirmedAction(userMessage) {
 }
 
 function shouldStartExecution(executionDecisionData) {
-    return Boolean(
-        executionDecisionData.activeAction &&
-        executionDecisionData.actionState &&
-        executionDecisionData.actionState.status === "ready" &&
-        userConfirmedAction(executionDecisionData.currentUserMessage)
-    );
+    const actionState = executionDecisionData.actionState;
+
+    if (!executionDecisionData.activeAction || !actionState) {
+        return false;
+    }
+
+    if (actionState.status !== "ready") {
+        return false;
+    }
+
+    if (!userConfirmedAction(executionDecisionData.currentUserMessage)) {
+        return false;
+    }
+
+    if (executionDecisionData.actionSupportsExecutionModes) {
+        return Boolean(actionState.executionMode);
+    }
+
+    return true;
 }
 
 fieldExtractors.extractStructuredFields = extractStructuredFields;
 fieldExtractors.determineRequestReadiness = determineRequestReadiness;
 fieldExtractors.determineActionEvent = determineActionEvent;
+fieldExtractors.determineExecutionModeEvent = determineExecutionModeEvent;
+fieldExtractors.extractExecutionMode = extractExecutionMode;
 fieldExtractors.userConfirmedAction = userConfirmedAction;
 fieldExtractors.shouldStartExecution = shouldStartExecution;
 

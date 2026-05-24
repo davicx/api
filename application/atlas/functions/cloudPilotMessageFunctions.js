@@ -38,6 +38,7 @@ async function processMessage(rawUserMessage, conversationID) {
     let cloudPilotShouldRespond = false; //Other is we send to Open AI
     let actionTransitionedToReady = false;
     let actionPendingConfirmation = false;
+    let executionModeSelected = false;
     let newActionStarted = false;
     let fieldsUpdated = false;
 
@@ -57,7 +58,8 @@ async function processMessage(rawUserMessage, conversationID) {
 
                 missingFields: [],
                 collectedFields: {},
-                askedForFields: {}
+                askedForFields: {},
+                executionMode: null
             },
             atlasExecution: {
                 status: "idle", // "idle" | "running" | "completed" | "failed"
@@ -188,19 +190,36 @@ async function processMessage(rawUserMessage, conversationID) {
 
         actionTransitionedToReady = true;
     }
+
+    const activeActionDefinition = getActionDefinition(activeAction || userRequest);
+
+    const actionSupportsExecutionModes =
+        actionRegistry.actionRequiresExecutionModeSelection(activeActionDefinition);
+
+    //Step 6F: Capture execution mode selection (destructive tier only)
+    if (
+        actionReady &&
+        actionSupportsExecutionModes &&
+        !currentActionState.executionMode
+    ) {
+        const executionMode = Functions.extractExecutionMode(currentUserMessage);
+
+        if (executionMode) {
+            console.log("STEP 6F: Execution mode selected:", executionMode);
+
+            actionState.setExecutionMode(conversationID, executionMode);
+
+            currentActionState = actionState.getActionStatus(conversationID);
+            activeAction = currentActionState.pendingAction;
+            executionModeSelected = true;
+        }
+    }
     
     //Step 6C: CloudPilot should respond when request just became ready
     if (actionTransitionedToReady) {
         console.log("Step 6C: CloudPilot should respond");
 
         cloudPilotShouldRespond = true;
-    }
-
-    //Step 6D: Check if action is pending confirmation
-    actionPendingConfirmation = activeAction && currentActionState.status === "ready" && !actionTransitionedToReady;
-
-    if (actionPendingConfirmation) {
-        console.log("Step 6D: Action pending confirmation");
     }
 
     //Step 6E: Determine workflow event
@@ -222,11 +241,52 @@ async function processMessage(rawUserMessage, conversationID) {
         cloudPilotShouldRespond = true;
     }
 
+    const executionModeEvent = Functions.determineExecutionModeEvent({
+        actionReady: actionReady,
+        executionMode: currentActionState.executionMode,
+        actionSupportsExecutionModes: actionSupportsExecutionModes
+    });
+
+    if (executionModeEvent) {
+        actionEvent = executionModeEvent;
+
+        console.log("Step 6E (mode): Workflow event detected:", actionEvent);
+
+        cloudPilotShouldRespond = true;
+    }
+
+    if (executionModeSelected) {
+        actionEvent = "awaiting_confirmation";
+
+        console.log("Step 6E (confirm): Workflow event after mode selection");
+
+        cloudPilotShouldRespond = true;
+    }
+
+    //Step 6D: Check if action is pending confirmation
+    actionPendingConfirmation =
+        activeAction &&
+        currentActionState.status === "ready" &&
+        !actionTransitionedToReady &&
+        (
+            !actionSupportsExecutionModes ||
+            currentActionState.executionMode
+        );
+
+    if (actionPendingConfirmation) {
+        console.log("Step 6D: Action pending confirmation");
+    }
+
     //STEP 7: Execution lifecycle
     if (actionPendingConfirmation) {
         console.log("Step 7A: Action awaiting execution confirmation");
 
-        const userConfirmedExecution = Functions.shouldStartExecution({activeAction: activeAction, actionState: currentActionState, currentUserMessage: currentUserMessage });
+        const userConfirmedExecution = Functions.shouldStartExecution({
+            activeAction: activeAction,
+            actionState: currentActionState,
+            currentUserMessage: currentUserMessage,
+            actionSupportsExecutionModes: actionSupportsExecutionModes
+        });
 
         if (userConfirmedExecution) {
             console.log("Step 7B: User confirmed execution");
@@ -235,8 +295,6 @@ async function processMessage(rawUserMessage, conversationID) {
             cloudPilotShouldRespond = true;
         }
     }
-
-    const activeActionDefinition = getActionDefinition(activeAction || userRequest);
 
     const chatPayload = {
         conversationID,
@@ -255,6 +313,7 @@ async function processMessage(rawUserMessage, conversationID) {
         actionState: {
             pendingAction: activeAction,
             status: currentActionState.status,
+            executionMode: currentActionState.executionMode,
             missingFields: [...(currentActionState.missing || [])],
             collectedFields: { ...(currentActionState.collected || {}) },
             askedForFields: { ...(currentActionState.asked || {}) }
@@ -377,6 +436,7 @@ function cloneActionStatus(state, activeAction, ready) {
     return {
         type: activeAction,
         ready: Boolean(ready),
+        executionMode: state.executionMode || null,
         missingFields: [...(state.missing || [])],
         collectedFields: { ...(state.collected || {}) },
         askedForFields: { ...(state.asked || {}) }

@@ -41,6 +41,7 @@ class AtlasExecution {
             state: {
                 pendingAction: activeAction,
                 status: "running",
+                executionMode: payload.actionState.executionMode || null,
                 missing: payload.actionState.missingFields || [],
                 collected: payload.actionState.collectedFields || {}
             },

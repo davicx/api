@@ -13,8 +13,10 @@ This file is the central registry for CloudPilot action definitions.
 Each action definition describes static orchestration metadata:
 - identity
 - policy
+- actionTier (general_chat | informational | destructive)
 - intent detection
 - workflow requirements
+- executionModes (destructive actions only)
 - execution handler
 - defaults
 - user-facing system messages
@@ -38,6 +40,7 @@ const actionRegistry = {
         allowed: true,
 
         //Orchestration
+        actionTier: 'general_chat',
         requiresWorkflow: false,
         requiresExecution: false,
 
@@ -76,6 +79,7 @@ const actionRegistry = {
         allowed: true,
 
         //Orchestration
+        actionTier: 'informational',
         requiresWorkflow: false,
         requiresExecution: true,
 
@@ -115,6 +119,7 @@ const actionRegistry = {
         allowed: true,
 
         //Orchestration
+        actionTier: 'informational',
         requiresWorkflow: true,
         requiresExecution: false,
 
@@ -158,8 +163,17 @@ const actionRegistry = {
         allowed: true,
 
         //Orchestration
+        actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+
+        //Execution mode selection (destructive tier only)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
 
         //Intent Detection
         match: (text) =>
@@ -201,8 +215,17 @@ const actionRegistry = {
         allowed: true,
 
         //Orchestration
+        actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+
+        //Execution mode selection (destructive tier only)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
 
         //Intent Detection
         match: (text) =>
@@ -244,4 +267,17 @@ const actionRegistry = {
     }
 };
 
+function actionRequiresExecutionModeSelection(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        Array.isArray(actionDefinition.executionModes) &&
+        actionDefinition.executionModes.length > 0
+    );
+}
+
 module.exports = actionRegistry;
+
+Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
+    value: actionRequiresExecutionModeSelection,
+    enumerable: false
+});
