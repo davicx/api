@@ -106,9 +106,7 @@ async function processMessage(rawUserMessage, conversationID) {
     console.log(actionDefinition)
     console.log(" ");
     
-    const shouldExecuteImmediately =
-        actionDefinition.requiresWorkflow === false &&
-        actionDefinition.requiresExecution === true;
+    const shouldExecuteImmediately = actionDefinition.requiresWorkflow === false && actionDefinition.requiresExecution === true;
     
     //STEP 4: Start or replace active request
     if (actionDefinition.requiresWorkflow) {
