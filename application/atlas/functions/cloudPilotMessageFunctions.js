@@ -195,11 +195,7 @@ async function processMessage(rawUserMessage, conversationID) {
         actionRegistry.actionRequiresExecutionModeSelection(activeActionDefinition);
 
     //Step 6F: Capture execution mode selection (destructive tier only)
-    if (
-        actionReady &&
-        actionSupportsExecutionModes &&
-        !currentActionState.executionMode
-    ) {
+    if ( actionReady && actionSupportsExecutionModes && !currentActionState.executionMode) {
         const executionMode = Functions.extractExecutionMode(currentUserMessage);
 
         if (executionMode) {
