@@ -3,6 +3,8 @@
 FUNCTIONS A: Atlas Scanner Functions
     1) Function A1: Scan EC2
     2) Function A2: Create EC2
+    3) Function A3: Delete EC2
+    4) Function A4: Toggle EC2
 */
 
 const ATLAS_BASE_URL = process.env.ATLAS_BASE_URL || "http://127.0.0.1:8000";
@@ -48,4 +50,38 @@ async function createEC2(requestBody) {
     return await response.json();
 }
 
-module.exports = { scanEC2, createEC2 };
+//Function A3: Delete EC2 (Atlas /ec2/delete)
+async function deleteEC2(requestBody) {
+    const response = await fetch(ATLAS_BASE_URL + "/ec2/delete", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        throw new Error("Atlas EC2 delete failed with status " + response.status);
+    }
+
+    return await response.json();
+}
+
+//Function A4: Toggle EC2 (Atlas /ec2/toggle)
+async function toggleEC2(requestBody) {
+    const response = await fetch(ATLAS_BASE_URL + "/ec2/toggle", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        throw new Error("Atlas EC2 toggle failed with status " + response.status);
+    }
+
+    return await response.json();
+}
+
+module.exports = { scanEC2, createEC2, deleteEC2, toggleEC2 };

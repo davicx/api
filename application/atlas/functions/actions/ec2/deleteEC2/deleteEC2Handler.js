@@ -1,6 +1,6 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
 
-async function toggleEC2Handler(context) {
+async function deleteEC2Handler(context) {
 
     const executionMode = context.state.executionMode;
 
@@ -41,13 +41,12 @@ async function toggleEC2Handler(context) {
         const collected = context.state.collected;
 
         const region = collected.region;
-        const primary_instance_id = collected.primary_instance_id;
-        const secondary_instance_id = collected.secondary_instance_id;
+        const instance_id = collected.instance_id;
 
-        if (!region || !primary_instance_id || !secondary_instance_id) {
+        if (!region || !instance_id) {
             return {
                 success: false,
-                cloudPilotMessage: "I am missing region, primary instance ID, or secondary instance ID to toggle EC2 instances.",
+                cloudPilotMessage: "I am missing region or instance ID to delete the instance.",
                 error: "missing_collected_fields",
                 atlasResponse: null
             };
@@ -55,65 +54,55 @@ async function toggleEC2Handler(context) {
 
         const requestBody = {
             region: String(region).trim(),
-            targets: {
-                primary_instance_id: String(primary_instance_id).trim(),
-                secondary_instance_id: String(secondary_instance_id).trim()
-            }
+            instance_id: String(instance_id).trim()
         };
 
         console.log("_____________________________________");
-        console.log("Toggle EC2 request body:");
+        console.log("Delete EC2 request body:");
         console.log(JSON.stringify(requestBody, null, 2));
         console.log("_____________________________________");
 
-        const atlasResponseRaw = await atlasEC2Functions.toggleEC2(requestBody);
+        const atlasResponseRaw = await atlasEC2Functions.deleteEC2(requestBody);
 
         console.log("_____________________________________");
-        console.log("RAW Atlas Toggle Response:");
+        console.log("RAW Atlas Delete Response:");
         console.log(JSON.stringify(atlasResponseRaw, null, 2));
         console.log("_____________________________________");
 
-        if (
-            atlasResponseRaw &&
-            atlasResponseRaw.success === true &&
-            atlasResponseRaw.data &&
-            atlasResponseRaw.data.status === "SUCCESS"
-        ) {
-            const primaryId = atlasResponseRaw.data.primary_instance_id || String(primary_instance_id).trim();
-            const secondaryId = atlasResponseRaw.data.secondary_instance_id || String(secondary_instance_id).trim();
+        if (atlasResponseRaw && atlasResponseRaw.success === true && atlasResponseRaw.data && atlasResponseRaw.data.instance_id) {
+            const instanceId = atlasResponseRaw.data.instance_id;
             const regionOut = atlasResponseRaw.data.region || String(region).trim();
-
+            const stateOut = atlasResponseRaw.data.state || "terminating";
             return {
                 success: true,
-                cloudPilotMessage:
-                    "Toggle completed in " + regionOut + ". Stopped primary " + primaryId + " and started secondary " + secondaryId + ".",
+                cloudPilotMessage: "Termination requested for EC2 instance " + instanceId + " in " + regionOut + " (" + stateOut + ").",
                 error: null,
                 atlasResponse: atlasResponseRaw.data
             };
         }
 
-        const errMsg = atlasResponseRaw && atlasResponseRaw.message ? String(atlasResponseRaw.message) : "Atlas did not toggle the EC2 instances.";
+        const errMsg = atlasResponseRaw && atlasResponseRaw.message ? String(atlasResponseRaw.message) : "Atlas did not delete the instance.";
         const errCode = atlasResponseRaw && atlasResponseRaw.errors && atlasResponseRaw.errors[0] ? String(atlasResponseRaw.errors[0]) : "";
 
         return {
             success: false,
-            cloudPilotMessage: "I could not toggle the EC2 instances.",
+            cloudPilotMessage: "I could not delete the EC2 instance.",
             error: errCode || errMsg,
             atlasResponse: null
         };
 
     } catch (error) {
 
-        console.log("Atlas Toggle Error:");
+        console.log("Atlas Delete Error:");
         console.log(error);
 
         return {
             success: false,
-            cloudPilotMessage: "I could not toggle the EC2 instances.",
+            cloudPilotMessage: "I could not delete the EC2 instance.",
             error: error.message,
             atlasResponse: null
         };
     }
 }
 
-module.exports = toggleEC2Handler;
+module.exports = deleteEC2Handler;

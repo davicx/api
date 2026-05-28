@@ -1,8 +1,9 @@
 /**
  * Manual E2E: create_ec2 through CloudPilot chat workflow (automatic mode).
- * Usage: node scripts/e2e-create-ec2.js
+ * Usage (from application/atlas): node doc/testing/e2e-create-ec2.js
+ * Requires Atlas at ATLAS_BASE_URL — launches real EC2; run only when intended.
  */
-const { processMessage } = require('../functions/cloudPilotMessageFunctions');
+const { processMessage } = require('../../functions/cloudPilotMessageFunctions');
 
 const conversationID = 'e2e-create-' + Date.now();
 

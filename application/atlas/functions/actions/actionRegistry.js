@@ -1,6 +1,7 @@
 const scanEC2Handler = require('./ec2/scanEC2/scanEC2Handler');
 const toggleEC2Handler = require('./ec2/toggleEC2/toggleEC2Handler');
 const createEC2Handler = require('./ec2/createEC2/createEC2Handler');
+const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
 const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
 
 /*
@@ -182,7 +183,9 @@ const actionRegistry = {
 
         //Fields Required Before Ready
         requiredFields: [
-            'region'
+            'region',
+            'primary_instance_id',
+            'secondary_instance_id'
         ],
 
         //Optional Defaults
@@ -195,12 +198,14 @@ const actionRegistry = {
         messages: {
             started: 'Confirm before changing EC2 instances.',
             missingFields: {
-                region: 'Which AWS region should I use?'
+                region: 'Which AWS region should I use?',
+                primary_instance_id: 'What is the primary EC2 instance ID to stop (e.g. i-0abc123)?',
+                secondary_instance_id: 'What is the secondary EC2 instance ID to start (e.g. i-0xyz987)?'
             },
-            ready: 'Everything is ready for the EC2 update.',
-            executing: 'Updating EC2 instance state.',
-            success: 'EC2 instance state updated.',
-            failed: 'EC2 instance state update failed.'
+            ready: 'Everything is ready for the EC2 toggle.',
+            executing: 'Toggling EC2 instances. This may take a few minutes.',
+            success: 'EC2 toggle completed.',
+            failed: 'EC2 toggle failed.'
         }
     },
 
@@ -264,6 +269,60 @@ const actionRegistry = {
             executing: 'Creating EC2 instance.',
             success: 'EC2 instance created.',
             failed: 'EC2 create failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Delete EC2
+    delete_ec2: {
+        //Identity
+        type: 'delete_ec2',
+        actionLabel: 'Delete EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Execution mode selection (destructive tier only)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('delete') &&
+            (text.includes('ec2') || text.includes('instance')),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: deleteEC2Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 delete.',
+            missingFields: {
+                region: 'Which AWS region is the instance in?',
+                instance_id: 'What is the EC2 instance ID to delete (e.g. i-0abc123)?'
+            },
+            ready: 'Everything is ready for the EC2 delete.',
+            executing: 'Terminating EC2 instance.',
+            success: 'EC2 instance termination requested.',
+            failed: 'EC2 delete failed.'
         }
     }
 };

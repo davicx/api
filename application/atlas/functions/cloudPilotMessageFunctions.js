@@ -92,7 +92,7 @@ async function processMessage(rawUserMessage, conversationID) {
     const currentUserMessage = currentUserMessageOutcome.currentUserMessage;
 
     //STEP 2: Detect user request
-    const userRequest = detectUserRequest(currentUserMessage); //available: general_chat, scan_ec2, toggle_ec2, create_ec2
+    const userRequest = detectUserRequest(currentUserMessage); //available: general_chat, scan_ec2, toggle_ec2, create_ec2, delete_ec2, ...
     processMessageOutcome.cloudPilot.userRequest = userRequest;
     processMessageOutcome.cloudPilot.actionStatus.type = userRequest === "general_chat" ? null : userRequest;
 
@@ -147,15 +147,19 @@ async function processMessage(rawUserMessage, conversationID) {
 
         for (const missingFieldName of missingFields) {
 
-            const structuredFieldValue = extractedFields[missingFieldName];
+            let fieldValue = extractedFields[missingFieldName];
 
-            if (!structuredFieldValue) {
+            if (!fieldValue && typeof Functions[missingFieldName] === "function") {
+                fieldValue = Functions[missingFieldName](currentUserMessage);
+            }
+
+            if (!fieldValue) {
                 continue;
             }
 
-            console.log("STEP 5: Found field:", missingFieldName, structuredFieldValue);
+            console.log("STEP 5: Found field:", missingFieldName, fieldValue);
 
-            actionState.setField(conversationID, missingFieldName, structuredFieldValue);
+            actionState.setField(conversationID, missingFieldName, fieldValue);
             fieldsUpdated = true;
 
             // Refresh state after updating workflow fields

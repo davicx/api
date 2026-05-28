@@ -3,12 +3,13 @@ FUNCTIONS A: AWS Helper Functions
 	1) Function A1: Extract AWS region from user text
 	2) Function A2: Extract EC2 instance type from user text
 	3) Function A3: Extract instance name from user text (MVP phrases)
-	4) Function A4: fieldExtractors map (field name → extractor)
-	5) Function A5: Extract structured workflow fields from user message
-	6) Function A6: Determine request readiness
-	7) Function A7: Determine workflow event
-	8) Function A8: Determine execution mode workflow event
-	9) Function A9: Extract execution mode from user message (1-4)
+	4) Function A3b: Extract EC2 instance ID from user text
+	5) Function A4: fieldExtractors map (field name → extractor)
+	6) Function A5: Extract structured workflow fields from user message
+	7) Function A6: Determine request readiness
+	8) Function A7: Determine workflow event
+	9) Function A8: Determine execution mode workflow event
+	10) Function A9: Extract execution mode from user message (1-4)
 
 */
 
@@ -56,11 +57,23 @@ function extractName(text) {
     return null;
 }
 
+//Function A3b: Extract EC2 instance ID from user text
+function extractInstanceId(text) {
+    const match = String(text || '').match(/\b(i-[0-9a-f]{8,17})\b/i);
+    if (!match) {
+        return null;
+    }
+    return String(match[1]).toLowerCase();
+}
+
 //Function A4: fieldExtractors map (field name → extractor)
 const fieldExtractors = {
     region: extractAwsRegion,
     instance_type: extractInstanceType,
-    name: extractName
+    name: extractName,
+    instance_id: extractInstanceId,
+    primary_instance_id: extractInstanceId,
+    secondary_instance_id: extractInstanceId
 };
 
 //Function A5: Extract structured workflow fields from user message
