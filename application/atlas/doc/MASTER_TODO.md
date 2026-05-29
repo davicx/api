@@ -2,7 +2,7 @@
 
 Consolidated plan for API, Navigator, and Atlas work. Update this file when stages complete or priorities change.
 
-**Last reviewed:** 2026-05-28 (create/delete API status updated; manual AWS verification pending)
+**Last reviewed:** 2026-05-28 (Create / Delete / Toggle API wiring complete; manual AWS verification pending for all three)
 
 ---
 
@@ -104,8 +104,8 @@ Before final confirmation on destructive actions, add a clear danger boundary (c
 Use this checklist for every change in Part 1 (Stages 0–4). Do not drift.
 
 - [ ] **Do not** implement rollback or an execution DB in this track.
-- [ ] **Do** add `operation_id` + shared mutation metadata in **Stage 0.5** before cloning toggle/delete handlers.
-- [ ] **Clone** `createEC2Handler` for toggle and delete — same structure, gates, and response mapping. **Do not** invent new handler patterns.
+- [x] **Clone** `createEC2Handler` for toggle and delete — same structure, gates, and response mapping.
+- [ ] **Do** add `operation_id` + shared mutation metadata in **Stage 0.5** (deferred — create/delete/toggle shipped without it).
 - [ ] **MVP toggle** uses explicit instance IDs in workflow/API body; add comments (and light structure) in Atlas toggle core pointing toward **tag/role resolution** in Stage 5 — do not treat raw IDs as permanent product design.
 - [ ] **Atlas unreachable** (`ATLAS_BASE_URL` down or fetch failure) must return a controlled error for create, toggle, and delete (e.g. `atlas_unreachable`) — no unhandled fetch crashes.
 - [ ] **ActionState** is for chat workflow only (fields, mode, confirmation). **Do not** use it to track long-running execution status; execution lifecycle belongs on Atlas/execution records later.
@@ -116,7 +116,7 @@ Use this checklist for every change in Part 1 (Stages 0–4). Do not drift.
 
 | Track | Status | Doc section |
 |-------|--------|-------------|
-| **EC2 mutations** (create / delete / toggle → AWS) | In progress — create/delete API wiring implemented and reported working; toggle still incomplete; manual AWS verification pending | [Part 1](#part-1-ec2-mutations-create--delete--toggle) |
+| **EC2 mutations** (create / delete / toggle → AWS) | **API wiring done** for all three — **manual AWS E2E + Stage 4 integration** still pending | [Part 1](#part-1-ec2-mutations-create--delete--toggle) |
 | Navigator UI contract | Foundation done; Kite persistence & more adapters later | [Part 2](#part-2-navigator-ui-response-contract) |
 
 ---
@@ -137,17 +137,87 @@ User confirms
   → AWS account updated
 ```
 
-**Reference implementation:** `create_ec2`. Delete now mirrors the create mutation pattern; toggle still needs the same Atlas-calling handler pattern.
+**Reference implementation:** `create_ec2`. Delete and toggle now mirror the same handler pattern.
 
 **Out of scope for this track:** Kite UI, iOS, doc-folder cleanup, rollback, execution DB, full delete safety policy (Stage 5+).
 
-### Current reality (status update 2026-05-28)
+---
 
-| Operation | Atlas (Python) hits AWS? | API / CloudPilot chat wired? | Notes |
-|-----------|--------------------------|------------------------------|-------|
-| **Create** | Yes — `run_instances` in `manage_instances.py` | Yes — `createEC2Handler` → `POST /ec2/create` | Reported working; manual AWS verification still pending in this doc |
-| **Delete** | Yes — `terminate_instances` | Yes — `deleteEC2Handler` → `POST /ec2/delete` | Reported working; manual AWS verification still pending in this doc |
-| **Toggle** | Yes — stop primary, start secondary + waiters | Yes — `toggleEC2Handler` → `POST /ec2/toggle` | API wiring implemented; manual AWS verification pending |
+### EC2 mutations — Done vs needs to be done
+
+**Legend:** **Done** = implemented in API/Navigator code. **Needs** = not verified, not implemented, or deferred.
+
+#### Create EC2 (`create_ec2`)
+
+| Area | Done | Needs |
+|------|------|-------|
+| **Registry** | `actionRegistry.js` — destructive tier, `executionModes`, `match()`, fields: `name`, `region`, `instance_type`, defaults/tags | Optional `image_id` in workflow if chat should supply AMI |
+| **Handler** | `createEC2Handler.js` — mode gates, Atlas call, success/error mapping | — |
+| **Atlas client** | `atlasEC2Functions.createEC2` → `POST /ec2/create` | Structured `atlas_unreachable` error (fetch failures use generic catch today) |
+| **Field extractors** | `region`, `name`, `instance_type` in `functions.js` | — |
+| **Chat workflow** | Intent → fields → mode `4` → confirm → execute | — |
+| **Atlas (Python)** | `run_instances` in `manage_instances.py` | AMI strategy (Stage 0.1) if `DEFAULT_AMIS` empty in test region |
+| **Manual AWS test** | Local smoke / reported working | **You:** confirm instance running + tags in AWS (`api/README.md` samples) |
+| **E2E script** | `doc/testing/e2e-create-ec2.js` | Run manually when Atlas + AWS ready |
+| **Stage 0.5** | — | `operation_id` + shared mutation metadata (deferred) |
+| **Stage 5+** | — | Tag verification doc, non-automatic modes, Navigator adapter |
+
+**Exit criteria not yet closed:** Chat create in automatic mode returns `instance_id` **and** instance exists in AWS (manual verify).
+
+#### Delete EC2 (`delete_ec2`)
+
+| Area | Done | Needs |
+|------|------|-------|
+| **Registry** | `delete_ec2` — destructive tier, `executionModes`, `match()`, fields: `region`, `instance_id` | — |
+| **Handler** | `deleteEC2Handler.js` — mirrors create pattern | — |
+| **Atlas client** | `atlasEC2Functions.deleteEC2` → `POST /ec2/delete` | Structured `atlas_unreachable` error |
+| **Field extractors** | `instance_id` (+ region) in `functions.js` | — |
+| **Chat workflow** | Intent → fields → mode `4` → confirm → execute | — |
+| **Atlas (Python)** | `terminate_instances` in `manage_instances.py` | — |
+| **Manual AWS test** | Local smoke / reported working | **You:** confirm instance `terminating`/`terminated` in AWS |
+| **E2E script** | `doc/testing/e2e-delete-ec2.js` | Run manually when Atlas + AWS ready |
+| **MVP safety** | — | Only terminate `cloudpilot-managed=true` instances (Stage 3.6 / Stage 5) |
+| **Stage 0.5** | — | `operation_id` (deferred) |
+| **Stage 5+** | — | Delete safety policy, Navigator adapter |
+
+**Exit criteria not yet closed:** Chat delete in automatic mode calls `terminate_instances` **and** AWS state confirmed manually.
+
+#### Toggle EC2 (`toggle_ec2`)
+
+| Area | Done | Needs |
+|------|------|-------|
+| **Registry** | `toggle_ec2` — destructive tier, `executionModes`, fields: `region`, `primary_instance_id`, `secondary_instance_id`, missing-field messages | Optional: narrow `match()` if “toggle”/“switch” false-positives |
+| **Handler** | `toggleEC2Handler.js` — automatic mode calls Atlas (no OpenAI); `{ region, targets: { … } }` body | — |
+| **Atlas client** | `atlasEC2Functions.toggleEC2` → `POST /ec2/toggle` | Structured `atlas_unreachable` error |
+| **Field extractors** | `primary_instance_id`, `secondary_instance_id` (reuse `i-…` pattern) in `functions.js` | — |
+| **Chat workflow** | Region → primary ID → secondary ID → mode `4` → confirm | — |
+| **Non-automatic modes** | instructions / cli / pr stubs (same as create/delete) | Real content for modes 1–3 (Stage 5) |
+| **Atlas (Python)** | `toggle_instances.py` — stop primary, wait, start secondary | Stage 0.2: boto `ClientError` wrapping (bad IDs can 500 today) |
+| **Manual AWS test** | Local smoke test with mocked fetch only | **You:** primary stopped + secondary running in AWS |
+| **E2E script** | — | Add `doc/testing/e2e-toggle-ec2.js` (optional) |
+| **Stage 0.5** | — | `operation_id` (deferred) |
+| **Stage 5+** | — | Tag/role-based instance resolution (no raw IDs in chat), Navigator adapter |
+
+**Exit criteria not yet closed:** Chat toggle in automatic mode changes AWS; success returns non-null `atlasResponse` (manual verify).
+
+#### All three — shared needs (Stage 4)
+
+| Needs | Detail |
+|-------|--------|
+| **Cross-action E2E** | Manual script: create → toggle → delete on test instances; document cleanup |
+| **Atlas-down behavior** | Predictable error when `ATLAS_BASE_URL` unreachable (all three handlers) |
+| **Integration regression** | Action isolation, mode gate, confirmation gate, failure paths |
+| **Chat samples** | Done — `api/README.md` |
+
+---
+
+### Current reality (summary)
+
+| Operation | Atlas hits AWS? | API / CloudPilot wired? | Manual AWS verified? |
+|-----------|-----------------|-------------------------|----------------------|
+| **Create** | Yes | Yes | **Needs** |
+| **Delete** | Yes | Yes | **Needs** |
+| **Toggle** | Yes | Yes | **Needs** |
 
 **Registry today:** `actionRegistry.js` has `create_ec2`, `delete_ec2`, `toggle_ec2`, `scan_ec2`, `inventory_aws`, `general_chat`.
 
@@ -212,76 +282,72 @@ api/application/atlas/functions/actions/ec2/toggleEC2/toggleEC2Handler.js
 
 ---
 
-### Stage 1 — Create: complete the orchestration path
+### Stage 1 — Create EC2
 
-**Status:** Node → Atlas wired; reported working. Manual AWS verification pending.
+**API status:** Done. **Manual AWS E2E:** Needs verification.
 
-| Task | Detail |
-|------|--------|
-| 1.1 Resolve AMI | Implement Stage 0.1 |
-| 1.2 Optional `image_id` in workflow | Add to `requiredFields` or extractors in `functions.js` if chat should supply AMI |
-| 1.3 Handler validation | Keep `createEC2Handler` Atlas error → `cloudPilotMessage` mapping |
-| 1.4 Chat E2E test | Intent → fields → mode `4` (automatic) → confirm → instance in AWS |
-| 1.5 Tag verification | Registry defaults + user tags + Atlas safety tags on instance |
+| Task | Status | Detail |
+|------|--------|--------|
+| 1.1 Resolve AMI | Needs | Stage 0.1 — if create fails in region, fill `DEFAULT_AMIS` or pass `image_id` |
+| 1.2 Optional `image_id` in workflow | Needs | Only if chat should supply AMI |
+| 1.3 Handler validation | Done | `createEC2Handler` maps Atlas success/errors |
+| 1.4 Chat E2E test | Needs | Intent → fields → `4` → `yes` → instance in AWS |
+| 1.5 Tag verification | Needs | Confirm registry defaults + Atlas tags on instance |
 
 **Exit criteria:** Chat create in automatic mode returns `instance_id` and instance exists in AWS.
 
-**Current note:** API path is implemented. Keep this stage open until manual create test confirms the AWS instance and tags.
-
 ---
 
-### Stage 2 — Toggle: connect Navigator orchestration to Atlas (MVP: explicit instance IDs)
+### Stage 2 — Toggle EC2 (MVP: explicit instance IDs)
 
-**Status:** API → Atlas wiring implemented; reported ready for manual test. Manual AWS verification pending.
+**API status:** Done. **Manual AWS E2E:** Needs verification.
 
-**MVP only:** workflow collects `primary_instance_id` and `secondary_instance_id`. **Product follow-up (Stage 5+):** resolve instances by `cloudpilot-role` / tags in region — do not treat raw IDs as permanent UX.
+**MVP:** workflow collects `primary_instance_id` and `secondary_instance_id`. **Stage 5+:** tag/role resolution.
 
-| Task | Detail |
-|------|--------|
-| 2.1 `atlasEC2Functions.toggleEC2` | `POST /ec2/toggle` (mirror `createEC2`) |
-| 2.2 Registry fields (MVP) | Add `primary_instance_id`, `secondary_instance_id` to `toggle_ec2.requiredFields` + `missingFields` messages |
-| 2.3 Field extractors (MVP) | Instance ID patterns in `functions.js` (`i-…` or `field: "value"`) |
-| 2.4 `toggleEC2Handler` (automatic) | Mirror `createEC2Handler`: metadata + `{ region, targets: { … } }` → Atlas → map response |
-| 2.5 Non-automatic modes | Keep instruction/cli/pr stubs (same as create) |
-| 2.6 Intent tuning (optional) | Narrow `match()` if “toggle”/“switch” false-positives hurt |
-| 2.7 Chat E2E test | Full workflow → primary stopped, secondary running in AWS |
-| 2.8 UX copy (optional) | `messages.executing` — toggle can take minutes (waiters) |
+| Task | Status | Detail |
+|------|--------|--------|
+| 2.1 `atlasEC2Functions.toggleEC2` | Done | `POST /ec2/toggle` |
+| 2.2 Registry fields | Done | `region`, `primary_instance_id`, `secondary_instance_id` + messages |
+| 2.3 Field extractors | Done | `functions.js` — `i-…` and `field: "value"` |
+| 2.4 `toggleEC2Handler` (automatic) | Done | Mirrors create/delete; Atlas body + response mapping |
+| 2.5 Non-automatic modes | Done (stubs) | instructions/cli/pr — same as create/delete |
+| 2.6 Intent tuning | Needs (optional) | Narrow `match()` if false-positives |
+| 2.7 Chat E2E test | Needs | Full workflow → primary stopped, secondary running |
+| 2.8 UX copy | Done | `messages.executing` notes toggle may take minutes |
 
 **Exit criteria:** Chat toggle in automatic mode changes AWS; success returns non-null `atlasResponse`.
 
 ---
 
-### Stage 3 — Delete: add Navigator mutation action (mirror create template)
+### Stage 3 — Delete EC2
 
-**Status:** CloudPilot action and API → Atlas wiring implemented; reported working. Manual AWS verification pending.
+**API status:** Done. **Manual AWS E2E:** Needs verification.
 
-| Task | Detail |
-|------|--------|
-| 3.1 Registry `delete_ec2` | Destructive tier, `executionModes`, `match()` (e.g. delete + ec2/instance), `requiredFields`: `region`, `instance_id` |
-| 3.2 `deleteEC2Handler` | New `ec2/deleteEC2/` — mirror `createEC2Handler` structure |
-| 3.3 `atlasEC2Functions.deleteEC2` | `POST /ec2/delete` |
-| 3.4 Field extractors | `instance_id` from message |
-| 3.5 Registry messages | started / missing / ready / executing / success / failed |
-| 3.6 MVP safety (recommended) | Only terminate instances with `cloudpilot-managed=true` (Atlas or pre-check) — full rules in `cloudpilot_tagging_metadata.md` |
-| 3.7 Chat E2E test | delete intent → fields → mode 4 → confirm → `terminating` in AWS |
+| Task | Status | Detail |
+|------|--------|--------|
+| 3.1 Registry `delete_ec2` | Done | Destructive tier, `executionModes`, `match()`, `region`, `instance_id` |
+| 3.2 `deleteEC2Handler` | Done | Mirrors `createEC2Handler` |
+| 3.3 `atlasEC2Functions.deleteEC2` | Done | `POST /ec2/delete` |
+| 3.4 Field extractors | Done | `instance_id` from message |
+| 3.5 Registry messages | Done | started / missing / ready / executing / success / failed |
+| 3.6 MVP safety | Needs | `cloudpilot-managed=true` guard (Stage 5) |
+| 3.7 Chat E2E test | Needs | delete intent → fields → `4` → confirm → terminating in AWS |
 
 **Exit criteria:** Chat delete in automatic mode calls `terminate_instances`.
-
-**Checklist:** Follow `doc/instructions/adding_new_action.md` (registry → handler → Atlas client → extractors → tests).
-
-**Current note:** Registry, handler, `atlasEC2Functions.deleteEC2`, and `instance_id` extraction are implemented. Keep this stage open until manual delete test confirms the instance reaches `terminating`/`terminated`.
 
 ---
 
 ### Stage 4 — Integration and regression
 
-| Task | Detail |
-|------|--------|
-| 4.1 Action isolation | New action replaces stale pending action (`shouldStartNewAction`) |
-| 4.2 Execution mode gate | AWS only when `executionMode === "automatic"` |
-| 4.3 Confirmation gate | `yes` / `confirm` / etc. before `AtlasExecution` |
-| 4.4 Failure paths | Missing fields, bad IDs, wrong state — clear `cloudPilotMessage` |
-| 4.5 Cross-action sequence | create → toggle → delete on test instances (document cleanup) |
+**Status:** Needs — all three API paths exist; cross-action manual testing not closed.
+
+| Task | Status | Detail |
+|------|--------|--------|
+| 4.1 Action isolation | Needs verify | New action replaces stale pending action |
+| 4.2 Execution mode gate | Done | AWS only when `executionMode === "automatic"` |
+| 4.3 Confirmation gate | Done | `yes` / `confirm` before `AtlasExecution` |
+| 4.4 Failure paths | Needs verify | Missing fields, bad IDs, wrong state — clear messages |
+| 4.5 Cross-action sequence | Needs | create → toggle → delete on test instances; document cleanup |
 
 **Exit criteria:** Manual chat scripts pass for all three without Kite changes.
 
@@ -302,44 +368,77 @@ api/application/atlas/functions/actions/ec2/toggleEC2/toggleEC2Handler.js
 
 ---
 
-### Suggested implementation order
+### Suggested order (current)
 
 ```text
-Stage 0 (Atlas hardening)
-  → Stage 0.5 (operation_id + shared mutation metadata)
-  → Stage 1 (Create — full vertical slice)
-  → Stage 2 (Toggle — MVP instance IDs)
-  → Stage 3 (Delete — clone template)
-  → Stage 4 (Integration)
+Done (API wiring):
+  Create Stage 1 — handler, registry, Atlas client, extractors
+  Delete Stage 3 — same pattern
+  Toggle Stage 2 — same pattern
 
-Stage 5 (Hardening + tag-driven toggle + execution records) — after stable mutations
-Rollback — after Stage 5 / stable flow (separate track)
+Next (you / manual):
+  Manual AWS E2E for create, delete, toggle (see api/README.md)
+  Stage 4 — integration + cross-action sequence
+
+Later (optional / hardening):
+  Stage 0 — Atlas error wrapping (especially toggle bad IDs)
+  Stage 0.5 — operation_id (deferred)
+  Stage 5 — tag-driven toggle, delete safety, Navigator mutate adapters
 ```
 
-Recommended sequence: **0 → 0.5 → 1 → 2 → 3 → 4**. Do not skip 0.5 if adding toggle/delete handlers in the same pass.
+Chat samples: **`api/README.md`** — Create, Delete, Toggle message flows.
 
 ### Manual test matrix (no Kite)
 
 | Action | Chat flow | AWS verify |
 |--------|-----------|------------|
-| Create | create intent + name/region/type + `4` + `yes` | Pending manual check: instance running, tags present |
-| Toggle | toggle intent + region + both IDs + `4` + `yes` | Primary stopped, secondary running |
-| Delete | delete intent + region + instance_id + `4` + `yes` | Pending manual check: instance terminating/terminated |
-| Atlas down | stop Atlas; run each mutation in automatic | `success: false`, predictable error (e.g. `atlas_unreachable`) — no unhandled fetch crash |
+| Create | create intent + name/region/type + `4` + `yes` | **Needs** — instance running, tags present |
+| Toggle | toggle intent + region + both IDs + `4` + `yes` | **Needs** — primary stopped, secondary running |
+| Delete | delete intent + region + instance_id + `4` + `yes` | **Needs** — instance terminating/terminated |
+| Atlas down | stop Atlas; run each mutation in automatic | **Needs** — predictable error, no fetch crash |
 
-### Per-action checklist (from `adding_new_action.md`)
+### Per-action checklist
 
-- [ ] `actionRegistry.js`
-- [ ] Handler + import
-- [ ] `requiredFields` + missing-field messages
-- [ ] Field extractors (`functions.js`)
-- [ ] `atlasEC2Functions` API function
-- [ ] Automatic mode calls Atlas (not OpenAI / not stub)
-- [ ] Handler maps Atlas success/errors
-- [ ] Intent, missing fields, mode 4 + confirm tested
-- [ ] AWS verified
-- [ ] `operation_id` present on execution context and forwarded to Atlas
-- [ ] Atlas unreachable returns structured failure (all three)
+#### Create — API code
+
+- [x] `actionRegistry.js`
+- [x] `createEC2Handler.js`
+- [x] `requiredFields` + missing-field messages
+- [x] Field extractors (`functions.js`)
+- [x] `atlasEC2Functions.createEC2`
+- [x] Automatic mode calls Atlas
+- [x] Handler maps Atlas success/errors
+- [ ] Manual AWS verified
+- [ ] `operation_id` (Stage 0.5 — deferred)
+- [ ] Atlas unreachable structured failure
+
+#### Delete — API code
+
+- [x] `actionRegistry.js` (`delete_ec2`)
+- [x] `deleteEC2Handler.js`
+- [x] `requiredFields` + missing-field messages
+- [x] Field extractors (`instance_id`)
+- [x] `atlasEC2Functions.deleteEC2`
+- [x] Automatic mode calls Atlas
+- [x] Handler maps Atlas success/errors
+- [ ] Manual AWS verified
+- [ ] Delete safety (`cloudpilot-managed`) — Stage 5
+- [ ] `operation_id` (deferred)
+- [ ] Atlas unreachable structured failure
+
+#### Toggle — API code
+
+- [x] `actionRegistry.js` (`toggle_ec2`)
+- [x] `toggleEC2Handler.js`
+- [x] `requiredFields` + missing-field messages
+- [x] Field extractors (`primary_instance_id`, `secondary_instance_id`)
+- [x] `atlasEC2Functions.toggleEC2`
+- [x] Automatic mode calls Atlas (not OpenAI)
+- [x] Handler maps Atlas success/errors
+- [ ] Manual AWS verified
+- [ ] Optional E2E script (`e2e-toggle-ec2.js`)
+- [ ] `operation_id` (deferred)
+- [ ] Atlas unreachable structured failure
 
 ### Known gaps (not in this track)
 
@@ -390,7 +489,7 @@ inventoryAWSHandler.js  → navigatorResponse
 scanEC2Handler.js       → navigatorResponse
 ```
 
-**Not wired:** `create_ec2`, `toggle_ec2` (no mutate adapters yet; optional in EC2 Stage 5).
+**Not wired:** `create_ec2`, `delete_ec2`, `toggle_ec2` (no mutate adapters yet; optional in EC2 Stage 5).
 
 ### Current work
 
@@ -504,6 +603,7 @@ new Atlas data shape → small API adapter → same Navigator contract → same 
 
 | Topic | Path |
 |-------|------|
+| **EC2 chat samples (Create / Delete / Toggle)** | `api/README.md` |
 | Add a new action | `api/application/atlas/doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `api/application/atlas/doc/instructions/converting_atlas_data.md` |
 | Create tags / delete safety (future) | `api/doc/instructions/cloudpilot_tagging_metadata.md` |
@@ -521,3 +621,4 @@ new Atlas data shape → small API adapter → same Navigator contract → same 
 | 2026-05-24 | Added **Implementation rules (non-negotiable)** checklist for Cursor / implementers |
 | 2026-05-28 | Updated EC2 mutation status: create/delete API paths implemented and reported working; toggle remains incomplete; manual AWS verification pending |
 | 2026-05-28 | Toggle Stage 2 API wiring: `toggleEC2`, registry fields, extractors, handler mirrors create/delete; chat samples in `api/README.md` |
+| 2026-05-28 | Added **Done vs needs** tables for Create / Delete / Toggle; marked API wiring complete; manual AWS + Stage 4 as next steps |
