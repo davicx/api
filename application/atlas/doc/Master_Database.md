@@ -4,7 +4,7 @@
 
 **Status:** Planning only — no implementation in this doc.
 
-**Last reviewed:** 2026-05-28 (workflow records model; resolution rules; `is_open` column)
+**Last reviewed:** 2026-05-30 (workflow fields reference — README + insertable SQL)
 
 **Related:** `doc/MASTER_TODO.md` (execution records vs chat workflow), `api/doc/database/shareshare_may_2026.sql`
 
@@ -156,30 +156,279 @@ Today's `ActionState` fields map to one workflow row:
 
 **Many rows per conversation** — each row is one open (or historical) action.
 
-### Schema
+---
+
+### Workflow fields reference (README)
+
+Use this when implementing `Actions.js`, migrations, or Kite workflow UI. Column names match the insertable SQL below.
+
+**Naming note:** Application docs may say **`workflow_id`**. In MySQL the primary key column is **`id`** — treat `workflow_id` ≡ `id` unless you add a separate UUID column later.
+
+#### Workflow fields
+
+| Field | Column | Description |
+|-------|--------|-------------|
+| **workflow_id** | `id` | Unique workflow/action record (auto-increment PK) |
+| **conversation_id** | `conversation_id` | Which chat started the workflow |
+| **action_type** | `action_type` | System action CloudPilot performs |
+
+**`action_type` examples:** `create_ec2`, `delete_ec2`, `toggle_ec2`, `scan_ec2`, `resize_ec2`
+
+| Field | Column | Description |
+|-------|--------|-------------|
+| **action_name** | `action_name` | Human-friendly label for this workflow instance |
+| **action_notes** | `action_notes` | Optional memo or context |
+
+**`action_name` examples:** `Development Server`, `Nightly Cost Savings`, `Production Resize`
+
+**`action_notes` examples:**
+
+- Waiting for approval
+- Verify region before execution
+- Customer requested completion by Friday
+
+#### Status fields
+
+| Field | Column | Description |
+|-------|--------|-------------|
+| **status** | `status` | Current workflow state |
+| **priority** | `priority` | Importance of the workflow |
+| **is_open** | `is_open` | Whether the workflow is still active (`1` = active; `0` = completed, failed, or cancelled) |
+
+**`status` values:**
+
+| Value | Meaning |
+|-------|---------|
+| `pending` | Workflow started but missing information |
+| `ready` | Everything required has been collected (fields + execution mode if required) |
+| `awaiting_confirmation` | Ready but waiting for user approval (`yes` / `confirm`) |
+| `running` | Currently executing (Atlas / handler in progress) |
+| `completed` | Finished successfully |
+| `failed` | Execution failed |
+| `cancelled` | User cancelled workflow |
+
+**Today in memory:** `ready` often covers both “fields complete” and “waiting for confirm.” When persisting, prefer splitting **`ready`** vs **`awaiting_confirmation`** for clearer UI and queries.
+
+**`priority` values:** `low`, `normal`, `high`, `critical` (default **`normal`**)
+
+#### Execution fields
+
+| Field | Column | Description |
+|-------|--------|-------------|
+| **execution_mode** | `execution_mode` | How CloudPilot performs the action (destructive tier only) |
+
+**`execution_mode` values:**
+
+| Value | Meaning | Example |
+|-------|---------|---------|
+| `instruction` | Explain step-by-step what the user should do manually | Stop the EC2 instance from the AWS Console, then restart it |
+| `cli` | Generate AWS CLI commands for the user to run | `aws ec2 stop-instances --instance-ids i-123` |
+| `pr` | Generate infrastructure code or a pull request | Terraform change to resize an EC2 instance |
+| `automatic` | CloudPilot performs the action directly through AWS APIs | CloudPilot stops one instance and starts another automatically |
+
+**Note:** In-memory code today uses `instructions` (plural) for mode 1. Align DB/API to one spelling when migrating (`instruction` vs `instructions`).
+
+#### Workflow state fields (JSON)
+
+| Field | Column | Description |
+|-------|--------|-------------|
+| **collected** | `collected` | Information CloudPilot already knows (JSON object) |
+| **missing** | `missing` | Information still needed before execution (JSON array of field names) |
+| **asked** | `asked` | Fields CloudPilot has already requested from the user (JSON object or array) |
+
+**`collected` examples:**
+
+```text
+region = us-west-2
+instance_id = i-123
+instance_type = t3.micro
+```
+
+**`missing` examples:**
+
+```text
+region
+instance_name
+instance_type
+```
+
+**`asked` examples:**
+
+```text
+region
+instance_name
+```
+
+#### Audit fields
+
+| Field | Column | Description |
+|-------|--------|-------------|
+| **created_at** | `created_at` | When the workflow was created |
+| **updated_at** | `updated_at` | Last time the workflow changed |
+| **completed_at** | `completed_at` | When the workflow finished (`completed`, `failed`, or `cancelled`); `NULL` while open |
+
+---
+
+### Schema (insertable)
 
 ```sql
 CREATE TABLE cloudpilot_workflows (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT 'workflow_id',
 
     conversation_id BIGINT NOT NULL,
+
     action_type VARCHAR(100) NOT NULL,
+    action_name VARCHAR(255) NULL,
+    action_notes TEXT NULL,
 
     status VARCHAR(50) NOT NULL,
-    execution_mode VARCHAR(50),
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+    execution_mode VARCHAR(50) NULL,
     is_open TINYINT(1) NOT NULL DEFAULT 1,
 
-    collected JSON,
-    missing JSON,
-    asked JSON,
+    collected JSON NULL,
+    missing JSON NULL,
+    asked JSON NULL,
 
-    created_at DATETIME,
-    updated_at DATETIME,
-    completed_at DATETIME NULL
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    completed_at DATETIME NULL,
+
+    INDEX idx_workflows_conversation (conversation_id),
+    INDEX idx_workflows_open (conversation_id, is_open),
+    INDEX idx_workflows_status (status)
 );
+```
 
-CREATE INDEX idx_workflows_conversation ON cloudpilot_workflows (conversation_id);
-CREATE INDEX idx_workflows_open ON cloudpilot_workflows (conversation_id, is_open);
+### Example INSERT (copy/paste)
+
+Toggle workflow mid-collection — region known, instance IDs still missing:
+
+```sql
+INSERT INTO cloudpilot_workflows (
+    conversation_id,
+    action_type,
+    action_name,
+    action_notes,
+    status,
+    priority,
+    execution_mode,
+    is_open,
+    collected,
+    missing,
+    asked,
+    created_at,
+    updated_at,
+    completed_at
+) VALUES (
+    1,
+    'toggle_ec2',
+    'Nightly Cost Savings',
+    'Verify region before execution',
+    'pending',
+    'normal',
+    NULL,
+    1,
+    JSON_OBJECT(
+        'region', 'us-west-2'
+    ),
+    JSON_ARRAY(
+        'primary_instance_id',
+        'secondary_instance_id'
+    ),
+    JSON_OBJECT(
+        'region', TRUE
+    ),
+    NOW(),
+    NOW(),
+    NULL
+);
+```
+
+Create workflow — ready for execution mode, awaiting user choice:
+
+```sql
+INSERT INTO cloudpilot_workflows (
+    conversation_id,
+    action_type,
+    action_name,
+    action_notes,
+    status,
+    priority,
+    execution_mode,
+    is_open,
+    collected,
+    missing,
+    asked,
+    created_at,
+    updated_at,
+    completed_at
+) VALUES (
+    1,
+    'create_ec2',
+    'Development Server',
+    'Customer requested completion by Friday',
+    'ready',
+    'high',
+    NULL,
+    1,
+    JSON_OBJECT(
+        'name', 'cloudpilot-change-instance-primary',
+        'region', 'us-west-2',
+        'instance_type', 't3.micro'
+    ),
+    JSON_ARRAY(),
+    JSON_OBJECT(
+        'name', TRUE,
+        'region', TRUE,
+        'instance_type', TRUE
+    ),
+    NOW(),
+    NOW(),
+    NULL
+);
+```
+
+Completed workflow — row kept for history (`is_open = 0`):
+
+```sql
+INSERT INTO cloudpilot_workflows (
+    conversation_id,
+    action_type,
+    action_name,
+    action_notes,
+    status,
+    priority,
+    execution_mode,
+    is_open,
+    collected,
+    missing,
+    asked,
+    created_at,
+    updated_at,
+    completed_at
+) VALUES (
+    1,
+    'delete_ec2',
+    'Cleanup test instance',
+    NULL,
+    'completed',
+    'normal',
+    'automatic',
+    0,
+    JSON_OBJECT(
+        'region', 'us-west-2',
+        'instance_id', 'i-006d78c86d01c1775'
+    ),
+    JSON_ARRAY(),
+    JSON_OBJECT(
+        'region', TRUE,
+        'instance_id', TRUE
+    ),
+    '2026-05-30 15:00:00',
+    '2026-05-30 15:05:00',
+    '2026-05-30 15:05:00'
+);
 ```
 
 **`is_open`** — simplifies queries. Open vs history without `status NOT IN (...)` every time.
@@ -224,10 +473,13 @@ ORDER BY completed_at DESC;
 
 ### Status values
 
+See [Workflow fields reference (README)](#workflow-fields-reference-readme) for full definitions. Summary:
+
 | Status | Meaning |
 |--------|---------|
 | `pending` | Action started; missing required fields |
-| `ready` | All fields + mode present; awaiting confirmation |
+| `ready` | All required fields collected (mode may still be needed) |
+| `awaiting_confirmation` | Ready; waiting for user `yes` / `confirm` |
 | `running` | AtlasExecution in progress |
 | `completed` | Finished successfully — **row kept** |
 | `failed` | Handler or Atlas error — **row kept** |
@@ -645,3 +897,4 @@ Light AWS smoke test (create, delete, toggle)
 | 2026-05-26 | Initial plan |
 | 2026-05-28 | Simplified to two tables; JSON collected fields |
 | 2026-05-28 | **Multi-action model:** workflow records (not conversation state); `is_open`; resolution Rules 1–6; `processMessage` starts with conversationId+message only |
+| 2026-05-30 | **Workflow fields reference:** README tables (`action_name`, `action_notes`, `priority`, `awaiting_confirmation`, execution modes); updated `CREATE TABLE`; three example `INSERT`s |
