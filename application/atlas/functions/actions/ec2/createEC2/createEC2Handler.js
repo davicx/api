@@ -1,4 +1,5 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../outcome/outcomeRegistry');
 
 function buildTagsFromDefaults(defaults) {
     const raw = defaults && defaults.tags;
@@ -113,13 +114,13 @@ async function createEC2Handler(context) {
             };
         }
 
-        const errMsg = atlasResponseRaw && atlasResponseRaw.message ? String(atlasResponseRaw.message) : "Atlas did not create the instance.";
-        const errCode = atlasResponseRaw && atlasResponseRaw.errors && atlasResponseRaw.errors[0] ? String(atlasResponseRaw.errors[0]) : "";
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+        const outcomeContext = buildActionOutcomeContext(collected, atlasResponseRaw);
 
         return {
             success: false,
-            cloudPilotMessage: "I could not create the EC2 instance.",
-            error: errCode || errMsg,
+            cloudPilotMessage: buildOutcomeMessage(errCode, outcomeContext, 'create_ec2'),
+            error: errCode || 'execution_failed',
             atlasResponse: null
         };
 
@@ -130,8 +131,8 @@ async function createEC2Handler(context) {
 
         return {
             success: false,
-            cloudPilotMessage: "I could not create the EC2 instance.",
-            error: error.message,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'create_ec2'),
+            error: 'atlas_unreachable',
             atlasResponse: null
         };
     }

@@ -66,9 +66,10 @@ class AtlasExecution {
 
             return {
                 success: false,
-                cloudPilotMessage: "Atlas execution failed.",
+                cloudPilotMessage:
+                    "Something unexpected went wrong while running that action. Please try again in a moment.",
                 atlasResponse: null,
-                error: error.message
+                error: "execution_exception"
             };
         }
     }

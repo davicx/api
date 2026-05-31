@@ -39,10 +39,35 @@ async function handleCloudPilotChat(payload) {
         return await AtlasExecution.startNewAtlasExecution(payload);
     }
 
+    // STEP 5A: Workflow still collecting fields (repeat intent)
+    if (payload.actionEvent === "workflow_in_progress") {
+
+        return cloudPilotRespondWorkflowInProgress(payload);
+    }
+
+    // STEP 5B: Execution already running
+    if (payload.actionEvent === "workflow_running") {
+
+        return cloudPilotRespondWorkflowRunning(payload);
+    }
+
+    // STEP 5C: Previous execution failed
+    if (payload.actionEvent === "workflow_failed") {
+
+        return cloudPilotRespondWorkflowFailed(payload);
+    }
+
     // STEP 6: Fallback
+    if (payload.actionState && payload.actionState.pendingAction) {
+
+        return cloudPilotRespondWorkflowInProgress(payload);
+    }
+
     return {
-        success: false,
-        message: "Unknown CloudPilot workflow event.",
+        success: true,
+        message:
+            "I couldn't match that to the current workflow step. " +
+            "Please continue with the open action or start a new one.",
         atlasResponse: null,
         error: "unknown_workflow_event"
     };
@@ -130,6 +155,63 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
         message: message,
         atlasResponse: null,
         error: null
+    };
+}
+
+async function cloudPilotRespondWorkflowInProgress(payload) {
+    const actionDefinition = payload.actionDefinition;
+    const actionLabel = actionDefinition.actionLabel || actionDefinition.type || "workflow";
+    const missingFields = payload.actionState.missingFields || [];
+    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+
+    let message = "You already have a " + actionLabel + " workflow in progress.";
+
+    if (missingFieldsMessage) {
+        message += " " + missingFieldsMessage;
+    } else {
+        message += " Please continue where we left off.";
+    }
+
+    return {
+        success: true,
+        message: message,
+        atlasResponse: null,
+        error: null
+    };
+}
+
+async function cloudPilotRespondWorkflowRunning(payload) {
+    const actionDefinition = payload.actionDefinition;
+    const actionLabel = actionDefinition.actionLabel || actionDefinition.type || "action";
+
+    return {
+        success: true,
+        message:
+            "Your " +
+            actionLabel +
+            " action is already running. I will let you know when it finishes.",
+        atlasResponse: null,
+        error: null
+    };
+}
+
+async function cloudPilotRespondWorkflowFailed(payload) {
+    const actionDefinition = payload.actionDefinition;
+    const actionLabel = actionDefinition.actionLabel || actionDefinition.type || "action";
+    const failedMessage =
+        actionDefinition.messages && actionDefinition.messages.failed
+            ? actionDefinition.messages.failed
+            : "That action did not complete.";
+
+    return {
+        success: true,
+        message:
+            failedMessage +
+            " Your " +
+            actionLabel +
+            " workflow did not finish. Say the action again if you want to start over.",
+        atlasResponse: null,
+        error: "workflow_failed"
     };
 }
 

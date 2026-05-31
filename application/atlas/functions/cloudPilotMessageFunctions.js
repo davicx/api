@@ -143,14 +143,29 @@ async function processMessage(rawUserMessage, conversationID) {
     //STEP 5: Extract structured workflow fields from the user message.
     if (activeAction && currentActionState.missing.length > 0) {
         const extractedFields = Functions.extractStructuredFields(currentUserMessage);
+        const messageUsesStructuredFormat = Object.keys(extractedFields).length > 0;
         const missingFields = currentActionState.missing.slice();
+        let heuristicInstanceIdUsed = false;
 
         for (const missingFieldName of missingFields) {
 
             let fieldValue = extractedFields[missingFieldName];
 
-            if (!fieldValue && typeof Functions[missingFieldName] === "function") {
+            if (!fieldValue && !messageUsesStructuredFormat && typeof Functions[missingFieldName] === "function") {
+                const isInstanceIdField =
+                    missingFieldName === "instance_id" ||
+                    missingFieldName === "primary_instance_id" ||
+                    missingFieldName === "secondary_instance_id";
+
+                if (isInstanceIdField && heuristicInstanceIdUsed) {
+                    continue;
+                }
+
                 fieldValue = Functions[missingFieldName](currentUserMessage);
+
+                if (fieldValue && isInstanceIdField) {
+                    heuristicInstanceIdUsed = true;
+                }
             }
 
             if (!fieldValue) {
@@ -291,7 +306,44 @@ async function processMessage(rawUserMessage, conversationID) {
             actionEvent = "execution_requested";
 
             cloudPilotShouldRespond = true;
+
+            if (activeAction) {
+                processMessageOutcome.cloudPilot.userRequest = activeAction;
+                processMessageOutcome.cloudPilot.actionStatus.type = activeAction;
+            }
         }
+    }
+
+    //Step 7C: Failed workflow — user said yes but execution already failed
+    if (
+        !actionEvent &&
+        activeAction &&
+        currentActionState.status === "failed" &&
+        Functions.userConfirmedAction(currentUserMessage)
+    ) {
+        console.log("Step 7C: Confirmation after failed workflow");
+
+        actionEvent = "workflow_failed";
+        cloudPilotShouldRespond = true;
+    }
+
+    //Step 7D: Resolve null actionEvent when workflow is still open
+    actionEvent = resolveNullActionEvent({
+        actionEvent: actionEvent,
+        cloudPilotShouldRespond: cloudPilotShouldRespond,
+        activeAction: activeAction,
+        currentActionState: currentActionState,
+        userRequest: userRequest,
+        actionReady: actionReady,
+        actionSupportsExecutionModes: actionSupportsExecutionModes
+    });
+
+    if (actionEvent && !cloudPilotShouldRespond && activeAction && userRequest === activeAction) {
+        cloudPilotShouldRespond = true;
+    }
+
+    if (actionEvent) {
+        console.log("Step 7D: Resolved workflow event:", actionEvent);
     }
 
     const chatPayload = {
@@ -324,10 +376,17 @@ async function processMessage(rawUserMessage, conversationID) {
     if (cloudPilotShouldRespond) {
         const result = await handleCloudPilotChat(chatPayload);
 
-        processMessageOutcome.success = result.success;
-        processMessageOutcome.cloudPilotMessage = result.cloudPilotMessage || result.message || "";
+        const chatMessage = result.cloudPilotMessage || result.message || "";
+
+        processMessageOutcome.cloudPilotMessage = chatMessage;
         processMessageOutcome.atlasResponse = result.atlasResponse || null;
         processMessageOutcome.error = result.error || null;
+
+        if (chatMessage) {
+            processMessageOutcome.success = true;
+        } else {
+            processMessageOutcome.success = result.success;
+        }
 
         currentActionState = actionState.getActionStatus(conversationID);
         activeAction = currentActionState.pendingAction;
@@ -456,6 +515,44 @@ function shouldStartNewAction(activeAction, actionDefinition, actionState) {
     const previousActionFailed = actionState.status === "failed";
 
     return noActionActive || actionChanged || previousActionCompleted || previousActionFailed;
+}
+
+//Function D5: Resolve null actionEvent when workflow is still open
+function resolveNullActionEvent(options) {
+    if (options.actionEvent || !options.activeAction) {
+        return options.actionEvent;
+    }
+
+    const shouldRespondForOpenWorkflow =
+        options.cloudPilotShouldRespond || options.userRequest === options.activeAction;
+
+    if (!shouldRespondForOpenWorkflow) {
+        return null;
+    }
+
+    const status = options.currentActionState.status;
+
+    if (status === "running") {
+        return "workflow_running";
+    }
+
+    if (status === "failed") {
+        return "workflow_failed";
+    }
+
+    if (options.actionReady) {
+        if (options.actionSupportsExecutionModes && !options.currentActionState.executionMode) {
+            return "awaiting_execution_mode";
+        }
+
+        return "awaiting_confirmation";
+    }
+
+    if (options.currentActionState.missing.length > 0) {
+        return "workflow_in_progress";
+    }
+
+    return null;
 }
 
 //Function D3: Get Current User Message

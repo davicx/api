@@ -1,4 +1,5 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../outcome/outcomeRegistry');
 
 async function toggleEC2Handler(context) {
 
@@ -92,13 +93,13 @@ async function toggleEC2Handler(context) {
             };
         }
 
-        const errMsg = atlasResponseRaw && atlasResponseRaw.message ? String(atlasResponseRaw.message) : "Atlas did not toggle the EC2 instances.";
-        const errCode = atlasResponseRaw && atlasResponseRaw.errors && atlasResponseRaw.errors[0] ? String(atlasResponseRaw.errors[0]) : "";
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+        const outcomeContext = buildActionOutcomeContext(collected, atlasResponseRaw);
 
         return {
             success: false,
-            cloudPilotMessage: "I could not toggle the EC2 instances.",
-            error: errCode || errMsg,
+            cloudPilotMessage: buildOutcomeMessage(errCode, outcomeContext, 'toggle_ec2'),
+            error: errCode || 'execution_failed',
             atlasResponse: null
         };
 
@@ -109,8 +110,8 @@ async function toggleEC2Handler(context) {
 
         return {
             success: false,
-            cloudPilotMessage: "I could not toggle the EC2 instances.",
-            error: error.message,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'toggle_ec2'),
+            error: 'atlas_unreachable',
             atlasResponse: null
         };
     }

@@ -84,11 +84,15 @@ async function postMessage(req, res) {
     //STEP 4: Save CloudPilot message to database
     console.log("STEP 5: Save CloudPilot message to database");
 
-    if (cloudPilotResult && cloudPilotResult.success == true) {
+    var cloudPilotMessageOutcome = null;
+    const cloudPilotReplyText =
+        cloudPilotResult && cloudPilotResult.cloudPilotMessage
+            ? String(cloudPilotResult.cloudPilotMessage).trim()
+            : '';
 
-        //STEP 5: Build CloudPilot message
-        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.cloudPilotMessage);
-        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
+    if (cloudPilotReplyText) {
+        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotReplyText);
+        cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
         if (cloudPilotMessageOutcome.outcome == 200) {
             console.log("STEP 5 SUCCESS: CloudPilot message saved");
@@ -97,11 +101,15 @@ async function postMessage(req, res) {
         }
     }
     
-    //Step 4A: Add current user message to JSON output
-    messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
+    //Step 4A: Add CloudPilot message to JSON output when saved
+    if (cloudPilotMessageOutcome && cloudPilotMessageOutcome.newMessage) {
+        messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
+    }
 
     //Step 4B: Add Cloud Pilot action status to response
-    messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
+    if (cloudPilotResult && cloudPilotResult.cloudPilot) {
+        messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
+    }
 
     //Step 4C: Add formatted Atlas data to response
     messageOutcome.data.atlasResponse = null;
@@ -109,14 +117,25 @@ async function postMessage(req, res) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
     }
 
-    //Step 4D: Set final API success metadata from CloudPilot processing outcome
-    if (cloudPilotResult && cloudPilotResult.success == true) {
+    //Step 4D: HTTP success when user message saved and CloudPilot chat turn completed
+    const userMessageSaved = currentUserMessageOutcome.outcome == 200;
+    const cloudPilotTurnCompleted = Boolean(cloudPilotResult && cloudPilotReplyText);
+
+    if (userMessageSaved && cloudPilotTurnCompleted) {
+        messageOutcome.success = true;
+        messageOutcome.statusCode = 200;
+        messageOutcome.errors = [];
+
+        if (cloudPilotResult && cloudPilotResult.error) {
+            messageOutcome.errors = [cloudPilotResult.error];
+        }
+    } else if (userMessageSaved && cloudPilotResult && cloudPilotResult.success == true) {
         messageOutcome.success = true;
         messageOutcome.statusCode = 200;
         messageOutcome.errors = [];
     } else {
         messageOutcome.errors = [];
-        
+
         if (cloudPilotResult && cloudPilotResult.error) {
             messageOutcome.errors = [cloudPilotResult.error];
         }

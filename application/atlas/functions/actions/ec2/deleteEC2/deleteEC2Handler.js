@@ -1,4 +1,5 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../outcome/outcomeRegistry');
 
 async function deleteEC2Handler(context) {
 
@@ -81,13 +82,13 @@ async function deleteEC2Handler(context) {
             };
         }
 
-        const errMsg = atlasResponseRaw && atlasResponseRaw.message ? String(atlasResponseRaw.message) : "Atlas did not delete the instance.";
-        const errCode = atlasResponseRaw && atlasResponseRaw.errors && atlasResponseRaw.errors[0] ? String(atlasResponseRaw.errors[0]) : "";
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+        const outcomeContext = buildActionOutcomeContext(collected, atlasResponseRaw);
 
         return {
             success: false,
-            cloudPilotMessage: "I could not delete the EC2 instance.",
-            error: errCode || errMsg,
+            cloudPilotMessage: buildOutcomeMessage(errCode, outcomeContext, 'delete_ec2'),
+            error: errCode || 'execution_failed',
             atlasResponse: null
         };
 
@@ -98,8 +99,8 @@ async function deleteEC2Handler(context) {
 
         return {
             success: false,
-            cloudPilotMessage: "I could not delete the EC2 instance.",
-            error: error.message,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'delete_ec2'),
+            error: 'atlas_unreachable',
             atlasResponse: null
         };
     }

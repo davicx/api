@@ -2,7 +2,7 @@
 
 **Purpose:** Plan safe handling when mutations fail expected ways (deleted instances, invalid IDs, Atlas down) — **without crashing the API** and **without scary “error” UX** for normal business outcomes.
 
-**Status:** Planning only — no implementation in this doc.
+**Status:** Complete — code implemented (2026-05-24). Manual E2E tests 7–8 still recommended.
 
 **Last reviewed:** 2026-05-30
 
@@ -206,12 +206,19 @@ atlas/app/api/routes/ec2_operation_routes.py
 - Guard: only access `cloudPilotMessageOutcome.newMessage` when defined
 - Distinguish: chat turn failed vs remediation did not run
 
-### API — orchestration (later, separate track)
+### API — orchestration
 
-Known gaps from testing (document only here):
+When a workflow is already open, CloudPilot must not fall through to `unknown_workflow_event`:
 
-- `actionEvent: null` → `unknown_workflow_event` (repeat intent while workflow pending)
-- `yes` while detected intent is `general_chat` but stale `toggle_ec2` ready — confirmation should bind to open workflow explicitly
+- Repeat same intent while fields missing → `workflow_in_progress` (re-prompt missing fields)
+- Repeat same intent while ready → `awaiting_confirmation` or `awaiting_execution_mode`
+- Confirm after failed execution → `workflow_failed` (ask user to restart)
+- Execution in flight → `workflow_running`
+- Fallback with open workflow → same as `workflow_in_progress`
+
+Known gaps still separate (intent tuning):
+
+- Name contains `toggle` → create hijacked as toggle (substring match)
 
 See `Master_Database.md` resolution rules when persisting workflows.
 
@@ -264,12 +271,13 @@ Aligns with `Master_Database.md` workflow lifecycle; no schema change required i
 
 ## Checklist (implementation)
 
-- [ ] **1.** `messages.js` — guard `cloudPilotMessageOutcome`; save/show friendly reply on failed remediation
-- [ ] **2.** Atlas toggle — preflight `describe_instances` + `same_instance`
-- [ ] **3.** Atlas toggle — `ClientError` → `service_error`; route returns 200 envelope
-- [ ] **4.** Atlas delete — `instance_not_found` / `terminated` mapping (parity)
-- [ ] **5.** `atlasEC2Functions` — mutations return parsed envelope; no throw on `success: false`
-- [ ] **6.** `toggleEC2Handler` / `deleteEC2Handler` — outcome code → friendly `cloudPilotMessage`
+- [x] **1.** `messages.js` — guard `cloudPilotMessageOutcome`; save/show friendly reply on failed remediation
+- [x] **2.** Atlas toggle — preflight `describe_instances` + `same_instance`
+- [x] **3.** Atlas toggle — `ClientError` → `service_error`; route returns 200 envelope
+- [x] **4.** Atlas delete — `instance_not_found` / `terminated` mapping (parity)
+- [x] **5.** `atlasEC2Functions` — mutations return parsed envelope; no throw on `success: false`
+- [x] **6.** `toggleEC2Handler` / `deleteEC2Handler` — outcome code → friendly `cloudPilotMessage`
+- [x] **6b.** Orchestration — repeat intent, failed-workflow confirmation, no crash on `unknown_workflow_event`
 - [ ] **7.** Manual test: toggle deleted IDs → friendly message, API up, primary not stopped if secondary missing
 - [ ] **8.** Manual test: Atlas stopped → `atlas_unreachable` friendly message, API up
 
@@ -279,4 +287,6 @@ Aligns with `Master_Database.md` workflow lifecycle; no schema change required i
 
 | Date | Change |
 |------|--------|
+| 2026-05-24 | Orchestration — resolveNullActionEvent, workflow_in_progress/failed/running handlers, failed+yes guard |
+| 2026-05-24 | Phase 1 implemented — messages.js guard, outcomeRegistry, atlasEC2Functions fetchAtlasMutation, handler outcome mapping, Atlas preflight |
 | 2026-05-30 | Initial plan — outcome vs crash; ship order; preflight mandatory for toggle; `same_instance`; friendly UX vs internal `failed` |
