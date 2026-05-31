@@ -4,7 +4,7 @@
 
 **Status:** Planning only — no implementation in this doc.
 
-**Last reviewed:** 2026-05-30 (workflow fields reference — README + insertable SQL)
+**Last reviewed:** 2026-05-30 (workflow fields reference; `organization_id`, `requested_by_user_name`)
 
 **Related:** `doc/MASTER_TODO.md` (execution records vs chat workflow), `api/doc/database/shareshare_may_2026.sql`
 
@@ -169,7 +169,9 @@ Use this when implementing `Actions.js`, migrations, or Kite workflow UI. Column
 | Field | Column | Description |
 |-------|--------|-------------|
 | **workflow_id** | `id` | Unique workflow/action record (auto-increment PK) |
+| **organization_id** | `organization_id` | Organization / tenant that owns the workflow |
 | **conversation_id** | `conversation_id` | Which chat started the workflow |
+| **requested_by_user_name** | `requested_by_user_name` | Username of the user who started the workflow |
 | **action_type** | `action_type` | System action CloudPilot performs |
 
 **`action_type` examples:** `create_ec2`, `delete_ec2`, `toggle_ec2`, `scan_ec2`, `resize_ec2`
@@ -191,7 +193,7 @@ Use this when implementing `Actions.js`, migrations, or Kite workflow UI. Column
 
 | Field | Column | Description |
 |-------|--------|-------------|
-| **status** | `status` | Current workflow state |
+| **status** | `status` | Current workflow state (default **`pending`** on insert) |
 | **priority** | `priority` | Importance of the workflow |
 | **is_open** | `is_open` | Whether the workflow is still active (`1` = active; `0` = completed, failed, or cancelled) |
 
@@ -275,15 +277,22 @@ instance_name
 CREATE TABLE cloudpilot_workflows (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT 'workflow_id',
 
+    organization_id BIGINT NOT NULL,
+
     conversation_id BIGINT NOT NULL,
+
+    requested_by_user_name VARCHAR(255) NOT NULL,
 
     action_type VARCHAR(100) NOT NULL,
     action_name VARCHAR(255) NULL,
     action_notes TEXT NULL,
 
-    status VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+
     priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+
     execution_mode VARCHAR(50) NULL,
+
     is_open TINYINT(1) NOT NULL DEFAULT 1,
 
     collected JSON NULL,
@@ -291,12 +300,15 @@ CREATE TABLE cloudpilot_workflows (
     asked JSON NULL,
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
     completed_at DATETIME NULL,
 
     INDEX idx_workflows_conversation (conversation_id),
     INDEX idx_workflows_open (conversation_id, is_open),
-    INDEX idx_workflows_status (status)
+    INDEX idx_workflows_status (status),
+    INDEX idx_workflows_organization (organization_id)
 );
 ```
 
@@ -306,7 +318,9 @@ Toggle workflow mid-collection — region known, instance IDs still missing:
 
 ```sql
 INSERT INTO cloudpilot_workflows (
+    organization_id,
     conversation_id,
+    requested_by_user_name,
     action_type,
     action_name,
     action_notes,
@@ -322,6 +336,8 @@ INSERT INTO cloudpilot_workflows (
     completed_at
 ) VALUES (
     1,
+    1,
+    'davey',
     'toggle_ec2',
     'Nightly Cost Savings',
     'Verify region before execution',
@@ -349,7 +365,9 @@ Create workflow — ready for execution mode, awaiting user choice:
 
 ```sql
 INSERT INTO cloudpilot_workflows (
+    organization_id,
     conversation_id,
+    requested_by_user_name,
     action_type,
     action_name,
     action_notes,
@@ -365,6 +383,8 @@ INSERT INTO cloudpilot_workflows (
     completed_at
 ) VALUES (
     1,
+    1,
+    'davey',
     'create_ec2',
     'Development Server',
     'Customer requested completion by Friday',
@@ -393,7 +413,9 @@ Completed workflow — row kept for history (`is_open = 0`):
 
 ```sql
 INSERT INTO cloudpilot_workflows (
+    organization_id,
     conversation_id,
+    requested_by_user_name,
     action_type,
     action_name,
     action_notes,
@@ -409,6 +431,8 @@ INSERT INTO cloudpilot_workflows (
     completed_at
 ) VALUES (
     1,
+    1,
+    'davey',
     'delete_ec2',
     'Cleanup test instance',
     NULL,
@@ -659,7 +683,7 @@ Follows same patterns as `Post.js`: static methods, MySQL via `conn`, structured
 
 | Method | Purpose |
 |--------|---------|
-| **`createAction(conversationId, actionType, requiredFields)`** | INSERT new workflow row; status `pending`; missing = required fields |
+| **`createAction(organizationId, conversationId, requestedByUserName, actionType, requiredFields)`** | INSERT new workflow row; status `pending` (default); missing = required fields |
 | **`updateAction(workflowId, updates)`** | Update `collected`, `missing`, `asked`, `status`, `execution_mode` |
 | **`finishAction(workflowId, status)`** | `is_open = 0`, set status + `completed_at` |
 | **`getAction(workflowId)`** | Single workflow by `id` |
@@ -695,7 +719,7 @@ Implementation builds this from `getAllOpenActions` + `actionRegistry` labels + 
 
 | Today (`ActionState`) | Future (`Actions` class) |
 |-----------------------|--------------------------|
-| `setPendingAction(conversationId, …)` | `createAction(conversationId, actionType, requiredFields)` |
+| `setPendingAction(conversationId, …)` | `createAction(organizationId, conversationId, requestedByUserName, actionType, requiredFields)` |
 | `setField(conversationId, field, value)` | `updateAction(workflowId, { collected, missing })` |
 | `setStatus` / `setExecutionMode` | `updateAction(workflowId, { status, execution_mode })` |
 | `clear(conversationId)` | `finishAction(workflowId, 'completed')` |
@@ -860,7 +884,7 @@ User then starts delete without losing create history:
 
 ```text
 5. User: "delete ec2 instance"
-   → Actions.createAction(123, 'delete_ec2', [region, instance_id])
+   → Actions.createAction(orgId, 123, 'davey', 'delete_ec2', [region, instance_id])
    → row id=11, status=pending  (row id=10 still completed in DB)
 ```
 
@@ -898,3 +922,4 @@ Light AWS smoke test (create, delete, toggle)
 | 2026-05-28 | Simplified to two tables; JSON collected fields |
 | 2026-05-28 | **Multi-action model:** workflow records (not conversation state); `is_open`; resolution Rules 1–6; `processMessage` starts with conversationId+message only |
 | 2026-05-30 | **Workflow fields reference:** README tables (`action_name`, `action_notes`, `priority`, `awaiting_confirmation`, execution modes); updated `CREATE TABLE`; three example `INSERT`s |
+| 2026-05-30 | **`cloudpilot_workflows` schema:** add `organization_id`, `requested_by_user_name`; `status` default `'pending'`; index `idx_workflows_organization`; INSERT examples updated |
