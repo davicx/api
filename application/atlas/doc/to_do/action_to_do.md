@@ -2,7 +2,7 @@
 
 **Purpose:** Next chunk of work after EC2 mutations API wiring — durable workflows, human-friendly naming, open-actions UX, and conversational run/confirm (not command-line disambiguation until truly needed).
 
-**Status:** Planning only — no implementation in this doc.
+**Status:** P0 + P1C implemented — restart hydration live; P1D (DB-only) next
 
 **Last reviewed:** 2026-06-01 (review: defer `action_name`, England rule, DB-first order, open-actions table + Run Now row)
 
@@ -359,6 +359,229 @@ Only after Phase 1 stable.
 
 ---
 
+## Implementation phases (small, testable slices)
+
+You already have a **hybrid** today: `Actions.createAction` on new intent + `syncOpenWorkflowRowFromMemory` after memory updates. Reads still come from `ActionState` Map. These phases finish the flip **without a big-bang rewrite**.
+
+Each phase has: **change → how to test → rollback if broken**.
+
+### Phase 0 — Schema ready (no app behavior change)
+
+**Change:**
+
+- Confirm `cloudpilot_workflows` exists (run `doc/sql/cloudpilot_workflows_phase1.sql` if needed)
+- Add `display_name` column if missing
+
+**Test:**
+
+```sql
+SHOW CREATE TABLE cloudpilot_workflows;
+SELECT id, conversation_id, action_type, display_name, status, is_open FROM cloudpilot_workflows LIMIT 5;
+```
+
+**Done when:** Table exists; `display_name` column present.
+
+---
+
+### Phase 1A — DB writes on create only (mostly done — verify)
+
+**Change:** New action intent → `Actions.createAction` (already wired). Confirm row appears in MySQL.
+
+**Test:**
+
+1. Chat: `Create an ec2 instance`
+2. Query DB: one row, `is_open = 1`, `action_type = create_ec2`
+
+**Done when:** Row created on intent; no duplicate open rows for same conversation.
+
+---
+
+### Phase 1B — DB writes on every update (verify sync)
+
+**Change:** After field/status/mode updates, `syncOpenWorkflowRowFromMemory` pushes to DB (already called in several places). Verify all update paths call sync.
+
+**Test:**
+
+1. Start create → send `region: "us-west-2"`
+2. Query DB: `collected` JSON has region; `missing` array shrinks
+
+**Done when:** DB row matches memory after each message turn.
+
+---
+
+### Phase 1C — Read from DB on load (the big flip — part 1)
+
+**Change:** Add helper `loadWorkflowForConversation(conversationId)` that:
+
+1. Calls `Actions.getOpenActionForConversation`
+2. Maps DB row → same shape as `getActionStatus()` today
+3. If row exists and memory is empty (e.g. after restart), **hydrate** orchestration from DB
+
+**Test (the killer test):**
+
+1. Start create → send region + name fields
+2. **Restart Node**
+3. Send next missing field or `4`
+4. CloudPilot continues without “start over”
+
+**Done when:** Restart mid-flow works using DB row alone.
+
+**Rollback:** Feature flag `CLOUDPILOT_STATE_BACKEND=memory` skips DB read.
+
+---
+
+### Phase 1D — DB as source of truth (remove dual write)
+
+**Change:**
+
+- Replace `actionState.setField` / `setStatus` / `setExecutionMode` / `markAsked` with `Actions.updateAction` (or thin wrapper)
+- Remove `syncOpenWorkflowRowFromMemory` — no memory-then-sync
+- `getActionStatus` reads DB only (or delete and use `Actions` everywhere)
+
+**Test:**
+
+1. Full create flow: intent → fields → `4` → `yes` → instance created
+2. Full delete flow same way
+3. Restart mid-flow still works (Phase 1C test)
+
+**Done when:** No `ActionState` Map updates on hot path; delete or gate `ActionState.js`.
+
+---
+
+### Phase 2A — `display_name` on create
+
+**Change:**
+
+- On `createAction`, set `display_name` from `actionRegistry[actionType].actionLabel` (optionally + context later)
+- Migration already applied in Phase 0
+
+**Test:**
+
+1. Start toggle → query DB: `display_name` = e.g. `Toggle EC2`
+2. No change to chat behavior yet
+
+**Done when:** Every new row has non-null `display_name`.
+
+---
+
+### Phase 2B — User-friendly `status` values
+
+**Change:** Map internal transitions to clearer statuses:
+
+- missing fields → `waiting_on_fields`
+- all fields, no mode → `waiting_on_execution_mode`
+- ready for confirm → `waiting_on_confirmation`
+- executing → `running`
+- finish → `completed` / `failed`, `is_open = 0`
+
+**Test:**
+
+1. Walk create through each step; query DB `status` after each message
+2. Status matches what user would understand
+
+**Done when:** Dashboard/chat can show status without translating `ready` → English.
+
+---
+
+### Phase 2C — `focused_workflow_id` (in-process)
+
+**Change:** In `processMessage`, track `focusedWorkflowId` = open row id being updated this turn. Bare `4` / `yes` target focused row.
+
+**Test:**
+
+1. Single open workflow — unchanged behavior
+2. (Optional) Log focused id each turn for debugging
+
+**Done when:** Execution mode + confirm always attach to focused workflow id, not guessed from memory keys.
+
+---
+
+### Phase 3A — England rule copy (chat only)
+
+**Change:** CloudPilotChat ready / mode / confirm messages include `display_name`:
+
+```text
+Everything is ready for "Toggle EC2 Lab Environment".
+Execution mode: automatic. Would you like me to execute this action?
+```
+
+Bare `4` and bare `yes` unchanged.
+
+**Test:**
+
+1. Toggle flow through ready → confirm messages mention display name
+2. Bare `4` and `yes` still work
+
+**Done when:** User sees friendly name in every pre-execute prompt.
+
+---
+
+### Phase 3B — “Show open actions” (chat list)
+
+**Change:**
+
+- Intent match: `show open actions`, `what am I waiting on`, etc.
+- Handler calls `Actions.getAllOpenActions` + `getMissingActionInfo`
+- CloudPilot replies with numbered list (no dashboard yet)
+
+**Test:**
+
+1. Mid-create → `what am I waiting on` → list shows one action, status, missing fields
+2. No open row → friendly empty message
+
+**Done when:** Chat-only open-actions works.
+
+---
+
+### Phase 3C — Open actions Navigator table (Kite dashboard)
+
+**Change:**
+
+- Add small adapter: open rows → `navigatorResponse.data.tables[]` with `id: open_actions`
+- Columns: display_name, action_type, status, missing, run
+- Extra **Run Now** row: `display_name: "Run Now"`, `run: "button"` (placeholder)
+
+**Test:**
+
+1. Same intent as 3B → response includes `tables[0].id === "open_actions"`
+2. Kite renders table + button placeholder row
+3. Click Run does nothing yet (Phase 2 product)
+
+**Done when:** Dashboard shows open actions table from API.
+
+---
+
+### Phase 4 — Later (not MVP)
+
+- Multi-open workflows per conversation
+- `run 1` / fuzzy display_name disambiguation
+- Run button wired to confirm + execute
+- Optional `action_name` slug
+
+---
+
+### Suggested sprint order
+
+```text
+Week-style slices (each shippable):
+
+  P0  Schema
+  P1A Verify create → DB
+  P1B Verify sync on update
+  P1C Read after restart  ← first real win
+  P1D DB only, drop memory
+  P2A display_name
+  P2B status labels
+  P2C focused_workflow_id
+  P3A England copy
+  P3B Chat open-actions list
+  P3C Dashboard table + Run Now row
+```
+
+**Stop and test after every phase.** Do not start 3C until 1D passes restart test.
+
+---
+
 ## Testing plan (manual)
 
 | Test | Expect |
@@ -402,3 +625,5 @@ Only after Phase 1 stable.
 |------|--------|
 | 2026-06-01 | Initial plan |
 | 2026-06-01 | Review: defer `action_name`; England rule; DB-first order; `focused_workflow_id`; user-friendly status; open-actions table + Run Now button row; Phase 1/2 split |
+| 2026-06-01 | Added **Implementation phases** P0–P3C: small testable slices; restart test at 1C |
+| 2026-06-01 | **P0 + P1C shipped:** `display_name` schema, `workflowStateFunctions.js`, hydrate on `processMessage` start |

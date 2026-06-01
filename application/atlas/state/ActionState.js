@@ -32,6 +32,7 @@ class ActionState {
         pendingAction: null,
         status: null,
         executionMode: null,
+        workflowId: null,
         collected: {},
         missing: [],
         asked: {}
@@ -58,9 +59,23 @@ class ActionState {
     state.pendingAction = action;
     state.status = "pending";
     state.executionMode = null;
+    state.workflowId = null;
     state.missing = [...missingFields];
     state.collected = {};
     state.asked = {};
+  }
+
+  // STEP 2B: Restore workflow from MySQL row (P1C — after server restart)
+  restoreFromDatabase(conversationId, dbAction) {
+    const state = this.getState(conversationId);
+
+    state.pendingAction = dbAction.actionType;
+    state.status = dbAction.status;
+    state.executionMode = dbAction.executionMode || null;
+    state.workflowId = dbAction.workflowId || null;
+    state.collected = { ...(dbAction.collected || {}) };
+    state.missing = [...(dbAction.missing || [])];
+    state.asked = { ...(dbAction.asked || {}) };
   }
 
   // STEP 3: Get current action status (FIXED: consistent naming)
@@ -71,6 +86,7 @@ class ActionState {
       pendingAction: state.pendingAction,
       status: state.status,
       executionMode: state.executionMode,
+      workflowId: state.workflowId || null,
       missing: state.missing,
       collected: state.collected,
       asked: state.asked
@@ -89,6 +105,13 @@ class ActionState {
     const state = this.getState(conversationId);
 
     state.executionMode = executionMode;
+  }
+
+  // STEP 3.4: Link in-memory state to persisted workflow row
+  setWorkflowId(conversationId, workflowId) {
+    const state = this.getState(conversationId);
+
+    state.workflowId = workflowId;
   }
 
   // STEP 3.5: Mark missing field as already asked

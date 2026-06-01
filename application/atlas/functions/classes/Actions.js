@@ -562,6 +562,7 @@ const ALLOWED_UPDATE_COLUMNS = {
     asked: 'asked',
     priority: 'priority',
     action_name: 'action_name',
+    display_name: 'display_name',
     action_notes: 'action_notes',
     outcome_code: 'outcome_code'
 };
@@ -602,6 +603,7 @@ function mapRowToAction(row) {
         requestedByUserName: row.requested_by_user_name,
         actionType: row.action_type,
         actionName: row.action_name,
+        displayName: row.display_name,
         actionNotes: row.action_notes,
         status: row.status,
         outcomeCode: row.outcome_code,

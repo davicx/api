@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS cloudpilot_workflows (
 
     action_type VARCHAR(100) NOT NULL,
     action_name VARCHAR(255) NULL,
+    display_name VARCHAR(255) NULL,
     action_notes TEXT NULL,
 
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
@@ -91,6 +92,11 @@ CREATE TABLE IF NOT EXISTS cloudpilot_workflows (
 -- ALTER TABLE cloudpilot_workflows
 --     DROP INDEX idx_workflows_organization,
 --     ADD INDEX idx_workflows_organization (organization);
+
+-- B3) display_name (P0 — human label for prompts / dashboard; nullable in Phase 1):
+-- ALTER TABLE cloudpilot_workflows
+--     ADD COLUMN display_name VARCHAR(255) NULL
+--         AFTER action_name;
 
 
 -- -----------------------------------------------------------------------------

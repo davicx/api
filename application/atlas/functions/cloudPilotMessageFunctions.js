@@ -5,6 +5,7 @@ const Functions = require('./functions');
 const AtlasExecution = require('./classes/AtlasExecution');
 const Actions = require('./classes/Actions');
 const { handleCloudPilotChat } = require('./chat/CloudPilotChat');
+const { hydrateWorkflowFromDatabase } = require('./workflowStateFunctions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -34,6 +35,8 @@ Execution Layer: execution (done by atlas)
 //Function A1: Process Message (pipeline)
 async function processMessage(rawUserMessage, conversationID, context) {
     const processMessageContext = normalizeProcessMessageContext(context);
+
+    await hydrateWorkflowFromDatabase(conversationID);
 
     var currentActionState = actionState.getActionStatus(conversationID);
     var activeAction = currentActionState.pendingAction;
@@ -138,6 +141,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
                 console.log(createActionOutcome.errors);
             } else {
                 console.log("STEP 4: Workflow persisted to database, workflowId:", createActionOutcome.workflowId);
+                actionState.setWorkflowId(conversationID, createActionOutcome.workflowId);
             }
 
             newActionStarted = true;
