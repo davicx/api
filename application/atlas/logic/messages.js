@@ -71,7 +71,10 @@ async function postMessage(req, res) {
     //console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
     try {
-        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);
+        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID, {
+            masterSite: masterSite,
+            requestedByUserName: messageFrom
+        });
         //console.log("CloudPilot Result:");
         //console.log("___________________");
         //console.log(cloudPilotResult);

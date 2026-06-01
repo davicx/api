@@ -1,11 +1,14 @@
 const actionState = require('../../state/ActionState');
 const actionRegistry = require('../actions/actionRegistry');
+const Actions = require('./Actions');
 
 class AtlasExecution {
     static async startNewAtlasExecution(payload) {
         console.log("ATLAS EXECUTION STARTED");
 
         actionState.setStatus(payload.conversationID, "running");
+
+        await syncOpenWorkflowStatus(payload.conversationID, "running");
 
         const activeAction =
             payload.actionState.pendingAction ||
@@ -15,6 +18,8 @@ class AtlasExecution {
 
         if (!actionDefinition) {
             actionState.setStatus(payload.conversationID, "failed");
+
+            await finishOpenWorkflowInDatabase(payload.conversationID, "failed", "action_not_found");
 
             return {
                 success: false,
@@ -26,6 +31,8 @@ class AtlasExecution {
 
         if (typeof actionDefinition.executionFunction !== "function") {
             actionState.setStatus(payload.conversationID, "failed");
+
+            await finishOpenWorkflowInDatabase(payload.conversationID, "failed", "execution_function_missing");
 
             return {
                 success: false,
@@ -55,14 +62,25 @@ class AtlasExecution {
             if (executionResult.success) {
                 actionState.setStatus(payload.conversationID, "completed");
                 actionState.clear(payload.conversationID);
+
+                await finishOpenWorkflowInDatabase(payload.conversationID, "completed", "success");
             } else {
                 actionState.setStatus(payload.conversationID, "failed");
+
+                const failOutcomeCode =
+                    executionResult.error != null && String(executionResult.error).trim() !== ""
+                        ? String(executionResult.error)
+                        : "execution_failed";
+
+                await finishOpenWorkflowInDatabase(payload.conversationID, "failed", failOutcomeCode);
             }
 
             return executionResult;
 
         } catch (error) {
             actionState.setStatus(payload.conversationID, "failed");
+
+            await finishOpenWorkflowInDatabase(payload.conversationID, "failed", "execution_exception");
 
             return {
                 success: false,
@@ -99,6 +117,41 @@ class AtlasExecution {
             error: null
         };
     }
+}
+
+//FUNCTIONS B: Workflow DB sync (write-only — orchestration still uses ActionState)
+//Function B1: Update open row status while run is in progress
+async function syncOpenWorkflowStatus(conversationID, status) {
+    const openResult = await Actions.getOpenActionForConversation(conversationID);
+
+    if (!openResult.success || !openResult.action) {
+        return;
+    }
+
+    await Actions.updateAction(openResult.action.workflowId, {
+        status: status
+    });
+}
+
+//Function B2: Close open row and log final database state
+async function finishOpenWorkflowInDatabase(conversationID, status, outcomeCode) {
+    const openResult = await Actions.getOpenActionForConversation(conversationID);
+
+    if (!openResult.success || !openResult.action) {
+        console.log("DATABASE WORKFLOW: No open row to finish for conversation", conversationID);
+        return;
+    }
+
+    const finishResult = await Actions.finishAction(
+        openResult.action.workflowId,
+        status,
+        outcomeCode
+    );
+
+    console.log(" ");
+    console.log("DATABASE WORKFLOW ROW (after user confirmed / run finished):");
+    console.log(JSON.stringify(finishResult.action, null, 2));
+    console.log(" ");
 }
 
 module.exports = AtlasExecution;

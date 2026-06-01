@@ -2,7 +2,7 @@
 
 Consolidated plan for API, Navigator, and Atlas work. Update this file when stages complete or priorities change.
 
-**Last reviewed:** 2026-05-28 (Create / Delete / Toggle API wiring complete; manual AWS verification pending for all three)
+**Last reviewed:** 2026-06-01 (Part 1B workflow DB migration todo; MVP multi-workflow policy)
 
 ---
 
@@ -444,6 +444,40 @@ Chat samples: **`api/README.md`** — Create, Delete, Toggle message flows.
 
 - Kite / Navigator buttons for mutations
 - **Execution persistence** — `ActionState` is chat-only; long runs must not depend on it (see [Workflow state vs execution lifecycle](#workflow-state-vs-execution-lifecycle))
+
+---
+
+## Part 1B: Workflow database migration (`cloudpilot_workflows`)
+
+**Plan detail:** `doc/Master_Database.md` (Start here, Step 4 checklist, MVP multi-workflow policy, future UX).
+
+**Status:** Phase 1 **in progress** — dual-write **4a–4f done**; brain still on `ActionState`.
+
+### Next — finish Step 4 (single source: DB)
+
+- [ ] **4g** — At start of `processMessage`, load open row via `Actions.getOpenActionForConversation`; map to orchestration shape
+- [ ] **4h** — Field/status/mode updates via `Actions.updateAction` / `setField` only; remove `syncOpenWorkflowRowFromMemory`
+- [ ] **4i** — Remove `ActionState` (or thin shim); **keep** `cloneActionStatus` for API `CloudPilotActionStatus` (source = DB row, not memory)
+- [ ] **4j** — Decide `inventory_aws` immediate path (row needed or not)
+- [ ] **Restart test** — mid-flow API restart; conversation resumes from open row
+
+**Remember:** `syncOpenWorkflowRowFromMemory` = temporary photocopy memory → DB. `cloneActionStatus` = response JSON for client (stays).
+
+### MVP — multiple workflows (locked for now)
+
+- [ ] **One open at a time** — only create one `is_open = 1` per conversation; do not ship multi-open product behavior yet
+- [ ] **If multiple open rows exist** — ignore extras; always use current open row from `getOpenActionForConversation`
+- [ ] **Defer** `resolveWorkflow()` Rules 1–6 and disambiguation prompts
+
+### Later — multiple open workflows (not MVP)
+
+- [ ] **One open** — `yes` / mode / fields bind to that row (unchanged)
+- [ ] **Multiple open** — Kite **table** of open workflows with **Run** per row (`workflowId`)
+- [ ] **Named confirm in chat** — e.g. `yes run my_cool_toggle` → match `action_name` on row
+- [ ] Set **`action_name`** when creating workflows so table + named confirm have labels
+- [ ] Implement Rules 1–6 in `resolveWorkflow()` when enabling multiple `is_open = 1` by design
+
+**Not in this track yet:** Phase 2 `cloudpilot_executions`.
 - Rollback / undo
 - Per-user / multi-account AWS credentials
 

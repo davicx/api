@@ -3,6 +3,7 @@ const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
 const Functions = require('./functions');
 const AtlasExecution = require('./classes/AtlasExecution');
+const Actions = require('./classes/Actions');
 const { handleCloudPilotChat } = require('./chat/CloudPilotChat');
 
 /*
@@ -31,7 +32,9 @@ Execution Layer: execution (done by atlas)
 */
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
-async function processMessage(rawUserMessage, conversationID) {
+async function processMessage(rawUserMessage, conversationID, context) {
+    const processMessageContext = normalizeProcessMessageContext(context);
+
     var currentActionState = actionState.getActionStatus(conversationID);
     var activeAction = currentActionState.pendingAction;
     let actionEvent = null;
@@ -120,6 +123,23 @@ async function processMessage(rawUserMessage, conversationID) {
             console.log(" ");
 
             actionState.setPendingAction(conversationID, actionDefinition.type, actionDefinition.requiredFields || []);
+
+            const createActionOutcome = await Actions.createAction({
+                organization: processMessageContext.masterSite,
+                conversationId: conversationID,
+                requestedByUserName: processMessageContext.requestedByUserName,
+                actionType: actionDefinition.type,
+                requiredFields: actionDefinition.requiredFields || [],
+                actionName: actionDefinition.actionLabel || null
+            });
+
+            if (!createActionOutcome.success) {
+                console.log("STEP 4: Failed to persist workflow to database");
+                console.log(createActionOutcome.errors);
+            } else {
+                console.log("STEP 4: Workflow persisted to database, workflowId:", createActionOutcome.workflowId);
+            }
+
             newActionStarted = true;
         }
 
@@ -186,6 +206,10 @@ async function processMessage(rawUserMessage, conversationID) {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
+    if (fieldsUpdated) {
+        await syncOpenWorkflowRowFromMemory(conversationID);
+    }
+
     //STEP 6: Gather information for request and see if it is just became ready or was ready
     const actionReady = Functions.determineRequestReadiness(activeAction, currentActionState);
 
@@ -199,6 +223,8 @@ async function processMessage(rawUserMessage, conversationID) {
         currentActionState = actionState.getActionStatus(conversationID);
 
         activeAction = currentActionState.pendingAction;
+
+        await syncOpenWorkflowRowFromMemory(conversationID);
     }
 
     //Step 6B: Check if the ready JUST happened 
@@ -225,6 +251,8 @@ async function processMessage(rawUserMessage, conversationID) {
             currentActionState = actionState.getActionStatus(conversationID);
             activeAction = currentActionState.pendingAction;
             executionModeSelected = true;
+
+            await syncOpenWorkflowRowFromMemory(conversationID);
         }
     }
     
@@ -581,7 +609,36 @@ function getCurrentUserMessage(rawUserMessage) {
     };
 }
 
-//Function D4: Print State
+//Function D4: Normalize processMessage context (masterSite, user)
+function normalizeProcessMessageContext(context) {
+    const raw = context || {};
+
+    return {
+        masterSite: raw.masterSite || 'Cloud Pilot',
+        requestedByUserName: String(raw.requestedByUserName || raw.messageFrom || '').trim()
+    };
+}
+
+//Function D5: Sync open workflow row from in-memory ActionState (write-only; do not read DB for orchestration)
+async function syncOpenWorkflowRowFromMemory(conversationID) {
+    const openResult = await Actions.getOpenActionForConversation(conversationID);
+
+    if (!openResult.success || !openResult.action) {
+        return;
+    }
+
+    const memoryState = actionState.getActionStatus(conversationID);
+
+    await Actions.updateAction(openResult.action.workflowId, {
+        status: memoryState.status,
+        execution_mode: memoryState.executionMode,
+        collected: memoryState.collected || {},
+        missing: memoryState.missing || [],
+        asked: memoryState.asked || {}
+    });
+}
+
+//Function D6: Print State
 function printState(conversationID, messageVar) {
     console.log(" ")
     console.log("_____________________________________")
