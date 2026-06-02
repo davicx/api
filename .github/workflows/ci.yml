@@ -20,7 +20,7 @@ jobs:
         run: npm ci
 
       - name: Block presigned AWS URL leaks in repo
-        run: bash scripts/check-no-presigned-aws-urls.sh
+        run: bash test/scripts/check-no-presigned-aws-urls.sh
 
       - name: Run tests
         run: npm test

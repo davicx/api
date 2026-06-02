@@ -1,5 +1,5 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../outcome/outcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
 
 function buildTagsFromDefaults(defaults) {
     const raw = defaults && defaults.tags;

@@ -1,11 +1,11 @@
-const openAIFunctions = require('./openAI/openAIFunctions');
+const openAIFunctions = require('./chat/openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
 const Functions = require('./functions');
 const AtlasExecution = require('./classes/AtlasExecution');
 const Actions = require('./classes/Actions');
-const { handleCloudPilotChat } = require('./chat/CloudPilotChat');
-const { hydrateWorkflowFromDatabase } = require('./workflowStateFunctions');
+const { handleCloudPilotChat } = require('./chat/cloudPilotChat');
+const { loadUsersOpenAction } = require('./actionStateFunctions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -17,7 +17,7 @@ FUNCTIONS B: Request Detection / Action Lookup
 
 FUNCTIONS C: Chat Handlers
     1) Function C1: Handle General Chat
-    2) Function C2: Handle CloudPilot Chat (imported from ./chat/CloudPilotChat)
+    2) Function C2: Handle CloudPilot Chat (imported from ./chat/cloudPilotChat)
 
 FUNCTIONS D: Helpers
     1) Function D1: Clone Action Status
@@ -36,7 +36,7 @@ Execution Layer: execution (done by atlas)
 async function processMessage(rawUserMessage, conversationID, context) {
     const processMessageContext = normalizeProcessMessageContext(context);
 
-    await hydrateWorkflowFromDatabase(conversationID);
+    await loadUsersOpenAction(conversationID);
 
     var currentActionState = actionState.getActionStatus(conversationID);
     var activeAction = currentActionState.pendingAction;

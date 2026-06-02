@@ -65,8 +65,8 @@ class ActionState {
     state.asked = {};
   }
 
-  // STEP 2B: Restore workflow from MySQL row (P1C — after server restart)
-  restoreFromDatabase(conversationId, dbAction) {
+  // STEP 2B: Load open action from database row into memory (after server restart)
+  loadActionFromDatabase(conversationId, dbAction) {
     const state = this.getState(conversationId);
 
     state.pendingAction = dbAction.actionType;

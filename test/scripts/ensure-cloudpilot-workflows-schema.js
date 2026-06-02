@@ -3,12 +3,12 @@
  * Safe to run repeatedly — skips if column already exists.
  *
  * Usage (from api/):
- *   node scripts/ensure-cloudpilot-workflows-schema.js
+ *   node test/scripts/ensure-cloudpilot-workflows-schema.js
  */
 
 require('dotenv').config();
 
-const db = require('../application/functions/conn');
+const db = require('../../application/functions/conn');
 
 function runQuery(connection, queryString, params) {
     return new Promise(function (resolve, reject) {
