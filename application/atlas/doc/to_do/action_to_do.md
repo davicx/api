@@ -2,7 +2,7 @@
 
 **Purpose:** Next chunk of work after EC2 mutations API wiring — durable workflows, human-friendly naming, open-actions UX, and conversational run/confirm (not command-line disambiguation until truly needed).
 
-**Status:** P0 + P1C implemented — restart hydration live; P1D (DB-only) next
+**Status:** P0–P1D + **P2A** + **P2B** (friendly status in DB) done; P2C `focused_workflow_id` next
 
 **Last reviewed:** 2026-06-01 (review: defer `action_name`, England rule, DB-first order, open-actions table + Run Now row)
 

@@ -1,4 +1,3 @@
-const actionState = require('../../state/ActionState');
 const actionRegistry = require('../actions/actionRegistry');
 const Actions = require('./Actions');
 
@@ -6,9 +5,7 @@ class AtlasExecution {
     static async startNewAtlasExecution(payload) {
         console.log("ATLAS EXECUTION STARTED");
 
-        actionState.setStatus(payload.conversationID, "running");
-
-        await syncOpenWorkflowStatus(payload.conversationID, "running");
+        await syncOpenActionStatus(payload.conversationID, "running");
 
         const activeAction =
             payload.actionState.pendingAction ||
@@ -17,9 +14,7 @@ class AtlasExecution {
         const actionDefinition = actionRegistry[activeAction];
 
         if (!actionDefinition) {
-            actionState.setStatus(payload.conversationID, "failed");
-
-            await finishOpenWorkflowInDatabase(payload.conversationID, "failed", "action_not_found");
+            await finishOpenActionInDatabase(payload.conversationID, "failed", "action_not_found");
 
             return {
                 success: false,
@@ -30,9 +25,7 @@ class AtlasExecution {
         }
 
         if (typeof actionDefinition.executionFunction !== "function") {
-            actionState.setStatus(payload.conversationID, "failed");
-
-            await finishOpenWorkflowInDatabase(payload.conversationID, "failed", "execution_function_missing");
+            await finishOpenActionInDatabase(payload.conversationID, "failed", "execution_function_missing");
 
             return {
                 success: false,
@@ -60,27 +53,20 @@ class AtlasExecution {
                 await actionDefinition.executionFunction(executionContext);
 
             if (executionResult.success) {
-                actionState.setStatus(payload.conversationID, "completed");
-                actionState.clear(payload.conversationID);
-
-                await finishOpenWorkflowInDatabase(payload.conversationID, "completed", "success");
+                await finishOpenActionInDatabase(payload.conversationID, "completed", "success");
             } else {
-                actionState.setStatus(payload.conversationID, "failed");
-
                 const failOutcomeCode =
                     executionResult.error != null && String(executionResult.error).trim() !== ""
                         ? String(executionResult.error)
                         : "execution_failed";
 
-                await finishOpenWorkflowInDatabase(payload.conversationID, "failed", failOutcomeCode);
+                await finishOpenActionInDatabase(payload.conversationID, "failed", failOutcomeCode);
             }
 
             return executionResult;
 
         } catch (error) {
-            actionState.setStatus(payload.conversationID, "failed");
-
-            await finishOpenWorkflowInDatabase(payload.conversationID, "failed", "execution_exception");
+            await finishOpenActionInDatabase(payload.conversationID, "failed", "execution_exception");
 
             return {
                 success: false,
@@ -105,8 +91,7 @@ class AtlasExecution {
     static async closeAtlasExecution(payload) {
         console.log("ATLAS EXECUTION COMPLETED");
 
-        actionState.setStatus(payload.conversationID, "completed");
-        actionState.clear(payload.conversationID);
+        await finishOpenActionInDatabase(payload.conversationID, "completed", "success");
 
         return {
             success: true,
@@ -119,9 +104,9 @@ class AtlasExecution {
     }
 }
 
-//FUNCTIONS B: Workflow DB sync (write-only — orchestration still uses ActionState)
+//FUNCTIONS B: Open action row in database
 //Function B1: Update open row status while run is in progress
-async function syncOpenWorkflowStatus(conversationID, status) {
+async function syncOpenActionStatus(conversationID, status) {
     const openResult = await Actions.getOpenActionForConversation(conversationID);
 
     if (!openResult.success || !openResult.action) {
@@ -134,11 +119,11 @@ async function syncOpenWorkflowStatus(conversationID, status) {
 }
 
 //Function B2: Close open row and log final database state
-async function finishOpenWorkflowInDatabase(conversationID, status, outcomeCode) {
+async function finishOpenActionInDatabase(conversationID, status, outcomeCode) {
     const openResult = await Actions.getOpenActionForConversation(conversationID);
 
     if (!openResult.success || !openResult.action) {
-        console.log("DATABASE WORKFLOW: No open row to finish for conversation", conversationID);
+        console.log("DATABASE ACTION: No open row to finish for conversation", conversationID);
         return;
     }
 
@@ -149,7 +134,7 @@ async function finishOpenWorkflowInDatabase(conversationID, status, outcomeCode)
     );
 
     console.log(" ");
-    console.log("DATABASE WORKFLOW ROW (after user confirmed / run finished):");
+    console.log("DATABASE ACTION ROW (after user confirmed / run finished):");
     console.log(JSON.stringify(finishResult.action, null, 2));
     console.log(" ");
 }

@@ -1,11 +1,23 @@
 const openAIFunctions = require('./chat/openAI/openAIFunctions');
-const actionState = require('../state/ActionState');
 const actionRegistry = require('./actions/actionRegistry');
 const Functions = require('./functions');
 const AtlasExecution = require('./classes/AtlasExecution');
-const Actions = require('./classes/Actions');
 const { handleCloudPilotChat } = require('./chat/cloudPilotChat');
-const { loadUsersOpenAction } = require('./actionStateFunctions');
+const {
+    getUsersActionState,
+    startNewUsersAction,
+    setUsersActionField,
+    setUsersActionStatus,
+    setUsersActionExecutionMode,
+    printUsersActionState
+} = require('./actionStateFunctions');
+const {
+    STATUS,
+    statusWhenFieldsComplete,
+    isWaitingOnConfirmation,
+    isWaitingOnExecutionMode,
+    shouldUpdateStatusWhenFieldsComplete
+} = require('./actionStatusFunctions');
 
 /*
 FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
@@ -36,9 +48,7 @@ Execution Layer: execution (done by atlas)
 async function processMessage(rawUserMessage, conversationID, context) {
     const processMessageContext = normalizeProcessMessageContext(context);
 
-    await loadUsersOpenAction(conversationID);
-
-    var currentActionState = actionState.getActionStatus(conversationID);
+    var currentActionState = await getUsersActionState(conversationID);
     var activeAction = currentActionState.pendingAction;
     let actionEvent = null;
     let cloudPilotShouldRespond = false; //Other is we send to Open AI
@@ -82,7 +92,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     //Sync Data
     processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(currentActionState, null, false);
 
-    printState(conversationID, "INITIAL STATE:");
+    await printUsersActionState(conversationID, "INITIAL STATE:");
  
     //STEP 1: Normalize user message
     const currentUserMessageOutcome = getCurrentUserMessage(rawUserMessage);
@@ -125,30 +135,23 @@ async function processMessage(rawUserMessage, conversationID, context) {
             console.log("STEP 4: Starting active request");
             console.log(" ");
 
-            actionState.setPendingAction(conversationID, actionDefinition.type, actionDefinition.requiredFields || []);
+            const startOutcome = await startNewUsersAction(
+                conversationID,
+                processMessageContext,
+                actionDefinition
+            );
 
-            const createActionOutcome = await Actions.createAction({
-                organization: processMessageContext.masterSite,
-                conversationId: conversationID,
-                requestedByUserName: processMessageContext.requestedByUserName,
-                actionType: actionDefinition.type,
-                requiredFields: actionDefinition.requiredFields || [],
-                actionName: actionDefinition.actionLabel || null
-            });
-
-            if (!createActionOutcome.success) {
-                console.log("STEP 4: Failed to persist workflow to database");
-                console.log(createActionOutcome.errors);
-            } else {
-                console.log("STEP 4: Workflow persisted to database, workflowId:", createActionOutcome.workflowId);
-                actionState.setWorkflowId(conversationID, createActionOutcome.workflowId);
+            if (!startOutcome.success) {
+                console.log("STEP 4: Failed to persist action to database");
+                console.log(startOutcome.errors);
             }
 
+            currentActionState = startOutcome.state;
             newActionStarted = true;
         }
 
         // Refresh active request state
-        currentActionState = actionState.getActionStatus(conversationID);
+        currentActionState = await getUsersActionState(conversationID);
         activeAction = currentActionState.pendingAction;
         //processMessageOutcome.cloudPilot.state = cloneOperationState(currentStateData);
     } else if (shouldExecuteImmediately) {
@@ -198,11 +201,13 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
             console.log("STEP 5: Found field:", missingFieldName, fieldValue);
 
-            actionState.setField(conversationID, missingFieldName, fieldValue);
+            currentActionState = await setUsersActionField(
+                conversationID,
+                missingFieldName,
+                fieldValue
+            );
             fieldsUpdated = true;
 
-            // Refresh state after updating workflow fields
-            currentActionState = actionState.getActionStatus(conversationID);
             activeAction = currentActionState.pendingAction;
         }
 
@@ -210,25 +215,33 @@ async function processMessage(rawUserMessage, conversationID, context) {
         console.log("STEP 5: Nothing pending so we did not look for any updated information");
     }
 
-    if (fieldsUpdated) {
-        await syncOpenWorkflowRowFromMemory(conversationID);
-    }
+    const activeActionDefinition = getActionDefinition(activeAction || userRequest);
+
+    const actionSupportsExecutionModes =
+        actionRegistry.actionRequiresExecutionModeSelection(activeActionDefinition);
 
     //STEP 6: Gather information for request and see if it is just became ready or was ready
     const actionReady = Functions.determineRequestReadiness(activeAction, currentActionState);
 
-    //Step 6A: Update request status to READY now user just has to confirm
-    if (actionReady && currentActionState.status !== "ready") {
-        console.log("Step 6A: Updating request status to READY");
+    //Step 6A: Update status — waiting on mode or confirmation (not generic "ready")
+    if (
+        actionReady &&
+        shouldUpdateStatusWhenFieldsComplete(
+            currentActionState.status,
+            actionSupportsExecutionModes,
+            currentActionState.executionMode
+        )
+    ) {
+        const newStatus = statusWhenFieldsComplete(
+            actionSupportsExecutionModes,
+            currentActionState.executionMode
+        );
 
-        actionState.setStatus(conversationID, "ready");
+        console.log("Step 6A: Updating action status to", newStatus);
 
-        // Refresh state after updating request status
-        currentActionState = actionState.getActionStatus(conversationID);
+        currentActionState = await setUsersActionStatus(conversationID, newStatus);
 
         activeAction = currentActionState.pendingAction;
-
-        await syncOpenWorkflowRowFromMemory(conversationID);
     }
 
     //Step 6B: Check if the ready JUST happened 
@@ -238,11 +251,6 @@ async function processMessage(rawUserMessage, conversationID, context) {
         actionTransitionedToReady = true;
     }
 
-    const activeActionDefinition = getActionDefinition(activeAction || userRequest);
-
-    const actionSupportsExecutionModes =
-        actionRegistry.actionRequiresExecutionModeSelection(activeActionDefinition);
-
     //Step 6F: Capture execution mode selection (destructive tier only)
     if ( actionReady && actionSupportsExecutionModes && !currentActionState.executionMode) {
         const executionMode = Functions.extractExecutionMode(currentUserMessage);
@@ -250,13 +258,16 @@ async function processMessage(rawUserMessage, conversationID, context) {
         if (executionMode) {
             console.log("STEP 6F: Execution mode selected:", executionMode);
 
-            actionState.setExecutionMode(conversationID, executionMode);
+            currentActionState = await setUsersActionExecutionMode(conversationID, executionMode);
 
-            currentActionState = actionState.getActionStatus(conversationID);
             activeAction = currentActionState.pendingAction;
             executionModeSelected = true;
 
-            await syncOpenWorkflowRowFromMemory(conversationID);
+            currentActionState = await setUsersActionStatus(
+                conversationID,
+                STATUS.WAITING_ON_CONFIRMATION
+            );
+            activeAction = currentActionState.pendingAction;
         }
     }
     
@@ -311,7 +322,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     //Step 6D: Check if action is pending confirmation
     actionPendingConfirmation =
         activeAction &&
-        currentActionState.status === "ready" &&
+        isWaitingOnConfirmation(currentActionState.status) &&
         !actionTransitionedToReady &&
         (
             !actionSupportsExecutionModes ||
@@ -420,7 +431,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
             processMessageOutcome.success = result.success;
         }
 
-        currentActionState = actionState.getActionStatus(conversationID);
+        currentActionState = await getUsersActionState(conversationID);
         activeAction = currentActionState.pendingAction;
         refreshedActionReady = Functions.determineRequestReadiness(activeAction, currentActionState);
 
@@ -439,8 +450,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     //Also maybe set all manually one by one this is confusing
     processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(currentActionState, activeAction, refreshedActionReady);
     
-    //STATE TEMP
-    printState(conversationID, "FINAL STATE:");
+    await printUsersActionState(conversationID, "FINAL STATE:");
     //STATE TEMP
     //console.log("_______________processMessage______________________")    
     console.log("FINAL END OF FUNCTION: processMessageOutcome ")
@@ -541,10 +551,10 @@ function shouldStartNewAction(activeAction, actionDefinition, actionState) {
     const actionChanged = activeAction !== actionDefinition.type;
 
     // Previous active request already completed
-    const previousActionCompleted = actionState.status === "completed";
+    const previousActionCompleted = actionState.status === STATUS.COMPLETED;
 
     // Previous active request already failed
-    const previousActionFailed = actionState.status === "failed";
+    const previousActionFailed = actionState.status === STATUS.FAILED;
 
     return noActionActive || actionChanged || previousActionCompleted || previousActionFailed;
 }
@@ -564,19 +574,30 @@ function resolveNullActionEvent(options) {
 
     const status = options.currentActionState.status;
 
-    if (status === "running") {
+    if (status === STATUS.RUNNING) {
         return "workflow_running";
     }
 
-    if (status === "failed") {
+    if (status === STATUS.FAILED) {
         return "workflow_failed";
     }
 
     if (options.actionReady) {
-        if (options.actionSupportsExecutionModes && !options.currentActionState.executionMode) {
+        if (
+            options.actionSupportsExecutionModes &&
+            !options.currentActionState.executionMode
+        ) {
             return "awaiting_execution_mode";
         }
 
+        return "awaiting_confirmation";
+    }
+
+    if (isWaitingOnExecutionMode(status)) {
+        return "awaiting_execution_mode";
+    }
+
+    if (isWaitingOnConfirmation(status)) {
         return "awaiting_confirmation";
     }
 
@@ -622,36 +643,6 @@ function normalizeProcessMessageContext(context) {
         requestedByUserName: String(raw.requestedByUserName || raw.messageFrom || '').trim()
     };
 }
-
-//Function D5: Sync open workflow row from in-memory ActionState (write-only; do not read DB for orchestration)
-async function syncOpenWorkflowRowFromMemory(conversationID) {
-    const openResult = await Actions.getOpenActionForConversation(conversationID);
-
-    if (!openResult.success || !openResult.action) {
-        return;
-    }
-
-    const memoryState = actionState.getActionStatus(conversationID);
-
-    await Actions.updateAction(openResult.action.workflowId, {
-        status: memoryState.status,
-        execution_mode: memoryState.executionMode,
-        collected: memoryState.collected || {},
-        missing: memoryState.missing || [],
-        asked: memoryState.asked || {}
-    });
-}
-
-//Function D6: Print State
-function printState(conversationID, messageVar) {
-    console.log(" ")
-    console.log("_____________________________________")
-    console.log(messageVar);
-    actionState.print(conversationID);        
-    console.log("_____________________________________")
-    console.log(" ");
-}
-
 
 module.exports = { processMessage, detectUserRequest, getActionDefinition };
 
