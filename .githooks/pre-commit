@@ -1,0 +1,4 @@
+#!/bin/sh
+# Enable once: git config core.hooksPath .githooks
+ROOT="$(git rev-parse --show-toplevel)"
+exec bash "${ROOT}/scripts/check-no-presigned-aws-urls.sh"

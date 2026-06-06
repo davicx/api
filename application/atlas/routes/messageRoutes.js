@@ -17,6 +17,14 @@ FUNCTIONS C: All Functions Related to getting Messages
 
 //FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
 //Route B1: Post Message
+/* 
+Still need
+policy: {
+    allowed: false, //NOT DONE
+    message: null, //NOT DONE
+    reasonNotAllowed: null // e.g. "OUT_OF_SCOPE", "DESTRUCTIVE_ACTION" //NOT DONE
+},
+*/
 messageRouter.post('/message', function (req, res) {
     messages.postMessage(req, res);
 });

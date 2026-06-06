@@ -55,6 +55,144 @@ app.use(messages);
 
 Same URLs either way: **`POST /message`**, **`GET /messages/group/:group_id`**, etc.
 
+## CloudPilot EC2 mutations — chat message samples
+
+Use **`POST /message`** (Kite chat or Postman). Each destructive action uses execution mode **`4`** (automatic) and confirmation **`yes`**.
+
+Prerequisites: API running, Atlas running at `ATLAS_BASE_URL` (default `http://127.0.0.1:8000`), and AWS credentials configured for Atlas. Clean up test instances when finished.
+
+### Create EC2
+
+**Message 1** — start the flow:
+
+```text
+Create an ec2 instance
+```
+
+Also works: `Create an instance`, `create ec2 instance`
+
+**Message 2** — region, name, and size (one line is fine):
+
+```text
+name: "my-test-instance" region: "us-west-2" instance_type: "t3.micro"
+```
+
+Or split across messages:
+
+```text
+region: "us-west-2"
+```
+
+```text
+name: "my-test-instance" instance_type: "t3.micro"
+```
+
+**Message 3** — execution mode:
+
+```text
+4
+```
+
+**Message 4** — confirm:
+
+```text
+yes
+```
+
+Copy the **`instance_id`** from CloudPilot’s success message (e.g. `i-0abc…`) for delete or toggle.
+
+### Delete EC2
+
+**Message 1**:
+
+```text
+Delete an ec2 instance
+```
+
+Also works: `Delete an instance`, `delete ec2 instance`
+
+**Message 2** — use the ID from create:
+
+```text
+region: "us-west-2" instance_id: "i-0123456789abcdef0"
+```
+
+Or if the ID and region are in one line:
+
+```text
+Delete instance i-0123456789abcdef0 in us-west-2
+```
+
+(`region` + `i-…` can be picked up from that message.)
+
+**Message 3**:
+
+```text
+4
+```
+
+**Message 4**:
+
+```text
+yes
+```
+
+### Toggle EC2
+
+Stops the **primary** instance and starts the **secondary** instance. Toggle can take several minutes (Atlas waiters).
+
+**Message 1**:
+
+```text
+Toggle ec2 instances
+```
+
+Also works: `switch ec2`, `toggle ec2`
+
+**Message 2** — region:
+
+```text
+region: "us-west-2"
+```
+
+**Message 3** — primary instance ID (the one to stop):
+
+```text
+primary_instance_id: "i-0123456789abcdef0"
+```
+
+Or just paste the ID when prompted:
+
+```text
+i-0123456789abcdef0
+```
+
+**Message 4** — secondary instance ID (the one to start):
+
+```text
+secondary_instance_id: "i-0fedcba9876543210"
+```
+
+Or just paste the ID when prompted:
+
+```text
+i-0fedcba9876543210
+```
+
+**Message 5**:
+
+```text
+4
+```
+
+**Message 6**:
+
+```text
+yes
+```
+
+Later (Stage 5): primary/secondary may be resolved from `cloudpilot-role` tags so you do not need to paste IDs manually.
+
 ## Running the Application
 
 To run the application in development mode with nodemon (which automatically restarts the server on file changes), use:
@@ -149,7 +287,7 @@ storage_type: local or aws
 AWS
 "fileName": "background_1.jpg",
 "fileNameServer": "postImage-1749944860810-321769559-background_1.jpg",
-"fileURL": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/posts/postImage-1749944860810-321769559-background_1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAXZAOI335HZSDKHVN%2F20250614%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250614T234741Z&X-Amz-Expires=259200&X-Amz-Signature=a3d18ccb151ba39e2bca0f5f557900aebbe0d39219e2e1e95dec248e59a55176&X-Amz-SignedHeaders=host&x-id=GetObject",
+"fileURL": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/posts/postImage-1749944860810-321769559-background_1.jpg",
 "cloudBucket": "insta-app-bucket-tutorial",
 "cloudKey": "posts/postImage-1749944860810-321769559-background_1.jpg",
 
@@ -160,3 +298,12 @@ LOCAL
 "cloudBucket": "kite-posts-us-west-two",
 "cloudKey": "no_cloud_key",
 
+
+
+meta = response-level context
+stats = visible metrics
+tables = visible tabular data
+cards = visible summaries
+alerts = visible notices/warnings
+actions = visible user actions
+raw = optional original Atlas payload

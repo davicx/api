@@ -5,7 +5,7 @@ const Notification = require('../../functions/classes/Notification');
 const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
-const openAIFunctions = require('../functions/openAIFunctions');
+const openAIFunctions = require('../functions/openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
@@ -36,7 +36,7 @@ async function postMessage(req, res) {
     const cloudBucket = req.body.cloudBucket || 'no_cloud_bucket';
     const storageType = req.body.storageType || 'local';
     
-    var headerMessage = "Post Message";
+    var headerMessage = "New Message";
     Functions.addHeader(headerMessage);
 
     var messageOutcome = {
@@ -48,21 +48,15 @@ async function postMessage(req, res) {
         currentUser: messageFrom
     };
 
-
-    //STEP 1: Get current state (Does the user have an open request)
-    var currentState = actionState.getActionStatus(conversationID);
-    console.log("STEP 1: Get current state (Does the user have an open request)")
-    actionState.print(conversationID);
-
-    //STEP 2: Build Message this is basically the JSON for a message
+    //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    console.log("STEP 2: Build Message ")
+    //console.log("STEP 1: Build Message ")
 
-    //STEP 3: Send user message to be stored in the database
-    console.log("STEP 3: Send user message to be stored in the database");
+    //STEP 2: Send user message to be stored in the database
+    //console.log("STEP 2: Send user message to be stored in the database");
     var currentUserMessageOutcome = await Message.createMessageText(currentUserMessage);
 
-    //Step 3A: Add current user message to JSON output
+    //Step 2A: Add current user message to JSON output
     messageOutcome.data.currentUserMessage = currentUserMessageOutcome.newMessage;
     
     if (currentUserMessageOutcome.outcome != 200) {
@@ -71,29 +65,37 @@ async function postMessage(req, res) {
         messageOutcome.success = false;
     }
 
-    //STEP 4: CloudPilot processing
+    //STEP 3: CloudPilot processing
     let cloudPilotResult = null;
-    console.log(" ");
-    console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
+    //console.log(" ");
+    //console.log("STEP 4: CloudPilot checking user message and sending to OPENAI API");
 
     try {
-        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID);
-        console.log("CloudPilot Result:");
-        console.log("___________________");
-        console.log(cloudPilotResult);
-        console.log("___________________");
+        cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID, {
+            masterSite: masterSite,
+            requestedByUserName: messageFrom
+        });
+        //console.log("CloudPilot Result:");
+        //console.log("___________________");
+        //console.log(cloudPilotResult);
+        //console.log("___________________");
     } catch (err) {
         console.error("CloudPilot error:", err);
     }
 
-    //STEP 5: Save CloudPilot message to database
+    
+    //STEP 4: Save CloudPilot message to database
     console.log("STEP 5: Save CloudPilot message to database");
 
-    if (cloudPilotResult && cloudPilotResult.success == true) {
+    var cloudPilotMessageOutcome = null;
+    const cloudPilotReplyText =
+        cloudPilotResult && cloudPilotResult.cloudPilotMessage
+            ? String(cloudPilotResult.cloudPilotMessage).trim()
+            : '';
 
-        //STEP 5: Build CloudPilot message
-        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotResult.cloudPilotMessage);
-        var cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
+    if (cloudPilotReplyText) {
+        var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotReplyText);
+        cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
         if (cloudPilotMessageOutcome.outcome == 200) {
             console.log("STEP 5 SUCCESS: CloudPilot message saved");
@@ -102,35 +104,52 @@ async function postMessage(req, res) {
         }
     }
     
-    //Step 5A: Add current user message to JSON output
-    messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
-
-    //Step 5B: Add Cloud Pilot action status to response
-    messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
-
-    //Step 5C: Add formatted Atlas data to response
-    messageOutcome.data.atlas = null;
-    if (cloudPilotResult && cloudPilotResult.atlas) {
-        messageOutcome.data.atlas = cloudPilotResult.atlas;
+    //Step 4A: Add CloudPilot message to JSON output when saved
+    if (cloudPilotMessageOutcome && cloudPilotMessageOutcome.newMessage) {
+        messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
     }
 
-    //Step 5D: Set final API success metadata from CloudPilot processing outcome
-    if (cloudPilotResult && cloudPilotResult.success == true) {
+    //Step 4B: Add Cloud Pilot action status to response
+    if (cloudPilotResult && cloudPilotResult.cloudPilot) {
+        messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
+    }
+
+    //Step 4C: Add formatted Atlas data to response
+    messageOutcome.data.atlasResponse = null;
+    if (cloudPilotResult && cloudPilotResult.atlasResponse) {
+        messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
+    }
+
+    //Step 4D: HTTP success when user message saved and CloudPilot chat turn completed
+    const userMessageSaved = currentUserMessageOutcome.outcome == 200;
+    const cloudPilotTurnCompleted = Boolean(cloudPilotResult && cloudPilotReplyText);
+
+    if (userMessageSaved && cloudPilotTurnCompleted) {
+        messageOutcome.success = true;
+        messageOutcome.statusCode = 200;
+        messageOutcome.errors = [];
+
+        if (cloudPilotResult && cloudPilotResult.error) {
+            messageOutcome.errors = [cloudPilotResult.error];
+        }
+    } else if (userMessageSaved && cloudPilotResult && cloudPilotResult.success == true) {
         messageOutcome.success = true;
         messageOutcome.statusCode = 200;
         messageOutcome.errors = [];
     } else {
         messageOutcome.errors = [];
-        
+
         if (cloudPilotResult && cloudPilotResult.error) {
             messageOutcome.errors = [cloudPilotResult.error];
         }
     }
+
     
-    //STEP 6: Return Response
+    //STEP 5: Return Response
     Functions.addFooter();
     res.json(messageOutcome);
 }
+
 
 //Function B2: Delete Message
 async function deleteMessage(req, res) {
@@ -357,12 +376,5 @@ async function getConversationMessages(req, res) {
     res.json(messagesResponse);
 }
 
-module.exports = {
-    postMessageHello,
-    postMessage,
-    deleteMessage,
-    editMessage,
-    getGroupMessages,
-    getConversationMessages
-};
+module.exports = { postMessageHello, postMessage, deleteMessage, editMessage, getGroupMessages, getConversationMessages };
 

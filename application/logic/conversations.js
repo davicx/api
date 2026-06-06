@@ -59,7 +59,7 @@ async function getConversationsByGroup(req, res) {
     const groupID = req.params.group_id;
     const currentUser = req.currentUser || req.body?.currentUser;
 
-    Functions.addHeader('Get conversations for group ' + groupID);
+    // Functions.addHeader('Get conversations for group ' + groupID);
 
     try {
         const outcome = await Conversation.getConversationsByGroup(groupID);
@@ -122,7 +122,7 @@ async function getConversationById(req, res) {
         });
     }
 
-    Functions.addFooter();
+    //Functions.addFooter();
 }
 
 module.exports = {

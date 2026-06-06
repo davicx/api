@@ -68,8 +68,6 @@ function removeArrayDuplicates(fullArray) {
 //Function B1: Add Header
 function addHeader(headerMessage) {
     console.log(" ")
-    console.log(" ")
-    console.log(" ")
     console.log("______________________________________________________________")
     console.log("______________________________________________________________")
     console.log("HEADER: " + headerMessage)
@@ -84,7 +82,6 @@ function addFooter() {
     console.log("______________________________________________________________")
     console.log("FOOTER: Request made at " + timeFunctions.getCurrentTime().postTime);
     console.log("______________________________________________________________")
-    console.log(" ")
     console.log(" ")
 }
 

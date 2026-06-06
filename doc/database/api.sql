@@ -6,6 +6,12 @@
 #ALL#
 #########
 
+#DELETE FROM messages WHERE message_id > 10 AND message_id < 376;
+#SELECT * FROM messages;
+ALTER TABLE cloudpilot_workflows
+    MODIFY organization VARCHAR(255) NOT NULL DEFAULT 'Cloud Pilot';
+SELECT * FROM cloudpilot_workflows;
+  
 #UPDATE posts SET post_caption = "I really want to get Secret of Mana you can find it at a couple of stores and it would be so awesome!!" WHERE post_id = 838;
 
 #SELECT * FROM posts;
