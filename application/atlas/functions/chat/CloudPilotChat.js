@@ -1,6 +1,5 @@
 const AtlasExecution = require('../classes/AtlasExecution');
 
-//NEW 
 //Function B3: Handle Cloud Pilot Chat
 async function handleCloudPilotChat(payload) {
 

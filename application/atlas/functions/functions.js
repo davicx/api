@@ -111,7 +111,7 @@ function determineRequestReadiness(activeRequestedAction, currentStateData) {
     }
 
     // Request already completed
-    if (currentStateData.status === "completed") {
+    if (currentStateData.status === "completed" || currentStateData.status === "cancelled") {
         console.log("STEP 6C: Request already completed");
         return false;
     }
@@ -188,6 +188,8 @@ function userConfirmedAction(userMessage) {
     return confirmationMessages.includes(normalizedMessage);
 }
 
+const { isWaitingOnConfirmation } = require('./actionStatusFunctions');
+
 function shouldStartExecution(executionDecisionData) {
     const actionState = executionDecisionData.actionState;
 
@@ -195,7 +197,7 @@ function shouldStartExecution(executionDecisionData) {
         return false;
     }
 
-    if (actionState.status !== "ready") {
+    if (!isWaitingOnConfirmation(actionState.status)) {
         return false;
     }
 

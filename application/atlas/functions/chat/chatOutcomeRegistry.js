@@ -1,5 +1,5 @@
 /*
-FUNCTIONS A: CloudPilot outcome messages
+FUNCTIONS A: CloudPilot chat outcome messages
     1) Function A1: Build friendly outcome message for chat
     2) Function A2: Read first outcome code from Atlas envelope
 */

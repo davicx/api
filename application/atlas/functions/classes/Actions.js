@@ -1,4 +1,5 @@
 const db = require('../../../functions/conn');
+const { initialStatusForNewAction } = require('../actionStatusFunctions');
 
 /*
 METHODS A: CREATE WORKFLOW RELATED
@@ -43,6 +44,7 @@ class Actions {
         actionType,
         requiredFields,
         actionName,
+        displayName,
         actionNotes,
         priority
     }) {
@@ -74,6 +76,13 @@ class Actions {
             const missingFields = Array.isArray(requiredFields) ? requiredFields.slice() : [];
             const collected = {};
             const asked = {};
+            const initialStatus = initialStatusForNewAction(missingFields);
+            const resolvedDisplayName =
+                displayName != null && String(displayName).trim() !== ''
+                    ? String(displayName).trim()
+                    : actionName != null && String(actionName).trim() !== ''
+                      ? String(actionName).trim()
+                      : null;
 
             const insertResults = await runQuery(
                 connection,
@@ -83,6 +92,7 @@ class Actions {
                     requested_by_user_name,
                     action_type,
                     action_name,
+                    display_name,
                     action_notes,
                     status,
                     priority,
@@ -90,14 +100,16 @@ class Actions {
                     collected,
                     missing,
                     asked
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 1, ?, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
                 [
                     String(organization || 'Cloud Pilot').trim(),
                     Number(conversationId),
                     String(requestedByUserName || '').trim(),
                     String(actionType || '').trim(),
                     actionName || null,
+                    resolvedDisplayName,
                     actionNotes || null,
+                    initialStatus,
                     priority || 'normal',
                     stringifyJsonColumn(collected),
                     stringifyJsonColumn(missingFields),
@@ -562,6 +574,7 @@ const ALLOWED_UPDATE_COLUMNS = {
     asked: 'asked',
     priority: 'priority',
     action_name: 'action_name',
+    display_name: 'display_name',
     action_notes: 'action_notes',
     outcome_code: 'outcome_code'
 };
@@ -602,6 +615,7 @@ function mapRowToAction(row) {
         requestedByUserName: row.requested_by_user_name,
         actionType: row.action_type,
         actionName: row.action_name,
+        displayName: row.display_name,
         actionNotes: row.action_notes,
         status: row.status,
         outcomeCode: row.outcome_code,

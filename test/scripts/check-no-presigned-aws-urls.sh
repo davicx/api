@@ -5,7 +5,7 @@
 set -euo pipefail
 set -o pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 # Built at runtime so this file is not matched by the repo scan below.
