@@ -1,5 +1,5 @@
-const actionState = require('../state/ActionState');
-const Actions = require('./classes/Actions');
+const actionState = require('../../state/ActionState');
+const Actions = require('../classes/Actions');
 
 /*
 FUNCTIONS A: Action state — database is source of truth (Phase 1D)

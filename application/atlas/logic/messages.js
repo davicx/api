@@ -50,7 +50,8 @@ async function postMessage(req, res) {
 
     //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    //console.log("STEP 1: Build Message ")
+    console.log("STEP 1: Build Message ")
+    console.log(currentUserMessage)
 
     //STEP 2: Send user message to be stored in the database
     //console.log("STEP 2: Send user message to be stored in the database");
@@ -64,6 +65,7 @@ async function postMessage(req, res) {
         messageOutcome.statusCode = 500;
         messageOutcome.success = false;
     }
+
 
     //STEP 3: CloudPilot processing
     let cloudPilotResult = null;
@@ -83,7 +85,7 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
-    
+    /*
     //STEP 4: Save CloudPilot message to database
     console.log("STEP 5: Save CloudPilot message to database");
 
@@ -144,6 +146,7 @@ async function postMessage(req, res) {
         }
     }
 
+    */
     
     //STEP 5: Return Response
     Functions.addFooter();

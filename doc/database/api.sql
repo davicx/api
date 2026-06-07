@@ -5,8 +5,11 @@
 #########
 #ALL#
 #########
--- Optional: pick your database
--- USE shareshare;
+
+#SELECT * FROM atlas_actions;
+#SELECT * FROM cloudpilot_workflows;
+#SELECT * FROM conversations;
+
 
 
 
