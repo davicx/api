@@ -48,6 +48,7 @@ Execution Layer: execution (done by atlas)
 async function processMessage(rawUserMessage, conversationID, context) {
     const processMessageContext = normalizeProcessMessageContext(context);
 
+    //This is workflow 
     var currentActionState = await getUsersActionState(conversationID);
     var activeAction = currentActionState.pendingAction;
     let actionEvent = null;

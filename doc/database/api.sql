@@ -5,16 +5,22 @@
 #########
 #ALL#
 #########
+-- Optional: pick your database
+-- USE shareshare;
+
 
 #DELETE FROM messages WHERE message_id > 10 AND message_id < 376;
 #SELECT * FROM messages;
-ALTER TABLE cloudpilot_workflows
-    MODIFY organization VARCHAR(255) NOT NULL DEFAULT 'Cloud Pilot';
-SELECT * FROM cloudpilot_workflows;
+
+#SELECT * FROM posts WHERE group_id = 70;
   
 #UPDATE posts SET post_caption = "I really want to get Secret of Mana you can find it at a couple of stores and it would be so awesome!!" WHERE post_id = 838;
+#UPDATE posts SET group_id = 70 AND post_to = 70 WHERE post_id > 0;
+#UPDATE posts SET post_type = "photo" WHERE post_id = 832;
 
-#SELECT * FROM posts;
+#UPDATE posts SET group_id = 72, post_to = 72 WHERE post_id >= 1;
+    
+#SELECT * FROM posts WHERE group_id = 72;
 #DELETE FROM comments WHERE comment_id > 244;
 #SELECT * FROM comments;
 
