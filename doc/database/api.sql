@@ -9,6 +9,9 @@
 -- USE shareshare;
 
 
+
+
+
 #DELETE FROM messages WHERE message_id > 10 AND message_id < 376;
 #SELECT * FROM messages;
 

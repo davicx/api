@@ -25,7 +25,7 @@ METHODS D: CLOSE WORKFLOW RELATED (no DELETE)
     1) Method D1: finishAction
     2) Method D2: cancelAction
 
-Doc: application/atlas/doc/Master_Database.md
+Doc: application/atlas/doc/current_development.md
 Phase 1: one is_open = 1 row per conversation_id (enforced in createAction).
 */
 
