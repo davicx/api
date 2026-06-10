@@ -1,13 +1,13 @@
-const actionRegistry = require('../actions/actionRegistry');
+const actionRegistry = require('../../actions/actionRegistry');
 
 /*
 FUNCTIONS A: Action detection from user message (rules / registry)
-    1) Function A1: getAction
+    1) Function A1: searchMessageForAction
 */
 
-//Function A1: Detect action type from message (registry match)
-function getAction(userMessage) {
-    const normalizedMessage = String(userMessage || '').toLowerCase().trim();
+//Function A1: Find an action intent in the message
+function searchMessageForAction(message) {
+    const normalizedMessage = String(message || '').toLowerCase().trim();
     const matches = [];
 
     for (const action of Object.values(actionRegistry)) {
@@ -45,4 +45,4 @@ function getAction(userMessage) {
     };
 }
 
-module.exports = { getAction };
+module.exports = { searchMessageForAction };

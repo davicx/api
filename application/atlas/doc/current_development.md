@@ -2,7 +2,7 @@
 
 **Purpose:** Single source of truth for what we are working on, what is done, and what is deferred.
 
-**Last reviewed:** 2026-06-06 (pipeline rebuild — STEP 1–3 live)
+**Last reviewed:** 2026-06-09 (understanding layer restructure — Slice 1)
 
 **Reference docs (not todo lists):**
 
@@ -136,7 +136,7 @@ Message
 | Execution | `functions/executions/` | Atlas/AWS when `shouldExecute` |
 | Response | `functions/responses/` (`buildResponse.js` first; delegates to `chat/`) | Only layer that produces user-facing text |
 
-**Import style:** one namespace per module — e.g. `const UnderstandingFunctions = require('./understanding/parseMessage');` then `UnderstandingFunctions.understandUserMessage(...)`. No destructured requires in the orchestrator.
+**Import style:** one namespace per module — e.g. `const UnderstandingFunctions = require('./understanding/understandMessage');` then `UnderstandingFunctions.understandMessage(...)`. No destructured requires in the orchestrator.
 
 ### What is live today (2026-06-06)
 
@@ -144,15 +144,25 @@ Message
 |------|--------|------|
 | STEP 1 Normalize | ✅ Live | `getCurrentUserMessage` |
 | STEP 2 Load request | ✅ Live | `ActionStateFunctions.getUsersActionState` → `cloudpilot_requests` via `Actions.js` |
-| STEP 3 Understand | ✅ Live | `UnderstandingFunctions.understandUserMessage(message, currentActionState)` |
+| STEP 3 Understand | ✅ Live | `UnderstandingFunctions.understandMessage(message, currentActionState)` |
 | STEP 4+ | ❌ Not wired | Old STEP 4–8 still **commented** in `cloudPilotMessageFunctions.js` |
 
-**Understanding (P1 done):**
+**Understanding (Slice 1 done):**
 
-- `understanding/getAction.js` — registry `match()` → action type
-- `understanding/parseMessage.js` — `buildUnderstandingContext`, `parseMessage`, **`understandUserMessage`** (orchestrator entry)
-- When **idle**: runs `getAction` → e.g. `"toggle_ec2"` or `"general_chat"`
+```text
+understanding/
+├── understandMessage.js              ← orchestrator entry (Function F1)
+└── search/
+    ├── searchMessageForAction.js     ← registry match() → action type
+    ├── searchMessageForRegion.js     ← stub
+    ├── searchMessageForValues.js     ← stub
+    ├── searchMessageForReply.js      ← stub
+    └── searchMessageForConversation.js ← stub
+```
+
+- When **idle**: runs `searchMessageForAction` → e.g. `"toggle_ec2"` or `"general_chat"`
 - When **open request**: returns `action: null` (continuations — do **not** treat as `general_chat`)
+- Stubs return empty/`null` — same behavior as before Slice 1
 
 **`messageUnderstanding` shape (log at STEP 3):**
 
@@ -184,8 +194,8 @@ Until those land, only STEP 3 logs are meaningful. HTTP reply may stay empty (`s
 | **P0** | DB: `cloudpilot_actions` + `cloudpilot_requests` + seed; `Actions.js` migrated | STEP 2 loads without `ER_NO_SUCH_TABLE` |
 | **P1** | `understanding/` + STEP 3 log | `toggle ec2` → `"action": "toggle_ec2"`; idle `hello` → `"general_chat"` |
 | **P4 (next)** | `requests/processRequest.js` + STEP 4 log `requestOutcome` | After `toggle ec2`, **next** message INITIAL STATE shows open request + `missing` |
-| **P2** | `understanding/getValues.js` + Request applies fields | `region: "us-west-2"` updates `collected` / shrinks `missing` |
-| **P3** | `getReply.js` — mode `1`–`4`, confirm `yes` | Destructive tier flow |
+| **P2** | `searchMessageForValues.js` + Request applies fields | `region: "us-west-2"` updates `collected` / shrinks `missing` |
+| **P3** | `searchMessageForReply.js` — mode `1`–`4`, confirm `yes` | Destructive tier flow |
 | **P5** | `responses/buildResponse.js` | Chat text returns in API response |
 | **P6** | `executions/processExecution.js` | Atlas runs on confirm |
 
@@ -225,13 +235,124 @@ Chat samples: repo root `README.md` (EC2 mutations section).
 | File | Role |
 |------|------|
 | `functions/cloudPilotMessageFunctions.js` | Orchestrator (`processMessage`) |
-| `functions/understanding/parseMessage.js` | STEP 3 |
-| `functions/understanding/getAction.js` | Registry intent (rules) |
+| `functions/understanding/understandMessage.js` | STEP 3 entry (Function F1) |
+| `functions/understanding/search/searchMessageForAction.js` | Registry intent (rules) |
 | `functions/actions/actionStateFunctions.js` | STEP 2 state bridge |
 | `functions/classes/Actions.js` | MySQL `cloudpilot_requests` (target rename: `requests/Requests.js`) |
 | `doc/database/database.md` | Schema + seed SQL |
 
 Old message parsing in `cloudPilotMessageFunctions.js` (commented STEP 5/6/7) and removed `detectUserRequest` are marked `TO DO: remove me` — superseded by `understanding/` + `requests/processRequest`.
+
+---
+
+## Understanding: To Do
+
+**Goal:** Three clean layers — understanding (extract signals), request processing (decide A–F), execution (run AWS). Slice 1 (file layout + stubs) is done. Remaining slices preserve behavior first, then add features.
+
+### Architecture (target)
+
+```text
+Layer 1  understandMessage(message)           → signals only, no DB
+Layer 2  processRequest(signals, requestState) → categories A–F, DB writes
+Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
+```
+
+**One sentence per function:**
+
+| Function | Job |
+|----------|-----|
+| `understandMessage()` | Extract signals from a message. |
+| `searchMessageForAction()` | Find an action in a message. |
+| `searchMessageForRegion()` | Find an AWS region in a message. |
+| `searchMessageForValues()` | Find all structured field values in a message. |
+| `searchMessageForReply()` | Find confirm, cancel, or execution mode in a message. |
+| `searchMessageForConversation()` | Find status/list/focus conversation intents in a message. |
+| `processRequest()` | Decide what to do with the signals given current request state. |
+| `executeRequest()` | Run the action. |
+
+**Rule:** Every search function answers one question. No request state inside understanding. Conditional logic (“only if region is missing”) lives in `processRequest`.
+
+### Slice 2 — Stateless understanding + processRequest stub
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `understandMessage(message)` — drop `actionState` arg | Planned | Always run all searches unconditionally |
+| Add `requests/processRequest.js` | Planned | Replicate today's open-request guard so STEP 3 logs stay the same |
+| Reorder pipeline: understand → load request → processRequest | Planned | Today: load request → understand |
+| Remove `buildUnderstandingContext` from understanding | Planned | Context moves to `processRequest` |
+
+**Test (must match Slice 1):**
+
+```text
+"toggle ec2"  (idle)           → action: "toggle_ec2"
+"hello"       (idle)           → action: "general_chat"
+"us-west-2"   (open request)   → action: null, values: {}
+```
+
+### Slice 3 — Field extraction
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement `searchMessageForRegion` | Planned | Move regex from `functions.js` `extractAwsRegion` |
+| Implement `searchMessageForValues` | Planned | Compose region + instance_id + structured `field: "value"` |
+| `processRequest` category B | Planned | Apply values when open request + field in `missing` |
+
+**Test:**
+
+```text
+"region: us-west-2" (open request, missing region) → values: { "region": "us-west-2" }
+```
+
+### Slice 4 — Reply extraction
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement `searchMessageForReply` | Planned | confirm, cancel, execution mode `1`–`4` |
+| `processRequest` categories C, D | Planned | Confirm → execute path; cancel → close request |
+
+**Test:**
+
+```text
+"yes"    (waiting on confirmation) → reply: "confirm"
+"cancel" (open request)            → reply: "cancel"
+```
+
+### Slice 5 — Conversation + status
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement `searchMessageForConversation` | Planned | Status question, list open actions, focus switch |
+| `processRequest` category E | Planned | Show status / missing fields |
+
+### Slice 6 — Full request processing + response
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `processRequest` category A | Planned | New/replace request, ask missing fields |
+| `processRequest` category F | Planned | Route to OpenAI general chat |
+| Wire STEP 4 log `requestOutcome` | Planned | See target shape in [Pipeline rebuild](#pipeline-rebuild-processmessage--active-work) |
+| `responses/buildResponse.js` | Planned | Chat text returns in API response |
+| `executeRequest` + STEP 5 | Planned | Atlas runs on confirm |
+
+### Cleanup (after slices land)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Delete `parseMessage.js`, `getAction.js` | ✅ Done | Replaced by `understandMessage.js`, `searchMessageForAction.js` |
+| Remove commented STEPS 5–7 in `cloudPilotMessageFunctions.js` | Planned | Superseded by search functions + `processRequest` |
+| Move field extractors out of `functions.js` | Planned | Into `searchMessageForRegion` / `searchMessageForValues` |
+| Move `determineActionEvent`, `shouldStartExecution` | Planned | Into `processRequest` |
+
+### Decision priority for `processRequest` (document once)
+
+```text
+1. reply === "cancel"            → D
+2. reply === "confirm"           → C (if waiting on confirmation)
+3. conversation === "status"     → E
+4. values present + open request   → B
+5. action is concrete action       → A (new or replace)
+6. else                            → F
+```
 
 ---
 
@@ -434,6 +555,7 @@ Old message parsing in `cloudPilotMessageFunctions.js` (commented STEP 5/6/7) an
 
 | Date | Change |
 |------|--------|
+| 2026-06-09 | **Understanding Slice 1:** restructured `understanding/` — `understandMessage` entry, `searchMessageFor*` files, stubs; added **Understanding: To Do** section (Slices 2–6) |
 | 2026-06-06 | **Pipeline rebuild:** section added — STEP 1–3 live (`understanding/`), STEP 4 next; why region/fields not persisted yet; test curl |
 | 2026-06-06 | **Target `functions/` layout:** `requests/`, `executions/`, `navigator/` — old → new file map; section 1E |
 | 2026-06-06 | **Terminology:** *workflow* retired — use **request** only; target tables `cloudpilot_requests` / `cloudpilot_executions` per `database.md` |

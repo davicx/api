@@ -2,7 +2,7 @@ const openAIFunctions = require('./chat/openAI/openAIFunctions');
 const actionRegistry = require('./actions/actionRegistry');
 const Functions = require('./functions');
 const ActionStateFunctions = require('./actions/actionStateFunctions');
-const UnderstandingFunctions = require('./understanding/parseMessage');
+const UnderstandingFunctions = require('./understanding/understandMessage');
 const AtlasExecution = require('./classes/AtlasExecution');
 const CloudPilotChat = require('./chat/cloudPilotChat');
 const ActionStatusFunctions = require('./actionStatusFunctions');
@@ -101,13 +101,13 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 
     //STEP 3: Understand the user message
-    const messageUnderstanding = await UnderstandingFunctions.understandUserMessage(currentUserMessage, currentActionState);
+    const messageUnderstanding = await UnderstandingFunctions.understandMessage(currentUserMessage, currentActionState);
 
     console.log("STEP 3: MESSAGE UNDERSTANDING:");
     console.log(JSON.stringify(messageUnderstanding, null, 2));
     console.log(" ");
 
-    // TO DO: remove me — replaced by understanding/parseMessage (P1)
+    // TO DO: remove me — replaced by understanding/understandMessage (Slice 1)
     // const userRequest = detectUserRequest(currentUserMessage);
     // processMessageOutcome.cloudPilot.userRequest = userRequest;
     // processMessageOutcome.cloudPilot.actionStatus.type = userRequest === "general_chat" ? null : userRequest;
@@ -465,7 +465,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 }
 
-// TO DO: remove me — moved to understanding/getAction.js (P1)
+// TO DO: remove me — moved to understanding/search/searchMessageForAction.js (Slice 1)
 //FUNCTIONS B: Process User Messages
 //Function B1: Detect User Request
 // function detectUserRequest(userMessage) {
