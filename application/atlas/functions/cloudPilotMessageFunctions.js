@@ -107,10 +107,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(JSON.stringify(messageUnderstanding, null, 2));
     console.log(" ");
 
-    // TO DO: remove me — replaced by understanding/understandMessage (Slice 1)
-    // const userRequest = detectUserRequest(currentUserMessage);
-    // processMessageOutcome.cloudPilot.userRequest = userRequest;
-    // processMessageOutcome.cloudPilot.actionStatus.type = userRequest === "general_chat" ? null : userRequest;
+
+    //STEP 4: Start or replace active request
+
     
     /*
     //STEP 3: Check if user is requesting an action not just general chat
@@ -464,6 +463,13 @@ async function processMessage(rawUserMessage, conversationID, context) {
     return processMessageOutcome;
 
 }
+
+
+    // TO DO: remove me — replaced by understanding/understandMessage (Slice 1)
+    // const userRequest = detectUserRequest(currentUserMessage);
+    // processMessageOutcome.cloudPilot.userRequest = userRequest;
+    // processMessageOutcome.cloudPilot.actionStatus.type = userRequest === "general_chat" ? null : userRequest;
+    
 
 // TO DO: remove me — moved to understanding/search/searchMessageForAction.js (Slice 1)
 //FUNCTIONS B: Process User Messages

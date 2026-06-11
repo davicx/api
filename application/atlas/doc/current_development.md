@@ -8,6 +8,7 @@
 
 | Topic | Path |
 |-------|------|
+| Actions & input types (STEP 3 understanding) | `doc/ReadMe.md` |
 | Database schema (actions, requests, executions) | `doc/database/database.md` |
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
@@ -119,22 +120,40 @@ functions/
 
 ```text
 Message
-  ↓ STEP 1  Normalize
-  ↓ STEP 2  Load active request (DB)
-  ↓ STEP 3  Understand message     → messageUnderstanding
-  ↓ STEP 4  Process request        → requestOutcome          ← NEXT
-  ↓ STEP 5  Process execution       → executionOutcome        (later)
-  ↓ STEP 6  Build response           → responseOutcome         (later)
+  ↓ STEP 1  Normalize message
+  ↓ STEP 2  Load current request (DB)
+  ↓ STEP 3  Understand message        → understanding
+  ↓ STEP 4  Decide next step          → decision              ← NEXT
+  ↓ STEP 5  Apply one state change    → request mutation
+  ↓ STEP 6  Execute (if needed)       → execution
+  ↓ STEP 7  Respond once              → response
+```
+
+**Golden rule:** understand once → decide once → mutate once → respond once. No re-check loops.
+
+**Target `processMessage` shape:**
+
+```js
+async function processMessage(rawUserMessage, conversationID, context) {
+  const message = getCurrentUserMessage(rawUserMessage);
+  const state = await loadCurrentRequest(conversationID);
+  const understanding = await understandMessage(message);
+
+  const decision = decideNextStep({ message, state, understanding });
+
+  return await performDecision(decision, { conversationID, context, message, state, understanding });
+}
 ```
 
 **Layers (folder targets):**
 
-| Layer | Folder | Job |
-|-------|--------|-----|
-| Understanding | `functions/understanding/` | Read message → signals only (no DB, no chat text) |
-| Request | `functions/requests/` (next: `processRequest.js`) | State machine + DB writes → `actionEvent`, `shouldExecute` |
-| Execution | `functions/executions/` | Atlas/AWS when `shouldExecute` |
-| Response | `functions/responses/` (`buildResponse.js` first; delegates to `chat/`) | Only layer that produces user-facing text |
+| Layer | Folder | One question |
+|-------|--------|--------------|
+| Understanding | `functions/understanding/` | What did the user say? |
+| Decision | `functions/decision/` | What do we do now? |
+| Requests | `functions/requests/` | How do requests change? (DB) |
+| Execution | `functions/execution/` | Run the thing (Atlas/AWS) |
+| Response | `functions/chat/` + `functions/responses/` | User-facing text |
 
 **Import style:** one namespace per module — e.g. `const UnderstandingFunctions = require('./understanding/understandMessage');` then `UnderstandingFunctions.understandMessage(...)`. No destructured requires in the orchestrator.
 
@@ -147,22 +166,26 @@ Message
 | STEP 3 Understand | ✅ Live | `UnderstandingFunctions.understandMessage(message, currentActionState)` |
 | STEP 4+ | ❌ Not wired | Old STEP 4–8 still **commented** in `cloudPilotMessageFunctions.js` |
 
-**Understanding (Slice 1 done):**
+**Understanding (in progress — STEP 3 only, no actions yet):**
 
 ```text
 understanding/
 ├── understandMessage.js              ← orchestrator entry (Function F1)
 └── search/
-    ├── searchMessageForAction.js     ← registry match() → action type
-    ├── searchMessageForRegion.js     ← AWS region regex
-    ├── searchMessageForValues.js     ← composes region (more fields later)
-    ├── searchMessageForReply.js      ← stub
-    └── searchMessageForConversation.js ← stub
+    ├── searchMessageForAction.js     ← ✅ action type
+    ├── searchMessageForRegion.js
+    ├── searchMessageForStructuredFields.js
+    ├── searchMessageForInstanceId.js
+    ├── searchMessageForInstanceType.js
+    ├── searchMessageForName.js
+    ├── searchMessageForValues.js     ← composes all field extractors
+    ├── searchMessageForReply.js
+    └── searchMessageForConversation.js
 ```
 
+- **Exit criteria (understanding done):** ✅ Slices 3b–5 complete — STEP 3 populates full `messageUnderstanding`. **No DB writes, no chat response, no Atlas/AWS** until STEP 4 `processRequest` (next phase).
 - When **idle**: runs `searchMessageForAction` → e.g. `"toggle_ec2"` or `"general_chat"`
-- When **open request**: returns `action: null` (continuations — do **not** treat as `general_chat`)
-- Stubs return empty/`null` — same behavior as before Slice 1
+- When **open request**: returns `action: null` (continuations — moves to `processRequest` in Slice 2)
 
 **`messageUnderstanding` shape (log at STEP 3):**
 
@@ -179,13 +202,13 @@ understanding/
 }
 ```
 
-### Why `region: "us-west-2"` does nothing yet (expected)
+### Why STEP 3 logs matter but nothing “happens” yet (expected)
 
-1. **No STEP 4** — `"toggle ec2"` does not create a row in `cloudpilot_requests`; INITIAL STATE stays empty on the next message.
-2. **No P2 `getValues`** — structured fields are not parsed into `messageUnderstanding.values`.
-3. **No Request apply** — even with values, nothing calls `setUsersActionField` until STEP 4 / Request layer.
+1. **Understanding still filling in** — `values` has region only; instance IDs, structured fields, `reply`, `conversation` still stubs. See [Finish understanding (STEP 3)](#finish-understanding-step-3--before-processrequest).
+2. **No STEP 4** — even when STEP 3 is complete, `processRequest` does not run yet: no request rows created, no fields saved to DB, no confirm/execute.
+3. **No response layer** — HTTP reply may stay empty (`success: false`) until `buildResponse` — that is OK.
 
-Until those land, only STEP 3 logs are meaningful. HTTP reply may stay empty (`success: false`) — that is OK.
+**Your mental model is correct:** when understanding is done, every message should produce a full STEP 3 object like the shape below — same data we used to parse inline, but extracted only. Actions come in the **next** step (`processRequest`).
 
 ### Incremental rollout
 
@@ -247,7 +270,130 @@ Old message parsing in `cloudPilotMessageFunctions.js` (commented STEP 5/6/7) an
 
 ## Understanding: To Do
 
-**Goal:** Three clean layers — understanding (extract signals), request processing (decide A–F), execution (run AWS). Slice 1 (file layout + stubs) is done. Remaining slices preserve behavior first, then add features.
+**Goal:** Three clean layers — understanding (extract signals), request processing (decide A–F), execution (run AWS).
+
+**Current focus:** Finish **Layer 1 only**. Populate STEP 3 for all message types we supported before. **No actions yet** — `processRequest` is the next phase after understanding is complete.
+
+---
+
+### Finish understanding (STEP 3) — before `processRequest`
+
+When this section is done, any user message should fill in:
+
+```json
+{
+  "action": "scan_ec2",
+  "values": {},
+  "reply": null,
+  "conversation": null,
+  "ambiguous": false,
+  "candidates": [],
+  "source": "rules",
+  "confidence": 1
+}
+```
+
+…with real data in each field when the message contains it. Nothing downstream runs yet.
+
+| `messageUnderstanding` field | Search function | Status | Old source (`functions.js` / elsewhere) |
+|-----------------------------|-----------------|--------|----------------------------------------|
+| `action` | `searchMessageForAction` | ✅ Done | `detectUserRequest` / registry `match()` |
+| `values.region` | `searchMessageForRegion` | ✅ Done | `extractAwsRegion` |
+| `values.instance_id` | `searchMessageForValues` | ✅ Done | `extractInstanceId` |
+| `values.primary_instance_id` | `searchMessageForValues` | ✅ Done | `extractInstanceId` (toggle) |
+| `values.secondary_instance_id` | `searchMessageForValues` | ✅ Done | `extractInstanceId` (toggle) |
+| `values.name` | `searchMessageForValues` | ✅ Done | `extractName` (create) |
+| `values.instance_type` | `searchMessageForValues` | ✅ Done | `extractInstanceType` (create) |
+| `values.*` (structured) | `searchMessageForValues` | ✅ Done | `extractStructuredFields` — `field: "value"` |
+| `reply` | `searchMessageForReply` | ✅ Done | `userConfirmedAction`, `extractExecutionMode`, cancel phrases |
+| `conversation` | `searchMessageForConversation` | ✅ Done | `workflowConversationFunctions` (list/focus/status) |
+| `ambiguous` / `candidates` | `searchMessageForAction` | ✅ Done | multi-match registry |
+
+**Suggested build order (understanding only):**
+
+```text
+1. Slice 3b — searchMessageForValues: instance IDs + structured field: "value"
+2. Slice 4   — searchMessageForReply: yes, cancel, execution mode 1–4
+3. Slice 5   — searchMessageForConversation: status, list open actions, focus switch
+4. Slice 2   — understandMessage(message) stateless; open-request guard moves to processRequest (optional last in understanding phase)
+```
+
+**Exit test (understanding complete):**
+
+```text
+"toggle ec2"                              → action: "toggle_ec2"
+"toggle ec2 in us-west-2"                 → action + values.region
+"i-0abc123"                               → values.primary_instance_id or instance_id (heuristic)
+'primary_instance_id: "i-0abc123"'        → values.primary_instance_id
+"yes"                                     → reply: "confirm"
+"4"                                       → reply: execution mode
+"cancel"                                  → reply: "cancel"
+"what am I waiting on"                    → conversation: "list_open"
+"hello"                                   → action: "general_chat", empty values
+```
+
+After exit test passes → start **processRequest** (STEP 4). That layer decides A–F and touches the DB; understanding does not.
+
+**Status (2026-06-09):** Slices 3b, 4, 5 done — STEP 3 parses all fields. Slice 2 (stateless entry) deferred to `processRequest` phase.
+
+---
+
+### Actions & input reference (STEP 3)
+
+**Actions** — intent phrases → `action`:
+
+| Action | Example messages |
+|--------|------------------|
+| `general_chat` | `hello`, `hi` (no action match) |
+| `inventory_aws` | `show me all my aws resources`, `show my aws resources` |
+| `scan_ec2` | `scan ec2`, `scan ec2 in us-west-2` |
+| `toggle_ec2` | `toggle ec2`, `switch ec2` |
+| `create_ec2` | `create ec2`, `create instance` |
+| `delete_ec2` | `delete ec2`, `delete instance` |
+
+**Values** — field inputs → `values` (any action; composed in `searchMessageForValues`):
+
+| Field | Example input |
+|-------|----------------|
+| `region` | `us-west-2`, `region: "us-west-2"`, embedded in `scan ec2 in us-west-2` |
+| `instance_id` | `i-0abc123def4567890` (single bare ID) |
+| `primary_instance_id` | `primary_instance_id: "i-0abc123def4567890"`, first of two bare IDs |
+| `secondary_instance_id` | `secondary_instance_id: "i-0xyz9876543210fed"`, second of two bare IDs |
+| `name` | `name it my-demo-server`, `call it my-demo-server`, bare `my-demo.server` |
+| `instance_type` | `t3.micro`, `instance_type: "t3.micro"` |
+| Any registry field | `field_name: "value"` (quoted structured format) |
+
+**Required fields per action** (for `processRequest` later — collected via `values` over one or more messages):
+
+| Action | Required `values` keys |
+|--------|------------------------|
+| `scan_ec2` | `region` |
+| `toggle_ec2` | `region`, `primary_instance_id`, `secondary_instance_id` |
+| `create_ec2` | `name`, `region`, `instance_type` |
+| `delete_ec2` | `region`, `instance_id` |
+| `inventory_aws` | _(none — immediate execution when wired)_ |
+| `general_chat` | _(none)_ |
+
+**Reply** — confirm / mode / cancel → `reply`:
+
+| Input | `reply` value |
+|-------|----------------|
+| `yes`, `confirm`, `run it`, `do it`, `proceed`, `execute` | `confirm` |
+| `cancel`, `stop`, `never mind`, `abort`, `quit`, … | `cancel` |
+| `1` | `instructions` |
+| `2` | `cli` |
+| `3` | `pr` |
+| `4` | `automatic` |
+
+**Conversation** — meta intents → `conversation`:
+
+| Input | `conversation` value |
+|-------|----------------------|
+| `what am i waiting on`, `list open actions`, `show my open actions`, … | `list_open` |
+| `what is the status`, `show status`, `where are we`, … | `status` |
+| `switch to 2`, `focus on Toggle EC2`, `use delete ec2`, … | `focus_switch` |
+
+---
 
 ### Architecture (target)
 
@@ -272,82 +418,292 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 
 **Rule:** Every search function answers one question. No request state inside understanding. Conditional logic (“only if region is missing”) lives in `processRequest`.
 
-### Slice 2 — Stateless understanding + processRequest stub
-
-| Task | Status | Notes |
-|------|--------|-------|
-| `understandMessage(message)` — drop `actionState` arg | Planned | Always run all searches unconditionally |
-| Add `requests/processRequest.js` | Planned | Replicate today's open-request guard so STEP 3 logs stay the same |
-| Reorder pipeline: understand → load request → processRequest | Planned | Today: load request → understand |
-| Remove `buildUnderstandingContext` from understanding | Planned | Context moves to `processRequest` |
-
-**Test (must match Slice 1):**
-
-```text
-"toggle ec2"  (idle)           → action: "toggle_ec2"
-"hello"       (idle)           → action: "general_chat"
-"us-west-2"   (open request)   → action: null, values: {}
-```
-
-### Slice 3 — Field extraction
+### Slice 3 — Field extraction (region)
 
 | Task | Status | Notes |
 |------|--------|-------|
 | Implement `searchMessageForRegion` | ✅ Done | Regex from `functions.js` `extractAwsRegion` |
 | Implement `searchMessageForValues` (region only) | ✅ Done | Composes `searchMessageForRegion` → `values.region` |
-| `searchMessageForValues` — instance_id, structured `field: "value"` | Planned | Later Slice 3 follow-up |
-| `processRequest` category B | Planned | Apply values when open request + field in `missing` |
 
-**Test (STEP 3 log):**
-
-```text
-"toggle ec2 in us-west-2"  → values: { "region": "us-west-2" }
-"region: us-west-2"          → values: { "region": "us-west-2" }
-"us-west-2" (open request)   → action: null, values: { "region": "us-west-2" }
-"hello"                      → values: {}
-```
-
-### Slice 4 — Reply extraction
+### Slice 3b — Field extraction (toggle / create / delete fields)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Implement `searchMessageForReply` | Planned | confirm, cancel, execution mode `1`–`4` |
-| `processRequest` categories C, D | Planned | Confirm → execute path; cancel → close request |
+| Instance IDs in `searchMessageForValues` | ✅ Done | `instance_id`, `primary_instance_id`, `secondary_instance_id` |
+| Structured `field: "value"` in `searchMessageForValues` | ✅ Done | `searchMessageForStructuredFields` |
+| `name`, `instance_type` in `searchMessageForValues` | ✅ Done | `searchMessageForName`, `searchMessageForInstanceType` |
 
-**Test:**
+**Test (STEP 3 log only — no DB):**
 
 ```text
-"yes"    (waiting on confirmation) → reply: "confirm"
-"cancel" (open request)            → reply: "cancel"
+"toggle ec2 in us-west-2"           → values: { "region": "us-west-2" }
+"i-0abc123"                         → values: { "primary_instance_id": "i-0abc123" } (or instance_id)
+'primary_instance_id: "i-0abc123"'  → values: { "primary_instance_id": "i-0abc123" }
 ```
 
-### Slice 5 — Conversation + status
+### Slice 4 — Reply extraction (understanding only)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Implement `searchMessageForConversation` | Planned | Status question, list open actions, focus switch |
-| `processRequest` category E | Planned | Show status / missing fields |
+| Implement `searchMessageForReply` | ✅ Done | confirm, cancel, execution mode `1`–`4` |
 
-### Slice 6 — Full request processing + response
+**Test (STEP 3 log only):**
+
+```text
+"yes"    → reply: "confirm"
+"4"      → reply: execution mode (e.g. "automatic")
+"cancel" → reply: "cancel"
+```
+
+### Slice 5 — Conversation (understanding only)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `processRequest` category A | Planned | New/replace request, ask missing fields |
-| `processRequest` category F | Planned | Route to OpenAI general chat |
-| Wire STEP 4 log `requestOutcome` | Planned | See target shape in [Pipeline rebuild](#pipeline-rebuild-processmessage--active-work) |
-| `responses/buildResponse.js` | Planned | Chat text returns in API response |
-| `executeRequest` + STEP 5 | Planned | Atlas runs on confirm |
+| Implement `searchMessageForConversation` | ✅ Done | Status question, list open actions, focus switch |
 
-### Decision priority for `processRequest` (document once)
+### Slice 2 — Stateless understanding (first step of Decision phase)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `understandMessage(message)` — drop `actionState` arg | Planned | Always run all searches; no open-request guard in understanding |
+| Remove `buildUnderstandingContext` from understanding | Planned | Interpretation moves to `decideNextStep` |
+
+---
+
+## Pipeline: Decision → Requests → Execution
+
+**Status:** Understanding complete (STEP 3). **Next:** Decision layer — same incremental style as understanding.
+
+**Replaces:** commented STEPS 4–8 in `cloudPilotMessageFunctions.js`, inline flags (`cloudPilotShouldRespond`, `fieldsUpdated`, `actionTransitionedToReady`, …), `determineActionEvent`, `resolveNullActionEvent`.
+
+---
+
+### 1. Understanding — ✅ done
 
 ```text
-1. reply === "cancel"            → D
-2. reply === "confirm"           → C (if waiting on confirmation)
-3. conversation === "status"     → E
-4. values present + open request   → B
-5. action is concrete action       → A (new or replace)
-6. else                            → F
+understanding/
+├── understandMessage.js
+└── search/
+    ├── searchMessageForAction.js
+    ├── searchMessageForRegion.js
+    ├── searchMessageForStructuredFields.js
+    ├── searchMessageForInstanceId.js
+    ├── searchMessageForInstanceType.js
+    ├── searchMessageForName.js
+    ├── searchMessageForValues.js      ← composes field searches
+    ├── searchMessageForReply.js
+    └── searchMessageForConversation.js
 ```
+
+Output: `understanding` — see `doc/ReadMe.md`. No DB. No route. No state mutation.
+
+---
+
+### 2. Decision — **next build**
+
+**Job:** Given `understanding` + `requestState`, return **one** `decision`.
+
+```text
+decision/
+├── decideNextStep.js       ← entry (orchestrator calls only this)
+├── decisionTypes.js        ← route + event constants
+└── (later) determineRoute.js, determineEvent.js if file grows
+```
+
+**Decision shape:**
+
+```js
+{
+  route: "cloudpilot" | "openai",
+  event: "new_request" | "missing_fields_given" | ... ,
+  action: "toggle_ec2",           // when relevant
+  values: { region: "us-west-2" }, // when relevant
+  executionMode: "automatic"       // when reply is 1-4
+}
+```
+
+**Deletes these old flags** — all become `decision.route` + `decision.event`:
+
+```text
+cloudPilotShouldRespond
+actionTransitionedToReady
+actionPendingConfirmation
+executionModeSelected
+newActionStarted
+fieldsUpdated
+actionEvent (inline variable)
+```
+
+**`decideNextStep` priority** (first match wins — captures old logic):
+
+```text
+1.  understanding.ambiguous                    → event: ambiguous_action
+2.  understanding.reply === "cancel"           → event: request_cancelled
+3.  understanding.conversation === "list_open" → event: list_open_actions
+4.  understanding.conversation === "focus_switch" → event: focus_switch
+5.  understanding.conversation === "status"    → event: request_status
+6.  understanding.reply is execution mode (1-4) + state ready for mode → event: execution_mode_selected
+7.  understanding.reply === "confirm" + waiting_on_confirmation → event: execution_confirmed
+8.  understanding.reply === "confirm" + state.status === "failed" → event: workflow_failed (old 7C)
+9.  understanding.action + not general_chat + no open / replace allowed → event: new_request
+10. understanding.action + not general_chat + same as open request (repeat intent) → event: request_chat (old resolveNull → workflow_in_progress)
+11. state.pendingAction + values present (matching missing) → event: missing_fields_given
+12. state.pendingAction + no decision yet → event: request_chat (maps old resolveNullActionEvent)
+13. understanding.action === inventory path + requiresExecution + no workflow → event: immediate_execution (inventory_aws)
+14. else → route: openai, event: general_chat
+```
+
+**`request_chat` sub-events** (derived from state when event is `request_chat` — old `resolveNullActionEvent`):
+
+| State condition | Chat sub-event (for `CloudPilotChat`) |
+|-----------------|--------------------------------------|
+| `status === running` | `workflow_running` |
+| `status === failed` | `workflow_failed` |
+| ready + needs mode + no `executionMode` | `awaiting_execution_mode` |
+| ready + (mode set or non-destructive) | `awaiting_confirmation` |
+| `missing.length > 0` | `workflow_in_progress` |
+
+**Old `actionEvent` → new `decision.event` map:**
+
+| Old (`CloudPilotChat`) | New (`decideNextStep`) |
+|------------------------|-------------------------|
+| `new_action` | `new_request` |
+| `missing_fields_given` | `missing_fields_given` |
+| `awaiting_execution_mode` | `execution_mode_selected` or `request_chat` → sub |
+| `awaiting_confirmation` | `request_chat` → sub |
+| `execution_requested` | `execution_confirmed` |
+| `workflow_in_progress` | `request_chat` → sub |
+| `workflow_running` | `request_chat` → sub |
+| `workflow_failed` | `request_chat` → sub or `workflow_failed` |
+| _(OpenAI path)_ | `general_chat` |
+
+**Core slice (build first — your starter):**
+
+```js
+function decideNextStep({ state, understanding }) {
+  if (understanding.action && understanding.action !== "general_chat" && shouldStartNewRequest(state, understanding)) {
+    return { route: "cloudpilot", event: "new_request", action: understanding.action, values: understanding.values };
+  }
+  if (state.pendingAction && hasApplicableValues(state, understanding.values)) {
+    return { route: "cloudpilot", event: "missing_fields_given", values: understanding.values };
+  }
+  if (state.pendingAction && understanding.reply === "confirm" && isWaitingOnConfirmation(state)) {
+    return { route: "cloudpilot", event: "execution_confirmed" };
+  }
+  if (state.pendingAction) {
+    return { route: "cloudpilot", event: "request_chat" };
+  }
+  return { route: "openai", event: "general_chat" };
+}
+```
+
+Log at **STEP 4: DECISION**.
+
+---
+
+### 3. Requests — apply one mutation
+
+**Job:** Decision says WHAT; request functions DO it (once per message).
+
+```text
+requests/
+├── loadRequest.js          ← wrap getUsersActionState (STEP 2)
+├── startRequest.js         ← old startNewUsersAction / createAction
+├── updateRequestFields.js  ← old setUsersActionField loop (values → missing)
+├── setRequestStatus.js     ← waiting_on_fields / mode / confirmation
+├── setExecutionMode.js     ← reply 1-4
+├── cancelRequest.js        ← reply cancel + closeOpenActionBeforeStartingNew
+├── completeRequest.js      ← finish after execution
+└── applyDecision.js        ← maps decision.event → one mutator
+```
+
+**Old STEP → new function:**
+
+| Old step | Request function |
+|----------|------------------|
+| STEP 4 start/replace | `startRequest` (+ `cancelRequest` if replacing) |
+| STEP 5 field loop | `updateRequestFields` |
+| STEP 6A status after fields | `setRequestStatus` (`statusWhenFieldsComplete`) |
+| STEP 6F mode | `setExecutionMode` + `setRequestStatus` → confirmation |
+| Cancel | `cancelRequest` |
+| STEP 7 confirm | _(no DB until execute — decision only)_ |
+
+**`applyDecision(decision)`** calls **exactly one** of the above. Log at **STEP 5: REQUEST UPDATE**.
+
+**DB tables:** `cloudpilot_requests` (read/write), `cloudpilot_actions` (lookup `action_id`). `cloudpilot_workflows` retired.
+
+---
+
+### 4. Execution — run when decision says so
+
+```text
+execution/
+├── executeRequest.js       ← entry
+└── AtlasExecution.js       ← move from classes/ (existing)
+```
+
+| `decision.event` | Execution |
+|------------------|-----------|
+| `execution_confirmed` | `executeRequest(state)` → handler → Atlas |
+| `immediate_execution` | `inventory_aws` — no request row (old STEP 4 immediate) |
+
+Log at **STEP 6: EXECUTION**. No understanding. No decision re-run.
+
+---
+
+### 5. Response — respond once
+
+```text
+performDecision()
+  → applyDecision()      // mutate once
+  → executeRequest()   // if decision requires
+  → buildResponse()    // CloudPilotChat or OpenAI — once
+```
+
+| `decision.route` | Handler |
+|------------------|---------|
+| `cloudpilot` | `CloudPilotChat.handleCloudPilotChat` (existing event handlers) |
+| `openai` | `openAIFunctions.sendGeneralChat` |
+
+Log at **STEP 7: RESPONSE**. Map `decision.event` → `actionEvent` for `CloudPilotChat` during transition (alias table above).
+
+---
+
+### Incremental rollout (Decision phase)
+
+| Slice | Build | Test |
+|-------|-------|------|
+| **D0** | `understandMessage(message)` stateless | Same STEP 3 output; open request no longer blanks `action` in understanding |
+| **D1** | `decideNextStep` core + STEP 4 log only | `toggle ec2` → `new_request`; `hello` → `general_chat` |
+| **D2** | `applyDecision` for `new_request` only | STEP 5: row in `cloudpilot_requests`; INITIAL STATE on next message |
+| **D3** | `missing_fields_given` | `us-west-2` shrinks `missing`, grows `collected` |
+| **D4** | `execution_mode_selected` + `execution_confirmed` | destructive tier 4 → yes |
+| **D5** | `performDecision` + `CloudPilotChat` wiring | Chat text in API |
+| **D6** | `execution` + `inventory_aws` immediate | Atlas E2E |
+| **D7** | cancel, list_open, focus_switch, status, ambiguous | conversation + reply paths |
+| **D8** | Delete commented pipeline + old flags in `cloudPilotMessageFunctions.js` | CLEAN UP Phase 2 |
+
+---
+
+### What used to work — checklist
+
+| Capability | Old location | New home |
+|------------|--------------|----------|
+| Detect action intent | `detectUserRequest` / STEP 3 | ✅ `understanding` |
+| Extract region, IDs, name, type | STEP 5 / `functions.js` | ✅ `understanding` |
+| Confirm / cancel / mode 1-4 | STEP 6F/7 / `functions.js` | ✅ `understanding` |
+| List open actions / focus | `workflowConversationFunctions` | ✅ `understanding.conversation` → `decideNextStep` |
+| Start / replace request | STEP 4 | `decideNextStep` → `startRequest` |
+| Apply fields to request | STEP 5 | `updateRequestFields` |
+| Status transitions | STEP 6A/6F | `setRequestStatus` / `setExecutionMode` |
+| Resolve “what chat event?” | `resolveNullActionEvent` | `decideNextStep` → `request_chat` sub-events |
+| Execute on confirm | STEP 7/8 | `execution_confirmed` → `executeRequest` |
+| Inventory immediate | STEP 4 `shouldExecuteImmediately` | `immediate_execution` |
+| General chat | STEP 8 OpenAI branch | `route: openai` |
+| Chat copy per event | `CloudPilotChat.js` | Keep — fed by `performDecision` |
+| Ambiguous action | `getAction` multi-match | `decideNextStep` → `ambiguous_action` |
+| One open request per conversation | `createAction` guard | `startRequest` (unchanged) |
+| Replace on new action | `closeOpenActionBeforeStartingNew` | `startRequest` (unchanged) |
 
 ---
 
@@ -382,7 +738,7 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 |------|--------|-------|
 | Delete `parseMessage.js`, `getAction.js` | ✅ Done | Replaced by `understandMessage.js`, `search/searchMessageForAction.js` |
 | Remove `extractAwsRegion` from `functions/functions.js` | Planned | Duplicate of `search/searchMessageForRegion.js` |
-| Move remaining field extractors | Planned | `extractStructuredFields`, `instance_id`, etc. → `searchMessageForValues` |
+| Move remaining field extractors | ✅ Done | Now in `understanding/search/`; remove duplicates from `functions.js` in cleanup |
 | Move reply / event helpers | Planned | `extractExecutionMode`, `userConfirmedAction`, `determineActionEvent`, `shouldStartExecution` → `searchMessageForReply` + `processRequest` |
 | Gut or delete `functions/functions.js` | Planned | Only required by commented pipeline today; empty once Phase 2–3 done |
 
@@ -590,16 +946,16 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 ## Suggested order (today)
 
 ```text
-1. Pipeline rebuild — STEP 4 processRequest (log requestOutcome), then understanding Slices 2–6, P5 buildResponse
-2. CLEAN UP — Phase 1 then Phase 2 (see [CLEAN UP](#clean-up)) — soon, no new features
-3. Adopt cloudpilot_actions + cloudpilot_requests + cloudpilot_executions (database.md) — Actions.js done; run SQL if not yet
-4. P3C — open_actions Navigator table (API)
-5. functions/ restructure — requests/ then executions/ then navigator/ (see section 1E)
-6. Kite — wire POST /message + render action status + navigator tables
-7. Manual AWS E2E — create, delete, toggle + Stage 4 cross-action
-8. Policy fields on routes
-9. CLEAN UP — Phase 3–4 after processRequest lands
-10. Phase 2 product — Executions.js + operation_id (when ready for audit/retries)
+1. Decision phase — D0 stateless understanding, D1 decideNextStep, D2–D8 apply/execute/respond (see Pipeline: Decision → Requests → Execution)
+3. CLEAN UP — Phase 1 then Phase 2 (see [CLEAN UP](#clean-up)) — soon, no new features
+4. Adopt cloudpilot_actions + cloudpilot_requests + cloudpilot_executions (database.md) — Actions.js done; run SQL if not yet
+5. P3C — open_actions Navigator table (API)
+6. functions/ restructure — requests/ then executions/ then navigator/ (see section 1E)
+7. Kite — wire POST /message + render action status + navigator tables
+8. Manual AWS E2E — create, delete, toggle + Stage 4 cross-action
+9. Policy fields on routes
+10. CLEAN UP — Phase 3–4 after processRequest lands
+11. Phase 2 product — Executions.js + operation_id (when ready for audit/retries)
 ```
 
 ---
@@ -608,6 +964,9 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 
 | Date | Change |
 |------|--------|
+| 2026-06-09 | **Decision phase plan:** `decideNextStep` → `applyDecision` → `executeRequest` → respond once; old pipeline/flags mapped; slices D0–D8 |
+| 2026-06-09 | **Understanding complete (Slices 3b–5):** all field/reply/conversation parsers; **Actions & input reference** table added |
+| 2026-06-09 | **Understanding plan:** "Finish STEP 3 before processRequest" — field/reply/conversation table + exit test; actions deferred to next phase |
 | 2026-06-09 | **CLEAN UP** section added — phased dead-code removal plan (orphaned files, commented pipeline, duplicates) |
 | 2026-06-09 | **Understanding Slice 3 (region):** `searchMessageForRegion` + `searchMessageForValues` wire-up; STEP 3 logs `values.region` |
 | 2026-06-09 | **Understanding Slice 1:** restructured `understanding/` — `understandMessage` entry, `searchMessageFor*` files, stubs; added **Understanding: To Do** section (Slices 2–6) |
