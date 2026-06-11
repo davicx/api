@@ -154,8 +154,8 @@ understanding/
 ├── understandMessage.js              ← orchestrator entry (Function F1)
 └── search/
     ├── searchMessageForAction.js     ← registry match() → action type
-    ├── searchMessageForRegion.js     ← stub
-    ├── searchMessageForValues.js     ← stub
+    ├── searchMessageForRegion.js     ← AWS region regex
+    ├── searchMessageForValues.js     ← composes region (more fields later)
     ├── searchMessageForReply.js      ← stub
     └── searchMessageForConversation.js ← stub
 ```
@@ -293,14 +293,18 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Implement `searchMessageForRegion` | Planned | Move regex from `functions.js` `extractAwsRegion` |
-| Implement `searchMessageForValues` | Planned | Compose region + instance_id + structured `field: "value"` |
+| Implement `searchMessageForRegion` | ✅ Done | Regex from `functions.js` `extractAwsRegion` |
+| Implement `searchMessageForValues` (region only) | ✅ Done | Composes `searchMessageForRegion` → `values.region` |
+| `searchMessageForValues` — instance_id, structured `field: "value"` | Planned | Later Slice 3 follow-up |
 | `processRequest` category B | Planned | Apply values when open request + field in `missing` |
 
-**Test:**
+**Test (STEP 3 log):**
 
 ```text
-"region: us-west-2" (open request, missing region) → values: { "region": "us-west-2" }
+"toggle ec2 in us-west-2"  → values: { "region": "us-west-2" }
+"region: us-west-2"          → values: { "region": "us-west-2" }
+"us-west-2" (open request)   → action: null, values: { "region": "us-west-2" }
+"hello"                      → values: {}
 ```
 
 ### Slice 4 — Reply extraction
@@ -334,15 +338,6 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 | `responses/buildResponse.js` | Planned | Chat text returns in API response |
 | `executeRequest` + STEP 5 | Planned | Atlas runs on confirm |
 
-### Cleanup (after slices land)
-
-| Task | Status | Notes |
-|------|--------|-------|
-| Delete `parseMessage.js`, `getAction.js` | ✅ Done | Replaced by `understandMessage.js`, `searchMessageForAction.js` |
-| Remove commented STEPS 5–7 in `cloudPilotMessageFunctions.js` | Planned | Superseded by search functions + `processRequest` |
-| Move field extractors out of `functions.js` | Planned | Into `searchMessageForRegion` / `searchMessageForValues` |
-| Move `determineActionEvent`, `shouldStartExecution` | Planned | Into `processRequest` |
-
 ### Decision priority for `processRequest` (document once)
 
 ```text
@@ -353,6 +348,62 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 5. action is concrete action       → A (new or replace)
 6. else                            → F
 ```
+
+---
+
+## CLEAN UP
+
+**Goal:** Remove dead code left over from the pipeline rebuild and understanding move. **Do soon** — no behavior change if done in the order below. Full audit: 2026-06-09 (after Slice 1 + region).
+
+### Phase 1 — Safe now (orphaned files, zero live requires)
+
+| Task | Status | File / item |
+|------|--------|-------------|
+| Delete orphaned conversation state | Planned | `state/conversationStateFunctions.js` — old in-memory flow; superseded by `understanding/` + DB |
+| Delete orphaned focus tracking | Planned | `state/focusedWorkflowFunctions.js` — never wired |
+| Delete orphaned open-actions intents | Planned | `functions/workflowConversationFunctions.js` — never wired to STEP 3 |
+| Remove unused import | Planned | `logic/messages.js` — `require('../state/ActionState')` imported but unused |
+
+**Keep for now:** `state/ActionState.js` — still used when `CLOUDPILOT_STATE_BACKEND=memory`.
+
+### Phase 2 — `cloudPilotMessageFunctions.js` (live path is STEP 1–3 only)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Remove commented STEP 4–8 block (~lines 115–462) | Planned | Superseded by `processRequest` + `buildResponse` |
+| Remove commented `detectUserRequest` | Planned | Replaced by `searchMessageForAction` |
+| Remove `//GOAL`, `//FINAL`, `//APPENDIX` blocks (~lines 653–916) | Planned | Historical sketches only |
+| Remove dead imports on live path | Planned | `Functions`, `AtlasExecution`, `CloudPilotChat` — only used inside comments today |
+| Review helpers only used in comments | Planned | `getActionDefinition`, `handleGeneralChat`, `cloneActionStatus`, `shouldStartNewAction`, `resolveNullActionEvent` — delete or move to `requests/` when STEP 4 lands |
+
+### Phase 3 — Duplicate / legacy logic (after understanding + processRequest slices)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Delete `parseMessage.js`, `getAction.js` | ✅ Done | Replaced by `understandMessage.js`, `search/searchMessageForAction.js` |
+| Remove `extractAwsRegion` from `functions/functions.js` | Planned | Duplicate of `search/searchMessageForRegion.js` |
+| Move remaining field extractors | Planned | `extractStructuredFields`, `instance_id`, etc. → `searchMessageForValues` |
+| Move reply / event helpers | Planned | `extractExecutionMode`, `userConfirmedAction`, `determineActionEvent`, `shouldStartExecution` → `searchMessageForReply` + `processRequest` |
+| Gut or delete `functions/functions.js` | Planned | Only required by commented pipeline today; empty once Phase 2–3 done |
+
+### Phase 4 — Docs (optional, low risk)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Mark doc snapshots as historical | Planned | `doc/code/allCode.js`, `doc/code/allCodeTwo.js` — show old `detectUserRequest` pipeline |
+| Retire legacy SQL doc | Planned | `doc/sql/cloudpilot_workflows_phase1.sql` — superseded by `doc/database/database.md` |
+
+### Suggested cleanup order
+
+```text
+1. Phase 1 — delete 3 orphaned files + unused import in messages.js
+2. Phase 2 — strip commented blocks + dead imports in cloudPilotMessageFunctions.js
+3. Continue understanding / processRequest slices (Slices 2–6)
+4. Phase 3 — remove duplicates from functions.js after logic lives in understanding/ + requests/
+5. Phase 4 — doc hygiene when convenient
+```
+
+**Rule:** One cleanup PR per phase; run same STEP 3 curl tests after each (`hi`, `toggle ec2`, `scan ec2`, `toggle ec2 in us-west-2`).
 
 ---
 
@@ -539,14 +590,16 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 ## Suggested order (today)
 
 ```text
-1. Pipeline rebuild — STEP 4 processRequest (log requestOutcome), then P2 getValues, P5 buildResponse
-2. Adopt cloudpilot_actions + cloudpilot_requests + cloudpilot_executions (database.md) — Actions.js done; run SQL if not yet
-3. P3C — open_actions Navigator table (API)
-4. functions/ restructure — requests/ then executions/ then navigator/ (see section 1E)
-5. Kite — wire POST /message + render action status + navigator tables
-6. Manual AWS E2E — create, delete, toggle + Stage 4 cross-action
-7. Policy fields on routes
-8. Phase 2 — Executions.js + operation_id (when ready for audit/retries)
+1. Pipeline rebuild — STEP 4 processRequest (log requestOutcome), then understanding Slices 2–6, P5 buildResponse
+2. CLEAN UP — Phase 1 then Phase 2 (see [CLEAN UP](#clean-up)) — soon, no new features
+3. Adopt cloudpilot_actions + cloudpilot_requests + cloudpilot_executions (database.md) — Actions.js done; run SQL if not yet
+4. P3C — open_actions Navigator table (API)
+5. functions/ restructure — requests/ then executions/ then navigator/ (see section 1E)
+6. Kite — wire POST /message + render action status + navigator tables
+7. Manual AWS E2E — create, delete, toggle + Stage 4 cross-action
+8. Policy fields on routes
+9. CLEAN UP — Phase 3–4 after processRequest lands
+10. Phase 2 product — Executions.js + operation_id (when ready for audit/retries)
 ```
 
 ---
@@ -555,6 +608,8 @@ Layer 3  executeRequest(requestState)          → Atlas/AWS when told to
 
 | Date | Change |
 |------|--------|
+| 2026-06-09 | **CLEAN UP** section added — phased dead-code removal plan (orphaned files, commented pipeline, duplicates) |
+| 2026-06-09 | **Understanding Slice 3 (region):** `searchMessageForRegion` + `searchMessageForValues` wire-up; STEP 3 logs `values.region` |
 | 2026-06-09 | **Understanding Slice 1:** restructured `understanding/` — `understandMessage` entry, `searchMessageFor*` files, stubs; added **Understanding: To Do** section (Slices 2–6) |
 | 2026-06-06 | **Pipeline rebuild:** section added — STEP 1–3 live (`understanding/`), STEP 4 next; why region/fields not persisted yet; test curl |
 | 2026-06-06 | **Target `functions/` layout:** `requests/`, `executions/`, `navigator/` — old → new file map; section 1E |

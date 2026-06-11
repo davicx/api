@@ -3,11 +3,16 @@ FUNCTIONS A: Region extraction from user message
     1) Function A1: searchMessageForRegion
 */
 
-//Function A1: Find an AWS region in the message (stub — logic in Slice 3)
+//Function A1: Find an AWS region in the message
 function searchMessageForRegion(message) {
-    void message;
+    const text = String(message || '');
+    const match = text.match(/\b((?:us|eu|ap|sa|ca|me|af)-(?:gov-)?[a-z]+-\d)\b/i);
 
-    return {};
+    if (!match) {
+        return {};
+    }
+
+    return { region: String(match[1]).toLowerCase() };
 }
 
 module.exports = { searchMessageForRegion };
