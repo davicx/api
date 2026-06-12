@@ -2,7 +2,7 @@
 
 **Purpose:** Single source of truth for what we are working on, what is done, and what is deferred.
 
-**Last reviewed:** 2026-06-09 (understanding layer restructure — Slice 1)
+**Last reviewed:** 2026-06-09 (STEP 4 decision layer live — STEP 5 next)
 
 **Reference docs (not todo lists):**
 
@@ -123,13 +123,131 @@ Message
   ↓ STEP 1  Normalize message
   ↓ STEP 2  Load current request (DB)
   ↓ STEP 3  Understand message        → understanding
-  ↓ STEP 4  Decide next step          → decision              ← NEXT
-  ↓ STEP 5  Apply one state change    → request mutation
+  ↓ STEP 4  Decide next step          → decision              ✅
+  ↓ STEP 5  Apply one state change    → request mutation      ← NEXT
   ↓ STEP 6  Execute (if needed)       → execution
   ↓ STEP 7  Respond once              → response
 ```
 
 **Golden rule:** understand once → decide once → mutate once → respond once. No re-check loops.
+
+---
+
+## STEP 5: CURRENT TO DO
+
+**Goal:** Persist the decision to `cloudpilot_requests` — one DB mutation per message. This is the layer that gives CloudPilot **memory** between messages.
+
+### Mental model
+
+STEP 5 does **not** look at `chatType`. It only reads the **decision object** from STEP 4.
+
+```js
+const requestOutcome = await applyDecision(decision, {
+  conversationID,
+  context: processMessageContext,
+  requestState: currentActionState
+});
+```
+
+```text
+decision says skip    → do nothing
+decision says create  → create request row
+decision says update  → update open request row
+decision says close   → finish request (is_open = 0, status completed)
+decision says cancel  → cancel request row
+```
+
+`applyDecision` infers the verb from the decision shape (`request`, `closeRequest`, `response.type`, etc.) — **not** from `chatType`. `chatType` is for STEP 7 (which handler speaks). STEP 5 only mutates state.
+
+### Entry file (keep it boring)
+
+```text
+functions/requests/applyDecision.js   ← orchestrator calls only this at first
+```
+
+Wire in `cloudPilotMessageFunctions.js`:
+
+```js
+//STEP 5: Request update
+const requestOutcome = await applyDecision(decision, { conversationID, context, requestState: currentActionState });
+
+console.log("STEP 5: REQUEST UPDATE:");
+console.log(JSON.stringify(requestOutcome, null, 2));
+console.log(" ");
+```
+
+Reuse existing DB primitives underneath (`ActionStateFunctions`, `Actions.js`) — do not reimplement field loops from the old commented pipeline.
+
+### Return shape (first version)
+
+```js
+{
+  success: true,
+  action: "created" | "updated" | "skipped" | "closed" | "cancelled",
+  requestID: null,
+  request: null,
+  error: null
+}
+```
+
+- `action: "skipped"` — no row change (`general_chat`, conversation intents, `immediate_execution` persist skip, no-op chat scenes)
+- `request` — loaded state after mutation (same shape as STEP 2 `ACTION STATE`), or `null` when skipped
+
+### Build plan (3 parts — do A + B together first)
+
+| Part | Scope | Proves |
+|------|-------|--------|
+| **A** | Create new request | `toggle ec2` → row in `cloudpilot_requests`; next message INITIAL STATE shows `pendingAction` |
+| **B** | Update open request (fields + status) | `region: "us-west-2"` merges into open row; `missing` shrinks, `collected` grows |
+| **C** | Close / cancel / replace | Mode 1–3 closes row; cancel; new action replaces open row |
+
+**First ship: Part A + B together** — the real win is:
+
+```text
+toggle ec2
+region: "us-west-2"
+```
+
+both persist. Part C can follow once A+B passes terminal tests.
+
+### Decision → mutation map (A + B)
+
+| Decision signal | Mutation |
+|-----------------|----------|
+| `decision.request` set, no open row | **create** — `Actions.createAction` (+ pre-fill `collected` if decision already has values, e.g. scan + region) |
+| `decision.request` set, open row exists, fields/status/mode changed | **update** — `Actions.updateAction` (`collected`, `missing`, `status`, `execution_mode`) |
+| `decision.request === null`, no close/cancel flags | **skip** |
+| _(Part C)_ `decision.closeRequest === true` | **close** — `Actions.finishAction` (`completed`, `is_open = 0`) |
+| _(Part C)_ `response.type === "request_cancelled"` | **cancel** — `Actions.cancelAction` |
+| _(Part C)_ new action while row open | **cancel** old + **create** new (`closeOpenActionBeforeStartingNew`) |
+| `response.type === "immediate_execution"` | **skip** row — execution is STEP 6 |
+
+### Test checklist (A + B)
+
+1. `toggle ec2` → STEP 5 `action: "created"` → next message INITIAL STATE has `pendingAction: "toggle_ec2"`
+2. `region: "us-west-2"` (with open toggle) → STEP 5 `action: "updated"` → `collected.region` set, `missing` no longer includes `region`
+3. `hi` (idle) → STEP 5 `action: "skipped"`
+4. `scan ec2` + region in one message → STEP 5 `action: "created"` with `collected.region` already set, `status: waiting_on_confirmation`
+
+### What STEP 5 is not
+
+- Does not re-run understanding or decision
+- Does not call Atlas / AWS (STEP 6)
+- Does not generate chat text (STEP 7)
+- Does not branch on `chatType`
+
+### Later helpers (optional — only if `applyDecision.js` grows)
+
+```text
+requests/
+├── applyDecision.js        ← entry (build first)
+├── startRequest.js         ← create row
+├── updateRequest.js        ← sync decision.request → DB
+├── closeRequest.js         ← finishAction
+└── cancelRequest.js        ← cancelAction
+```
+
+---
 
 **Target `processMessage` shape:**
 
@@ -163,8 +281,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
 |------|--------|------|
 | STEP 1 Normalize | ✅ Live | `getCurrentUserMessage` |
 | STEP 2 Load request | ✅ Live | `ActionStateFunctions.getUsersActionState` → `cloudpilot_requests` via `Actions.js` |
-| STEP 3 Understand | ✅ Live | `UnderstandingFunctions.understandMessage(message, currentActionState)` |
-| STEP 4+ | ❌ Not wired | Old STEP 4–8 still **commented** in `cloudPilotMessageFunctions.js` |
+| STEP 3 Understand | ✅ Live | `UnderstandingFunctions.understandMessage(message)` — stateless |
+| STEP 4 Decide | ✅ Live | `DecisionFunctions.decideNextStep` — logs `chatType` + `response.type` |
+| STEP 5+ | ❌ Not wired | `applyDecision` next; old STEP 4–8 still **commented** in `cloudPilotMessageFunctions.js` |
 
 **Understanding (in progress — STEP 3 only, no actions yet):**
 
@@ -601,34 +720,30 @@ Log at **STEP 4: DECISION**.
 
 ---
 
-### 3. Requests — apply one mutation
+### 3. Requests — apply one mutation (**STEP 5 — CURRENT TO DO**)
 
-**Job:** Decision says WHAT; request functions DO it (once per message).
+**Job:** Decision says WHAT; `applyDecision` does it (once per message). **Reads only the decision object** — not `chatType`.
 
 ```text
 requests/
-├── loadRequest.js          ← wrap getUsersActionState (STEP 2)
-├── startRequest.js         ← old startNewUsersAction / createAction
-├── updateRequestFields.js  ← old setUsersActionField loop (values → missing)
-├── setRequestStatus.js     ← waiting_on_fields / mode / confirmation
-├── setExecutionMode.js     ← reply 1-4
-├── cancelRequest.js        ← reply cancel + closeOpenActionBeforeStartingNew
-├── completeRequest.js      ← finish after execution
-└── applyDecision.js        ← maps decision.event → one mutator
+├── applyDecision.js        ← entry (orchestrator calls only this at first)
+├── startRequest.js         ← (later) old startNewUsersAction / createAction
+├── updateRequest.js        ← (later) sync decision.request → DB
+├── closeRequest.js         ← (later) finishAction
+└── cancelRequest.js        ← (later) cancelAction
 ```
 
-**Old STEP → new function:**
+**`applyDecision(decision, context)`** maps decision shape → one mutator:
 
-| Old step | Request function |
-|----------|------------------|
-| STEP 4 start/replace | `startRequest` (+ `cancelRequest` if replacing) |
-| STEP 5 field loop | `updateRequestFields` |
-| STEP 6A status after fields | `setRequestStatus` (`statusWhenFieldsComplete`) |
-| STEP 6F mode | `setExecutionMode` + `setRequestStatus` → confirmation |
-| Cancel | `cancelRequest` |
-| STEP 7 confirm | _(no DB until execute — decision only)_ |
+```text
+skip    → no DB write
+create  → new row
+update  → sync collected / missing / status / execution_mode
+close   → finishAction (completed)
+cancel  → cancelAction
+```
 
-**`applyDecision(decision)`** calls **exactly one** of the above. Log at **STEP 5: REQUEST UPDATE**.
+Log at **STEP 5: REQUEST UPDATE**. See [STEP 5: CURRENT TO DO](#step-5-current-to-do) for full spec, return shape, and A+B test plan.
 
 **DB tables:** `cloudpilot_requests` (read/write), `cloudpilot_actions` (lookup `action_id`). `cloudpilot_workflows` retired.
 
@@ -660,10 +775,10 @@ performDecision()
   → buildResponse()    // CloudPilotChat or OpenAI — once
 ```
 
-| `decision.route` | Handler |
-|------------------|---------|
-| `cloudpilot` | `CloudPilotChat.handleCloudPilotChat` (existing event handlers) |
-| `openai` | `openAIFunctions.sendGeneralChat` |
+| `decision.chatType` | Handler |
+|---------------------|---------|
+| `generalChatResponding` | `handleGeneralChat` |
+| `cloudPilotResponding` | `handleCloudPilotChat` |
 
 Log at **STEP 7: RESPONSE**. Map `decision.event` → `actionEvent` for `CloudPilotChat` during transition (alias table above).
 
@@ -673,15 +788,14 @@ Log at **STEP 7: RESPONSE**. Map `decision.event` → `actionEvent` for `CloudPi
 
 | Slice | Build | Test |
 |-------|-------|------|
-| **D0** | `understandMessage(message)` stateless | Same STEP 3 output; open request no longer blanks `action` in understanding |
-| **D1** | `decideNextStep` core + STEP 4 log only | `toggle ec2` → `new_request`; `hello` → `general_chat` |
-| **D2** | `applyDecision` for `new_request` only | STEP 5: row in `cloudpilot_requests`; INITIAL STATE on next message |
-| **D3** | `missing_fields_given` | `us-west-2` shrinks `missing`, grows `collected` |
-| **D4** | `execution_mode_selected` + `execution_confirmed` | destructive tier 4 → yes |
-| **D5** | `performDecision` + `CloudPilotChat` wiring | Chat text in API |
-| **D6** | `execution` + `inventory_aws` immediate | Atlas E2E |
-| **D7** | cancel, list_open, focus_switch, status, ambiguous | conversation + reply paths |
-| **D8** | Delete commented pipeline + old flags in `cloudPilotMessageFunctions.js` | CLEAN UP Phase 2 |
+| **D0** | `understandMessage(message)` stateless + `decideNextStep` + STEP 4 log | ✅ Done |
+| **D1** | `applyDecision` Part A + B (create + update) | `toggle ec2` then `us-west-2` persists |
+| **D2** | `applyDecision` Part C (close / cancel / replace) | Mode 1–3 closes row; cancel works |
+| **D3** | `execution` + mode 4 confirm | Atlas runs on automatic + yes |
+| **D4** | Response layer (`handleGeneralChat` / `handleCloudPilotChat`) | Chat text in API |
+| **D5** | `immediate_execution` (`inventory_aws`) | No request row; Atlas inventory |
+| **D6** | Conversation + ambiguous paths | list_open, focus, status, ambiguous |
+| **D7** | Delete commented pipeline + old flags | CLEAN UP Phase 2 |
 
 ---
 
@@ -964,7 +1078,8 @@ Log at **STEP 7: RESPONSE**. Map `decision.event` → `actionEvent` for `CloudPi
 
 | Date | Change |
 |------|--------|
-| 2026-06-09 | **Decision phase plan:** `decideNextStep` → `applyDecision` → `executeRequest` → respond once; old pipeline/flags mapped; slices D0–D8 |
+| 2026-06-09 | **STEP 5 spec:** `applyDecision` — decision-only mutations (skip/create/update/close/cancel); A+B first; return shape; added [STEP 5: CURRENT TO DO](#step-5-current-to-do) |
+| 2026-06-09 | **STEP 4 live:** `decideNextStep` + `chatType` (`generalChatResponding` / `cloudPilotResponding`); D0 complete |
 | 2026-06-09 | **Understanding complete (Slices 3b–5):** all field/reply/conversation parsers; **Actions & input reference** table added |
 | 2026-06-09 | **Understanding plan:** "Finish STEP 3 before processRequest" — field/reply/conversation table + exit test; actions deferred to next phase |
 | 2026-06-09 | **CLEAN UP** section added — phased dead-code removal plan (orphaned files, commented pipeline, duplicates) |

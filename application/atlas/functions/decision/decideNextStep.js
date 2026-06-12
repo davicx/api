@@ -1,6 +1,6 @@
 const actionRegistry = require('../actions/actionRegistry');
 const ActionStatusFunctions = require('../actionStatusFunctions');
-const { ROUTE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
+const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
 
 /*
 FUNCTIONS A: Decision layer — target request state + response type (no DB, no chat, no Atlas)
@@ -20,7 +20,7 @@ FUNCTIONS B: Helpers
     11) Function B11: shouldStartImmediateExecution
 */
 
-//Function A1: Given understanding + loaded request state, return route, target request, and response type
+//Function A1: Given understanding + loaded request state, return chatType, target request, and response type
 function decideNextStep({ understanding, requestState }) {
     const state = normalizeRequestState(requestState);
     const u = understanding || {};
@@ -47,7 +47,7 @@ function decideNextStep({ understanding, requestState }) {
 
     if (u.reply === 'cancel' && state.pendingAction) {
         return {
-            route: ROUTE.CLOUDPILOT,
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
             request: null,
             response: { type: RESPONSE_TYPE.REQUEST_CANCELLED },
             closeRequest: true
@@ -80,7 +80,7 @@ function decideNextStep({ understanding, requestState }) {
 
     if (shouldStartImmediateExecution(state, u)) {
         return {
-            route: ROUTE.CLOUDPILOT,
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
             request: null,
             response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
             execute: { action: 'inventory_aws' }
@@ -104,7 +104,7 @@ function decideNextStep({ understanding, requestState }) {
     }
 
     return {
-        route: ROUTE.OPENAI,
+        chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
         request: null,
         response: { type: RESPONSE_TYPE.GENERAL_CHAT }
     };
@@ -350,7 +350,7 @@ function handleExecutionModeSelection(state, mode) {
     };
 
     return {
-        route: ROUTE.CLOUDPILOT,
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
         request,
         response: { type: responseTypeByMode[mode] },
         closeRequest: true
@@ -404,7 +404,7 @@ function shouldStartImmediateExecution(state, understanding) {
 
 function cloudpilotDecision(request, responseType) {
     return {
-        route: ROUTE.CLOUDPILOT,
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
         request,
         response: { type: responseType }
     };

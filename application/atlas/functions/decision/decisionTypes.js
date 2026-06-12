@@ -1,12 +1,12 @@
 /*
 FUNCTIONS A: Decision layer constants
-    1) Function A1: ROUTE
+    1) Function A1: CHAT_TYPE
     2) Function A2: RESPONSE_TYPE
 */
 
-const ROUTE = {
-    CLOUDPILOT: 'cloudpilot',
-    OPENAI: 'openai'
+const CHAT_TYPE = {
+    GENERAL_CHAT_RESPONDING: 'generalChatResponding',
+    CLOUD_PILOT_RESPONDING: 'cloudPilotResponding'
 };
 
 const RESPONSE_TYPE = {
@@ -32,7 +32,7 @@ const RESPONSE_TYPE = {
 const EXECUTION_MODE_REPLIES = ['instructions', 'cli', 'pr', 'automatic'];
 
 module.exports = {
-    ROUTE,
+    CHAT_TYPE,
     RESPONSE_TYPE,
     EXECUTION_MODE_REPLIES
 };
