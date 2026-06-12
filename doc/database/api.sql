@@ -5,8 +5,14 @@
 #########
 #ALL#
 #########
--- Optional: pick your database
--- USE shareshare;
+
+#SELECT * FROM atlas_actions;
+#SELECT * FROM cloudpilot_workflows;
+#SELECT * FROM conversations;
+
+
+
+
 
 
 #DELETE FROM messages WHERE message_id > 10 AND message_id < 376;

@@ -18,7 +18,7 @@ const {
     useDatabaseActionState,
     actionStateIsEmpty,
     mapActionToState
-} = require('../../../../application/atlas/functions/actionStateFunctions');
+} = require('../../../../application/atlas/functions/actions/actionStateFunctions');
 
 const CONVERSATION_ID = 9001;
 

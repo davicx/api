@@ -25,7 +25,7 @@ METHODS D: CLOSE WORKFLOW RELATED (no DELETE)
     1) Method D1: finishAction
     2) Method D2: cancelAction
 
-Doc: application/atlas/doc/Master_Database.md
+Doc: application/atlas/doc/current_development.md
 Phase 1: one is_open = 1 row per conversation_id (enforced in createAction).
 */
 
@@ -60,7 +60,7 @@ class Actions {
         try {
             const openCheck = await runQuery(
                 connection,
-                'SELECT id FROM cloudpilot_workflows WHERE conversation_id = ? AND is_open = 1 LIMIT 1',
+                'SELECT id FROM cloudpilot_requests WHERE conversation_id = ? AND is_open = 1 LIMIT 1',
                 [Number(conversationId)]
             );
 
@@ -69,6 +69,21 @@ class Actions {
                     code: 'open_workflow_exists',
                     message: 'This conversation already has an open workflow.',
                     existingWorkflowId: openCheck[0].id
+                });
+                return outcome;
+            }
+
+            const actionId = await resolveActionIdByType(
+                connection,
+                String(actionType || '').trim()
+            );
+
+            if (!actionId) {
+                outcome.errors.push({
+                    code: 'action_type_not_found',
+                    message:
+                        'Action type not found in cloudpilot_actions. Seed the registry table first.',
+                    actionType: String(actionType || '').trim()
                 });
                 return outcome;
             }
@@ -86,11 +101,11 @@ class Actions {
 
             const insertResults = await runQuery(
                 connection,
-                `INSERT INTO cloudpilot_workflows (
+                `INSERT INTO cloudpilot_requests (
                     organization,
                     conversation_id,
-                    requested_by_user_name,
-                    action_type,
+                    requested_by_user,
+                    action_id,
                     action_name,
                     display_name,
                     action_notes,
@@ -105,7 +120,7 @@ class Actions {
                     String(organization || 'Cloud Pilot').trim(),
                     Number(conversationId),
                     String(requestedByUserName || '').trim(),
-                    String(actionType || '').trim(),
+                    actionId,
                     actionName || null,
                     resolvedDisplayName,
                     actionNotes || null,
@@ -141,7 +156,7 @@ class Actions {
         try {
             const rows = await runQuery(
                 connection,
-                'SELECT * FROM cloudpilot_workflows WHERE id = ? LIMIT 1',
+                REQUEST_SELECT + ' WHERE r.id = ? LIMIT 1',
                 [Number(workflowId)]
             );
 
@@ -168,7 +183,8 @@ class Actions {
         try {
             const rows = await runQuery(
                 connection,
-                'SELECT * FROM cloudpilot_workflows WHERE conversation_id = ? AND is_open = 1 LIMIT 1',
+                REQUEST_SELECT +
+                    ' WHERE r.conversation_id = ? AND r.is_open = 1 LIMIT 1',
                 [Number(conversationId)]
             );
 
@@ -195,7 +211,8 @@ class Actions {
         try {
             const rows = await runQuery(
                 connection,
-                'SELECT * FROM cloudpilot_workflows WHERE conversation_id = ? AND is_open = 1 ORDER BY id DESC',
+                REQUEST_SELECT +
+                    ' WHERE r.conversation_id = ? AND r.is_open = 1 ORDER BY r.id DESC',
                 [Number(conversationId)]
             );
 
@@ -216,29 +233,27 @@ class Actions {
         const connection = db.getConnection();
         const opts = options || {};
 
-        const conditions = ['conversation_id = ?'];
+        const conditions = ['r.conversation_id = ?'];
         const params = [Number(conversationId)];
 
         if (opts.isOpen === true) {
-            conditions.push('is_open = 1');
+            conditions.push('r.is_open = 1');
         } else if (opts.isOpen === false) {
-            conditions.push('is_open = 0');
+            conditions.push('r.is_open = 0');
         }
 
         if (opts.status) {
-            conditions.push('status = ?');
+            conditions.push('r.status = ?');
             params.push(String(opts.status));
         }
 
         if (opts.actionType) {
-            conditions.push('action_type = ?');
+            conditions.push('a.action_type = ?');
             params.push(String(opts.actionType));
         }
 
         let queryString =
-            'SELECT * FROM cloudpilot_workflows WHERE ' +
-            conditions.join(' AND ') +
-            ' ORDER BY id DESC';
+            REQUEST_SELECT + ' WHERE ' + conditions.join(' AND ') + ' ORDER BY r.id DESC';
 
         const limit = Number(opts.limit);
         if (limit > 0) {
@@ -266,29 +281,27 @@ class Actions {
         const connection = db.getConnection();
         const opts = options || {};
 
-        const conditions = ['organization = ?'];
+        const conditions = ['r.organization = ?'];
         const params = [String(organization || '').trim()];
 
         if (opts.isOpen === true) {
-            conditions.push('is_open = 1');
+            conditions.push('r.is_open = 1');
         } else if (opts.isOpen === false) {
-            conditions.push('is_open = 0');
+            conditions.push('r.is_open = 0');
         }
 
         if (opts.status) {
-            conditions.push('status = ?');
+            conditions.push('r.status = ?');
             params.push(String(opts.status));
         }
 
         if (opts.requestedByUserName) {
-            conditions.push('requested_by_user_name = ?');
+            conditions.push('r.requested_by_user = ?');
             params.push(String(opts.requestedByUserName));
         }
 
         let queryString =
-            'SELECT * FROM cloudpilot_workflows WHERE ' +
-            conditions.join(' AND ') +
-            ' ORDER BY id DESC';
+            REQUEST_SELECT + ' WHERE ' + conditions.join(' AND ') + ' ORDER BY r.id DESC';
 
         const limit = Number(opts.limit);
         if (limit > 0) {
@@ -316,29 +329,27 @@ class Actions {
         const connection = db.getConnection();
         const opts = options || {};
 
-        const conditions = ['requested_by_user_name = ?'];
+        const conditions = ['r.requested_by_user = ?'];
         const params = [String(requestedByUserName || '').trim()];
 
         if (opts.organization != null) {
-            conditions.push('organization = ?');
+            conditions.push('r.organization = ?');
             params.push(String(opts.organization).trim());
         }
 
         if (opts.isOpen === true) {
-            conditions.push('is_open = 1');
+            conditions.push('r.is_open = 1');
         } else if (opts.isOpen === false) {
-            conditions.push('is_open = 0');
+            conditions.push('r.is_open = 0');
         }
 
         if (opts.status) {
-            conditions.push('status = ?');
+            conditions.push('r.status = ?');
             params.push(String(opts.status));
         }
 
         let queryString =
-            'SELECT * FROM cloudpilot_workflows WHERE ' +
-            conditions.join(' AND ') +
-            ' ORDER BY id DESC';
+            REQUEST_SELECT + ' WHERE ' + conditions.join(' AND ') + ' ORDER BY r.id DESC';
 
         const limit = Number(opts.limit);
         if (limit > 0) {
@@ -449,7 +460,7 @@ class Actions {
         try {
             await runQuery(
                 connection,
-                'UPDATE cloudpilot_workflows SET ' + setParts.join(', ') + ' WHERE id = ?',
+                'UPDATE cloudpilot_requests SET ' + setParts.join(', ') + ' WHERE id = ?',
                 params
             );
 
@@ -533,7 +544,7 @@ class Actions {
         try {
             await runQuery(
                 connection,
-                `UPDATE cloudpilot_workflows
+                `UPDATE cloudpilot_requests
                  SET is_open = 0,
                      status = ?,
                      outcome_code = ?,
@@ -566,6 +577,9 @@ class Actions {
 }
 
 //FUNCTIONS B: Workflow DB helpers (file-local — not atlas/functions.js AWS extractors)
+const REQUEST_SELECT =
+    'SELECT r.*, a.action_type FROM cloudpilot_requests r INNER JOIN cloudpilot_actions a ON a.id = r.action_id';
+
 const ALLOWED_UPDATE_COLUMNS = {
     status: 'status',
     execution_mode: 'execution_mode',
@@ -610,9 +624,10 @@ function mapRowToAction(row) {
 
     return {
         workflowId: row.id,
+        actionId: row.action_id,
         organization: row.organization,
         conversationId: row.conversation_id,
-        requestedByUserName: row.requested_by_user_name,
+        requestedByUserName: row.requested_by_user,
         actionType: row.action_type,
         actionName: row.action_name,
         displayName: row.display_name,
@@ -631,7 +646,26 @@ function mapRowToAction(row) {
     };
 }
 
-//Function B4: Promise wrapper for connection.query
+//Function B4: Resolve cloudpilot_actions.id from action_type
+async function resolveActionIdByType(connection, actionType) {
+    if (!actionType) {
+        return null;
+    }
+
+    const rows = await runQuery(
+        connection,
+        'SELECT id FROM cloudpilot_actions WHERE action_type = ? LIMIT 1',
+        [actionType]
+    );
+
+    if (!rows || rows.length === 0) {
+        return null;
+    }
+
+    return rows[0].id;
+}
+
+//Function B5: Promise wrapper for connection.query
 function runQuery(connection, queryString, params) {
     return new Promise(function (resolve, reject) {
         connection.query(queryString, params, function (err, results) {
