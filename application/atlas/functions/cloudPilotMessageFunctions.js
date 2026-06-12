@@ -3,6 +3,7 @@ const actionRegistry = require('./actions/actionRegistry');
 const Functions = require('./functions');
 const ActionStateFunctions = require('./actions/actionStateFunctions');
 const UnderstandingFunctions = require('./understanding/understandMessage');
+const DecisionFunctions = require('./decision/decideNextStep');
 const AtlasExecution = require('./classes/AtlasExecution');
 const CloudPilotChat = require('./chat/cloudPilotChat');
 const ActionStatusFunctions = require('./actionStatusFunctions');
@@ -101,16 +102,23 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 
     //STEP 3: Understand the user message
-    const messageUnderstanding = await UnderstandingFunctions.understandMessage(currentUserMessage, currentActionState);
+    const messageUnderstanding = await UnderstandingFunctions.understandMessage(currentUserMessage);
 
     console.log("STEP 3: MESSAGE UNDERSTANDING:");
     console.log(JSON.stringify(messageUnderstanding, null, 2));
     console.log(" ");
 
 
-    //STEP 4: Start or replace active request
+    //STEP 4: Decision
+    const decision = DecisionFunctions.decideNextStep({
+        understanding: messageUnderstanding,
+        requestState: currentActionState
+    });
 
-    
+    console.log("STEP 4: DECISION:");
+    console.log(JSON.stringify(decision, null, 2));
+    console.log(" ");
+
     /*
     //STEP 3: Check if user is requesting an action not just general chat
     const actionDefinition = getActionDefinition(userRequest);
