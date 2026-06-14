@@ -6,6 +6,7 @@ const NAVIGATOR_COLUMN_TYPES = {
     NUMBER: "number"
 };
 
+
 /*
  
 FUNCTIONS A: All Functions Related to Navigator Responses

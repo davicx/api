@@ -4,8 +4,11 @@ const Functions = require('./functions');
 const ActionStateFunctions = require('./actions/actionStateFunctions');
 const UnderstandingFunctions = require('./understanding/understandMessage');
 const DecisionFunctions = require('./decision/decideNextStep');
+const RequestFunctions = require('./requests/applyDecision');
+const ExecutionFunctions = require('./executions/executeRequest');
+const ResponseFunctions = require('./responses/buildResponse');
 const AtlasExecution = require('./classes/AtlasExecution');
-const CloudPilotChat = require('./chat/cloudPilotChat');
+const CloudPilotChat = require('./chat/CloudPilotChat');
 const ActionStatusFunctions = require('./actionStatusFunctions');
 
 /*
@@ -18,7 +21,7 @@ FUNCTIONS B: Request Detection / Action Lookup
 
 FUNCTIONS C: Chat Handlers
     1) Function C1: Handle General Chat
-    2) Function C2: Handle CloudPilot Chat (imported from ./chat/cloudPilotChat)
+    2) Function C2: Handle CloudPilot Chat (imported from ./chat/CloudPilotChat)
 
 FUNCTIONS D: Helpers
     1) Function D1: Clone Action Status
@@ -32,11 +35,11 @@ System Layer: activeAction
 Registry Layer: actionDefinition
 Execution Layer: execution (done by atlas)
 
-//Sync Data
+//Sync Data (maybe old)
 //processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(currentActionState, null, false);
 
-
 */
+
 //FUNCTIONS A: CloudPilot (Atlas) — intent → decide → ChatGPT
 //Function A1: Process Message (pipeline)
 async function processMessage(rawUserMessage, conversationID, context) {
@@ -118,6 +121,86 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log("STEP 4: DECISION:");
     console.log(JSON.stringify(decision, null, 2));
     console.log(" ");
+
+
+    //STEP 5: Request update
+    const requestOutcome = await RequestFunctions.applyDecision(decision, {
+        conversationID: conversationID,
+        context: processMessageContext,
+        requestState: currentActionState
+    });
+
+    console.log("STEP 5: REQUEST UPDATE:");
+    console.log(JSON.stringify(requestOutcome, null, 2));
+    console.log(" ");
+
+    if (requestOutcome.request) {
+        currentActionState = requestOutcome.request;
+        activeAction = currentActionState.pendingAction;
+    }
+
+    if (requestOutcome.success) {
+        processMessageOutcome.success = true;
+    }
+
+    //STEP 6: Execute request (mock Atlas for now; finish row here)
+    const executionOutcome = await ExecutionFunctions.executeRequest(decision, {
+        conversationID: conversationID,
+        context: processMessageContext,
+        requestState: currentActionState
+    });
+
+    if (executionOutcome && executionOutcome.ran) {
+        currentActionState = await ActionStateFunctions.getUsersActionState(conversationID);
+        activeAction = currentActionState.pendingAction;
+
+        if (executionOutcome.success) {
+            processMessageOutcome.cloudPilot.atlasExecution.status = 'completed';
+        } else {
+            processMessageOutcome.cloudPilot.atlasExecution.status = 'failed';
+            processMessageOutcome.error = executionOutcome.error;
+        }
+    }
+
+    await ActionStateFunctions.printUsersActionState(conversationID, "FINAL STATE:");
+
+    //STEP 7: Build response (words only — no DB, no Atlas)
+    const responseOutcome = await ResponseFunctions.buildResponse(decision, {
+        conversationID: conversationID,
+        currentUserMessage: currentUserMessage,
+        requestOutcome: requestOutcome,
+        requestState: currentActionState,
+        executionOutcome: executionOutcome,
+        context: processMessageContext
+    });
+
+    console.log("STEP 7: RESPONSE:");
+    console.log(JSON.stringify(responseOutcome, null, 2));
+    console.log(" ");
+
+    if (responseOutcome.cloudPilotMessage) {
+        processMessageOutcome.cloudPilotMessage = responseOutcome.cloudPilotMessage;
+        processMessageOutcome.success = true;
+    }
+
+    if (responseOutcome.atlasResponse) {
+        processMessageOutcome.atlasResponse = responseOutcome.atlasResponse;
+    }
+
+    if (responseOutcome.error) {
+        processMessageOutcome.error = responseOutcome.error;
+    }
+
+    if (activeAction) {
+        processMessageOutcome.cloudPilot.userRequest = activeAction;
+    }
+
+    const actionReady = !currentActionState.missing || currentActionState.missing.length === 0;
+    processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(
+        currentActionState,
+        activeAction,
+        actionReady
+    );
 
     /*
     //STEP 3: Check if user is requesting an action not just general chat

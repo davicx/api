@@ -8,14 +8,17 @@
 
 #SELECT * FROM atlas_actions;
 #SELECT * FROM cloudpilot_workflows;
-#SELECT * FROM conversations;
+/*
+DELETE FROM cloudpilot_actions WHERE id > 0;
+DELETE FROM cloudpilot_requests WHERE id > 0;
+
+*/
+#SELECT * FROM cloudpilot_actions;
+DELETE FROM cloudpilot_requests WHERE conversation_id = 1;
+SELECT * FROM cloudpilot_requests;
 
 
-
-
-
-
-#DELETE FROM messages WHERE message_id > 10 AND message_id < 376;
+#DELETE FROM messages WHERE message_id > 6 AND message_id < 500;
 #SELECT * FROM messages;
 
 #SELECT * FROM posts WHERE group_id = 70;

@@ -22,7 +22,14 @@ const STATUS_PHRASES = [
     'request status',
     'current status',
     'where are we',
-    'what step are we on'
+    'what step are we on',
+    'what am i missing',
+    'what am i still missing',
+    "what's missing",
+    'whats missing',
+    'what do you still need',
+    'what do you need from me',
+    'what fields do you need'
 ];
 
 //Function A1: Find status, list, or focus conversation intents in the message

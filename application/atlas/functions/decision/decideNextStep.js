@@ -18,6 +18,9 @@ FUNCTIONS B: Helpers
     9) Function B9: handleExecutionModeSelection
     10) Function B10: resolveRequestChat
     11) Function B11: shouldStartImmediateExecution
+    12) Function B12: shouldStartExecutionOnConfirm
+    13) Function B13: buildExecutionStartedDecision
+    14) Function B14: buildGeneralChatDecision
 */
 
 //Function A1: Given understanding + loaded request state, return chatType, target request, and response type
@@ -66,16 +69,8 @@ function decideNextStep({ understanding, requestState }) {
         return handleExecutionModeSelection(state, u.reply);
     }
 
-    if (
-        state.pendingAction &&
-        u.reply === 'confirm' &&
-        ActionStatusFunctions.isWaitingOnConfirmation(state.status) &&
-        state.executionMode === 'automatic'
-    ) {
-        const request = buildRequestFromState(state);
-        request.status = ActionStatusFunctions.STATUS.RUNNING;
-
-        return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_STARTED);
+    if (shouldStartExecutionOnConfirm(state, u.reply)) {
+        return buildExecutionStartedDecision(state);
     }
 
     if (shouldStartImmediateExecution(state, u)) {
@@ -87,27 +82,15 @@ function decideNextStep({ understanding, requestState }) {
         };
     }
 
-    if (u.action && u.action !== 'general_chat' && shouldStartNewRequest(state, u.action)) {
+    if (u.action && u.action !== 'general_chat') {
         return buildNewRequestDecision(u);
-    }
-
-    if (state.pendingAction && u.action && u.action === state.pendingAction) {
-        return resolveRequestChat(state);
     }
 
     if (state.pendingAction && hasApplicableValues(state, u.values)) {
         return buildFieldsMergedDecision(state, u.values);
     }
 
-    if (state.pendingAction) {
-        return resolveRequestChat(state);
-    }
-
-    return {
-        chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
-        request: null,
-        response: { type: RESPONSE_TYPE.GENERAL_CHAT }
-    };
+    return buildGeneralChatDecision();
 }
 
 //Function B1: Normalize loaded request state into a consistent shape
@@ -278,7 +261,12 @@ function buildNewRequestDecision(understanding) {
             : RESPONSE_TYPE.AWAITING_CONFIRMATION;
     }
 
-    return cloudpilotDecision(request, responseType);
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request,
+        response: { type: responseType },
+        replaceOpenRequest: true
+    };
 }
 
 //Function B8: Target state after merging field values into an open request
@@ -400,6 +388,51 @@ function shouldStartImmediateExecution(state, understanding) {
     }
 
     return ActionStatusFunctions.isTerminalStatus(state.status);
+}
+
+//Function B12: User said yes — start execution when confirmation rules are met
+function shouldStartExecutionOnConfirm(state, reply) {
+    if (!state.pendingAction) {
+        return false;
+    }
+
+    if (reply !== 'confirm') {
+        return false;
+    }
+
+    if (!ActionStatusFunctions.isWaitingOnConfirmation(state.status)) {
+        return false;
+    }
+
+    const actionDefinition = actionRegistry[state.pendingAction];
+    const needsExecutionMode = actionRegistry.actionRequiresExecutionModeSelection(actionDefinition);
+
+    if (needsExecutionMode) {
+        if (state.executionMode === 'automatic') {
+            return true;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+//Function B13: Target state when user confirmed — run the open request
+function buildExecutionStartedDecision(state) {
+    const request = buildRequestFromState(state);
+    request.status = ActionStatusFunctions.STATUS.RUNNING;
+
+    return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_STARTED);
+}
+
+//Function B14: Not about the open request — OpenAI only, row untouched
+function buildGeneralChatDecision() {
+    return {
+        chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
+        request: null,
+        response: { type: RESPONSE_TYPE.GENERAL_CHAT }
+    };
 }
 
 function cloudpilotDecision(request, responseType) {
