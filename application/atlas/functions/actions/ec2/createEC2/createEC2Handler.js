@@ -99,9 +99,16 @@ async function createEC2Handler(context) {
         const atlasResponseRaw = await atlasEC2Functions.createEC2(requestBody);
 
         console.log("_____________________________________");
-        console.log("RAW Atlas Create Response:");
+        console.log("RAW Atlas Response:");
         console.log(JSON.stringify(atlasResponseRaw, null, 2));
         console.log("_____________________________________");
+
+        if (atlasResponseRaw && atlasResponseRaw.data) {
+            console.log("_____________________________________");
+            console.log("Atlas Response:");
+            console.log(JSON.stringify(atlasResponseRaw.data, null, 2));
+            console.log("_____________________________________");
+        }
 
         if (atlasResponseRaw && atlasResponseRaw.success === true && atlasResponseRaw.data && atlasResponseRaw.data.instance_id) {
             const instanceId = atlasResponseRaw.data.instance_id;
