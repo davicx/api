@@ -806,6 +806,8 @@ execution/
 
 Log at **STEP 6: EXECUTION**. No understanding. No decision re-run.
 
+**Mock vs real:** Node always calls Atlas HTTP (`actionRegistry` handler → `atlasEC2Functions` / `atlasAWSFunctions`). **No mock execution in Node.** Toggle mock data in **`atlas/app/main.py`** only — Live imports vs `api.routes.test.*`.
+
 ---
 
 ### 5. Response — respond once
@@ -1121,6 +1123,7 @@ Log at **STEP 7: RESPONSE**. Map `decision.event` → `actionEvent` for `CloudPi
 | Date | Change |
 |------|--------|
 | 2026-06-09 | **STEP 5 spec:** `applyDecision` — decision-only apply layer; A+B first; return shape; added [STEP 5: CURRENT TO DO](#step-5-current-to-do) |
+| 2026-06-10 | **STEP 6:** Removed Node mock execution; always calls Atlas via registry handlers; mock only in Atlas `main.py` |
 | 2026-06-10 | **STEP 5 naming:** request language (`startRequest`, `updateRequest`, `finishRequest`, `cancelRequest`); **`reason` on outcome**; no `inferMutation` / mutation jargon; D1 = 3 files, skip inline; D2 = finish + cancel |
 | 2026-06-09 | **STEP 4 live:** `decideNextStep` + `chatType` (`generalChatResponding` / `cloudPilotResponding`); D0 complete |
 | 2026-06-09 | **Understanding complete (Slices 3b–5):** all field/reply/conversation parsers; **Actions & input reference** table added |
@@ -1135,34 +1138,6 @@ Log at **STEP 7: RESPONSE**. Map `decision.event` → `actionEvent` for `CloudPi
 | 2026-06-01 | Prior docs: request phases P0–P3B shipped; P3C next |
 | 2026-05-28 | EC2 mutation API wiring complete; manual AWS pending |
 | 2026-05-24 | Error/outcome handling implemented; Navigator contract + adapters |
-
-
-One thing I would change
-This part:
-
-
-{
-  "replaceOpenRequest": true
-}
-
-is showing up even when there is no open request.
-Example:
-
-
-{
-  "pendingAction": null
-}
-
-then:
-
-
-{
-  "replaceOpenRequest": true
-}
-
-for a brand new scan.
-Not a bug, but slightly confusing.
-I'd expect:
 
 
 

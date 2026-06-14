@@ -143,10 +143,11 @@ async function processMessage(rawUserMessage, conversationID, context) {
         processMessageOutcome.success = true;
     }
 
-    //STEP 6: Execute request (mock Atlas for now; finish row here)
+    //STEP 6: Execute request via Atlas (finish row here when workflowId exists)
     const executionOutcome = await ExecutionFunctions.executeRequest(decision, {
         conversationID: conversationID,
         context: processMessageContext,
+        currentUserMessage: currentUserMessage,
         requestState: currentActionState
     });
 
@@ -202,7 +203,14 @@ async function processMessage(rawUserMessage, conversationID, context) {
         actionReady
     );
 
-    /*
+  
+
+    return processMessageOutcome;
+
+}
+
+
+  /*
     //STEP 3: Check if user is requesting an action not just general chat
     const actionDefinition = getActionDefinition(userRequest);
     console.log("STEP 3: ACTION- Full from Action Registry ");
@@ -550,12 +558,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
     console.log(" ");
     */
-
-    return processMessageOutcome;
-
-}
-
-
+   
     // TO DO: remove me — replaced by understanding/understandMessage (Slice 1)
     // const userRequest = detectUserRequest(currentUserMessage);
     // processMessageOutcome.cloudPilot.userRequest = userRequest;
