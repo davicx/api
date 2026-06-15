@@ -6,6 +6,7 @@
 # Site
 /uploads
 /functions/random
+/public
 
 # Conn
 /functions/conn.js
