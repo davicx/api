@@ -5,7 +5,7 @@ const Notification = require('../../functions/classes/Notification');
 const messageFunctions = require('../../functions/messageFunctions');
 const cloudPilotMessageFunctions = require('../functions/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
-const openAIFunctions = require('../functions/openAI/openAIFunctions');
+const openAIFunctions = require('../functions/chat/openAI/openAIFunctions');
 const actionState = require('../state/ActionState');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../functions/config/chatGPTconfig');
 
@@ -50,7 +50,8 @@ async function postMessage(req, res) {
 
     //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    //console.log("STEP 1: Build Message ")
+    console.log("STEP 1: Build Message ")
+    console.log(currentUserMessage)
 
     //STEP 2: Send user message to be stored in the database
     //console.log("STEP 2: Send user message to be stored in the database");
@@ -64,6 +65,7 @@ async function postMessage(req, res) {
         messageOutcome.statusCode = 500;
         messageOutcome.success = false;
     }
+
 
     //STEP 3: CloudPilot processing
     let cloudPilotResult = null;
@@ -83,9 +85,8 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
-    
-    //STEP 4: Save CloudPilot message to database
-    console.log("STEP 5: Save CloudPilot message to database");
+    //STEP 6: Save CloudPilot message to database
+    console.log("STEP 6: Save CloudPilot message to database");
 
     var cloudPilotMessageOutcome = null;
     const cloudPilotReplyText =
@@ -98,29 +99,29 @@ async function postMessage(req, res) {
         cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
         if (cloudPilotMessageOutcome.outcome == 200) {
-            console.log("STEP 5 SUCCESS: CloudPilot message saved");
+            console.log("STEP 6 SUCCESS: CloudPilot message saved");
         } else {
-            console.log("STEP 5 FAILED: Could not save CloudPilot message");
+            console.log("STEP 6 FAILED: Could not save CloudPilot message");
         }
     }
     
-    //Step 4A: Add CloudPilot message to JSON output when saved
+    //Step 6A: Add CloudPilot message to JSON output when saved
     if (cloudPilotMessageOutcome && cloudPilotMessageOutcome.newMessage) {
         messageOutcome.data.CloudPilotResponseMessage = cloudPilotMessageOutcome.newMessage;
     }
 
-    //Step 4B: Add Cloud Pilot action status to response
+    //Step 6B: Add Cloud Pilot action status to response
     if (cloudPilotResult && cloudPilotResult.cloudPilot) {
         messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
     }
 
-    //Step 4C: Add formatted Atlas data to response
+    //Step 6C: Add formatted Atlas data to response
     messageOutcome.data.atlasResponse = null;
     if (cloudPilotResult && cloudPilotResult.atlasResponse) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
     }
 
-    //Step 4D: HTTP success when user message saved and CloudPilot chat turn completed
+    //Step 6D: HTTP success when user message saved and CloudPilot chat turn completed
     const userMessageSaved = currentUserMessageOutcome.outcome == 200;
     const cloudPilotTurnCompleted = Boolean(cloudPilotResult && cloudPilotReplyText);
 
@@ -144,8 +145,7 @@ async function postMessage(req, res) {
         }
     }
 
-    
-    //STEP 5: Return Response
+    //STEP 7: Return Response
     Functions.addFooter();
     res.json(messageOutcome);
 }

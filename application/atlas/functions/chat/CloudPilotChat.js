@@ -1,6 +1,5 @@
 const AtlasExecution = require('../classes/AtlasExecution');
 
-//NEW 
 //Function B3: Handle Cloud Pilot Chat
 async function handleCloudPilotChat(payload) {
 
@@ -33,10 +32,16 @@ async function handleCloudPilotChat(payload) {
         return await cloudPilotRespondAwaitingConfirmation(payload);
     }
 
-    // STEP 5: User confirmed execution
+    // STEP 5: User confirmed execution — Atlas runs in STEP 6 (executeRequest), not here
     if (payload.actionEvent === "execution_requested") {
 
         return await AtlasExecution.startNewAtlasExecution(payload);
+    }
+
+    // STEP 5D: Execution started — words only until STEP 6 is wired
+    if (payload.actionEvent === "execution_started") {
+
+        return cloudPilotRespondExecutionStarted(payload);
     }
 
     // STEP 5A: Workflow still collecting fields (repeat intent)
@@ -55,6 +60,12 @@ async function handleCloudPilotChat(payload) {
     if (payload.actionEvent === "workflow_failed") {
 
         return cloudPilotRespondWorkflowFailed(payload);
+    }
+
+    // STEP 5E: User asked about open request status / missing fields
+    if (payload.actionEvent === "request_status") {
+
+        return cloudPilotRespondRequestStatus(payload);
     }
 
     // STEP 6: Fallback
@@ -212,6 +223,59 @@ async function cloudPilotRespondWorkflowFailed(payload) {
             " workflow did not finish. Say the action again if you want to start over.",
         atlasResponse: null,
         error: "workflow_failed"
+    };
+}
+
+async function cloudPilotRespondRequestStatus(payload) {
+    const actionDefinition = payload.actionDefinition;
+    const actionLabel = actionDefinition.actionLabel || actionDefinition.type || "request";
+    const missingFields = payload.actionState.missingFields || [];
+    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+    const ready = payload.actionReady === true;
+
+    let message = "Your " + actionLabel + " request is open.";
+
+    if (missingFieldsMessage) {
+        message += " " + missingFieldsMessage;
+    } else if (ready) {
+        const readyMessage =
+            actionDefinition.messages && actionDefinition.messages.ready
+                ? actionDefinition.messages.ready
+                : "Everything is ready.";
+        message += " " + readyMessage;
+    } else {
+        message += " Please continue when you are ready.";
+    }
+
+    return {
+        success: true,
+        message: message,
+        atlasResponse: null,
+        error: null
+    };
+}
+
+async function cloudPilotRespondExecutionStarted(payload) {
+    const actionDefinition = payload.actionDefinition;
+    const actionLabel = actionDefinition.actionLabel || actionDefinition.type || 'action';
+    const collectedFields = payload.actionState && payload.actionState.collectedFields
+        ? payload.actionState.collectedFields
+        : {};
+    let regionText = '';
+
+    if (collectedFields.region) {
+        regionText = ' in ' + String(collectedFields.region);
+    }
+
+    return {
+        success: true,
+        message:
+            'Starting your ' +
+            actionLabel +
+            regionText +
+            '. I will update you when it finishes.',
+        atlasResponse: null,
+        error: null
     };
 }
 
