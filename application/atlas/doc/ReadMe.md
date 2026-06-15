@@ -231,6 +231,10 @@ INSERT INTO cloudpilot_requests (
 
 | Topic | Path |
 |-------|------|
-| Current development & pipeline | `current_development.md` |
+| **Architecture (read first)** | `architecture.md` |
+| Active work (checklists) | `current_development.md` |
+| Shipped | `finished_development.md` |
+| Deferred / vision | `future_development.md` |
+| History & changelog | `appendix.md` |
 | Database schema | `database/database.md` |
 | Add a new action | `instructions/adding_new_action.md` |
