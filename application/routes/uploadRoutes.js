@@ -17,9 +17,7 @@ const multer = require('multer')
 const upload = multer({ dest: './uploads' })
 //const { uploadFile, getFileStream } = require('../functions/uploadFunctions')
 var mime = require('mime-types')
-var cors = require('cors')
-uploadRouter.use(cors())
-
+// CORS handled at app level (app.js) - cors() here overrides with * and breaks credentials
 const postFunctions = require('../functions/postFunctions')
 const posts = require('../logic/posts')
 
@@ -45,16 +43,6 @@ const localStorage = multer.diskStorage({
   }
 })
 
-//Upload Type
-//WORKS
-/*
-const uploadLocal = multer({ 
-  //Part 1: File Destination
-  storage: localStorage,
-  limits: { fileSize: 1024 * 1024 * 20},
-})
-*/
-
 const uploadLocal = multer({ 
   //Part 1: File Destination
   storage: localStorage,
@@ -69,9 +57,6 @@ const uploadLocal = multer({
     } 
   }
 })
-/*
-
-*/
 
 
 //Part 2: Photo Filter
@@ -84,7 +69,6 @@ var photoFilter = (req, file, cb) => {
       cb(null, false);
   } 
 }
-
 
 //Route A1: Post Photo (Move to postRoutes)
 uploadRouter.post('/post/photo/local/old', uploadLocal.single('image'), async function(req, res) {
@@ -103,6 +87,7 @@ uploadRouter.post('/post/photo/local/old', uploadLocal.single('image'), async fu
 
 })
 
+//APPENDIX
 //Local
 /*
 var uploadLocal = multer({

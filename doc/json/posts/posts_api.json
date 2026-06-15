@@ -1,0 +1,93 @@
+{
+    "data": [
+        {
+            "postID": 832,
+            "postType": "photo",
+            "groupID": 72,
+            "groupName": "Hiking in the Shire",
+            "groupImage": "http://localhost:3003/kite-us-west-two/groups/groupImage-1754264482637-64076401-IMG_3737.JPG",
+            "listID": 0,
+            "postFrom": "davey",
+            "postFromImage": "http://localhost:3003/kite-us-west-two/profile/profileImage-1754177896055-604384021-1597356887small7_p0_master1200.jpg",
+            "postTo": "72",
+            "postCaption": "Hiya wanna garden! ",
+            "fileName": "background_20.png",
+            "fileNameServer": "postImage-1760309973132-341816001-background_20.png",
+            "fileURL": "http://localhost:3003/kite-us-west-two/posts/postImage-1760309973132-341816001-background_20.png",
+            "cloudBucket": "kite-us-west-two",
+            "cloudKey": "posts/postImage-1760309973132-341816001-background_20.png",
+            "storageType": "local",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "10/12/2025",
+            "postTime": "3:059 pm",
+            "timeMessage": "3 months ago",
+            "created": "2025-10-12T22:59:33.000Z",
+            "commentsArray": [
+                {
+                    "commentID": 244,
+                    "postID": 832,
+                    "commentCaption": "He loved mountains too lets go on a hike!!",
+                    "commentFrom": "davey",
+                    "commentType": "post",
+                    "userName": "davey",
+                    "imageName": "frodo.jpg",
+                    "firstName": "David",
+                    "lastName": "Vasquez",
+                    "commentDate": "12/13/2025",
+                    "commentTime": "5:5 pm",
+                    "timeMessage": "a month ago",
+                    "commentLikes": [],
+                    "created": "2025-12-14T01:05:24.000Z",
+                    "friendshipStatus": 5,
+                    "commentLikeCount": 0,
+                    "groupID": 72,
+                    "commentLikedByCurrentUser": false
+                }
+            ],
+            "postLikesArray": [
+                {
+                    "postLikeID": 405,
+                    "postID": 832,
+                    "likedByUserName": "frodo",
+                    "likedByImage": "frodo.jpg",
+                    "likedByFirstName": "Mr Frodo",
+                    "likedByLastName": "Baggins",
+                    "timestamp": "2025-12-14T01:27:28.000Z",
+                    "friendshipStatus": 2
+                },
+                {
+                    "postLikeID": 406,
+                    "postID": 832,
+                    "likedByUserName": "sam",
+                    "likedByImage": "frodo.jpg",
+                    "likedByFirstName": "Sam",
+                    "likedByLastName": "Gamgee",
+                    "timestamp": "2025-12-14T01:27:33.000Z",
+                    "friendshipStatus": 1
+                },
+                {
+                    "postLikeID": 407,
+                    "postID": 832,
+                    "likedByUserName": "merry",
+                    "likedByImage": "frodo.jpg",
+                    "likedByFirstName": "Merry",
+                    "likedByLastName": "Brandybuck",
+                    "timestamp": "2025-12-14T01:27:37.000Z",
+                    "friendshipStatus": 2
+                }
+            ],
+            "isLikedByCurrentUser": false,
+            "simpleLikesArray": [
+                "frodo",
+                "sam",
+                "merry"
+            ]
+        }
+    ],
+    "message": "Need to add error and stuff in this always works!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}

@@ -1,4 +1,5 @@
 const db = require('./conn');
+const fileFunctions = require('./fileFunctions');
 //const Requests = require('./classes/Requests');
 //const Functions = require('./functions');
 //app.use(express.json());
@@ -12,9 +13,130 @@ FUNCTIONS A: All Functions Related to User Profile
 	4) Function A4: Check User Exists
 */
 
+
+//Function A1: Get User Image
+async function getUserImage(userName) {
+    const connection = db.getConnection(); 
+
+    const userProfileImage = {
+        message: "",
+        success: false,
+        userName: userName,
+        userProfileImage: "profile.jpg", // default fallback
+    };
+
+    return new Promise((resolve) => {
+        const query = "SELECT image_url FROM user_profile WHERE user_name = ?";
+
+        connection.query(query, [userName], (err, rows) => {
+            if (err) {
+                userProfileImage.message = "Database error: " + err.message;
+                return resolve(userProfileImage);
+            }
+
+            if (rows.length === 0) {
+                userProfileImage.message = "User not found: " + userName;
+                return resolve(userProfileImage);
+            }
+
+            const imageURL = rows[0].image_url;
+
+            if (imageURL) {
+                userProfileImage.userProfileImage = imageURL;
+                userProfileImage.success = true;
+                userProfileImage.message = "Image retrieved successfully";
+            } else {
+                userProfileImage.message = "Image not set for user: " + userName;
+            }
+
+            resolve(userProfileImage);
+        });
+    });
+}
+
+/*
+async function getUserImageComplex(userName) {
+    const connection = db.getConnection(); 
+    
+    console.log(" ")
+    console.log("______________________________________________")
+    console.log("FUNCTION: getUserImage")
+    console.log("Getting User Image for " + userName)
+
+    const userProfileImage = {
+        message: "",
+        success: false,
+        userName: userName,
+        userProfileImage: null,
+        statusCode: 400
+    };
+
+    return new Promise(async function(resolve, reject) {
+        try {
+            const queryString = "SELECT user_profile_id, user_id, user_name, image_name, storage_location, cloud_bucket, cloud_key, image_url, file_name, file_name_server FROM user_profile WHERE user_name = ?"
+            
+            connection.query(queryString, [userName], (err, rows) => {
+                if (!err) {
+                    if(rows.length >= 1) {
+                        const row = rows[0];
+                        
+                        // Get the image URL using fileFunctions.getImageURL
+                        if(row.storage_location && row.image_url) {
+                            fileFunctions.getImageURL(row.storage_location, row.image_url, row.cloud_key)
+                                .then(imageURL => {
+                                    userProfileImage.userProfileImage = imageURL;
+                                    userProfileImage.message = "Successfully retrieved user image for " + userName;
+                                    userProfileImage.success = true;
+                                    userProfileImage.statusCode = 200;
+                                    
+                                    console.log("userProfileImage")
+                                    console.log(userProfileImage)
+                                    console.log("userProfileImage")
+                                    console.log("______________________________________________")
+                                    console.log("______________________________________________")
+                                    console.log(" ")
+                                    
+                                    resolve(userProfileImage);
+                                })
+                                .catch(error => {
+                                    console.log("Error getting image URL for " + userName + ": " + error);
+                                    userProfileImage.message = "Error getting image URL for " + userName;
+                                    userProfileImage.success = false;
+                                    userProfileImage.statusCode = 500;
+                                    resolve(userProfileImage);
+                                });
+                        } else {
+                            userProfileImage.message = "No image data found for " + userName;
+                            userProfileImage.success = false;
+                            userProfileImage.statusCode = 404;
+                            resolve(userProfileImage);
+                        }
+                    } else {
+                        userProfileImage.message = "User not found: " + userName;
+                        userProfileImage.success = false;
+                        userProfileImage.statusCode = 404;
+                        resolve(userProfileImage);
+                    }
+                } else {
+                    console.log("Database error: " + err);
+                    userProfileImage.message = "Database error occurred";
+                    userProfileImage.success = false;
+                    userProfileImage.statusCode = 500;
+                    resolve(userProfileImage);
+                }
+            })
+        } catch(err) {
+            console.log("Catch error: " + err);
+            userProfileImage.message = "Unexpected error occurred";
+            userProfileImage.success = false;
+            userProfileImage.statusCode = 500;
+            reject(userProfileImage);
+        } 
+    })
+}
+*/
 //REMOVE ALL THIS IS HELPER STUFF 
 
-//Function A1: Get User Profile
 async function getUserProfile(userName) {
     const connection = db.getConnection(); 
     let currentUser = userName;
@@ -73,7 +195,6 @@ async function getUserProfile(userName) {
     //res.status(401).json(userProfileOutcome)
 }
 
-//Function A2: Get Simple User Profile
 async function getSimpleUserProfile(userName) {
     const connection = db.getConnection(); 
 
@@ -118,7 +239,6 @@ async function getSimpleUserProfile(userName) {
 
 }
 
-//Function A3: Update User Profile
 async function updateUserProfile(currentUser, newUserInformation) {
     const connection = db.getConnection(); 
 
@@ -133,4 +253,4 @@ async function updateUserProfile(currentUser, newUserInformation) {
 }
 
 
-module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile };
+module.exports = { getUserProfile, getSimpleUserProfile, updateUserProfile, getUserImage };

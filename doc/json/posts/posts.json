@@ -1,0 +1,55 @@
+{
+    "data": [
+        {
+            "postID": 678,
+            "postType": "photo",
+            "groupID": 70,
+            "listID": 0,
+            "postFrom": "davey",
+            "postTo": "photo",
+            "postCaption": "Hiya sam! wanna go on a hike today the weather is perfect!",
+            "fileName": "stars.jpg",
+            "fileNameServer": "postImage-1717975421510-619391449-stars.jpg",
+            "fileUrl": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1717975421510-619391449-stars.jpg",
+            "cloudKey": "images/postImage-1717975421510-619391449-stars.jpg",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "06/09/2024",
+            "postTime": "4:023 pm",
+            "timeMessage": "10 days ago",
+            "created": "2024-06-09T23:23:41.000Z",
+            "commentsArray": [],
+            "postLikesArray": [],
+            "simpleLikesArray": []
+        },
+        {
+            "postID": 677,
+            "postType": "photo",
+            "groupID": 70,
+            "listID": 0,
+            "postFrom": "davey",
+            "postTo": "photo",
+            "postCaption": "Hiya sam! wanna go on a hike today the weather is perfect!",
+            "fileName": "city.jpg",
+            "fileNameServer": "postImage-1717975390703-820924480-city.jpg",
+            "fileUrl": "https://insta-app-bucket-tutorial.s3.us-west-2.amazonaws.com/images/postImage-1717975390703-820924480-city.jpg",
+            "cloudKey": "images/postImage-1717975390703-820924480-city.jpg",
+            "videoURL": "empty",
+            "videoCode": "empty",
+            "postDate": "06/09/2024",
+            "postTime": "4:023 pm",
+            "timeMessage": "10 days ago",
+            "created": "2024-06-09T23:23:11.000Z",
+            "commentsArray": [],
+            "postLikesArray": [],
+            "simpleLikesArray": []
+        }
+    ],
+    "message": "Need to add error and stuff in this always works!",
+    "success": true,
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+}
+
+

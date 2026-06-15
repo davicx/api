@@ -31,12 +31,7 @@ FUNCTIONS C: All Routes Related to Post Actions
 
 */
 
-/*
-	var headerMessage = "NEW POST: Post Text"
-	Functions.addHeader(headerMessage)
-	Functions.addFooter()
-	
-	*/
+
 //FUNCTIONS A: All Functions Related to Posts
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {
@@ -55,6 +50,7 @@ postRouter.post('/post/photo', async function(req, res) {
 	if(functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "local")) {
 		console.log("Post Router: Type 1: Local to Local")
 		posts.postPhotoLocal(req, res)
+		//posts.postPhotoLocalAWS(req, res)
 	//Type 2: Local to AWS 	
 	} else if (functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "aws")) {
 		console.log("Post Router: Type 2: Local to AWS")
@@ -67,8 +63,6 @@ postRouter.post('/post/photo', async function(req, res) {
 		res.json({outcome:"uhh whats up dude", appLocation: appLocation, fileLocation:fileLocation})
 	}
 })
-
-
 
 //Route A5: Post Video
 postRouter.post('/post/video', function(req, res) {
@@ -144,11 +138,13 @@ module.exports = postRouter;
 
 
 
-
-
-
-
-
+//APPENDIX
+/*
+	var headerMessage = "NEW POST: Post Text"
+	Functions.addHeader(headerMessage)
+	Functions.addFooter()
+	
+	*/
 
 
 /*

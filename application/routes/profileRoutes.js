@@ -14,8 +14,19 @@ FUNCTIONS A: All Routes Related to User Profile
 	2) Function A2: Update User Profile
 	3) Function A3: Update User Image
 
+FUNCTIONS B: All Functions Related to User Info
+	1) Function B1: Get total User Posts, Groups and Friends
+
 */
 
+/*
+//USER KEY
+//TYPE 1: You are Currently Friends - "friends"
+//TYPE 2: Friendship Invite Pending (you) - "invite_pending"
+//TYPE 3: Friendship Request Pending (them) - "request_pending"
+//TYPE 4: Not Friends - "not_friends"
+//TYPE 5: This is you - "you"
+*/
 
 //FUNCTIONS A: All Routes Related to User Profile
 //Function A1: Get User Profile
@@ -23,12 +34,10 @@ profileRouter.get("/profile/:user_name", middlewares.verifyUser, (req, res) => {
     profile.getUserProfile(req, res);
 })
 
-
 //Function A2: Update User Profile
 profileRouter.post("/profile/update", (req, res) => {
 	profile.updateUserProfile(req, res);
 })
-
 
 //Function A3: Update Full User Profile
 profileRouter.post("/profile/full/update",(req, res) => {
@@ -60,6 +69,11 @@ profileRouter.post("/profile/full/update",(req, res) => {
 	
 })
 
+//FUNCTIONS B: All Functions Related to User Info
+//Function B1: Get total User Posts, Groups and Friends
+profileRouter.get("/profile/info/:user_name", middlewares.verifyUser, (req, res) => {
+    profile.getUserProfileInformation(req, res);
+})
 
 
 

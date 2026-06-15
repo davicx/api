@@ -1,5 +1,6 @@
 const db = require('./../conn');
 const timeFunctions = require('../timeFunctions');
+const imageFunctions = require('../imageFunctions');
 
 class Comment {
     constructor(commentID) {
@@ -56,9 +57,8 @@ class Comment {
     //Method A2: Get all the comments for a post
     static async getPostComments(postID)  {
         const connection = db.getConnection(); 
-        var commentsArray = []
 
-        const queryString = "SELECT comments.comment_id, comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
+        const queryString = "SELECT comments.comment_id, comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name, user_profile.storage_location, user_profile.image_url, user_profile.cloud_key FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
         var commentsOutcome = {
             success: false,
             comments: []
@@ -68,9 +68,19 @@ class Comment {
             try {
                 connection.query(queryString, [postID], (err, rows) => {
                     if (!err) {
-        
-                        commentsArray = rows.map((row) => {
+                        // Use Promise.all to handle async operations for each comment
+                        Promise.all(rows.map(async (row) => {
                             
+                            // Get user image URL using imageFunctions.getImage
+                            let userImage = row.image_name; // default to image_name
+                            if (row.storage_location && row.image_url) {
+                                try {
+                                    userImage = await imageFunctions.getImage(row.storage_location, row.image_url, row.cloud_key);
+                                } catch (error) {
+                                    console.log("Error getting user image for " + row.comment_from + ": " + error);
+                                }
+                            }
+
                             return {
                                 commentID: row.comment_id,
                                 postID: row.post_id,
@@ -78,7 +88,7 @@ class Comment {
                                 commentFrom: row.comment_from,
                                 commentType: "post",	
                                 userName: row.user_name,	
-                                imageName: row.image_name,	
+                                imageName: userImage,	
                                 firstName: row.first_name,	
                                 lastName: row.last_name,	
                                 commentDate: timeFunctions.formatTimestamp(row.created).date,
@@ -87,12 +97,14 @@ class Comment {
                                 commentLikes: [],
                                 created: row.created
                             }
+                        })).then(comments => {
+                            commentsOutcome.comments = comments;
+                            commentsOutcome.success = true;
+                            resolve(commentsOutcome)
+                        }).catch(error => {
+                            console.log("Error processing comments: " + error);
+                            reject(commentsOutcome);
                         });
-
-                        commentsOutcome.success = true;
-                        commentsOutcome.comments = commentsArray;
-                        
-                        resolve(commentsOutcome);
             
                     } else {
                         console.log("Failed to Select Posts" + err)

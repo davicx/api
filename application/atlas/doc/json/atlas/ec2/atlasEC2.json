@@ -1,0 +1,93 @@
+{
+  "data": {
+    "resourcesScanned": 1,
+    "findingCount": 1,
+    "scanType": "full",
+    "region": "us-west-2",
+    "instances": [
+      {
+        "instance_id": "i-065f09252b2ea0471",
+        "name": "Kite-env",
+        "state": "running",
+        "instance_type": "t3.micro",
+        "avg_cpu": 0.73,
+        "region": "us-west-2",
+        "tags": {
+          "aws:cloudformation:stack-name": "awseb-e-zp9vxkizqs-stack",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:us-west-2:631447262459:stack/awseb-e-zp9vxkizqs-stack/0a2d1df0-9349-11f0-8643-065d223a03c3",
+          "cloudpilot-test": "true",
+          "cloudpilot-role": "primary",
+          "elasticbeanstalk:environment-name": "Kite-env",
+          "aws:autoscaling:groupName": "awseb-e-zp9vxkizqs-stack-AWSEBAutoScalingGroup-76NrU5jPG8er",
+          "aws:cloudformation:logical-id": "AWSEBAutoScalingGroup",
+          "elasticbeanstalk:environment-id": "e-zp9vxkizqs",
+          "aws:ec2launchtemplate:id": "lt-0a6c7b7ba0ac4da3f",
+          "Name": "Kite-env",
+          "aws:ec2launchtemplate:version": "1"
+        }
+      }
+    ],
+    "findings": [
+      {
+        "id": "ec2-lowcpu-i-065f09252b2ea0471",
+        "provider": "aws",
+        "service": "ec2",
+        "region": "us-west-2",
+        "resource": {
+          "id": "i-065f09252b2ea0471",
+          "name": "Kite-env",
+          "region": "us-west-2",
+          "instance_type": "t3.micro",
+          "tags": {
+            "aws:cloudformation:stack-name": "awseb-e-zp9vxkizqs-stack",
+            "aws:cloudformation:stack-id": "arn:aws:cloudformation:us-west-2:631447262459:stack/awseb-e-zp9vxkizqs-stack/0a2d1df0-9349-11f0-8643-065d223a03c3",
+            "cloudpilot-test": "true",
+            "cloudpilot-role": "primary",
+            "elasticbeanstalk:environment-name": "Kite-env",
+            "aws:autoscaling:groupName": "awseb-e-zp9vxkizqs-stack-AWSEBAutoScalingGroup-76NrU5jPG8er",
+            "aws:cloudformation:logical-id": "AWSEBAutoScalingGroup",
+            "elasticbeanstalk:environment-id": "e-zp9vxkizqs",
+            "aws:ec2launchtemplate:id": "lt-0a6c7b7ba0ac4da3f",
+            "Name": "Kite-env",
+            "aws:ec2launchtemplate:version": "1"
+          }
+        },
+        "issue": {
+          "code": "LOW_CPU_UTILIZATION",
+          "title": "Low CPU utilization",
+          "description": "Average CPU is below the configured threshold; instance may be oversized.",
+          "severity": "low",
+          "confidence": 0.9,
+          "category": "cost"
+        },
+        "status": "active",
+        "priority": 2,
+        "metrics": {
+          "avg_cpu": 0.73
+        },
+        "recommendation": {
+          "action": "RIGHTSIZE",
+          "description": "Consider downsizing to t3.nano",
+          "risk": "low"
+        },
+        "remediation": {
+          "available": true,
+          "actions": []
+        },
+        "cost": {
+          "estimated_monthly_savings": 3,
+          "currency": "USD"
+        },
+        "summary": "Kite-env is underutilized (low CPU).",
+        "metadata": {
+          "rule_id": "ec2_low_cpu"
+        }
+      }
+    ]
+  },
+  "success": true,
+  "message": "EC2 scan completed (mock)",
+  "statusCode": 200,
+  "errors": [],
+  "currentUser": "davey"
+}

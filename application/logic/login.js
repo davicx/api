@@ -324,7 +324,6 @@ async function userRegister(req, res) {
       registrationValidation.usernameAvailableStatus = 0
       registrationValidation.usernameAvailableMessage = "The username " + userName + " is NOT available."
       masterUsernameAvailable = false
-      registrationOutcome.message = "NEED MORE registrationOutcome.messageUser name " + userName + "  is taken!"
       console.log("The user name is taken!")
     }
   }
@@ -361,7 +360,7 @@ async function userRegister(req, res) {
       //Update API response
       registrationOutcome.success = true
       registrationOutcome.statusCode = 200
-      registrationOutcome.message = " NEED TO FIX You successfully Registered " + userName + "!"
+      registrationOutcome.message = "You successfully registered " + userName + "!"
 
       //Add new User to API Response
       registeredUser.userName = newUser.userName
@@ -375,7 +374,7 @@ async function userRegister(req, res) {
     } else {
       //TO DO: Roll back any inserted data that failed 
       console.log("STEP 4: nope!")
-      registrationOutcome.message = "NEED TO FIX There was an error with registering " + userName + "!"
+      registrationOutcome.message = "Registration could not be completed. Please try again."
     }
     
   } else {
@@ -392,18 +391,40 @@ async function userRegister(req, res) {
   console.log(" ")
 
   registrationOutcome.data.registrationValidation = registrationValidation
+
+  // Build a single clear message for failures (all validation + username-taken issues)
+  if (!registrationOutcome.success) {
+    var messageParts = [];
+    if (registrationValidation.emailStatus === 0) {
+      messageParts.push(registrationValidation.emailMessage);
+    }
+    if (registrationValidation.usernameStatus === 0) {
+      messageParts.push(registrationValidation.usernameMessage);
+    }
+    if (registrationValidation.passwordStatus === 0) {
+      messageParts.push(registrationValidation.passwordMessage);
+    }
+    if (registrationValidation.usernameAvailableStatus === 0 && registrationValidation.usernameAvailableMessage) {
+      messageParts.push("Username is already taken.");
+    }
+    if (messageParts.length > 0) {
+      registrationOutcome.message = messageParts.join(" ");
+    }
+  }
   
   res.json(registrationOutcome)
 
 } 
 
+
 //Function A4: Login Status 
 async function loginStatus(req, res) {
-  console.log("")
-  console.log("___________________________________________")
-  console.log("loginFunctions: Function A4: Login Status ")
-  const connection = db.getConnection(); 
-  const userName = req.body.userName;
+  try {
+    console.log("")
+    console.log("___________________________________________")
+    console.log("loginFunctions: Function A4: Login Status ")
+    const connection = db.getConnection(); 
+    const userName = req.body.userName;
 
   var refreshToken = "";
   var accessToken = ""
@@ -413,8 +434,8 @@ async function loginStatus(req, res) {
 
   var loginStatus = {
     data: {},
-    success: false,
     messages: [],
+    success: false,
     statusCode: 500,
     errors: [],
     currentUser: "Not Verified"
@@ -452,7 +473,7 @@ async function loginStatus(req, res) {
           console.log("STEP 2: The token was a good one! " + userName + " is logged in")
           console.log("Step 2: Authorization Data ")
           console.log(authorizationData)
-          loginStatus.accessToken = req.cookies.accessToken
+          // loginStatus.accessToken = req.cookies.accessToken
           loginStatus.currentUser = authorizationData.currentUser
           validAccessToken = true
           loginStatus.data.userNameFromToken = authorizationData.currentUser
@@ -462,7 +483,7 @@ async function loginStatus(req, res) {
           console.log("STEP 2: The token was no good no one is logged in")
           loginStatus.messages.push("STEP 2: The token was no good no one is logged in")
           validAccessToken = false;
-          loginStatus.data.accessToken = "No Token"
+          // loginStatus.data.accessToken = "No Token"
       }
   })
     
@@ -503,27 +524,58 @@ async function loginStatus(req, res) {
       console.log("STEP 5: " + userName + " is currently logged in!");
       validAccessToken = true;
       validRefreshToken = true;
-      userLoggedIn = true;
+      const userLoggedIn = true;
 
-      loginStatus.data.accessToken = accessToken;
-      loginStatus.data.refreshToken = refreshToken;
-      loginStatus.data.validAccessToken = validAccessToken;
-      loginStatus.data.validRefreshToken = validRefreshToken;
-      loginStatus.data.refreshTokenMatches = refreshTokenMatches;
+      loginStatus.data.userNameFromToken = currentUserFromToken;
+      loginStatus.data.userLoggedIn = userLoggedIn;
+      loginStatus.data.token = {
+          tokenType: tokenType,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          validAccessToken: validAccessToken,
+          validRefreshToken: validRefreshToken,
+          refreshTokenMatches: refreshTokenMatches
+      };
 
-      loginStatus.success = true
-      loginStatus.statusCode = 200
-      loginStatus.messages.push(userName + " is currently logged in!")
+      loginStatus.success = true;
+      loginStatus.statusCode = 200;
+      loginStatus.messages.push(userName + " is currently logged in!");
       
   } else {  
       console.log("STEP 5: " + userName + " is currently not logged in!");
-      loginStatus.messages.push("STEP 5: " + userName + " is currently not logged in!")
-      loginStatus.userLoggedInMessage = userName + " is currently NOT logged in!"
-      loginStatus.userLoggedIn = false;
+      loginStatus.messages.push("STEP 5: " + userName + " is currently not logged in!");
+      
+      // Set default values for logged out user
+      loginStatus.data.userNameFromToken = "Not Logged In";
+      loginStatus.data.userLoggedIn = false;
+      loginStatus.data.token = {
+          tokenType: tokenType,
+          accessToken: "No Valid Token",
+          refreshToken: "No Valid Token",
+          validAccessToken: false,
+          validRefreshToken: false,
+          refreshTokenMatches: false
+      };
+
+      // Keep success true and status 200 for logged out users
+      loginStatus.success = true;
+      loginStatus.statusCode = 200;
   }
 
-
   res.json(loginStatus)
+  
+  } catch (error) {
+    console.error("Error in loginStatus:", error);
+    const errorResponse = {
+      data: {},
+      messages: ["An unexpected error occurred"],
+      success: false,
+      statusCode: 500,
+      errors: [error.message],
+      currentUser: "Error"
+    };
+    res.status(500).json(errorResponse);
+  }
 }
 
 //Function A5: Delete a User 
