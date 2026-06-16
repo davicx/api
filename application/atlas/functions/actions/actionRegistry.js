@@ -1,4 +1,5 @@
 const scanEC2Handler = require('./ec2/scanEC2/scanEC2Handler');
+const scanS3Handler = require('./s3/scanS3/scanS3Handler');
 const toggleEC2Handler = require('./ec2/toggleEC2/toggleEC2Handler');
 const createEC2Handler = require('./ec2/createEC2/createEC2Handler');
 const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
@@ -150,6 +151,50 @@ const actionRegistry = {
             executing: 'Running EC2 scan.',
             success: 'EC2 scan completed.',
             failed: 'EC2 scan failed.'
+        }
+    },
+
+    //SERVICE: S3
+    //Action: Scan S3
+    scan_s3: {
+        //Identity
+        type: 'scan_s3',
+        actionLabel: 'Scan S3',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('scan') &&
+            text.includes('s3'),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: scanS3Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing S3 scan.',
+            missingFields: {
+                region: 'Which AWS region should I use?'
+            },
+            ready: 'Everything is ready for the S3 scan.',
+            executing: 'Running S3 scan.',
+            success: 'S3 scan completed.',
+            failed: 'S3 scan failed.'
         }
     },
 

@@ -290,6 +290,7 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('general_chat', 'General Chat', 0),
     ('inventory_aws', 'Inventory AWS Resources', 1),
     ('scan_ec2', 'Scan EC2', 0),
+    ('scan_s3', 'Scan S3', 0),
     ('toggle_ec2', 'Toggle EC2', 0),
     ('create_ec2', 'Create EC2', 0),
     ('delete_ec2', 'Delete EC2', 0);

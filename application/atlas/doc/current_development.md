@@ -1,6 +1,6 @@
 # Current Development
 
-**Last reviewed:** 2026-06-11
+**Last reviewed:** 2026-05-28
 
 > Read [architecture.md](./architecture.md) first. Done: [finished_development.md](./finished_development.md). Later: [future_development.md](./future_development.md).
 
@@ -104,3 +104,94 @@ Move per [architecture.md](./architecture.md) target layout — one PR per area 
 | `POST /scan/ec2` | Returns `MOCK_SCAN_EC2_DATA` |
 
 No AWS calls in Test mode. Flip Live imports in `main.py` when real mutations needed again.
+
+---
+
+## Scan expansion
+
+**Principle:** Small → working → prove value → expand. Finish EC2 before touching another service.
+
+**Quality bar:** 10 excellent findings beat 100 mediocre ones. Ship a rule only if you would show it on a 15-minute prospect call. Every finding needs plain-English title, severity, explanation, and a **concrete recommendation** (not remediation).
+
+**Demo build order:**
+
+```text
+1. EC2 complete (6 rules)     ← validates full stack; copy this pattern later
+2. S3 (3 rules)               ← visual, high wow
+3. Security Groups (3 rules)  ← classic security scan
+   ─── product already demos well ───
+4. EBS
+5. RDS
+6. scan_aws orchestration     ← way later; thin layer over the five scanners
+```
+
+**Per-service chat actions (demo tier):** `scan_ec2` → `scan_s3` → `scan_security_groups` → `scan_ebs` → `scan_rds`. Defer umbrella `scan_aws` until each scanner is excellent standalone.
+
+### EC2 — demo v1 (Phase 0)
+
+**Today:** Scanner + rules engine + `POST /scan/ec2` + Navigator + `scan_ec2` chat action + mock mode. **Five rules wired**; snapshot rule deferred.
+
+**Scanner:** `public_ip` / `has_public_ip` done. `volume_ids` deferred (`ec2_no_recent_snapshot` later).
+
+| Rule | Status | Demo line |
+|------|--------|-----------|
+| `ec2_low_cpu` | [x] | Instance barely used — may be overpaying |
+| `ec2_missing_name_tag` | [x] | Cannot tell what this server is for |
+| `ec2_stopped_instance` | [x] | Stopped instances still costing storage |
+| `ec2_legacy_instance_type` | [x] | Legacy instance type — worse price/performance |
+| `ec2_public_ip_attached` | [x] | Instance exposed directly to the internet |
+| `ec2_no_recent_snapshot` | deferred | Server has no recent backup — after S3 |
+
+**Also:**
+
+- [ ] `ec2_low_cpu` — only evaluate when `state == running`
+- [ ] Register all rules in `rule_registry.py` (aliases per rule)
+- [ ] Recommendation copy pass — title, description, severity, `recommendation.description`, `summary` per rule
+- [ ] `MOCK_SCAN_EC2_DATA` — one clean sample finding per rule for Test mode demos
+- [ ] Navigator findings table — optional **Rule** column from `metadata.rule_id` or `issue.code`
+
+**Exit criteria:** Live scan in one region returns findings across all six rule types when the account has matching resources; Test mode demos without AWS.
+
+### S3 — demo v1 (Phase 1)
+
+- [x] `core/cloud/s3/scanner.py` + 3 rules
+- [x] `POST /scan/s3` + `s3_scan_service.py`
+- [x] API: `scan_s3` action + Navigator adapter
+- [x] `MOCK_SCAN_S3_DATA` (test routes)
+- [x] `s3_public_access_block_disabled`
+- [x] `s3_default_encryption_off`
+- [x] `s3_no_lifecycle_policy`
+- [x] DB seed — `scan_s3` in `cloudpilot_actions` (`node test/scripts/ensure-cloudpilot-actions-seed.js`)
+
+### Security Groups — demo v1 (Phase 2)
+
+| Rule | Demo line |
+|------|-----------|
+| `sg_ssh_open_to_world` | SSH (22) open to the internet |
+| `sg_rdp_open_to_world` | RDP (3389) open to the internet |
+| `sg_db_port_open_to_world` | Database port open to the internet |
+
+- [ ] `core/cloud/security_groups/` (or `ec2_network/`) scanner + rules
+- [ ] `POST /scan/security-groups` + API `scan_security_groups` action
+
+### Later — EBS, RDS, orchestration
+
+**EBS v1:** `ebs_unattached_volume`, `ebs_old_snapshot`, `ebs_unencrypted_volume` (gp2→gp3 later).
+
+**RDS v1:** `rds_publicly_accessible`, `rds_backups_disabled`, `rds_single_az_likely_production` (low CPU, old generation later).
+
+**Deferred:** Lambda, CloudWatch Logs, ELB, IAM, CloudTrail — not needed for demo package.
+
+### Finding quality checklist (every new rule)
+
+| Field | Requirement |
+|-------|-------------|
+| `issue.title` | Short, plain English (~60 chars) |
+| `issue.description` | 1–2 sentences — why it matters |
+| `issue.severity` | Business impact — backup and public IP should feel urgent |
+| `recommendation.description` | Concrete next step — not “review this resource” |
+| `summary` | One sentence for a live demo |
+| `metadata.rule_id` | Stable snake_case id |
+| `cost` | When calculable; omit beats a fake number |
+
+**Habit:** Write the demo sentence and recommendation **before** implementing detection logic.
