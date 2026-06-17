@@ -74,7 +74,7 @@ Navigator / cross-app items stay under **API** as parent. Kite renders mode indi
 
 ### Platform & more actions
 
-- Rollback / undo (after execution history)
+- Rollback / undo — see [development_undo_feature.md](./development_undo_feature.md) (after automatic toggle E2E)
 - Per-user / multi-account AWS credentials
 - Bulk actions (“delete 5 instances” → 5 request rows)
 - `resize_ec2`, security scan, cost report, RDS, IAM, Terraform

@@ -1,10 +1,12 @@
 # CloudPilot — Database
 
-Three tables: static **actions**, user **requests** (workflows), and **executions** (each run attempt).
+Three tables: static **actions**, user **requests** (workflows), and **executions** (each run attempt). **History** (audit + undo) is defined in master SQL.
 
 **Replaces:** `cloudpilot_workflows` (evolves into `cloudpilot_requests` + FK to `cloudpilot_actions`).
 
-**Runnable SQL:** sections below are copy-paste ready.
+**Source of truth (run on new machine):** [`sql/master_sql.sql`](../sql/master_sql.sql) — `cloudpilot_actions`, `cloudpilot_requests`, `cloudpilot_history`, and action seed.
+
+Runnable SQL below mirrors `master_sql.sql` for reference.
 
 ---
 

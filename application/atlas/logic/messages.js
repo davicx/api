@@ -228,7 +228,7 @@ async function editMessage(req, res) {
     res.json(editMessageOutcome);
 }
 
-//Function A4: Say Hello
+//Function A4: Say Hello (Just to test if Open AI is up and running)
 async function postMessageHello(req, res) {
     console.log('postMessageHello: incoming body keys', req.body && Object.keys(req.body));
     const raw = req.body && (req.body.message ?? req.body.messageCaption);

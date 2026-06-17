@@ -141,6 +141,7 @@ _(Historical Atlas notes: Stage 0 optional hardening, legacy `/remediations/ec2/
 
 | Date | Change |
 |------|--------|
+| 2026-06-11 | **Doc layout:** planning `.md` files in `doc/development/`; `ReadMe.md` + original folders stay at `doc/` root; added `development_undo_feature.md` |
 | 2026-06-11 | **Doc split:** `architecture.md`, `current_development.md`, `finished_development.md`, `future_development.md`, `appendix.md` |
 | 2026-06-11 | Pipeline E2E verified; field hardening P0; Learn/Test/Live vision |
 | 2026-06-10 | STEP 6: removed Node mock; Atlas-only mock via `main.py` |

@@ -13,9 +13,10 @@
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
 | Legacy request SQL (historical) | `doc/sql/cloudpilot_workflows_phase1.sql` |
+| **Master SQL (source of truth)** | `doc/sql/master_sql.sql` |
 | EC2 chat samples | `api/README.md` |
 | Create tags / delete safety (future) | `api/doc/instructions/cloudpilot_tagging_metadata.md` |
-| Pipeline rebuild history & old specs | `doc/appendix.md` |
+| Pipeline rebuild history & old specs | `doc/development/appendix.md` |
 
 **Related planning docs:**
 
@@ -24,6 +25,7 @@
 | [current_development.md](./current_development.md) | Active work — checklists + details |
 | [finished_development.md](./finished_development.md) | Shipped |
 | [future_development.md](./future_development.md) | Deferred / vision |
+| [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [appendix.md](./appendix.md) | Historical pipeline notes, changelog |
 
 ---
