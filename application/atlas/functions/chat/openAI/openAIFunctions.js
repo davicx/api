@@ -121,7 +121,7 @@ async function sendChatWithAction(userMessage, action) {
         '- Help with AWS EC2 when the user is asking about it; otherwise reply briefly and naturally.\n' +
         '- Keep responses under 10 words unless you need one short question (e.g. region or confirmation).\n' +
         '- Do not say you executed anything; nothing runs on AWS yet.\n' +
-        '- If action.type is scan_ec2, ask which region if missing.\n' +
+        '- If a field is missing, ask for it using field: "value" (e.g. region: "us-west-2").\n' +
         '- If action.type is toggle_ec2, ask for confirmation before acting.\n\n' +
         'ACTION:\n' +
         JSON.stringify(action);

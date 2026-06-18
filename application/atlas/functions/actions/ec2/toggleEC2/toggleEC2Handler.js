@@ -48,7 +48,8 @@ async function toggleEC2Handler(context) {
         if (!region || !primary_instance_id || !secondary_instance_id) {
             return {
                 success: false,
-                cloudPilotMessage: "I am missing region, primary instance ID, or secondary instance ID to toggle EC2 instances.",
+                cloudPilotMessage:
+                    "Missing fields. Send:\nregion: \"us-west-2\"\nprimary_instance_id: \"i-0abc123\"\nsecondary_instance_id: \"i-0xyz987\"",
                 error: "missing_collected_fields",
                 atlasResponse: null
             };

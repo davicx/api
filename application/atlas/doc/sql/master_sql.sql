@@ -109,7 +109,19 @@ CREATE TABLE IF NOT EXISTS cloudpilot_requests (
 -- -----------------------------------------------------------------------------
 -- 3. cloudpilot_history
 -- -----------------------------------------------------------------------------
--- Audit + undo. See doc/development/development_undo_feature.md
+-- CloudPilot Change History — audit, undo, version timeline (planned).
+-- See doc/development/development_undo_feature.md
+--
+-- Columns: id (history id), organization, conversation_id, request_id,
+--          executed_by_user, action_name, history_status,
+--          target_type, target_id, target_region,
+--          resource_state_before, resource_state_after, undo_payload,
+--          undo_available, restores_history_id, restored_by_history_id,
+--          created_at, updated_at
+--
+-- target_id for toggle MVP: primary_instance_id:secondary_instance_id (e.g. i-123:i-456)
+-- Note: no action_id — literal action_name preserves story if catalog changes.
+--       history_status is NOT cloudpilot_requests.status
 
 CREATE TABLE IF NOT EXISTS cloudpilot_history (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -118,15 +130,10 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
     conversation_id BIGINT NOT NULL,
     request_id BIGINT UNSIGNED NULL,
 
-    action_id BIGINT UNSIGNED NULL,
+    executed_by_user VARCHAR(255) NOT NULL,
+
     action_name VARCHAR(100) NOT NULL,
-    display_name VARCHAR(255) NULL,
-
-    status VARCHAR(50) NOT NULL,
-    outcome_code VARCHAR(100) NULL,
-
-    execution_mode VARCHAR(50) NULL,
-    executed_by_user VARCHAR(255) NULL,
+    history_status VARCHAR(50) NOT NULL,
 
     target_type VARCHAR(100) NULL,
     target_id VARCHAR(255) NULL,
@@ -135,26 +142,19 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
     resource_state_before JSON NULL,
     resource_state_after JSON NULL,
 
-    undo_available TINYINT(1) NOT NULL DEFAULT 0,
-    undo_status VARCHAR(50) NULL,
-
     undo_payload JSON NULL,
+    undo_available TINYINT(1) NOT NULL DEFAULT 0,
 
-    reverts_history_id BIGINT UNSIGNED NULL,
-    reverted_by_history_id BIGINT UNSIGNED NULL,
+    restores_history_id BIGINT UNSIGNED NULL,
+    restored_by_history_id BIGINT UNSIGNED NULL,
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    completed_at DATETIME NULL,
-    undone_at DATETIME NULL,
 
     INDEX idx_history_conversation (conversation_id, created_at),
-    INDEX idx_history_undo (undo_status, undo_available),
+    INDEX idx_history_target (target_type, target_id, created_at),
     INDEX idx_history_request (request_id),
-
-    CONSTRAINT fk_history_action
-        FOREIGN KEY (action_id)
-        REFERENCES cloudpilot_actions(id),
+    INDEX idx_history_undo (undo_available, history_status),
 
     CONSTRAINT fk_history_request
         FOREIGN KEY (request_id)

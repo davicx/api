@@ -144,9 +144,7 @@ const actionRegistry = {
         //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 scan.',
-            missingFields: {
-                region: 'Which AWS region should I use?'
-            },
+            missingFields: {},
             ready: 'Everything is ready for the EC2 scan.',
             executing: 'Running EC2 scan.',
             success: 'EC2 scan completed.',
@@ -188,9 +186,7 @@ const actionRegistry = {
         //User-Facing System Messages
         messages: {
             started: 'Preparing S3 scan.',
-            missingFields: {
-                region: 'Which AWS region should I use?'
-            },
+            missingFields: {},
             ready: 'Everything is ready for the S3 scan.',
             executing: 'Running S3 scan.',
             success: 'S3 scan completed.',
@@ -241,12 +237,8 @@ const actionRegistry = {
 
         //User-Facing System Messages
         messages: {
-            started: 'Confirm before changing EC2 instances.',
-            missingFields: {
-                region: 'Which AWS region should I use?',
-                primary_instance_id: 'What is the primary EC2 instance ID to stop (e.g. i-0abc123)?',
-                secondary_instance_id: 'What is the secondary EC2 instance ID to start (e.g. i-0xyz987)?'
-            },
+            started: 'Preparing EC2 toggle.',
+            missingFields: {},
             ready: 'Everything is ready for the EC2 toggle.',
             executing: 'Toggling EC2 instances. This may take a few minutes.',
             success: 'EC2 toggle completed.',
@@ -305,11 +297,7 @@ const actionRegistry = {
         //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 create.',
-            missingFields: {
-                name: 'What should I name this EC2 instance?',
-                region: 'Which AWS region should I use?',
-                instance_type: 'What EC2 instance type would you like?'
-            },
+            missingFields: {},
             ready: 'Everything is ready for the EC2 create.',
             executing: 'Creating EC2 instance.',
             success: 'EC2 instance created.',
@@ -360,10 +348,7 @@ const actionRegistry = {
         //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 delete.',
-            missingFields: {
-                region: 'Which AWS region is the instance in?',
-                instance_id: 'What is the EC2 instance ID to delete (e.g. i-0abc123)?'
-            },
+            missingFields: {},
             ready: 'Everything is ready for the EC2 delete.',
             executing: 'Terminating EC2 instance.',
             success: 'EC2 instance termination requested.',

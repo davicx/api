@@ -37,7 +37,7 @@
 - [ ] D2 — `cancelRequest` fully wired in `applyDecision` _(verify / finish)_
 - [ ] Schema migration — `cloudpilot_actions` + `cloudpilot_requests` + `cloudpilot_executions`
 - [ ] `functions/` folder restructure (requests / executions / navigator)
-- [ ] Policy on routes (`allowed`, `reasonNotAllowed`)
+- [ ] **Change History H1** — verify `saveHistory()` row after toggle automatic (`STEP 6B: HISTORY SAVED`) _(wired — see [development_undo_feature.md](./development_undo_feature.md))_
 
 ### Field hardening P0 — details
 

@@ -12,7 +12,7 @@ const OUTCOME_MESSAGES = {
     instance_terminated:
         'It seems like EC2 instance {instance_id} in {region} is already terminated, so I cannot run that action on it.',
     invalid_instance_id:
-        'That EC2 instance ID does not look valid. Please check the ID and try again.',
+        'That EC2 instance ID does not look valid. Use instance_id: "i-0abc123"',
     invalid_instance_state:
         'That EC2 instance is not in a state that allows this action right now.',
     same_instance:
@@ -24,11 +24,11 @@ const OUTCOME_MESSAGES = {
     atlas_unreachable:
         'I could not reach the service that runs AWS actions. Please make sure Atlas is running and try again.',
     missing_instance_ids:
-        'I need both a primary and a secondary instance ID to toggle.',
+        'Send both instance IDs:\nprimary_instance_id: "i-0abc123"\nsecondary_instance_id: "i-0xyz987"',
     missing_instance_id:
-        'I need an instance ID to delete that EC2 instance.',
+        'Send the instance ID:\ninstance_id: "i-0abc123"',
     invalid_region:
-        'That AWS region does not look valid. Please check the region and try again.',
+        'That AWS region does not look valid. Use region: "us-west-2"',
     no_default_ami_for_region:
         'I do not have a default AMI configured for {region} yet.',
     aws_run_instances_failed:

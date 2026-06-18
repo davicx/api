@@ -1,5 +1,6 @@
 const actionRegistry = require('../actions/actionRegistry');
 const FinishRequestFunctions = require('../requests/finishRequest');
+const HistoryFunctions = require('../history/saveHistory');
 const { RESPONSE_TYPE } = require('../decision/decisionTypes');
 
 /*
@@ -13,6 +14,7 @@ FUNCTIONS B: Helpers
     4) Function B4: buildExecutionOutcome
     5) Function B5: getDefaultSuccessMessage
     6) Function B6: getDefaultFailureMessage
+    7) Function B7: recordExecutionHistory
 */
 
 //Function A1: Registry handler → Atlas HTTP; finish request row when workflowId exists
@@ -124,6 +126,14 @@ async function executeRequest(decision, context) {
             executionResult.message ||
             getDefaultSuccessMessage(actionDefinition);
 
+        await recordExecutionHistory({
+            actionType: actionType,
+            historyStatus: 'completed',
+            executionResult: executionResult,
+            executionContext: executionContext,
+            orchestrationContext: context
+        });
+
         return buildExecutionOutcome({
             success: true,
             cloudPilotMessage: cloudPilotMessage,
@@ -153,6 +163,14 @@ async function executeRequest(decision, context) {
         executionResult.cloudPilotMessage ||
         executionResult.message ||
         getDefaultFailureMessage(actionDefinition);
+
+    await recordExecutionHistory({
+        actionType: actionType,
+        historyStatus: 'failed',
+        executionResult: executionResult,
+        executionContext: executionContext,
+        orchestrationContext: context
+    });
 
     return buildExecutionOutcome({
         success: false,
@@ -237,6 +255,17 @@ function getDefaultFailureMessage(actionDefinition) {
     }
 
     return 'That action did not complete.';
+}
+
+//Function B7: STEP 6B — persist change history after execution (success or failure)
+async function recordExecutionHistory(options) {
+    await HistoryFunctions.saveHistory({
+        actionName: options.actionType,
+        historyStatus: options.historyStatus,
+        executionResult: options.executionResult,
+        executionContext: options.executionContext,
+        orchestrationContext: options.orchestrationContext
+    });
 }
 
 module.exports = {

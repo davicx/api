@@ -47,7 +47,8 @@ async function deleteEC2Handler(context) {
         if (!region || !instance_id) {
             return {
                 success: false,
-                cloudPilotMessage: "I am missing region or instance ID to delete the instance.",
+                cloudPilotMessage:
+                    "Missing fields. Send:\nregion: \"us-west-2\"\ninstance_id: \"i-0abc123\"",
                 error: "missing_collected_fields",
                 atlasResponse: null
             };

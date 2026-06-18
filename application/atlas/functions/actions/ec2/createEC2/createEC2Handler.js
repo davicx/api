@@ -75,7 +75,8 @@ async function createEC2Handler(context) {
         if (!name || !region || !instance_type) {
             return {
                 success: false,
-                cloudPilotMessage: "I am missing name, region, or instance type to create the instance.",
+                cloudPilotMessage:
+                    "Missing fields. Send:\nname: \"my-app-server\"\nregion: \"us-west-2\"\ninstance_type: \"t3.micro\"",
                 error: "missing_collected_fields",
                 atlasResponse: null
             };

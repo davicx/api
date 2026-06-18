@@ -1,4 +1,5 @@
 const AtlasExecution = require('../classes/AtlasExecution');
+const { buildMissingFieldsMessage } = require('./fieldPromptExamples');
 
 //Function B3: Handle Cloud Pilot Chat
 async function handleCloudPilotChat(payload) {
@@ -89,11 +90,14 @@ async function cloudPilotRespondNewRequest(payload) {
 
     const missingFields = payload.actionState.missingFields || [];
 
-    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields );
+    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+
+    const message =
+        missingFieldsMessage || actionDefinition.messages.started;
 
     return {
         success: true,
-        message: actionDefinition.messages.started + " " + missingFieldsMessage,
+        message: message,
         atlasResponse: null,
         error: null
     };
@@ -116,7 +120,7 @@ async function cloudPilotRespondMissingFieldsGiven(payload) {
     if (missingFields.length > 0) {
         const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
 
-        acknowledgement += " " + missingFieldsMessage;
+        acknowledgement += '\n\n' + missingFieldsMessage;
     }
 
     return {
@@ -178,7 +182,7 @@ async function cloudPilotRespondWorkflowInProgress(payload) {
     let message = "You already have a " + actionLabel + " workflow in progress.";
 
     if (missingFieldsMessage) {
-        message += " " + missingFieldsMessage;
+        message += '\n\n' + missingFieldsMessage;
     } else {
         message += " Please continue where we left off.";
     }
@@ -236,7 +240,7 @@ async function cloudPilotRespondRequestStatus(payload) {
     let message = "Your " + actionLabel + " request is open.";
 
     if (missingFieldsMessage) {
-        message += " " + missingFieldsMessage;
+        message += '\n\n' + missingFieldsMessage;
     } else if (ready) {
         const readyMessage =
             actionDefinition.messages && actionDefinition.messages.ready
@@ -277,29 +281,6 @@ async function cloudPilotRespondExecutionStarted(payload) {
         atlasResponse: null,
         error: null
     };
-}
-
-function buildMissingFieldsMessage(actionDefinition, missingFields) {
-    const questions = [];
-
-    const registryMessages = actionDefinition.messages && actionDefinition.messages.missingFields ? actionDefinition.messages.missingFields : {};
-
-    for (const fieldName of missingFields) {
-        const question = registryMessages[fieldName];
-
-        if (question) {
-            questions.push(question);
-        }
-    }
-
-    if (questions.length === 0) {
-        return "";
-    }
-
-    return (
-        questions.join(" ") +
-        '\n\nPlease use this format:\nfield: "value"'
-    );
 }
 
 module.exports = {

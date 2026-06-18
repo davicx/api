@@ -269,9 +269,9 @@ cloudpilot_actions (static)
         ▼
 cloudpilot_requests (user request / workflow)
         │
-        │  request_id
-        ▼
-cloudpilot_executions (each run attempt)
+        ├── request_id → cloudpilot_executions (each run attempt)
+        │
+        └── request_id → cloudpilot_history (change audit + undo)
 ```
 
 ```text
@@ -279,7 +279,20 @@ Action definition  →  cloudpilot_actions
 User says "Toggle EC2"  →  cloudpilot_requests row (collect fields, confirm)
 User says "yes"  →  cloudpilot_executions row (Atlas/AWS runs)
 Request closes  →  cloudpilot_requests.is_open = 0, outcome_code set
+Mutation succeeds  →  cloudpilot_history row (audit + undo) — see `sql/master_sql.sql`
 ```
+
+---
+
+## cloudpilot_history
+
+**CloudPilot Change History** — what actually changed (audit, undo, future version timeline).
+
+**Source of truth:** [`sql/master_sql.sql`](../sql/master_sql.sql). Full plan: [`development/development_undo_feature.md`](../development/development_undo_feature.md).
+
+Key columns: `conversation_id`, `executed_by_user`, `action_name` (no `action_id`), `history_status` (not `requests.status`), `target_id` (toggle MVP: `i-123:i-456`), `resource_state_before` / `resource_state_after`, `undo_payload`, `undo_available`, `restores_history_id`, `restored_by_history_id`.
+
+**First coding milestone (H1):** save history row after successful `toggle_ec2` automatic — no undo yet. See plan doc.
 
 ---
 
