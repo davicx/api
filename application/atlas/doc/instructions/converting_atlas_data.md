@@ -92,7 +92,7 @@ Every converted response should fit this outer shape:
 Use:
 
 ```text
-application/atlas/functions/navigatorResponseFunctions.js
+application/atlas/services/navigator/functions/navigatorFunctions.js
 ```
 
 Helpers:

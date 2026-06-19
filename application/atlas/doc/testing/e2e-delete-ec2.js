@@ -3,7 +3,7 @@
  * Usage (from application/atlas): node doc/testing/e2e-delete-ec2.js
  * Requires: Atlas at ATLAS_BASE_URL. Set INSTANCE_ID env to a real instance before running.
  */
-const { processMessage } = require('../../functions/cloudPilotMessageFunctions');
+const { processMessage } = require('../../services/cloudPilotMessageFunctions');
 
 const instanceId = process.env.INSTANCE_ID;
 if (!instanceId) {

@@ -315,8 +315,8 @@ update original row (reverted, undo_available = false)
 ## API checklist (full feature)
 
 - [x] **H0** — `cloudpilot_history` in `master_sql.sql`
-- [ ] **H1** — `saveHistory()` wired to toggle automatic success → row in DB ← **verify with toggle E2E**
-- [ ] **H2** — `getLatestUndoable()` log only
+- [x] **H1** — `saveHistory()` wired to toggle automatic success → row in DB
+- [x] **H2** — `getLatestUndoable()` log only (`STEP 6C` after save)
 - [ ] **H3** — Undo intent → log `undo_payload` only
 - [ ] **H4** — Execute undo + link rows
 - [ ] **H5** — Failed toggle → history row with `history_status = failed`
@@ -512,19 +512,20 @@ Step 1 only needs **History Builders** (toggle only). Undo Registry comes with t
 ## Code layout (target)
 
 ```text
-functions/history/
-├── History.js                 ← DB CRUD (insertHistoryRow)
-├── saveHistory.js             ← entry: dispatch → builder → insert (H1)
-├── getLatestUndoable.js       ← query (H2)
-├── historyBuilders/           ← save information (NOT undo-only)
-│   ├── toggleEc2History.js    ← H1
-│   ├── createEc2History.js    (later)
-│   ├── deleteEc2History.js    (later)
-│   └── s3PolicyHistory.js     (later)
-└── undoRegistry.js            ← execute information (H4 — payload.type → handler)
+functions/
+├── classes/
+│   └── History.js             ← DB CRUD (insertHistoryRow, getLatestUndoableRow)
+├── history/
+│   ├── historyFunctions.js    ← saveHistory, getLatestUndoable (orchestration)
+│   ├── historyBuilders/       ← save information (NOT undo-only)
+│   │   ├── toggleEc2History.js    ← H1
+│   │   ├── createEc2History.js    (later)
+│   │   ├── deleteEc2History.js    (later)
+│   │   └── s3PolicyHistory.js     (later)
+│   └── undoRegistry.js            ← execute information (H4 — payload.type → handler)
 ```
 
-**Step 1 ships:** `History.js`, `saveHistory.js`, `historyBuilders/toggleEc2History.js` only.
+**Step 1 ships:** `classes/History.js`, `history/historyFunctions.js`, `historyBuilders/toggleEc2History.js` only.
 
 ---
 

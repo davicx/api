@@ -136,7 +136,7 @@ CREATE TABLE cloudpilot_requests (
 
 ### Request status values
 
-Used in app code today (`actionStatusFunctions.js`):
+Used in app code today (`requests/functions/requestStatusFunctions.js`):
 
 | Value | Meaning |
 |-------|---------|
