@@ -28,6 +28,7 @@
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [use_single_function_entry_points.md](./use_single_function_entry_points.md) | Capability layer — step plan (C0–C9) |
 | [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
+| [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — U1–U5 |
 | [appendix.md](./appendix.md) | Historical pipeline notes, changelog |
 
 ---

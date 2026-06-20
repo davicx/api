@@ -40,6 +40,7 @@
 - [x] **Change History H1** — `saveHistory()` row after toggle automatic (`STEP 6B: HISTORY SAVED`)
 - [x] **Change History H2** — `getLatestUndoable()` log after save (`STEP 6C`)
 - [ ] **Capability layer C1–C7** — single entry points — [use_single_function_entry_points.md](./use_single_function_entry_points.md)
+- [ ] **Step one cleanup U1–U3** — before capabilities — [step_one_cleanup.md](./step_one_cleanup.md)
 
 ### Field hardening P0 — details
 

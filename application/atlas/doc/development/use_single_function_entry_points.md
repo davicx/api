@@ -4,11 +4,14 @@
 
 **Status:** Planned — no code until Step C1.
 
+**Do this before:** [step_one_cleanup.md](./step_one_cleanup.md) (Phase U1–U3), then Step C1.
+
 **Related:**
 
 | Doc | Role |
 |-----|------|
 | [architecture.md](./architecture.md) | Stable reference — four layers, history rules |
+| [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — do U1–U3 first |
 | [single_capabiity_change.md](./single_capabiity_change.md) | New & changed files map |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo reuses mutation capabilities |
 | [current_development.md](./current_development.md) | Active checklist |
