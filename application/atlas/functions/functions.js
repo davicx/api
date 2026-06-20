@@ -188,7 +188,7 @@ function userConfirmedAction(userMessage) {
     return confirmationMessages.includes(normalizedMessage);
 }
 
-const { isWaitingOnConfirmation } = require('./actionStatusFunctions');
+const { isWaitingOnConfirmation } = require('../services/requests/functions/requestStatusFunctions');
 
 function shouldStartExecution(executionDecisionData) {
     const actionState = executionDecisionData.actionState;

@@ -55,7 +55,7 @@ Registry
 File:
 
 ```text
-application/atlas/functions/actions/actionRegistry.js
+application/atlas/services/actions/actionRegistry.js
 ```
 
 Add:

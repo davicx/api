@@ -1,6 +1,8 @@
 # CloudPilot — Actions & Input Types
 
-Reference for **STEP 3: MESSAGE UNDERSTANDING**. These tables describe what `understandMessage()` extracts from a user message into `messageUnderstanding` — no DB writes or execution until `processRequest` (STEP 4).
+Quick reference for understanding, decision, and local DB setup. Active planning docs (`.md` only) live in [`development/`](./development/) — start with [`development/architecture.md`](./development/architecture.md).
+
+Reference for **STEP 3: MESSAGE UNDERSTANDING**. These tables describe what `understandMessage()` extracts from a user message into `messageUnderstanding` — no DB writes or execution until STEP 5 apply.
 
 ```json
 {
@@ -124,14 +126,24 @@ After understanding, `decideNextStep()` returns a **decision** with `chatType` (
 
 ## Database setup (other machine)
 
-Run on your MySQL database if `cloudpilot_actions` / `cloudpilot_requests` are missing. Full schema: `database/database.md`.
+**Source of truth:** run [`sql/master_sql.sql`](./sql/master_sql.sql) — creates `cloudpilot_actions`, `cloudpilot_requests`, `cloudpilot_history`, and seeds actions.
+
+```bash
+mysql -u USER -p DATABASE_NAME < application/atlas/doc/sql/master_sql.sql
+```
+
+Field docs: `database/database.md`. Undo/history plan: `development/development_undo_feature.md`.
 
 **Check:**
 
 ```sql
 SELECT * FROM cloudpilot_actions;
 SELECT * FROM cloudpilot_requests;
+SELECT * FROM cloudpilot_history;
 ```
+
+<details>
+<summary>Inline SQL (same as master_sql.sql)</summary>
 
 ### `cloudpilot_actions` — create + seed (required)
 
@@ -153,6 +165,7 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('general_chat', 'General Chat', 0),
     ('inventory_aws', 'Inventory AWS Resources', 1),
     ('scan_ec2', 'Scan EC2', 0),
+    ('scan_s3', 'Scan S3', 0),
     ('toggle_ec2', 'Toggle EC2', 0),
     ('create_ec2', 'Create EC2', 0),
     ('delete_ec2', 'Delete EC2', 0)
@@ -225,16 +238,20 @@ INSERT INTO cloudpilot_requests (
 );
 ```
 
+</details>
+
 ---
 
 ## Related docs
 
 | Topic | Path |
 |-------|------|
-| **Architecture (read first)** | `architecture.md` |
-| Active work (checklists) | `current_development.md` |
-| Shipped | `finished_development.md` |
-| Deferred / vision | `future_development.md` |
-| History & changelog | `appendix.md` |
+| **Architecture (read first)** | `development/architecture.md` |
+| Active work (checklists) | `development/current_development.md` |
+| Shipped | `development/finished_development.md` |
+| Deferred / vision | `development/future_development.md` |
+| Undo / history feature | `development/development_undo_feature.md` |
+| History & changelog | `development/appendix.md` |
 | Database schema | `database/database.md` |
+| **Master SQL (source of truth)** | `sql/master_sql.sql` |
 | Add a new action | `instructions/adding_new_action.md` |

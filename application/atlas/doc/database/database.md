@@ -1,10 +1,12 @@
 # CloudPilot — Database
 
-Three tables: static **actions**, user **requests** (workflows), and **executions** (each run attempt).
+Three tables: static **actions**, user **requests** (workflows), and **executions** (each run attempt). **History** (audit + undo) is defined in master SQL.
 
 **Replaces:** `cloudpilot_workflows` (evolves into `cloudpilot_requests` + FK to `cloudpilot_actions`).
 
-**Runnable SQL:** sections below are copy-paste ready.
+**Source of truth (run on new machine):** [`sql/master_sql.sql`](../sql/master_sql.sql) — `cloudpilot_actions`, `cloudpilot_requests`, `cloudpilot_history`, and action seed.
+
+Runnable SQL below mirrors `master_sql.sql` for reference.
 
 ---
 
@@ -134,7 +136,7 @@ CREATE TABLE cloudpilot_requests (
 
 ### Request status values
 
-Used in app code today (`actionStatusFunctions.js`):
+Used in app code today (`requests/functions/requestStatusFunctions.js`):
 
 | Value | Meaning |
 |-------|---------|
@@ -267,9 +269,9 @@ cloudpilot_actions (static)
         ▼
 cloudpilot_requests (user request / workflow)
         │
-        │  request_id
-        ▼
-cloudpilot_executions (each run attempt)
+        ├── request_id → cloudpilot_executions (each run attempt)
+        │
+        └── request_id → cloudpilot_history (change audit + undo)
 ```
 
 ```text
@@ -277,7 +279,20 @@ Action definition  →  cloudpilot_actions
 User says "Toggle EC2"  →  cloudpilot_requests row (collect fields, confirm)
 User says "yes"  →  cloudpilot_executions row (Atlas/AWS runs)
 Request closes  →  cloudpilot_requests.is_open = 0, outcome_code set
+Mutation succeeds  →  cloudpilot_history row (audit + undo) — see `sql/master_sql.sql`
 ```
+
+---
+
+## cloudpilot_history
+
+**CloudPilot Change History** — what actually changed (audit, undo, future version timeline).
+
+**Source of truth:** [`sql/master_sql.sql`](../sql/master_sql.sql). Full plan: [`development/development_undo_feature.md`](../development/development_undo_feature.md).
+
+Key columns: `conversation_id`, `executed_by_user`, `action_name` (no `action_id`), `history_status` (not `requests.status`), `target_id` (toggle MVP: `i-123:i-456`), `resource_state_before` / `resource_state_after`, `undo_payload`, `undo_available`, `restores_history_id`, `restored_by_history_id`.
+
+**First coding milestone (H1):** save history row after successful `toggle_ec2` automatic — no undo yet. See plan doc.
 
 ---
 
@@ -290,6 +305,7 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('general_chat', 'General Chat', 0),
     ('inventory_aws', 'Inventory AWS Resources', 1),
     ('scan_ec2', 'Scan EC2', 0),
+    ('scan_s3', 'Scan S3', 0),
     ('toggle_ec2', 'Toggle EC2', 0),
     ('create_ec2', 'Create EC2', 0),
     ('delete_ec2', 'Delete EC2', 0);
