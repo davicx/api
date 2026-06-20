@@ -89,10 +89,7 @@ async function postMessage(req, res) {
     console.log("STEP 6: Save CloudPilot message to database");
 
     var cloudPilotMessageOutcome = null;
-    const cloudPilotReplyText =
-        cloudPilotResult && cloudPilotResult.cloudPilotMessage
-            ? String(cloudPilotResult.cloudPilotMessage).trim()
-            : '';
+    const cloudPilotReplyText = cloudPilotResult && cloudPilotResult.cloudPilotMessage ? String(cloudPilotResult.cloudPilotMessage).trim() : '';
 
     if (cloudPilotReplyText) {
         var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotReplyText);

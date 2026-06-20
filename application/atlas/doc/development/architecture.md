@@ -2,7 +2,7 @@
 
 **Purpose:** Stable reference for how the system works. Read this first.
 
-**Last reviewed:** 2026-05-28
+**Last reviewed:** 2026-06-09
 
 **Reference docs (how-to, not todo lists):**
 
@@ -26,6 +26,8 @@
 | [finished_development.md](./finished_development.md) | Shipped |
 | [future_development.md](./future_development.md) | Deferred / vision |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
+| [use_single_function_entry_points.md](./use_single_function_entry_points.md) | Capability layer — step plan (C0–C9) |
+| [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
 | [appendix.md](./appendix.md) | Historical pipeline notes, changelog |
 
 ---
@@ -77,6 +79,89 @@ Kite          = generic renderer
 **Phase 1 request policy:** one open request per `conversation_id` (`is_open = 1`). History stays as closed rows.
 
 **Naming:** `action_type` = machine key (`toggle_ec2`). `display_name` = human label ("Toggle EC2 Lab Environment").
+
+### CloudPilot Capability Layer (target)
+
+**Status:** Planned — see [use_single_function_entry_points.md](./use_single_function_entry_points.md) (Steps C0–C9). Incremental: start with `mutations/toggleEC2`, then scans/inventory.
+
+Today the execution path is:
+
+```text
+Action Registry → Handler → Atlas function → Atlas HTTP route
+```
+
+Over time, the **official product surface** should be named capabilities — the things Chat, Undo, PR generation, automatic remediation, and a future public API all call:
+
+```javascript
+toggleEC2()
+scanEC2()
+getAllResources()
+createEC2()
+```
+
+Handlers stay **thick** (formatting, Navigator, chat copy). Capability functions stay **thin** (call Atlas HTTP, return structured result).
+
+#### Three user intents → three folders
+
+Prefer **`scans/` · `inventory/` · `mutations/`** over a generic `info/` bucket — each maps to a distinct user intent:
+
+| Group | Intent | Examples | History? |
+|-------|--------|----------|----------|
+| **scans** | Analyze something | `scanEC2()`, `scanS3()`, `scanRDS()` | No — returns findings |
+| **inventory** | Tell me what exists | `getAllResources()`, `listEC2Instances()`, `listS3Buckets()` | No — returns resources |
+| **mutations** | Change something | `toggleEC2()`, `createEC2()`, `deleteEC2()`, `resizeEC2()` | Yes — creates `cloudpilot_history` rows |
+
+This aligns cleanly with Change History: only **mutations** get builders, `undo_payload`, and `history_status`.
+
+#### Target layout
+
+```text
+capabilities/                    ← or services/capabilities/ when introduced
+├── scans/
+│   ├── scanEC2.js
+│   ├── scanS3.js
+│   └── scanRDS.js
+├── inventory/
+│   ├── getAllResources.js
+│   ├── listEC2Instances.js
+│   └── listS3Buckets.js
+└── mutations/
+    ├── toggleEC2.js
+    ├── createEC2.js
+    └── deleteEC2.js
+```
+
+#### Undo reuses capabilities — not Atlas directly
+
+```text
+User presses undo
+  ↓
+executeUndoPayload()          ← undoRegistry (later)
+  ↓
+toggleEC2({ start, stop })    ← same mutation capability
+```
+
+Whether the call came from a user toggle or an undo press should not matter. That reuse is the architectural goal.
+
+**Two responsibilities stay separate:**
+
+| Layer | Job |
+|-------|-----|
+| `history/historyBuilders/` | **Save** — target, before/after snapshots, `undo_payload`, `undo_available` |
+| `undoRegistry.js` (later) | **Execute** — map `undo_payload.type` → call the right **mutation capability** |
+
+See [development_undo_feature.md](./development_undo_feature.md) for history table and undo phases (H1–H4).
+
+#### Relationship to existing folders
+
+| Today | Becomes |
+|-------|---------|
+| `executions/functions/executionFunctions.js` | Still STEP 6 orchestrator — calls handlers, then `saveHistory()` for mutations |
+| `actions/*Handler.js` | Still thick — understanding fields, Navigator, chat |
+| `atlasEC2Functions.scanEC2()` etc. | Move into `capabilities/scans/` or `capabilities/mutations/` over time |
+| `actionRegistry.js` | Unchanged — maps `action_type` → handler; handlers delegate to capabilities |
+
+Do **not** collapse handlers into capabilities. Registry + handlers = product/orchestration; capabilities = reusable AWS/Atlas operations.
 
 ### `processMessage` pipeline (STEP 1–7)
 

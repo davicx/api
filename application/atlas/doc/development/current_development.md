@@ -1,6 +1,6 @@
 # Current Development
 
-**Last reviewed:** 2026-05-28
+**Last reviewed:** 2026-06-09
 
 > Read [architecture.md](./architecture.md) first. Done: [finished_development.md](./finished_development.md). Later: [future_development.md](./future_development.md). Undo: [development_undo_feature.md](./development_undo_feature.md).
 
@@ -39,6 +39,7 @@
 - [x] `services/` folder restructure (requests / history / executions / navigator)
 - [x] **Change History H1** — `saveHistory()` row after toggle automatic (`STEP 6B: HISTORY SAVED`)
 - [x] **Change History H2** — `getLatestUndoable()` log after save (`STEP 6C`)
+- [ ] **Capability layer C1–C7** — single entry points — [use_single_function_entry_points.md](./use_single_function_entry_points.md)
 
 ### Field hardening P0 — details
 
