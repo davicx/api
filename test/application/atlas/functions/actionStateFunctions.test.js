@@ -1,4 +1,4 @@
-const actionState = require('../../../../application/atlas/state/ActionState');
+const actionState = require('../../../../application/atlas/services/requests/classes/ActionState');
 
 jest.mock('../../../../application/atlas/services/requests/classes/Request', () => ({
     getOpenActionForConversation: jest.fn(),

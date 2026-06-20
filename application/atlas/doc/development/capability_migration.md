@@ -10,7 +10,7 @@
 
 | Doc | Role |
 |-----|------|
-| [architecture.md](./architecture.md) | Stable reference — four layers, history rules |
+| [architecture.md](./architecture.md) | Stable reference — four layers + History, history rules |
 | [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — do U1–U3 first |
 | [single_capabiity_change.md](./single_capabiity_change.md) | New & changed files map |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo reuses mutation capabilities |
@@ -39,7 +39,7 @@ STEP 6  executeRequest              ← Execution Layer (when execution_started)
         capability (thin)             ← NEW — single entry point
         ↓
         Atlas / AWS                   ← Engine Layer
-STEP 6B saveHistory()                 ← CloudPilot only — NOT inside capability
+STEP 6B saveHistory()                 ← WHAT CHANGED — cross-cutting, NOT inside capability
 STEP 7  buildResponse
 ```
 
@@ -47,14 +47,33 @@ STEP 7  buildResponse
 
 ---
 
-## Four layers
+## Four layers + History
+
+Four **layers** answer WHAT / WHEN / HOW / WHERE. **History** is a fifth **concept** — cross-cutting, not a layer — it records WHAT CHANGED after execution completes.
+
+| Concept | Question | Home |
+|---------|----------|------|
+| **Conversation** | WHAT should happen? | `processMessage`, understand, decide, requests, responses |
+| **Execution** | WHEN should it happen? | `executeRequest`, handlers (registry) |
+| **Capability** | HOW do we do it? | `capabilities/` — `scanEC2`, `toggleEC2`, `getAllResources`, `generalChat` |
+| **Engine** | WHERE do we talk? | Atlas, AWS, OpenAI (`services/chat/openAI/`), GitHub, Jira |
+| **History** | WHAT CHANGED? | `services/history/` + STEP 6B — **not part of HOW** |
+
+History intentionally sits outside the capability path:
 
 ```text
-Conversation Layer          processMessage, understand, decide, requests, responses
-Execution Layer             executeRequest, handlers (registry)
-Capability Layer            scanEC2, toggleEC2, getAllResources, generalChat
-Engine Layer                Atlas, AWS, OpenAI, GitHub, Jira
+executeRequest()
+    ↓
+handler
+    ↓
+toggleEC2()          ← capability (HOW)
+    ↓
+Atlas                ← engine (WHERE)
+    ↓
+saveHistory()        ← WHAT CHANGED (mutations only)
 ```
+
+Capabilities return structured results. `saveHistory()` stays in STEP 6B after mutation success/failure. Capabilities do not insert history rows.
 
 ### Who calls capabilities?
 
@@ -72,7 +91,7 @@ Handlers stay **thick** (Navigator, chat copy, field context). Capabilities stay
 ## Target folder layout
 
 ```text
-services/capabilities/
+application/atlas/capabilities/     ← sibling to services/
 ├── scans/
 │   ├── scanEC2.js
 │   ├── scanS3.js
@@ -89,6 +108,8 @@ services/capabilities/
 └── conversation/
     └── generalChat.js              ← see “General chat” section below
 ```
+
+Handlers import with relative paths, e.g. `../../../../capabilities/mutations/toggleEC2` from `services/actions/ec2/toggleEC2/`.
 
 ### Capability return shape (convention)
 
@@ -177,8 +198,8 @@ Work in order. Each step is shippable and testable on its own. **Do not rename s
 
 **Tasks:**
 
-1. Create `services/capabilities/{scans,inventory,mutations,conversation}/`
-2. Add `services/capabilities/README.md` — return shape, “thin only”, history stays STEP 6B
+1. Create `application/atlas/capabilities/{scans,inventory,mutations,conversation}/`
+2. Add `capabilities/README.md` — return shape, “thin only”, history stays STEP 6B
 3. Add `index.js` re-exports (optional) or direct requires from handlers
 
 **Verify:** App boots; no imports switched yet.
@@ -332,7 +353,7 @@ Every `POST /message` runs STEPS 1–7. Atlas/OpenAI run only when:
 
 ## Exit criteria (whole initiative)
 
-- [ ] All Atlas HTTP calls from chat flow go through `services/capabilities/`
+- [ ] All Atlas HTTP calls from chat flow go through `capabilities/`
 - [ ] Handlers contain zero raw `fetch(ATLAS_BASE_URL + …)` 
 - [ ] `saveHistory()` only in `executionFunctions.js` (STEP 6B), never inside capabilities
 - [ ] Undo (H4) calls mutation capabilities only
@@ -346,3 +367,4 @@ Every `POST /message` runs STEPS 1–7. Atlas/OpenAI run only when:
 | Date | Change |
 |------|--------|
 | 2026-06-09 | Initial plan — four layers, C0–C9, general chat as `conversation/` |
+| 2026-06-09 | `capabilities/` at atlas root (sibling to `services/`); History as cross-cutting WHAT CHANGED |

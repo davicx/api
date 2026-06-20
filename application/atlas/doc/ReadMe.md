@@ -2,6 +2,8 @@
 
 Quick reference for understanding, decision, and local DB setup. Active planning docs (`.md` only) live in [`development/`](./development/) — start with [`development/architecture.md`](./development/architecture.md).
 
+**`services/` folder map:** [`../services/README.md`](../services/README.md)
+
 Reference for **STEP 3: MESSAGE UNDERSTANDING**. These tables describe what `understandMessage()` extracts from a user message into `messageUnderstanding` — no DB writes or execution until STEP 5 apply.
 
 ```json

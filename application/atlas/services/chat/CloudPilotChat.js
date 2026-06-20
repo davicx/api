@@ -1,4 +1,4 @@
-const AtlasExecution = require('../classes/AtlasExecution');
+const AtlasExecution = require('../executions/AtlasExecution');
 const { buildMissingFieldsMessage } = require('./fieldPromptExamples');
 
 //Function B3: Handle Cloud Pilot Chat

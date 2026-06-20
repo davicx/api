@@ -1,4 +1,4 @@
-const actionState = require('../../../state/ActionState');
+const actionState = require('../classes/ActionState');
 const Request = require('../classes/Request');
 
 /*

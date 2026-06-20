@@ -4,13 +4,13 @@
 
 **Status:** Planned — not started.
 
-**Do this before:** [use_single_function_entry_points.md](./use_single_function_entry_points.md) Step C1.
+**Do this before:** [step_one_cleanup.md](./step_one_cleanup.md) (Phase U1–U3), then Step C1.
 
 **Related:**
 
 | Doc | Role |
 |-----|------|
-| [use_single_function_entry_points.md](./use_single_function_entry_points.md) | Capability layer — C0–C9 |
+| [capability_migration.md](./capability_migration.md) | Capability layer — C0–C9 |
 | [single_capabiity_change.md](./single_capabiity_change.md) | New & changed files for capabilities |
 | [architecture.md](./architecture.md) | Four layers, pipeline reference |
 | [current_development.md](./current_development.md) | Active checklist |
@@ -192,7 +192,7 @@ Also confirm:
 U1  →  trim cloudPilotMessageFunctions comment blocks
 U2  →  remove dead helpers + unused imports
      →  smoke test
-C1  →  scaffold capabilities/          ← use_single_function_entry_points.md
+C1  →  scaffold capabilities/          ← capability_migration.md
 C2  →  toggleEC2 first slice
 U3  →  trim functions.js (when ready)
 C3–C7 → remaining capabilities

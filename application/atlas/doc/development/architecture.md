@@ -26,7 +26,7 @@
 | [finished_development.md](./finished_development.md) | Shipped |
 | [future_development.md](./future_development.md) | Deferred / vision |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
-| [use_single_function_entry_points.md](./use_single_function_entry_points.md) | Capability layer — step plan (C0–C9) |
+| [capability_migration.md](./capability_migration.md) | Capability layer — step plan (C0–C9) |
 | [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
 | [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — U1–U5 |
 | [appendix.md](./appendix.md) | Historical pipeline notes, changelog |
@@ -83,7 +83,7 @@ Kite          = generic renderer
 
 ### CloudPilot Capability Layer (target)
 
-**Status:** Planned — see [use_single_function_entry_points.md](./use_single_function_entry_points.md) (Steps C0–C9). Incremental: start with `mutations/toggleEC2`, then scans/inventory.
+**Status:** Planned — see [capability_migration.md](./capability_migration.md) (Steps C0–C9). Incremental: start with `mutations/toggleEC2`, then scans/inventory.
 
 Today the execution path is:
 
@@ -102,6 +102,32 @@ createEC2()
 
 Handlers stay **thick** (formatting, Navigator, chat copy). Capability functions stay **thin** (call Atlas HTTP, return structured result).
 
+#### Four layers + History (cross-cutting)
+
+| Concept | Question | Pipeline home |
+|---------|----------|---------------|
+| **Conversation** | WHAT should happen? | STEPS 3–5 — understand, decide, request state |
+| **Execution** | WHEN should it happen? | STEP 6 — gate on `execution_started` / `immediate_execution` |
+| **Capability** | HOW do we do it? | `capabilities/` — `scanEC2()`, `toggleEC2()`, `generalChat()` |
+| **Engine** | WHERE do we talk? | Atlas HTTP, OpenAI SDK (`services/chat/openAI/`) |
+| **History** | WHAT CHANGED? | Cross-cutting — **not a layer**; STEP 6B in `executionFunctions.js` |
+
+History intentionally sits **outside** the capability path — a record of what happened, not part of HOW:
+
+```text
+executeRequest()
+    ↓
+handler
+    ↓
+toggleEC2()          ← capability (HOW)
+    ↓
+Atlas                ← engine (WHERE)
+    ↓
+saveHistory()        ← WHAT CHANGED (mutations only)
+```
+
+Capabilities do not insert history rows. `saveHistory()` stays in STEP 6B after execution returns.
+
 #### Three user intents → three folders
 
 Prefer **`scans/` · `inventory/` · `mutations/`** over a generic `info/` bucket — each maps to a distinct user intent:
@@ -117,7 +143,7 @@ This aligns cleanly with Change History: only **mutations** get builders, `undo_
 #### Target layout
 
 ```text
-capabilities/                    ← or services/capabilities/ when introduced
+application/atlas/capabilities/   ← sibling to services/ (not inside it)
 ├── scans/
 │   ├── scanEC2.js
 │   ├── scanS3.js
@@ -126,10 +152,12 @@ capabilities/                    ← or services/capabilities/ when introduced
 │   ├── getAllResources.js
 │   ├── listEC2Instances.js
 │   └── listS3Buckets.js
-└── mutations/
-    ├── toggleEC2.js
-    ├── createEC2.js
-    └── deleteEC2.js
+├── mutations/
+│   ├── toggleEC2.js
+│   ├── createEC2.js
+│   └── deleteEC2.js
+└── conversation/
+    └── generalChat.js
 ```
 
 #### Undo reuses capabilities — not Atlas directly
@@ -194,18 +222,20 @@ Message
 ### Code folders (target layout)
 
 ```text
-services/                           ← CloudPilot API orchestration (was functions/)
-├── actions/                        ← registry + handlers (static product code)
-├── understanding/                  ← STEP 3 — signals only, no DB
-├── decision/                       ← STEP 4
-├── requests/                       ← STEP 5 — request lifecycle (service layout)
-├── history/                        ← audit + undo (service layout — reference implementation)
-├── executions/                     ← STEP 6
-├── chat/                           ← CloudPilotChat, outcomes, OpenAI
-├── responses/                      ← STEP 7 assembly
-├── navigator/                      ← Navigator response builders (functions only)
-├── classes/                        ← legacy root; AtlasExecution only until executions migrates
-└── cloudPilotMessageFunctions.js   ← thin orchestrator
+application/atlas/
+├── capabilities/                   ← thin execution surface (scanEC2, toggleEC2, …)
+└── services/                       ← CloudPilot API orchestration (was functions/)
+    ├── actions/                    ← registry + handlers (static product code)
+    ├── understanding/              ← STEP 3 — signals only, no DB
+    ├── decision/                   ← STEP 4
+    ├── requests/                   ← STEP 2 load + STEP 5 apply
+    ├── history/                    ← audit + undo (STEP 6B — WHAT CHANGED)
+    ├── executions/                 ← STEP 6
+    ├── chat/                       ← CloudPilotChat, outcomes, OpenAI
+    ├── responses/                  ← STEP 7 assembly
+    ├── navigator/                  ← Navigator response builders
+    ├── config/                     ← chatGPTconfig, etc.
+    └── cloudPilotMessageFunctions.js   ← thin orchestrator
 ```
 
 See [appendix.md](./appendix.md) for old → new file rename map and historical STEP 5 spec.
