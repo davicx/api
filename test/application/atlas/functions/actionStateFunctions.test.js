@@ -1,6 +1,6 @@
 const actionState = require('../../../../application/atlas/state/ActionState');
 
-jest.mock('../../../../application/atlas/functions/classes/Actions', () => ({
+jest.mock('../../../../application/atlas/services/requests/classes/Request', () => ({
     getOpenActionForConversation: jest.fn(),
     createAction: jest.fn(),
     cancelAction: jest.fn(),
@@ -9,7 +9,7 @@ jest.mock('../../../../application/atlas/functions/classes/Actions', () => ({
     setExecutionMode: jest.fn()
 }));
 
-const Actions = require('../../../../application/atlas/functions/classes/Actions');
+const Request = require('../../../../application/atlas/services/requests/classes/Request');
 const {
     getUsersActionState,
     loadUsersOpenAction,
@@ -18,7 +18,7 @@ const {
     useDatabaseActionState,
     actionStateIsEmpty,
     mapActionToState
-} = require('../../../../application/atlas/functions/actions/actionStateFunctions');
+} = require('../../../../application/atlas/services/requests/functions/requestLoadFunctions');
 
 const CONVERSATION_ID = 9001;
 
@@ -84,7 +84,7 @@ describe('actionStateFunctions', () => {
 
     describe('getUsersActionState', () => {
         test('reads open action from database', async () => {
-            Actions.getOpenActionForConversation.mockResolvedValue({
+            Request.getOpenActionForConversation.mockResolvedValue({
                 success: true,
                 action: {
                     workflowId: 42,
@@ -106,7 +106,7 @@ describe('actionStateFunctions', () => {
         });
 
         test('returns empty state when no open row', async () => {
-            Actions.getOpenActionForConversation.mockResolvedValue({
+            Request.getOpenActionForConversation.mockResolvedValue({
                 success: true,
                 action: null,
                 errors: []
@@ -120,7 +120,7 @@ describe('actionStateFunctions', () => {
 
     describe('startNewUsersAction', () => {
         test('cancels open row before creating a different action', async () => {
-            Actions.getOpenActionForConversation
+            Request.getOpenActionForConversation
                 .mockResolvedValueOnce({
                     success: true,
                     action: { workflowId: 1, actionType: 'scan_ec2' },
@@ -132,8 +132,8 @@ describe('actionStateFunctions', () => {
                     errors: []
                 });
 
-            Actions.cancelAction.mockResolvedValue({ success: true });
-            Actions.createAction.mockResolvedValue({
+            Request.cancelAction.mockResolvedValue({ success: true });
+            Request.createAction.mockResolvedValue({
                 success: true,
                 workflowId: 2,
                 action: {
@@ -157,8 +157,8 @@ describe('actionStateFunctions', () => {
                 requiredFields: ['region', 'primary_instance_id', 'secondary_instance_id']
             });
 
-            expect(Actions.cancelAction).toHaveBeenCalledWith(1);
-            expect(Actions.createAction).toHaveBeenCalledWith(
+            expect(Request.cancelAction).toHaveBeenCalledWith(1);
+            expect(Request.createAction).toHaveBeenCalledWith(
                 expect.objectContaining({
                     actionType: 'toggle_ec2',
                     displayName: 'Toggle EC2'
@@ -171,13 +171,13 @@ describe('actionStateFunctions', () => {
 
     describe('setUsersActionField', () => {
         test('writes field to database and returns updated state', async () => {
-            Actions.getOpenActionForConversation.mockResolvedValue({
+            Request.getOpenActionForConversation.mockResolvedValue({
                 success: true,
                 action: { workflowId: 5, actionType: 'create_ec2' },
                 errors: []
             });
 
-            Actions.setField.mockResolvedValue({
+            Request.setField.mockResolvedValue({
                 success: true,
                 action: {
                     workflowId: 5,
@@ -192,7 +192,7 @@ describe('actionStateFunctions', () => {
 
             const state = await setUsersActionField(CONVERSATION_ID, 'region', 'us-west-2');
 
-            expect(Actions.setField).toHaveBeenCalledWith(5, 'region', 'us-west-2');
+            expect(Request.setField).toHaveBeenCalledWith(5, 'region', 'us-west-2');
             expect(state.collected.region).toBe('us-west-2');
             expect(state.missing).toEqual([]);
         });
@@ -205,11 +205,11 @@ describe('actionStateFunctions', () => {
             const result = await loadUsersOpenAction(CONVERSATION_ID);
 
             expect(result).toEqual({ loaded: false, reason: 'memory_only_mode' });
-            expect(Actions.getOpenActionForConversation).not.toHaveBeenCalled();
+            expect(Request.getOpenActionForConversation).not.toHaveBeenCalled();
         });
 
         test('in database mode returns loaded when open row exists', async () => {
-            Actions.getOpenActionForConversation.mockResolvedValue({
+            Request.getOpenActionForConversation.mockResolvedValue({
                 success: true,
                 action: {
                     workflowId: 42,

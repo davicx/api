@@ -1,0 +1,193 @@
+const db = require('../../../../functions/conn');
+
+/*
+METHODS A: cloudpilot_history CRUD
+    1) Method A1: insertHistoryRow
+    2) Method A2: getLatestUndoableRow
+*/
+
+class History {
+
+    //Method A1: Insert one change-history row
+    static async insertHistoryRow(row) {
+        const connection = db.getConnection();
+        const data = row || {};
+
+        const outcome = {
+            success: false,
+            historyId: null,
+            history: null,
+            errors: []
+        };
+
+        try {
+            const insertResults = await runQuery(
+                connection,
+                `INSERT INTO cloudpilot_history (
+                    organization,
+                    conversation_id,
+                    request_id,
+                    executed_by_user,
+                    action_name,
+                    history_status,
+                    target_type,
+                    target_id,
+                    target_region,
+                    resource_state_before,
+                    resource_state_after,
+                    undo_payload,
+                    undo_available,
+                    restores_history_id,
+                    restored_by_history_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    String(data.organization || 'Cloud Pilot').trim(),
+                    Number(data.conversationId),
+                    data.requestId != null ? Number(data.requestId) : null,
+                    String(data.executedByUser || '').trim(),
+                    String(data.actionName || '').trim(),
+                    String(data.historyStatus || '').trim(),
+                    data.targetType || null,
+                    data.targetId || null,
+                    data.targetRegion || null,
+                    stringifyJsonColumn(data.resourceStateBefore),
+                    stringifyJsonColumn(data.resourceStateAfter),
+                    stringifyJsonColumn(data.undoPayload),
+                    data.undoAvailable ? 1 : 0,
+                    data.restoresHistoryId != null ? Number(data.restoresHistoryId) : null,
+                    data.restoredByHistoryId != null ? Number(data.restoredByHistoryId) : null
+                ]
+            );
+
+            const historyId = insertResults.insertId;
+
+            outcome.success = true;
+            outcome.historyId = historyId;
+            outcome.history = {
+                id: historyId,
+                actionName: data.actionName,
+                historyStatus: data.historyStatus,
+                targetType: data.targetType,
+                targetId: data.targetId,
+                undoAvailable: Boolean(data.undoAvailable)
+            };
+
+            return outcome;
+
+        } catch (err) {
+            console.log('History.insertHistoryRow failed', err);
+            outcome.errors.push(err);
+            return outcome;
+        }
+    }
+
+    //Method A2: Latest completed undoable row for a conversation
+    static async getLatestUndoableRow({ conversationId }) {
+        const connection = db.getConnection();
+
+        const outcome = {
+            success: false,
+            history: null,
+            errors: []
+        };
+
+        const conversationIdNumber = Number(conversationId);
+
+        if (!conversationIdNumber) {
+            outcome.errors.push({
+                code: 'invalid_conversation_id',
+                message: 'conversationId is required for history lookup'
+            });
+            return outcome;
+        }
+
+        try {
+            const rows = await runQuery(
+                connection,
+                `SELECT *
+                 FROM cloudpilot_history
+                 WHERE conversation_id = ?
+                   AND undo_available = 1
+                   AND history_status = 'completed'
+                 ORDER BY created_at DESC
+                 LIMIT 1`,
+                [conversationIdNumber]
+            );
+
+            outcome.success = true;
+
+            if (!rows || rows.length === 0) {
+                return outcome;
+            }
+
+            outcome.history = mapHistoryRowFromDb(rows[0]);
+            return outcome;
+
+        } catch (err) {
+            console.log('History.getLatestUndoableRow failed', err);
+            outcome.errors.push(err);
+            return outcome;
+        }
+    }
+}
+
+function stringifyJsonColumn(value) {
+    if (value == null) {
+        return null;
+    }
+
+    return JSON.stringify(value);
+}
+
+function parseJsonColumn(value) {
+    if (value == null) {
+        return null;
+    }
+
+    if (typeof value === 'object') {
+        return value;
+    }
+
+    try {
+        return JSON.parse(String(value));
+    } catch (err) {
+        return null;
+    }
+}
+
+function mapHistoryRowFromDb(row) {
+    return {
+        id: row.id,
+        organization: row.organization,
+        conversationId: row.conversation_id,
+        requestId: row.request_id,
+        executedByUser: row.executed_by_user,
+        actionName: row.action_name,
+        historyStatus: row.history_status,
+        targetType: row.target_type,
+        targetId: row.target_id,
+        targetRegion: row.target_region,
+        resourceStateBefore: parseJsonColumn(row.resource_state_before),
+        resourceStateAfter: parseJsonColumn(row.resource_state_after),
+        undoPayload: parseJsonColumn(row.undo_payload),
+        undoAvailable: row.undo_available === 1,
+        restoresHistoryId: row.restores_history_id,
+        restoredByHistoryId: row.restored_by_history_id,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+    };
+}
+
+function runQuery(connection, queryString, params) {
+    return new Promise(function (resolve, reject) {
+        connection.query(queryString, params, function (err, results) {
+            if (err) {
+                return reject(err);
+            }
+
+            resolve(results);
+        });
+    });
+}
+
+module.exports = History;

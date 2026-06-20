@@ -1,6 +1,6 @@
 # Current Development
 
-**Last reviewed:** 2026-05-28
+**Last reviewed:** 2026-06-09
 
 > Read [architecture.md](./architecture.md) first. Done: [finished_development.md](./finished_development.md). Later: [future_development.md](./future_development.md). Undo: [development_undo_feature.md](./development_undo_feature.md).
 
@@ -36,8 +36,11 @@
 - [ ] **P3C** — `open_actions` Navigator table in API response
 - [ ] D2 — `cancelRequest` fully wired in `applyDecision` _(verify / finish)_
 - [ ] Schema migration — `cloudpilot_actions` + `cloudpilot_requests` + `cloudpilot_executions`
-- [ ] `functions/` folder restructure (requests / executions / navigator)
-- [ ] **Change History H1** — verify `saveHistory()` row after toggle automatic (`STEP 6B: HISTORY SAVED`) _(wired — see [development_undo_feature.md](./development_undo_feature.md))_
+- [x] `services/` folder restructure (requests / history / executions / navigator)
+- [x] **Change History H1** — `saveHistory()` row after toggle automatic (`STEP 6B: HISTORY SAVED`)
+- [x] **Change History H2** — `getLatestUndoable()` log after save (`STEP 6C`)
+- [ ] **Capability layer C1–C7** — single entry points — [use_single_function_entry_points.md](./use_single_function_entry_points.md)
+- [ ] **Step one cleanup U1–U3** — before capabilities — [step_one_cleanup.md](./step_one_cleanup.md)
 
 ### Field hardening P0 — details
 
@@ -82,7 +85,7 @@
 
 ### `functions/` restructure — details
 
-Move per [architecture.md](./architecture.md) target layout — one PR per area (requests → executions → navigator). Do not rename symbols repo-wide in one pass.
+Move per [architecture.md](./architecture.md) — **done** (`application/atlas/services/`). One PR per area for any future service additions.
 
 ---
 

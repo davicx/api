@@ -2,7 +2,7 @@
 
 **Purpose:** Stable reference for how the system works. Read this first.
 
-**Last reviewed:** 2026-06-11
+**Last reviewed:** 2026-06-09
 
 **Reference docs (how-to, not todo lists):**
 
@@ -26,6 +26,9 @@
 | [finished_development.md](./finished_development.md) | Shipped |
 | [future_development.md](./future_development.md) | Deferred / vision |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
+| [use_single_function_entry_points.md](./use_single_function_entry_points.md) | Capability layer — step plan (C0–C9) |
+| [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
+| [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — U1–U5 |
 | [appendix.md](./appendix.md) | Historical pipeline notes, changelog |
 
 ---
@@ -39,7 +42,7 @@
 - Renders `navigatorResponse` (stats, tables, columns, alerts) via generic client renderer
 - Does **not** interpret action types or field collection — API owns orchestration
 
-**Navigator data** is shaped by API (`navigatorResponseFunctions.js` + per-action adapters). Kite displays what it receives.
+**Navigator data** is shaped by API (`navigator/functions/navigatorFunctions.js` + per-action adapters). Kite displays what it receives.
 
 ---
 
@@ -78,6 +81,89 @@ Kite          = generic renderer
 
 **Naming:** `action_type` = machine key (`toggle_ec2`). `display_name` = human label ("Toggle EC2 Lab Environment").
 
+### CloudPilot Capability Layer (target)
+
+**Status:** Planned — see [use_single_function_entry_points.md](./use_single_function_entry_points.md) (Steps C0–C9). Incremental: start with `mutations/toggleEC2`, then scans/inventory.
+
+Today the execution path is:
+
+```text
+Action Registry → Handler → Atlas function → Atlas HTTP route
+```
+
+Over time, the **official product surface** should be named capabilities — the things Chat, Undo, PR generation, automatic remediation, and a future public API all call:
+
+```javascript
+toggleEC2()
+scanEC2()
+getAllResources()
+createEC2()
+```
+
+Handlers stay **thick** (formatting, Navigator, chat copy). Capability functions stay **thin** (call Atlas HTTP, return structured result).
+
+#### Three user intents → three folders
+
+Prefer **`scans/` · `inventory/` · `mutations/`** over a generic `info/` bucket — each maps to a distinct user intent:
+
+| Group | Intent | Examples | History? |
+|-------|--------|----------|----------|
+| **scans** | Analyze something | `scanEC2()`, `scanS3()`, `scanRDS()` | No — returns findings |
+| **inventory** | Tell me what exists | `getAllResources()`, `listEC2Instances()`, `listS3Buckets()` | No — returns resources |
+| **mutations** | Change something | `toggleEC2()`, `createEC2()`, `deleteEC2()`, `resizeEC2()` | Yes — creates `cloudpilot_history` rows |
+
+This aligns cleanly with Change History: only **mutations** get builders, `undo_payload`, and `history_status`.
+
+#### Target layout
+
+```text
+capabilities/                    ← or services/capabilities/ when introduced
+├── scans/
+│   ├── scanEC2.js
+│   ├── scanS3.js
+│   └── scanRDS.js
+├── inventory/
+│   ├── getAllResources.js
+│   ├── listEC2Instances.js
+│   └── listS3Buckets.js
+└── mutations/
+    ├── toggleEC2.js
+    ├── createEC2.js
+    └── deleteEC2.js
+```
+
+#### Undo reuses capabilities — not Atlas directly
+
+```text
+User presses undo
+  ↓
+executeUndoPayload()          ← undoRegistry (later)
+  ↓
+toggleEC2({ start, stop })    ← same mutation capability
+```
+
+Whether the call came from a user toggle or an undo press should not matter. That reuse is the architectural goal.
+
+**Two responsibilities stay separate:**
+
+| Layer | Job |
+|-------|-----|
+| `history/historyBuilders/` | **Save** — target, before/after snapshots, `undo_payload`, `undo_available` |
+| `undoRegistry.js` (later) | **Execute** — map `undo_payload.type` → call the right **mutation capability** |
+
+See [development_undo_feature.md](./development_undo_feature.md) for history table and undo phases (H1–H4).
+
+#### Relationship to existing folders
+
+| Today | Becomes |
+|-------|---------|
+| `executions/functions/executionFunctions.js` | Still STEP 6 orchestrator — calls handlers, then `saveHistory()` for mutations |
+| `actions/*Handler.js` | Still thick — understanding fields, Navigator, chat |
+| `atlasEC2Functions.scanEC2()` etc. | Move into `capabilities/scans/` or `capabilities/mutations/` over time |
+| `actionRegistry.js` | Unchanged — maps `action_type` → handler; handlers delegate to capabilities |
+
+Do **not** collapse handlers into capabilities. Registry + handlers = product/orchestration; capabilities = reusable AWS/Atlas operations.
+
 ### `processMessage` pipeline (STEP 1–7)
 
 **Golden rule:** understand once → decide once → apply once → execute (if needed) → respond once.
@@ -100,7 +186,7 @@ Message
 | STEP 3 Understand | ✅ Live | `understandMessage.js` |
 | STEP 4 Decide | ✅ Live | `decideNextStep.js` |
 | STEP 5 Apply | ✅ Live | `applyDecision.js` |
-| STEP 6 Execute | ✅ Live | `executeRequest.js` → registry handlers |
+| STEP 6 Execute | ✅ Live | `executionFunctions.js` → registry handlers |
 | STEP 7 Respond | ✅ Live | `buildCloudPilotResponse.js` |
 
 **STEP 6 rule:** Node always calls Atlas HTTP. No mock execution in Node. Mock data lives in Atlas Test routes only.
@@ -108,19 +194,63 @@ Message
 ### Code folders (target layout)
 
 ```text
-functions/
-├── actions/              ← registry + handlers (static)
-├── understanding/        ← STEP 3 — signals only, no DB
-├── decision/             ← STEP 4
-├── requests/             ← STEP 5 — DB apply
-├── executions/           ← STEP 6
-├── chat/                 ← CloudPilotChat, outcomes, OpenAI
-├── responses/            ← STEP 7 assembly
-├── navigator/            ← navigatorResponseFunctions (target; today at functions root)
-└── cloudPilotMessageFunctions.js  ← thin orchestrator
+services/                           ← CloudPilot API orchestration (was functions/)
+├── actions/                        ← registry + handlers (static product code)
+├── understanding/                  ← STEP 3 — signals only, no DB
+├── decision/                       ← STEP 4
+├── requests/                       ← STEP 5 — request lifecycle (service layout)
+├── history/                        ← audit + undo (service layout — reference implementation)
+├── executions/                     ← STEP 6
+├── chat/                           ← CloudPilotChat, outcomes, OpenAI
+├── responses/                      ← STEP 7 assembly
+├── navigator/                      ← Navigator response builders (functions only)
+├── classes/                        ← legacy root; AtlasExecution only until executions migrates
+└── cloudPilotMessageFunctions.js   ← thin orchestrator
 ```
 
 See [appendix.md](./appendix.md) for old → new file rename map and historical STEP 5 spec.
+
+### Service folders (`classes/` + `functions/`)
+
+Persistence domains use the same layout inside each service folder. **`history/` is the reference** — migrate other services one at a time.
+
+```text
+<service>/
+├── classes/
+│   └── <Service>.js           ← MySQL CRUD only (insert, get, update, finish)
+└── functions/
+    └── <service>Functions.js  ← orchestration: call class, log STEPs, shape outcomes
+```
+
+Optional when a domain grows: extra `functions/*.js` files or helper subfolders (e.g. `history/historyBuilders/`).
+
+| Layer | Owns |
+|-------|------|
+| **`classes/`** | SQL, row mapping — no chat, Atlas, or pipeline logic |
+| **`functions/`** | “Do the thing” — entry points the orchestrator and STEPs call |
+
+**Target services** (map to `database.md` tables):
+
+| Service | Table / role | Status |
+|---------|----------------|--------|
+| **history** | `cloudpilot_history` | ✅ `history/classes/History.js` + `history/functions/historyFunctions.js` |
+| **requests** | `cloudpilot_requests` | ✅ `Request.js` + `requestFunctions.js` + `requestLoadFunctions.js` + `requestStatusFunctions.js` |
+| **executions** | `cloudpilot_executions` (future) | ✅ `executions/functions/executionFunctions.js` (no class yet) |
+| **navigator** | Response shaping (no DB) | ✅ `navigator/functions/navigatorFunctions.js` |
+
+**Migration rule:** service folder moves are complete; smoke-test chat after future service changes. Do not rename symbols repo-wide in the same pass as a folder move.
+
+**Keep outside service folders** — pipeline steps and product code, not one DB table:
+
+| Folder | Why separate |
+|--------|----------------|
+| `understanding/` | STEP 3 signals |
+| `decision/` | STEP 4 pure logic |
+| `responses/`, `chat/` | STEP 7 assembly and copy |
+| `actions/` | Static registry + per-action handlers (`scan_ec2`, `toggle_ec2`, …) |
+| `cloudPilotMessageFunctions.js` | Thin orchestrator — wires STEPs, does not own persistence |
+
+Do not fold scans or handlers into a generic `scan/` service until there is a clear persistence layer for scans.
 
 ### `messageUnderstanding` shape (STEP 3 log)
 
@@ -185,14 +315,19 @@ Destructive actions (`create_ec2`, `delete_ec2`, `toggle_ec2`): fields → `4` (
 
 | File | Role |
 |------|------|
-| `functions/cloudPilotMessageFunctions.js` | Orchestrator (`processMessage`) |
-| `functions/understanding/understandMessage.js` | STEP 3 |
-| `functions/decision/decideNextStep.js` | STEP 4 |
-| `functions/requests/applyDecision.js` | STEP 5 |
-| `functions/executions/executeRequest.js` | STEP 6 |
-| `functions/responses/buildCloudPilotResponse.js` | STEP 7 |
-| `functions/actions/actionRegistry.js` | Static action definitions |
-| `functions/classes/Actions.js` | MySQL `cloudpilot_requests` |
+| `services/cloudPilotMessageFunctions.js` | Orchestrator (`processMessage`) |
+| `services/understanding/understandMessage.js` | STEP 3 |
+| `services/decision/decideNextStep.js` | STEP 4 |
+| `services/requests/functions/requestLoadFunctions.js` | STEP 2 — load open request |
+| `services/requests/functions/requestFunctions.js` | STEP 5 — apply, start, update, finish |
+| `services/requests/functions/requestStatusFunctions.js` | Request status rules (`waiting_on_fields`, …) |
+| `services/executions/functions/executionFunctions.js` | STEP 6 |
+| `services/responses/buildCloudPilotResponse.js` | STEP 7 |
+| `services/actions/actionRegistry.js` | Static action definitions |
+| `services/requests/classes/Request.js` | MySQL `cloudpilot_requests` |
+| `services/history/classes/History.js` | MySQL `cloudpilot_history` |
+| `services/history/functions/historyFunctions.js` | Save + lookup history (H1/H2) |
+| `services/navigator/functions/navigatorFunctions.js` | Navigator stats / tables / columns |
 
 ### How to test locally
 

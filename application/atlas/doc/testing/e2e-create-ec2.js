@@ -3,7 +3,7 @@
  * Usage (from application/atlas): node doc/testing/e2e-create-ec2.js
  * Requires Atlas at ATLAS_BASE_URL — launches real EC2; run only when intended.
  */
-const { processMessage } = require('../../functions/cloudPilotMessageFunctions');
+const { processMessage } = require('../../services/cloudPilotMessageFunctions');
 
 const conversationID = 'e2e-create-' + Date.now();
 
