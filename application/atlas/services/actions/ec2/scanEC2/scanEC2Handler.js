@@ -1,7 +1,8 @@
-const atlasEC2Functions = require('../atlasEC2Functions');
+const ScanEC2Functions = require('../../../../capabilities/scans/scanEC2');
 const atlasEC2Formatter = require('./atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./atlasEC2MessageBuilder');
 const atlasEC2ScanNavigatorAdapter = require('./atlasEC2ScanNavigatorAdapter');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
 
 async function scanEC2Handler(context) {
 
@@ -13,7 +14,7 @@ async function scanEC2Handler(context) {
         let atlasResponseFormatted = null;
 
         const atlasResponseRaw =
-            await atlasEC2Functions.scanEC2(region);
+            await ScanEC2Functions.scanEC2(region);
 
         console.log("_____________________________________");
         console.log("RAW Atlas Response:");
@@ -21,15 +22,28 @@ async function scanEC2Handler(context) {
         console.log("_____________________________________");
 
         if (
-            atlasResponseRaw?.success === true &&
-            atlasResponseRaw?.data
+            !(atlasResponseRaw &&
+            atlasResponseRaw.success === true &&
+            atlasResponseRaw.data)
         ) {
+            const errCode = getFirstOutcomeCode(atlasResponseRaw);
+            const outcomeContext = buildActionOutcomeContext(
+                context.state.collected || {},
+                atlasResponseRaw
+            );
 
-            atlasResponseFormatted =
-                atlasEC2Formatter.formatAtlasEC2Output(
-                    atlasResponseRaw
-                );
+            return {
+                success: false,
+                cloudPilotMessage: buildOutcomeMessage(errCode, outcomeContext, 'scan_ec2'),
+                error: errCode || 'execution_failed',
+                atlasResponse: null
+            };
         }
+
+        atlasResponseFormatted =
+            atlasEC2Formatter.formatAtlasEC2Output(
+                atlasResponseRaw
+            );
 
         console.log("_____________________________________");
         console.log("Atlas Response:");

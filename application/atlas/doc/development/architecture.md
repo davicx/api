@@ -83,7 +83,7 @@ Kite          = generic renderer
 
 ### CloudPilot Capability Layer (target)
 
-**Status:** Planned — see [capability_migration.md](./capability_migration.md) (Steps C0–C9). Incremental: start with `mutations/toggleEC2`, then scans/inventory.
+**Status:** Planned — see [capability_migration.md](./capability_migration.md) (Steps C0–C9). Incremental: start with `changes/toggleEC2`, then scans/inventory.
 
 Today the execution path is:
 
@@ -123,22 +123,22 @@ toggleEC2()          ← capability (HOW)
     ↓
 Atlas                ← engine (WHERE)
     ↓
-saveHistory()        ← WHAT CHANGED (mutations only)
+saveHistory()        ← WHAT CHANGED (changes only)
 ```
 
 Capabilities do not insert history rows. `saveHistory()` stays in STEP 6B after execution returns.
 
 #### Three user intents → three folders
 
-Prefer **`scans/` · `inventory/` · `mutations/`** over a generic `info/` bucket — each maps to a distinct user intent:
+Prefer **`scans/` · `inventory/` · `changes/`** over a generic `info/` bucket — each maps to a distinct user intent:
 
 | Group | Intent | Examples | History? |
 |-------|--------|----------|----------|
 | **scans** | Analyze something | `scanEC2()`, `scanS3()`, `scanRDS()` | No — returns findings |
 | **inventory** | Tell me what exists | `getAllResources()`, `listEC2Instances()`, `listS3Buckets()` | No — returns resources |
-| **mutations** | Change something | `toggleEC2()`, `createEC2()`, `deleteEC2()`, `resizeEC2()` | Yes — creates `cloudpilot_history` rows |
+| **changes** | Change something | `toggleEC2()`, `createEC2()`, `deleteEC2()`, `resizeEC2()` | Yes — creates `cloudpilot_history` rows |
 
-This aligns cleanly with Change History: only **mutations** get builders, `undo_payload`, and `history_status`.
+This aligns cleanly with Change History: only **changes** get builders, `undo_payload`, and `history_status`.
 
 #### Target layout
 
@@ -152,7 +152,7 @@ application/atlas/capabilities/   ← sibling to services/ (not inside it)
 │   ├── getAllResources.js
 │   ├── listEC2Instances.js
 │   └── listS3Buckets.js
-├── mutations/
+├── changes/
 │   ├── toggleEC2.js
 │   ├── createEC2.js
 │   └── deleteEC2.js
@@ -185,9 +185,9 @@ See [development_undo_feature.md](./development_undo_feature.md) for history tab
 
 | Today | Becomes |
 |-------|---------|
-| `executions/functions/executionFunctions.js` | Still STEP 6 orchestrator — calls handlers, then `saveHistory()` for mutations |
+| `executions/functions/executionFunctions.js` | Still STEP 6 orchestrator — calls handlers, then `saveHistory()` for changes |
 | `actions/*Handler.js` | Still thick — understanding fields, Navigator, chat |
-| `atlasEC2Functions.scanEC2()` etc. | Move into `capabilities/scans/` or `capabilities/mutations/` over time |
+| `atlasEC2Functions.scanEC2()` etc. | Move into `capabilities/scans/` or `capabilities/changes/` over time |
 | `actionRegistry.js` | Unchanged — maps `action_type` → handler; handlers delegate to capabilities |
 
 Do **not** collapse handlers into capabilities. Registry + handlers = product/orchestration; capabilities = reusable AWS/Atlas operations.

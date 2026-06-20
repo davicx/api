@@ -1,55 +1,50 @@
 # Capabilities
 
-Thin, single-purpose execution functions — the stable surface for Atlas HTTP, OpenAI, and future engines.
+Thin functions that call Atlas or OpenAI — one entry point per product action.
 
-**Location:** `application/atlas/capabilities/` — sibling to `services/`, not inside it. Handlers under `services/actions/` import from here.
+**Location:** `application/atlas/capabilities/` — sibling to `services/`. Handlers in `services/actions/` import from here.
 
-**Not built yet (C1 scaffold).** Handlers in `services/actions/` still call `atlasEC2Functions.js` etc. directly until migration.
-
-## Planned layout
+## Layout
 
 ```text
 capabilities/
-├── scans/           scanEC2, scanS3, …
-├── inventory/       getAllResources, …
-├── mutations/       toggleEC2, createEC2, deleteEC2, …
-└── conversation/    generalChat, …
+├── scans/          scanEC2, scanS3
+├── changes/        toggleEC2, createEC2, deleteEC2
+├── inventory/      getAllResources
+├── conversation/   generalChat
+└── atlas/          atlasPost.js    ← how we POST to Atlas
 ```
 
-## Four layers (+ History)
+| Folder | What it is |
+|--------|------------|
+| `scans/` | Analyze AWS (no history row) |
+| `changes/` | Change AWS — toggle, create, delete (history at STEP 6B) |
+| `inventory/` | List what exists |
+| `conversation/` | General chat via OpenAI |
+| `atlas/` | Shared Atlas HTTP helper — not a product action |
 
-| Concept | Question | Role |
-|---------|----------|------|
-| **Conversation** | WHAT should happen? | STEPS 3–5 — understand, decide, request state |
-| **Execution** | WHEN should it happen? | STEP 6 — gate on `execution_started` / `immediate_execution` |
-| **Capability** | HOW do we do it? | Thin functions — `scanEC2()`, `toggleEC2()`, `generalChat()` |
-| **Engine** | WHERE do we talk? | Atlas HTTP, OpenAI SDK, GitHub, Jira |
-| **History** | WHAT CHANGED? | Cross-cutting — **not a layer** |
+## Wired vs placeholder
 
-History sits **outside** the capability path — a record of what happened, not part of HOW:
+| Capability | Status |
+|------------|--------|
+| `changes/toggleEC2` | **Live** — `toggleEC2Handler` calls this |
+| `changes/createEC2` | Placeholder — handler still uses `atlasEC2Functions` |
+| `changes/deleteEC2` | Placeholder — handler still uses `atlasEC2Functions` |
+| `scans/scanEC2` | **Live** — `scanEC2Handler` calls this |
+| `scans/scanS3` | Placeholder — handler still uses `atlasS3Functions` |
+| `inventory/getAllResources` | Placeholder — handler still uses `atlasAWSFunctions` |
+| `conversation/generalChat` | Placeholder — C6 wires `buildGeneralChatResponse` |
+
+## Call path (toggle — live)
 
 ```text
-executeRequest()
-    ↓
-handler
-    ↓
-toggleEC2()          ← capability (HOW)
-    ↓
-Atlas                ← engine (WHERE)
-    ↓
-saveHistory()        ← STEP 6B — WHAT CHANGED (mutations only)
+toggleEC2Handler  →  changes/toggleEC2  →  atlas/atlasPost  →  Atlas  →  saveHistory()
 ```
 
 ## Rules
 
-- Capabilities return structured results only — no request rows, no chat copy, no history inserts.
+- Capabilities return structured results — no request rows, no chat copy, no history inserts.
 - `saveHistory()` stays in `services/executions/functions/executionFunctions.js` (STEP 6B).
-- Registry + handlers stay in `services/actions/`; they delegate to capabilities for HOW.
+- Handlers stay in `services/actions/`; they delegate here for HOW.
 
-## Return shape (convention)
-
-```javascript
-{ success: boolean, data: object | null, error: string | null }
-```
-
-See [capability_migration.md](../doc/development/capability_migration.md) for the step-by-step plan (C0–C9).
+See [capability_migration.md](../doc/development/capability_migration.md) for the step-by-step plan.

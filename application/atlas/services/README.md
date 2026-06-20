@@ -35,7 +35,7 @@ cloudPilotMessageFunctions.js
   STEP 4  decision/          decision
   STEP 5  requests/          applyDecision
   STEP 6  executions/        executeRequest → handler → ../capabilities/
-  STEP 6B history/           saveHistory() (mutations only — after Atlas returns)
+  STEP 6B history/           saveHistory() (changes only — after Atlas returns)
   STEP 7  responses/         buildResponse
 ```
 

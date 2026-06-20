@@ -1,4 +1,4 @@
-const atlasEC2Functions = require('../atlasEC2Functions');
+const ToggleEC2Functions = require('../../../../capabilities/changes/toggleEC2');
 const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
 
 async function toggleEC2Handler(context) {
@@ -68,7 +68,7 @@ async function toggleEC2Handler(context) {
         console.log(JSON.stringify(requestBody, null, 2));
         console.log("_____________________________________");
 
-        const atlasResponseRaw = await atlasEC2Functions.toggleEC2(requestBody);
+        const atlasResponseRaw = await ToggleEC2Functions.toggleEC2(requestBody);
 
         console.log("_____________________________________");
         console.log("RAW Atlas Toggle Response:");
