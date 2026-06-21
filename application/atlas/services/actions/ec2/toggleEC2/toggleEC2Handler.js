@@ -1,41 +1,8 @@
-const atlasEC2Functions = require('../atlasEC2Functions');
+const ChangeEC2Functions = require('../../../../capabilities/changes/changeEC2');
 const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
 
+//Action only (toggle_ec2). Mode routing: responses/modes/userRequested*.js
 async function toggleEC2Handler(context) {
-
-    const executionMode = context.state.executionMode;
-
-    if (executionMode === "instructions") {
-        console.log("EXECUTION MODE: Instructions");
-        return {
-            success: true,
-            cloudPilotMessage: "Instructions mode is not implemented yet. I would provide step-by-step guidance here.",
-            error: null,
-            atlasResponse: null
-        };
-    }
-
-    if (executionMode === "cli") {
-        console.log("EXECUTION MODE: CLI");
-        return {
-            success: true,
-            cloudPilotMessage: "CLI mode is not implemented yet. I would provide CLI commands here.",
-            error: null,
-            atlasResponse: null
-        };
-    }
-
-    if (executionMode === "pr") {
-        console.log("EXECUTION MODE: Pull Request");
-        return {
-            success: true,
-            cloudPilotMessage: "Pull request mode is not implemented yet. I would open a PR for this change here.",
-            error: null,
-            atlasResponse: null
-        };
-    }
-
-    console.log("EXECUTION MODE: Automatic");
 
     try {
 
@@ -68,7 +35,7 @@ async function toggleEC2Handler(context) {
         console.log(JSON.stringify(requestBody, null, 2));
         console.log("_____________________________________");
 
-        const atlasResponseRaw = await atlasEC2Functions.toggleEC2(requestBody);
+        const atlasResponseRaw = await ChangeEC2Functions.toggleEC2(requestBody);
 
         console.log("_____________________________________");
         console.log("RAW Atlas Toggle Response:");

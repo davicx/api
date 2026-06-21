@@ -1,6 +1,11 @@
 /*
-FUNCTIONS A: Reply extraction from user message (confirm / cancel / execution mode)
-    1) Function A1: searchMessageForReply
+Vocabulary: Action = what CloudPilot does | Mode = how CloudPilot delivers it |
+Capability = implementation | Handler = orchestration
+
+User → Action → Mode → Handler → Capability → Atlas → AWS
+
+Mode reply (1–4) is parsed here (STEP 3). Routed in decideNextStep.handleExecutionModeSelection (STEP 4).
+Future modes 1–3: responses/modes/userRequested*.js (STEP 7). Mode 4 (automatic): confirmation → STEP 6 handler → capability → Atlas.
 */
 
 const EXECUTION_MODES = {

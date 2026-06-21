@@ -4,6 +4,21 @@ const SearchMessageForReplyFunctions = require('./search/searchMessageForReply')
 const SearchMessageForConversationFunctions = require('./search/searchMessageForConversation');
 
 /*
+What this file answers:
+
+* What does the user want?
+* What action was detected?
+* What values, reply, or conversation signals were found?
+
+Outputs: action, values, reply, conversation, ambiguous, candidates
+
+This is the WHAT layer (STEP 3). Action phrases are matched via
+actions/actionMap.js match rules in search/searchMessageForAction.js.
+
+See doc/development/action_map.md.
+*/
+
+/*
 FUNCTIONS F: Message understanding — extract signals from a message (no DB, no chat text)
     1) Function F1: understandMessage
 */

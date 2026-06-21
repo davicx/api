@@ -20,7 +20,7 @@ easy scaling
 
 ## Quick Checklist
 
-- [ ] Add action to `actionRegistry.js`
+- [ ] Add action to `actionMap.js`
 - [ ] Add/import execution handler
 - [ ] Decide if action needs workflow fields
 - [ ] Add required fields and missing-field messages
@@ -55,7 +55,7 @@ Registry
 File:
 
 ```text
-application/atlas/services/actions/actionRegistry.js
+application/atlas/services/actions/actionMap.js
 ```
 
 Add:
@@ -335,7 +335,7 @@ IMPORTANT:
 So `AtlasExecution` should eventually load the full action directly from:
 
 ```js
-actionRegistry[payload.actionState.pendingAction]
+actionMap[payload.actionState.pendingAction]
 ```
 
 ## Phase 10 - Response Validation

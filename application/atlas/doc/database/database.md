@@ -12,7 +12,7 @@ Runnable SQL below mirrors `master_sql.sql` for reference.
 
 ## cloudpilot_actions
 
-Static registry of what CloudPilot can do. One row per action type (mirrors `actionRegistry.js`).
+Static registry of what CloudPilot can do. One row per action type (mirrors `actionMap.js`).
 
 ### SQL
 
@@ -38,9 +38,9 @@ CREATE TABLE cloudpilot_actions (
 | Field | Definition |
 |-------|------------|
 | `id` | Primary key. Referenced by `cloudpilot_requests.action_id`. |
-| `action_type` | Machine key for the action. Examples: `toggle_ec2`, `create_ec2`, `delete_ec2`, `scan_ec2`, `inventory_aws`. Same value as `type` in `actionRegistry.js`. |
-| `display_name` | Default human label for this action type. Example: `Toggle EC2`. Same as `actionLabel` in `actionRegistry.js`. |
-| `requires_execution` | Maps to `requiresExecution` in `actionRegistry.js`. `1` = this action type has an execution handler; `0` = no handler (e.g. `general_chat`). |
+| `action_type` | Machine key for the action. Examples: `toggle_ec2`, `create_ec2`, `delete_ec2`, `scan_ec2`, `inventory_aws`. Same value as `type` in `actionMap.js`. |
+| `display_name` | Default human label for this action type. Example: `Toggle EC2`. Same as `actionLabel` in `actionMap.js`. |
+| `requires_execution` | Maps to `requiresExecution` in `actionMap.js`. `1` = this action type has an execution handler; `0` = no handler (e.g. `general_chat`). |
 
 ### Example rows
 
@@ -127,7 +127,7 @@ CREATE TABLE cloudpilot_requests (
 | `display_name` | Human label for **this** request instance. Shown in chat prompts and open-request lists. Often copied from the action’s `display_name` on create. |
 | `status` | Where this request is in the workflow. See [Request status values](#request-status-values). |
 | `outcome_code` | Machine-readable result when the request closes. `NULL` while open. Examples: `success`, `cancelled_by_user`, `instance_not_found`. Set on finish. |
-| `execution_mode` | How the user chose to run this request (destructive actions). Set when user picks 1–4 in chat. See [Execution mode values](#execution-mode-values). `NULL` until chosen. Same column name as `actionRegistry.js` `executionModes` and `Actions.js`. |
+| `execution_mode` | How the user chose to run this request (destructive actions). Set when user picks 1–4 in chat. See [Execution mode values](#execution-mode-values). `NULL` until chosen. Same column name as `actionMap.js` `executionModes` and `Actions.js`. |
 | `is_open` | `1` = request still active; `0` = closed (completed, failed, or cancelled). |
 | `collected` | JSON object of field values gathered from chat (e.g. `region`, `instance_id`). |
 | `missing` | JSON array of required field names not yet collected. |
@@ -150,7 +150,7 @@ Used in app code today (`requests/functions/requestStatusFunctions.js`):
 
 ### Execution mode values
 
-Used in app code today (`actionRegistry.js` destructive actions, user picks `1`–`4` in chat):
+Used in app code today (`actionMap.js` destructive actions, user picks `1`–`4` in chat):
 
 | Value | Meaning |
 |-------|---------|
@@ -311,4 +311,4 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('delete_ec2', 'Delete EC2', 0);
 ```
 
-(`requires_execution` values match current `actionRegistry.js`; adjust when seeding from production registry.)
+(`requires_execution` values match current `actionMap.js`; adjust when seeding from production registry.)

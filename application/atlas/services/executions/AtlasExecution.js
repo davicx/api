@@ -1,4 +1,4 @@
-const actionRegistry = require('../actions/actionRegistry');
+const actionMap = require('../actions/actionMap');
 const Request = require('../requests/classes/Request');
 
 class AtlasExecution {
@@ -11,7 +11,7 @@ class AtlasExecution {
             payload.actionState.pendingAction ||
             payload.userRequest;
 
-        const actionDefinition = actionRegistry[activeAction];
+        const actionDefinition = actionMap[activeAction];
 
         if (!actionDefinition) {
             await finishOpenActionInDatabase(payload.conversationID, "failed", "action_not_found");

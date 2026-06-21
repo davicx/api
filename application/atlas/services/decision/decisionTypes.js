@@ -26,7 +26,8 @@ const RESPONSE_TYPE = {
     AMBIGUOUS_ACTION: 'ambiguous_action',
     WORKFLOW_RUNNING: 'workflow_running',
     GENERAL_CHAT: 'general_chat',
-    IMMEDIATE_EXECUTION: 'immediate_execution'
+    IMMEDIATE_EXECUTION: 'immediate_execution',
+    UNDO_EXECUTION: 'undo_execution'
 };
 
 const EXECUTION_MODE_REPLIES = ['instructions', 'cli', 'pr', 'automatic'];

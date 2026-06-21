@@ -13,7 +13,7 @@
 | [architecture.md](./architecture.md) | Stable reference — four layers + History, history rules |
 | [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — do U1–U3 first |
 | [single_capabiity_change.md](./single_capabiity_change.md) | New & changed files map |
-| [development_undo_feature.md](./development_undo_feature.md) | Undo reuses mutation capabilities |
+| [development_undo_feature.md](./development_undo_feature.md) | Undo reuses change capabilities |
 | [current_development.md](./current_development.md) | Active checklist |
 
 **Last reviewed:** 2026-06-09
@@ -43,7 +43,7 @@ STEP 6B saveHistory()                 ← WHAT CHANGED — cross-cutting, NOT in
 STEP 7  buildResponse
 ```
 
-**History rule (locked):** Capabilities return structured results. `saveHistory()` stays in STEP 6B after mutation success/failure. Capabilities do not insert history rows.
+**History rule (locked):** Capabilities return structured results. `saveHistory()` stays in STEP 6B after change success/failure. Capabilities do not insert history rows.
 
 ---
 
@@ -70,10 +70,10 @@ toggleEC2()          ← capability (HOW)
     ↓
 Atlas                ← engine (WHERE)
     ↓
-saveHistory()        ← WHAT CHANGED (mutations only)
+saveHistory()        ← WHAT CHANGED (changes only)
 ```
 
-Capabilities return structured results. `saveHistory()` stays in STEP 6B after mutation success/failure. Capabilities do not insert history rows.
+Capabilities return structured results. `saveHistory()` stays in STEP 6B after change success/failure. Capabilities do not insert history rows.
 
 ### Who calls capabilities?
 
@@ -100,7 +100,7 @@ application/atlas/capabilities/     ← sibling to services/
 │   ├── getAllResources.js
 │   ├── listEC2Instances.js
 │   └── listS3Buckets.js
-├── mutations/
+├── changes/
 │   ├── toggleEC2.js
 │   ├── createEC2.js
 │   ├── deleteEC2.js
@@ -109,7 +109,7 @@ application/atlas/capabilities/     ← sibling to services/
     └── generalChat.js              ← see “General chat” section below
 ```
 
-Handlers import with relative paths, e.g. `../../../../capabilities/mutations/toggleEC2` from `services/actions/ec2/toggleEC2/`.
+Handlers import with relative paths, e.g. `../../../../capabilities/changes/toggleEC2` from `services/actions/ec2/toggleEC2/`.
 
 ### Capability return shape (convention)
 
@@ -130,7 +130,7 @@ Handlers map `data` → Navigator, `cloudPilotMessage`, etc.
 Later, optional exports for automation:
 
 ```javascript
-toggleEC2.meta = { group: 'mutation', createsHistory: true }
+toggleEC2.meta = { group: 'change', createsHistory: true }
 scanEC2.meta = { group: 'scan', createsHistory: false }
 ```
 
@@ -140,13 +140,13 @@ Do not build meta registry until at least C2–C4 are done.
 
 ## General chat — is it a capability?
 
-**Short answer:** Yes as a **single entry point**, but in a **fourth group** (`conversation/`), not mixed with scans/inventory/mutations.
+**Short answer:** Yes as a **single entry point**, but in a **fourth group** (`conversation/`), not mixed with scans/inventory/changes.
 
 | | Cloud operations | General chat |
 |--|------------------|--------------|
 | Pipeline step | STEP 6 (`execution_started`) | STEP 7 (`generalChatResponding`) |
 | Engine | Atlas → AWS | OpenAI |
-| History | mutations only | Never |
+| History | changes only | Never |
 | Handler | Yes (scan/toggle handlers) | No — response builder calls capability directly today |
 
 ### Recommended shape
@@ -161,7 +161,7 @@ capabilities/conversation/generalChat({ message, conversationID, context })
 openAIFunctions.sendGeneralChat()    ← engine stays in chat/openAI/
 ```
 
-**Why a fourth group, not `mutations/` or a handler:**
+**Why a fourth group (`conversation/`), not mixed into `changes/` or a handler:**
 
 - General chat is not “execute a CloudPilot action” — no request row lifecycle, no confirm, no Atlas.
 - Symmetry still holds: one function to call, one place to mock, future API can expose `POST /api/chat`.
@@ -172,7 +172,7 @@ openAIFunctions.sendGeneralChat()    ← engine stays in chat/openAI/
 - Do not route general chat through STEP 6 / `executeRequest` just to “fit the pattern.”
 - Do not put OpenAI logic inside handlers or inside `understandMessage`.
 
-**When to implement:** Step C6 (after first scan + mutation capabilities prove the pattern).
+**When to implement:** Step C6 (after first scan + change capabilities prove the pattern).
 
 ---
 
@@ -198,7 +198,7 @@ Work in order. Each step is shippable and testable on its own. **Do not rename s
 
 **Tasks:**
 
-1. Create `application/atlas/capabilities/{scans,inventory,mutations,conversation}/`
+1. Create `application/atlas/capabilities/{scans,inventory,changes,conversation}/`
 2. Add `capabilities/README.md` — return shape, “thin only”, history stays STEP 6B
 3. Add `index.js` re-exports (optional) or direct requires from handlers
 
@@ -206,15 +206,15 @@ Work in order. Each step is shippable and testable on its own. **Do not rename s
 
 ---
 
-### Step C2 — First mutation: `toggleEC2`
+### Step C2 — First change: `toggleEC2`
 
-**Goal:** Prove mutation path + STEP 6B history unchanged.
+**Goal:** Prove change path + STEP 6B history unchanged.
 
 **Tasks:**
 
-1. Move HTTP body from `atlasEC2Functions.toggleEC2()` → `capabilities/mutations/toggleEC2.js`
+1. Move HTTP body from `atlasEC2Functions.toggleEC2()` → `capabilities/changes/toggleEC2.js`
 2. `atlasEC2Functions.toggleEC2` becomes thin re-export (deprecation comment) OR handler imports capability directly
-3. `toggleEC2Handler` calls `capabilities/mutations/toggleEC2(...)` — formatting/Navigator unchanged
+3. `toggleEC2Handler` calls `capabilities/changes/toggleEC2(...)` — formatting/Navigator unchanged
 4. Confirm `executeRequest` → `saveHistory()` still logs `STEP 6B: HISTORY SAVED` on automatic toggle
 
 **Verify:**
@@ -262,7 +262,7 @@ Work in order. Each step is shippable and testable on its own. **Do not rename s
 
 **Tasks:**
 
-1. `createEC2`, `deleteEC2` → `capabilities/mutations/`
+1. `createEC2`, `deleteEC2` → `capabilities/changes/`
 2. Handlers updated; shims on `atlasEC2Functions` until C7
 
 **Verify:** E2E create/delete test scripts pass.
@@ -305,7 +305,7 @@ Work in order. Each step is shippable and testable on its own. **Do not rename s
 
 **Tasks:**
 
-1. `undoRegistry` maps `undo_payload.type` → mutation capability (e.g. `toggleEC2`)
+1. `undoRegistry` maps `undo_payload.type` → change capability (e.g. `toggleEC2`)
 2. `executeUndoPayload()` calls capability with payload args
 3. STEP 6B still records undo history row after success
 
@@ -322,7 +322,7 @@ Not scheduled — documented so the model stays coherent.
 | Consumer | Entry |
 |----------|--------|
 | Public API | Controller → capability |
-| Auto-remediation job | Job → `capabilities/mutations/resizeEC2` |
+| Auto-remediation job | Job → `capabilities/changes/resizeEC2` |
 | PR generation | Already mode 3 in decision — may call capability or emit instructions only |
 
 ---
@@ -333,7 +333,7 @@ Not scheduled — documented so the model stays coherent.
 |-------|--------|---------|------------------|
 | Scan | `scans/` | On confirm | No |
 | Inventory | `inventory/` | Often immediate | No |
-| Mutation | `mutations/` | On confirm | Yes |
+| Change | `changes/` | On confirm | Yes |
 | Conversation | `conversation/` | No (STEP 7) | No |
 
 ---
@@ -356,7 +356,7 @@ Every `POST /message` runs STEPS 1–7. Atlas/OpenAI run only when:
 - [ ] All Atlas HTTP calls from chat flow go through `capabilities/`
 - [ ] Handlers contain zero raw `fetch(ATLAS_BASE_URL + …)` 
 - [ ] `saveHistory()` only in `executionFunctions.js` (STEP 6B), never inside capabilities
-- [ ] Undo (H4) calls mutation capabilities only
+- [ ] Undo (H4) calls change capabilities only
 - [ ] `generalChat()` is the only OpenAI entry from STEP 7
 - [ ] Docs: architecture.md + this file match live layout
 

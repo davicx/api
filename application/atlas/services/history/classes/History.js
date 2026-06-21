@@ -4,6 +4,7 @@ const db = require('../../../../functions/conn');
 METHODS A: cloudpilot_history CRUD
     1) Method A1: insertHistoryRow
     2) Method A2: getLatestUndoableRow
+    3) Method A3: markHistoryReverted
 */
 
 class History {
@@ -125,6 +126,46 @@ class History {
 
         } catch (err) {
             console.log('History.getLatestUndoableRow failed', err);
+            outcome.errors.push(err);
+            return outcome;
+        }
+    }
+
+    //Method A3: Close out original row after successful undo (H4)
+    static async markHistoryReverted({ historyId, restoredByHistoryId }) {
+        const connection = db.getConnection();
+
+        const outcome = {
+            success: false,
+            errors: []
+        };
+
+        const historyIdNumber = Number(historyId);
+        const restoredByIdNumber = Number(restoredByHistoryId);
+
+        if (!historyIdNumber || !restoredByIdNumber) {
+            outcome.errors.push({
+                code: 'invalid_history_ids',
+                message: 'historyId and restoredByHistoryId are required'
+            });
+            return outcome;
+        }
+
+        try {
+            await runQuery(
+                connection,
+                `UPDATE cloudpilot_history
+                 SET restored_by_history_id = ?,
+                     undo_available = 0,
+                     history_status = 'reverted'
+                 WHERE id = ?`,
+                [restoredByIdNumber, historyIdNumber]
+            );
+
+            outcome.success = true;
+            return outcome;
+        } catch (err) {
+            console.log('History.markHistoryReverted failed', err);
             outcome.errors.push(err);
             return outcome;
         }

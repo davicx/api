@@ -40,7 +40,7 @@ Atlas adds a small safety baseline only when keys are missing:
 Defined in:
 
 ```text
-application/atlas/functions/actions/actionRegistry.js
+application/atlas/services/actions/actionMap.js
 ```
 
 Under `create_ec2.defaults.tags`:
@@ -67,7 +67,7 @@ application/atlas/functions/actions/ec2/createEC2/createEC2Handler.js
 Merge order:
 
 ```text
-actionRegistry.create_ec2.defaults.tags
+actionMap.create_ec2.defaults.tags
 +
 user-provided tags from collected.tags
 =

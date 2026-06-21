@@ -128,7 +128,7 @@ function resolveHistoryBuilderFields(options) {
     });
 }
 
-//Function B2: Only record automatic mutations that hit Atlas/AWS
+//Function B2: Only record automatic changes that hit Atlas/AWS
 function shouldRecordHistoryForExecution(actionName, executionContext) {
     if (!Object.prototype.hasOwnProperty.call(HISTORY_BUILDERS, actionName)) {
         return false;

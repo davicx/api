@@ -1,4 +1,4 @@
-const actionRegistry = require('../../actions/actionRegistry');
+const actionMap = require('../../actions/actionMap');
 const Request = require('../classes/Request');
 const ActionStateFunctions = require('./requestLoadFunctions');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
@@ -75,7 +75,7 @@ async function startRequest(decision, context) {
     const processMessageContext = context.context || {};
     const targetRequest = decision.request;
     const actionType = targetRequest.action;
-    const actionDefinition = actionRegistry[actionType];
+    const actionDefinition = actionMap[actionType];
 
     if (!actionDefinition) {
         return buildFailedOutcome('created', 'action_not_in_registry', null);
@@ -326,6 +326,10 @@ function resolveSkipReasonForNoRequest(decision) {
     }
 
     if (responseType === RESPONSE_TYPE.REQUEST_STATUS) {
+        return 'conversation_intent_only';
+    }
+
+    if (responseType === RESPONSE_TYPE.UNDO_EXECUTION) {
         return 'conversation_intent_only';
     }
 

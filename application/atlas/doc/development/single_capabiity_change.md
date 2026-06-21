@@ -49,7 +49,7 @@ Empty folders at C1:
 ```text
 capabilities/scans/
 capabilities/inventory/
-capabilities/mutations/
+capabilities/changes/
 capabilities/conversation/
 ```
 
@@ -57,7 +57,7 @@ Optional shared engine helper (could wait until C2):
 
 | File | Purpose |
 |------|---------|
-| `capabilities/_shared/fetchAtlasMutation.js` | Extract `fetchAtlasMutation()` from `atlasEC2Functions.js` — shared by mutations |
+| `capabilities/_shared/fetchAtlasMutation.js` | Extract `fetchAtlasMutation()` from `atlasEC2Functions.js` — shared by change capabilities |
 
 ---
 
@@ -65,7 +65,7 @@ Optional shared engine helper (could wait until C2):
 
 | File | New function |
 |------|----------------|
-| `capabilities/mutations/toggleEC2.js` | `toggleEC2(requestBody)` — Atlas `POST /ec2/toggle` |
+| `capabilities/changes/toggleEC2.js` | `toggleEC2(requestBody)` — Atlas `POST /ec2/toggle` |
 
 ---
 
@@ -91,8 +91,8 @@ Handler can remain `inventoryAWSHandler`; capability name aligns with product la
 
 | File | New function |
 |------|----------------|
-| `capabilities/mutations/createEC2.js` | `createEC2(requestBody)` |
-| `capabilities/mutations/deleteEC2.js` | `deleteEC2(requestBody)` |
+| `capabilities/changes/createEC2.js` | `createEC2(requestBody)` |
+| `capabilities/changes/deleteEC2.js` | `deleteEC2(requestBody)` |
 | `capabilities/scans/scanS3.js` | `scanS3(region)` |
 
 ---
@@ -129,10 +129,10 @@ See [development_undo_feature.md](./development_undo_feature.md) H4.
 
 | File | Change |
 |------|--------|
-| `actions/ec2/toggleEC2/toggleEC2Handler.js` | `atlasEC2Functions.toggleEC2(...)` → `capabilities/mutations/toggleEC2(...)` |
+| `actions/ec2/toggleEC2/toggleEC2Handler.js` | `atlasEC2Functions.toggleEC2(...)` → `capabilities/changes/toggleEC2(...)` |
 | `actions/ec2/scanEC2/scanEC2Handler.js` | → `capabilities/scans/scanEC2(...)` |
-| `actions/ec2/createEC2/createEC2Handler.js` | → `capabilities/mutations/createEC2(...)` |
-| `actions/ec2/deleteEC2/deleteEC2Handler.js` | → `capabilities/mutations/deleteEC2(...)` |
+| `actions/ec2/createEC2/createEC2Handler.js` | → `capabilities/changes/createEC2(...)` |
+| `actions/ec2/deleteEC2/deleteEC2Handler.js` | → `capabilities/changes/deleteEC2(...)` |
 | `actions/s3/scanS3/scanS3Handler.js` | → `capabilities/scans/scanS3(...)` |
 | `actions/aws/inventoryAWS/inventoryAWSHandler.js` | → `capabilities/inventory/getAllResources(...)` |
 
@@ -142,7 +142,7 @@ Handlers **keep:** field reads from `context.state.collected`, formatters, Navig
 
 | Handler | Require |
 |---------|---------|
-| `ec2/toggleEC2/toggleEC2Handler.js` | `../../../../capabilities/mutations/toggleEC2` |
+| `ec2/toggleEC2/toggleEC2Handler.js` | `../../../../capabilities/changes/toggleEC2` |
 | `ec2/scanEC2/scanEC2Handler.js` | `../../../../capabilities/scans/scanEC2` |
 | `responses/buildGeneralChatResponse.js` | `../../capabilities/conversation/generalChat` |
 
@@ -166,7 +166,7 @@ Handlers **keep:** field reads from `context.state.collected`, formatters, Navig
 
 Functions that **move out** of `atlasEC2Functions.js`:
 
-- `fetchAtlasMutation()` → `_shared/` or per-mutation file
+- `fetchAtlasMutation()` → `_shared/` or per-change capability file
 - `scanEC2()`, `createEC2()`, `deleteEC2()`, `toggleEC2()`
 
 ---
@@ -189,7 +189,7 @@ Functions that **move out** of `atlasEC2Functions.js`:
 | `understanding/understandMessage.js` | WHAT |
 | `decision/decideNextStep.js` | WHAT |
 | `requests/functions/requestFunctions.js` | WHAT |
-| `actions/actionRegistry.js` | Still maps `action_type` → handler |
+| `actions/actionMap.js` | Still maps `action_type` → handler |
 | `responses/buildCloudPilotResponse.js` | STEP 7 copy for CloudPilot actions |
 | `responses/buildResponse.js` | Router only — one path to general chat at C6 |
 | `chat/openAI/openAIFunctions.js` | Engine layer — SDK stays here; called by `generalChat()` |
@@ -202,14 +202,14 @@ Functions that **move out** of `atlasEC2Functions.js`:
 
 | Today | After | Group |
 |-------|-------|-------|
-| `atlasEC2Functions.toggleEC2()` | `toggleEC2()` in `capabilities/mutations/` | mutation |
+| `atlasEC2Functions.toggleEC2()` | `toggleEC2()` in `capabilities/changes/` | change |
 | `atlasEC2Functions.scanEC2()` | `scanEC2()` in `capabilities/scans/` | scan |
-| `atlasEC2Functions.createEC2()` | `createEC2()` in `capabilities/mutations/` | mutation |
-| `atlasEC2Functions.deleteEC2()` | `deleteEC2()` in `capabilities/mutations/` | mutation |
+| `atlasEC2Functions.createEC2()` | `createEC2()` in `capabilities/changes/` | change |
+| `atlasEC2Functions.deleteEC2()` | `deleteEC2()` in `capabilities/changes/` | change |
 | `atlasS3Functions.scanS3()` | `scanS3()` in `capabilities/scans/` | scan |
 | `atlasAWSFunctions.inventoryAWS()` | `getAllResources()` in `capabilities/inventory/` | inventory |
 | `openAIFunctions.sendGeneralChat()` | Still exists — wrapped by `generalChat()` in `capabilities/conversation/` | conversation |
-| *(none)* | `executeUndoPayload()` in `history/undoRegistry.js` | mutation (C8) |
+| *(none)* | `executeUndoPayload()` in `history/undoRegistry.js` | change (C8) |
 
 Handler names stay the same (`toggleEC2Handler`, `scanEC2Handler`, etc.) — only the downstream call changes.
 
@@ -226,7 +226,7 @@ capabilities/
 │   └── scanS3.js
 ├── inventory/
 │   └── getAllResources.js
-├── mutations/
+├── changes/
 │   ├── toggleEC2.js
 │   ├── createEC2.js
 │   └── deleteEC2.js
@@ -242,7 +242,7 @@ capabilities/
 |-------|--------|---------|------------------|
 | Scan | `scans/` | On confirm | No |
 | Inventory | `inventory/` | Often immediate | No |
-| Mutation | `mutations/` | On confirm | Yes |
+| Change | `changes/` | On confirm | Yes |
 | Conversation | `conversation/` | No (STEP 7) | No |
 
 ---
@@ -264,7 +264,7 @@ capabilities/
 
 - [ ] No new STEP — still 1–7, 6B for history
 - [ ] Handlers stay thick — 6 files change one import + one call each
-- [ ] Registry untouched — `actionRegistry.js` does not need edits
+- [ ] Registry untouched — `actionMap.js` does not need edits
 - [ ] OpenAI stays engine — `openAIFunctions.js` not duplicated
 - [ ] History not in capabilities — `executionFunctions.js` still owns `saveHistory()`
 - [ ] Fourth group is `conversation/` — not `chat/`
@@ -276,7 +276,7 @@ capabilities/
 Roughly **4 new files, 1 handler edit, 1 legacy shim**:
 
 1. `capabilities/README.md`
-2. `capabilities/mutations/toggleEC2.js`
+2. `capabilities/changes/toggleEC2.js`
 3. Optional `capabilities/_shared/fetchAtlasMutation.js`
 4. Edit `toggleEC2Handler.js` — one import + one call
 5. `atlasEC2Functions.js` — thin re-export or trim

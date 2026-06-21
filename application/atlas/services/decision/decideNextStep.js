@@ -1,6 +1,20 @@
-const actionRegistry = require('../actions/actionRegistry');
+const actionMap = require('../actions/actionMap');
 const ActionStatusFunctions = require('../requests/functions/requestStatusFunctions');
 const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
+
+/*
+What this file answers:
+
+* When is a request ready to run?
+* What should happen next?
+
+Examples: ask_for_missing_fields, awaiting_confirmation, execution_started,
+immediate_execution (inventory_aws), general_chat
+
+This is the WHEN layer (STEP 4).
+
+See doc/development/action_map.md.
+*/
 
 /*
 FUNCTIONS A: Decision layer — target request state + response type (no DB, no chat, no Atlas)
@@ -42,6 +56,10 @@ function decideNextStep({ understanding, requestState }) {
 
     if (u.conversation === 'status') {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.REQUEST_STATUS);
+    }
+
+    if (u.conversation === 'undo') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.UNDO_EXECUTION);
     }
 
     if (state.pendingAction && state.status === ActionStatusFunctions.STATUS.RUNNING) {
@@ -152,7 +170,7 @@ function hasApplicableValues(state, values) {
     }
 
     const missing = state.missing || [];
-    const actionDefinition = actionRegistry[state.pendingAction];
+    const actionDefinition = actionMap[state.pendingAction];
     const requiredFields = actionDefinition && Array.isArray(actionDefinition.requiredFields)
         ? actionDefinition.requiredFields
         : [];
@@ -209,8 +227,8 @@ function mergeValuesIntoRequest(collected, requiredFields, values, defaults, cur
 
 //Function B6: Is the user allowed to pick execution mode 1–4 right now?
 function isReadyForExecutionMode(state) {
-    const actionDefinition = actionRegistry[state.pendingAction];
-    const supportsExecutionModes = actionRegistry.actionRequiresExecutionModeSelection(actionDefinition);
+    const actionDefinition = actionMap[state.pendingAction];
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
 
     if (!supportsExecutionModes) {
         return false;
@@ -228,12 +246,12 @@ function isReadyForExecutionMode(state) {
 //Function B7: Target state for a brand-new workflow request
 function buildNewRequestDecision(understanding) {
     const action = understanding.action;
-    const actionDefinition = actionRegistry[action];
+    const actionDefinition = actionMap[action];
     const requiredFields = actionDefinition && Array.isArray(actionDefinition.requiredFields)
         ? actionDefinition.requiredFields
         : [];
     const defaults = actionDefinition && actionDefinition.defaults ? actionDefinition.defaults : {};
-    const supportsExecutionModes = actionRegistry.actionRequiresExecutionModeSelection(actionDefinition);
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
 
     const merged = mergeValuesIntoRequest({}, requiredFields, understanding.values, defaults);
     const ready = merged.missing.length === 0;
@@ -271,11 +289,11 @@ function buildNewRequestDecision(understanding) {
 
 //Function B8: Target state after merging field values into an open request
 function buildFieldsMergedDecision(state, values) {
-    const actionDefinition = actionRegistry[state.pendingAction];
+    const actionDefinition = actionMap[state.pendingAction];
     const requiredFields = actionDefinition && Array.isArray(actionDefinition.requiredFields)
         ? actionDefinition.requiredFields
         : [];
-    const supportsExecutionModes = actionRegistry.actionRequiresExecutionModeSelection(actionDefinition);
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
 
     const merged = mergeValuesIntoRequest(
         state.collected,
@@ -317,7 +335,10 @@ function buildFieldsMergedDecision(state, values) {
     return cloudpilotDecision(request, responseType);
 }
 
-//Function B9: User picked execution mode — modes 1–3 close request; mode 4 awaits confirmation
+//Function B9: User picked execution mode (Mode layer — STEP 4)
+// Mode 4 (automatic): persist execution_mode → waiting_on_confirmation → user confirms → STEP 6 handler → capability → Atlas.
+// Modes 1–3 (instructions / cli / pr): STEP 7 → responses/modes/userRequested*.js (no STEP 6).
+// FUTURE: expand responses/modes/ or promote to deliveryModes/ when OpenAI / GitHub PR land.
 function handleExecutionModeSelection(state, mode) {
     const request = buildRequestFromState(state);
     request.executionMode = mode;
@@ -340,16 +361,15 @@ function handleExecutionModeSelection(state, mode) {
     return {
         chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
         request,
-        response: { type: responseTypeByMode[mode] },
-        closeRequest: true
+        response: { type: responseTypeByMode[mode] }
     };
 }
 
 //Function B10: Open request with no state change — derive chat response from current state
 function resolveRequestChat(state) {
     const request = buildRequestFromState(state);
-    const actionDefinition = actionRegistry[state.pendingAction];
-    const supportsExecutionModes = actionRegistry.actionRequiresExecutionModeSelection(actionDefinition);
+    const actionDefinition = actionMap[state.pendingAction];
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
     const ready = (state.missing || []).length === 0;
 
     let responseType = RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS;
@@ -377,7 +397,7 @@ function shouldStartImmediateExecution(state, understanding) {
         return false;
     }
 
-    const actionDefinition = actionRegistry.inventory_aws;
+    const actionDefinition = actionMap.inventory_aws;
 
     if (!actionDefinition || actionDefinition.requiresWorkflow || !actionDefinition.requiresExecution) {
         return false;
@@ -404,8 +424,8 @@ function shouldStartExecutionOnConfirm(state, reply) {
         return false;
     }
 
-    const actionDefinition = actionRegistry[state.pendingAction];
-    const needsExecutionMode = actionRegistry.actionRequiresExecutionModeSelection(actionDefinition);
+    const actionDefinition = actionMap[state.pendingAction];
+    const needsExecutionMode = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
 
     if (needsExecutionMode) {
         if (state.executionMode === 'automatic') {

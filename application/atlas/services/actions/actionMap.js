@@ -6,11 +6,23 @@ const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
 const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
 
 /*
+What this file answers:
+
+* What actions exist?
+* How are actions detected? (match rules — used by understanding/search/searchMessageForAction.js)
+* What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
+
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, scan_s3, general_chat
+
+See doc/development/action_map.md.
+*/
+
+/*
 ===============================================================================
 CANONICAL STATIC ACTION DEFINITIONS
 ===============================================================================
 
-This file is the central registry for CloudPilot action definitions.
+This file is the central action map for CloudPilot action definitions.
 
 Each action definition describes static orchestration metadata:
 - identity
@@ -30,7 +42,7 @@ All actions should follow the same stable structure so orchestration, prompts,
 and frontend-safe action payloads can rely on consistent naming.
 */
 
-const actionRegistry = {
+const actionMap = {
 
     //SERVICE: General Chat
     general_chat: {
@@ -209,7 +221,7 @@ const actionRegistry = {
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //Execution mode selection (destructive tier only)
+        //Execution mode selection (Mode layer — destructive actions only; scan/inventory skip this)
         executionModes: [
             'instructions',
             'cli',
@@ -261,7 +273,7 @@ const actionRegistry = {
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //Execution mode selection (destructive tier only)
+        //Execution mode selection (Mode layer — destructive actions only; scan/inventory skip this)
         executionModes: [
             'instructions',
             'cli',
@@ -320,7 +332,7 @@ const actionRegistry = {
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //Execution mode selection (destructive tier only)
+        //Execution mode selection (Mode layer — destructive actions only; scan/inventory skip this)
         executionModes: [
             'instructions',
             'cli',
@@ -365,7 +377,7 @@ function actionRequiresExecutionModeSelection(actionDefinition) {
     );
 }
 
-module.exports = actionRegistry;
+module.exports = actionMap;
 
 Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
     value: actionRequiresExecutionModeSelection,

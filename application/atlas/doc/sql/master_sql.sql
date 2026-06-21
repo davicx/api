@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
 -- -----------------------------------------------------------------------------
 -- Seed: cloudpilot_actions (required before app can create requests)
 -- -----------------------------------------------------------------------------
--- Matches actionRegistry.js. Re-run safe via ON DUPLICATE KEY UPDATE.
+-- Matches actionMap.js. Re-run safe via ON DUPLICATE KEY UPDATE.
 
 INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) VALUES
     ('general_chat', 'General Chat', 0),

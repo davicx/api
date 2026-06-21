@@ -1,4 +1,4 @@
-const actionRegistry = require('../../actions/actionRegistry');
+const actionMap = require('../../actions/actionMap');
 
 /*
 FUNCTIONS A: Action detection from user message (rules / registry)
@@ -10,7 +10,7 @@ function searchMessageForAction(message) {
     const normalizedMessage = String(message || '').toLowerCase().trim();
     const matches = [];
 
-    for (const action of Object.values(actionRegistry)) {
+    for (const action of Object.values(actionMap)) {
         if (typeof action.match === 'function' && action.match(normalizedMessage)) {
             matches.push(action.type);
         }
