@@ -1,6 +1,6 @@
 # CloudPilot — `services/`
 
-CloudPilot API orchestration lives here (formerly `functions/`). Each folder maps to one layer of the message pipeline.
+CloudPilot API orchestration lives here (formerly `functions/`). **Full atlas code tree:** [../README.md](../README.md) (code only, no `doc/`).
 
 **Orchestrator (root):** `cloudPilotMessageFunctions.js` — STEPS 1–7 entry (`processMessage`).
 

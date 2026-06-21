@@ -2,7 +2,9 @@
 
 Thin functions that call Atlas or OpenAI — one entry point per product action.
 
-**Location:** `application/atlas/capabilities/` — sibling to `services/`. Handlers in `services/actions/` import from here.
+**Location:** `application/atlas/capabilities/` — sibling to `services/`. **Full atlas code tree:** [../README.md](../README.md).
+
+Handlers in `services/actions/` import from here for HOW.
 
 ## Layout
 

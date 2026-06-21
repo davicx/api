@@ -21,7 +21,8 @@ async function handleCloudPilotChat(payload) {
         return await cloudPilotRespondMissingFieldsGiven(payload);
     }
 
-    // STEP 3: Workflow is ready — ask how to perform the action (destructive tier)
+    // STEP 3: Workflow is ready — ask how to deliver the action (Mode layer; destructive actions only)
+    // User answers 1–4 → searchMessageForReply → handleExecutionModeSelection (STEP 4).
     if (payload.actionEvent === "awaiting_execution_mode") {
 
         return await cloudPilotRespondAwaitingExecutionMode(payload);
@@ -44,6 +45,8 @@ async function handleCloudPilotChat(payload) {
 
         return cloudPilotRespondExecutionStarted(payload);
     }
+
+// FUTURE (modes 1–3): handled in buildCloudPilotResponse → responses/modes/userRequested*.js
 
     // STEP 5A: Workflow still collecting fields (repeat intent)
     if (payload.actionEvent === "workflow_in_progress") {
@@ -141,7 +144,7 @@ async function cloudPilotRespondAwaitingExecutionMode(payload) {
             "1. Instructions\n" +
             "2. CLI Commands\n" +
             "3. Pull Request\n" +
-            "4. Automatic",
+            "4. Cloud Pilot Does It",
         atlasResponse: null,
         error: null
     };

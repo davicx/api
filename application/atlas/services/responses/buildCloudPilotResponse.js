@@ -1,6 +1,10 @@
 const actionRegistry = require('../actions/actionRegistry');
 const CloudPilotChat = require('../chat/CloudPilotChat');
 const { RESPONSE_TYPE } = require('../decision/decisionTypes');
+const UserRequestedInstructionsFunctions = require('./modes/userRequestedInstructions');
+const UserRequestedCLIFunctions = require('./modes/userRequestedCLI');
+const UserRequestedPRFunctions = require('./modes/userRequestedPR');
+const UserRequestedAutomaticFunctions = require('./modes/userRequestedAutomatic');
 
 /*
 FUNCTIONS A: STEP 7 — CloudPilot chat text (assembly only)
@@ -12,6 +16,7 @@ FUNCTIONS B: Helpers
     3) Function B3: copyObject
     4) Function B4: copyStringArray
     5) Function B5: isRequestReady
+    6) Function B6: buildUserRequestedModeResponse — routes to responses/modes/ (options 1–4)
 */
 
 //Function A1: Assemble CloudPilotChat input and return chat text
@@ -31,6 +36,14 @@ async function buildCloudPilotResponse(decision, context) {
     const requestState = getRequestStateFromContext(context);
     const requestOutcome = context.requestOutcome || {};
     const responseType = decision.response && decision.response.type ? decision.response.type : '';
+
+    // User picked a Mode → responses/modes/userRequested*.js (options 1–4)
+    const userRequestedModeResponse = buildUserRequestedModeResponse(responseType, decision.chatType);
+
+    if (userRequestedModeResponse) {
+        return userRequestedModeResponse;
+    }
+
     const actionEvent = mapResponseTypeToActionEvent(responseType, requestOutcome);
     const activeAction = requestState.pendingAction;
     const actionDefinition = actionRegistry[activeAction] || null;
@@ -195,6 +208,27 @@ function getRequestStateFromContext(context) {
     }
 
     return {};
+}
+
+//Function B6: Route to responses/modes/ — one file per user option (1–4)
+function buildUserRequestedModeResponse(responseType, chatType) {
+    if (responseType === RESPONSE_TYPE.EXECUTION_INSTRUCTIONS) {
+        return UserRequestedInstructionsFunctions.userRequestedInstructions(chatType);
+    }
+
+    if (responseType === RESPONSE_TYPE.EXECUTION_CLI) {
+        return UserRequestedCLIFunctions.userRequestedCLI(chatType);
+    }
+
+    if (responseType === RESPONSE_TYPE.EXECUTION_PR) {
+        return UserRequestedPRFunctions.userRequestedPR(chatType);
+    }
+
+    if (responseType === RESPONSE_TYPE.AWAITING_CONFIRMATION) {
+        return UserRequestedAutomaticFunctions.userRequestedAutomatic(chatType);
+    }
+
+    return null;
 }
 
 module.exports = {

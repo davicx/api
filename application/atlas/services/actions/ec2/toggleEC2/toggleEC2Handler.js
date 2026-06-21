@@ -5,6 +5,7 @@ async function toggleEC2Handler(context) {
 
     const executionMode = context.state.executionMode;
 
+    // Modes 1–3 in chat → STEP 7 responses/modes/userRequested*.js (not handler stubs below).
     if (executionMode === "instructions") {
         console.log("EXECUTION MODE: Instructions");
         return {

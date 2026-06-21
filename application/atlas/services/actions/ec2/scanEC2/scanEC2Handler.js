@@ -16,10 +16,10 @@ async function scanEC2Handler(context) {
         const atlasResponseRaw =
             await ScanEC2Functions.scanEC2(region);
 
-        console.log("_____________________________________");
-        console.log("RAW Atlas Response:");
-        console.log(JSON.stringify(atlasResponseRaw, null, 2));
-        console.log("_____________________________________");
+        // console.log("_____________________________________");
+        // console.log("RAW Atlas Response:");
+        // console.log(JSON.stringify(atlasResponseRaw, null, 2));
+        // console.log("_____________________________________");
 
         if (
             !(atlasResponseRaw &&
@@ -45,10 +45,10 @@ async function scanEC2Handler(context) {
                 atlasResponseRaw
             );
 
-        console.log("_____________________________________");
-        console.log("Atlas Response:");
-        console.log(atlasResponseFormatted);
-        console.log("_____________________________________");
+        // console.log("_____________________________________");
+        // console.log("Atlas Response:");
+        // console.log(atlasResponseFormatted);
+        // console.log("_____________________________________");
 
         const cloudPilotMessage =
             atlasEC2MessageBuilder.buildEC2ScanMessage(
