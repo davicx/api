@@ -19,7 +19,7 @@
 
 | Question | Answer |
 |----------|--------|
-| What does the user want? | `services/understanding/understandMessage.js` + `services/actions/actionRegistry.js` (`match`) |
+| What does the user want? | `services/understanding/understandMessage.js` + `services/actions/actionMap.js` (`match`) |
 | When is it ready? | `services/decision/decideNextStep.js` |
 | What runs? | `services/executions/functions/runAction.js` → handler |
 | How does it work? | `capabilities/` (scan, change, inventory, conversation) |
@@ -57,7 +57,7 @@
 
 | | |
 |--|--|
-| **WHAT** | `understandMessage` → `searchMessageForAction` → `actionRegistry.scan_ec2.match` (`scan` + `ec2`) |
+| **WHAT** | `understandMessage` → `searchMessageForAction` → `actionMap.scan_ec2.match` (`scan` + `ec2`) |
 | **WHEN** | `decideNextStep` — collect `region` → `awaiting_confirmation` → user `yes` → `execution_started` |
 | **RUN** | `runAction` → `actions/ec2/scanEC2/scanEC2Handler.js` |
 | **HOW** | `capabilities/scans/scanEC2.js` |
@@ -70,7 +70,7 @@
 
 | | |
 |--|--|
-| **WHAT** | `actionRegistry.scan_s3.match` (`scan` + `s3`) |
+| **WHAT** | `actionMap.scan_s3.match` (`scan` + `s3`) |
 | **WHEN** | Same as scan EC2 — region + confirm |
 | **RUN** | `runAction` → `actions/s3/scanS3/scanS3Handler.js` |
 | **HOW** | `capabilities/scans/scanS3.js` (placeholder — handler uses `atlasS3Functions`) |
@@ -83,7 +83,7 @@
 
 | | |
 |--|--|
-| **WHAT** | `actionRegistry.toggle_ec2.match` |
+| **WHAT** | `actionMap.toggle_ec2.match` |
 | **WHEN** | region + `primary_instance_id` + `secondary_instance_id` → execution mode `4` (automatic) → confirm → `execution_started` |
 | **RUN** | `runAction` → `actions/ec2/toggleEC2/toggleEC2Handler.js` |
 | **HOW** | `capabilities/changes/changeEC2.js` (`toggleEC2`) |
@@ -96,7 +96,7 @@
 
 | | |
 |--|--|
-| **WHAT** | `actionRegistry.create_ec2.match` |
+| **WHAT** | `actionMap.create_ec2.match` |
 | **WHEN** | `name`, `region`, `instance_type` + mode 4 + confirm |
 | **RUN** | `runAction` → `actions/ec2/createEC2/createEC2Handler.js` |
 | **HOW** | `capabilities/changes/changeEC2.js` (`createEC2`) — placeholder; handler uses `atlasEC2Functions` |
@@ -109,7 +109,7 @@
 
 | | |
 |--|--|
-| **WHAT** | `actionRegistry.delete_ec2.match` |
+| **WHAT** | `actionMap.delete_ec2.match` |
 | **WHEN** | `region` + `instance_id` + mode 4 + confirm |
 | **RUN** | `runAction` → `actions/ec2/deleteEC2/deleteEC2Handler.js` |
 | **HOW** | `capabilities/changes/changeEC2.js` (`deleteEC2`) — placeholder; handler uses `atlasEC2Functions` |
@@ -122,7 +122,7 @@
 
 | | |
 |--|--|
-| **WHAT** | `actionRegistry.inventory_aws.match` |
+| **WHAT** | `actionMap.inventory_aws.match` |
 | **WHEN** | **Immediate** — `decideNextStep` → `immediate_execution` (no request row, no confirm). Proves WHEN ≠ confirmation. |
 | **RUN** | `runAction` → `actions/aws/inventoryAWS/inventoryAWSHandler.js` |
 | **HOW** | `capabilities/inventory/getAllResources.js` (placeholder — handler uses `atlasAWSFunctions`) |

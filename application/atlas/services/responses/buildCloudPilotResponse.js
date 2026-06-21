@@ -1,10 +1,9 @@
-const actionRegistry = require('../actions/actionRegistry');
+const actionMap = require('../actions/actionMap');
 const CloudPilotChat = require('../chat/CloudPilotChat');
 const { RESPONSE_TYPE } = require('../decision/decisionTypes');
 const UserRequestedInstructionsFunctions = require('./modes/userRequestedInstructions');
 const UserRequestedCLIFunctions = require('./modes/userRequestedCLI');
 const UserRequestedPRFunctions = require('./modes/userRequestedPR');
-const UserRequestedAutomaticFunctions = require('./modes/userRequestedAutomatic');
 
 /*
 FUNCTIONS A: STEP 7 — CloudPilot chat text (assembly only)
@@ -16,7 +15,7 @@ FUNCTIONS B: Helpers
     3) Function B3: copyObject
     4) Function B4: copyStringArray
     5) Function B5: isRequestReady
-    6) Function B6: buildUserRequestedModeResponse — routes to responses/modes/ (options 1–4)
+    6) Function B6: buildUserRequestedModeResponse — modes 1–3 at STEP 7 (mode 4: userRequestedAutomatic at STEP 6)
 */
 
 //Function A1: Assemble CloudPilotChat input and return chat text
@@ -37,7 +36,7 @@ async function buildCloudPilotResponse(decision, context) {
     const requestOutcome = context.requestOutcome || {};
     const responseType = decision.response && decision.response.type ? decision.response.type : '';
 
-    // User picked a Mode → responses/modes/userRequested*.js (options 1–4)
+    // Modes 1–3 at STEP 7. Mode 4 (automatic): CloudPilotChat confirmation here; STEP 6 → userRequestedAutomatic.js
     const userRequestedModeResponse = buildUserRequestedModeResponse(responseType, decision.chatType);
 
     if (userRequestedModeResponse) {
@@ -46,7 +45,7 @@ async function buildCloudPilotResponse(decision, context) {
 
     const actionEvent = mapResponseTypeToActionEvent(responseType, requestOutcome);
     const activeAction = requestState.pendingAction;
-    const actionDefinition = actionRegistry[activeAction] || null;
+    const actionDefinition = actionMap[activeAction] || null;
 
     if (!actionDefinition) {
         return {
@@ -210,7 +209,7 @@ function getRequestStateFromContext(context) {
     return {};
 }
 
-//Function B6: Route to responses/modes/ — one file per user option (1–4)
+//Function B6: Route to responses/modes/ — options 1–3 (STEP 7 reply)
 function buildUserRequestedModeResponse(responseType, chatType) {
     if (responseType === RESPONSE_TYPE.EXECUTION_INSTRUCTIONS) {
         return UserRequestedInstructionsFunctions.userRequestedInstructions(chatType);
@@ -222,10 +221,6 @@ function buildUserRequestedModeResponse(responseType, chatType) {
 
     if (responseType === RESPONSE_TYPE.EXECUTION_PR) {
         return UserRequestedPRFunctions.userRequestedPR(chatType);
-    }
-
-    if (responseType === RESPONSE_TYPE.AWAITING_CONFIRMATION) {
-        return UserRequestedAutomaticFunctions.userRequestedAutomatic(chatType);
     }
 
     return null;

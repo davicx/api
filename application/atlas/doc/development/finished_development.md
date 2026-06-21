@@ -41,7 +41,7 @@
 
 ### Execution & handlers (STEP 6–7)
 
-- [x] `executeRequest` → `actionRegistry` handlers → Atlas
+- [x] `executeRequest` → `actionMap` handlers → Atlas
 - [x] `buildCloudPilotResponse` — success/failure chat copy
 - [x] `scan_ec2`, `inventory_aws`, `general_chat`
 - [x] `create_ec2`, `delete_ec2`, `toggle_ec2` handlers (automatic mode → Atlas)
@@ -81,7 +81,7 @@
 
 ### Field extractors & registry
 
-- [x] `create_ec2`, `delete_ec2`, `toggle_ec2` in `actionRegistry.js`
+- [x] `create_ec2`, `delete_ec2`, `toggle_ec2` in `actionMap.js`
 - [x] Field extractors: region, name, instance_type, instance_id, primary/secondary IDs
 - [x] Instance-id heuristic (one bare `i-…` per message)
 

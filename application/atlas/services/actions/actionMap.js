@@ -22,7 +22,7 @@ See doc/development/action_map.md.
 CANONICAL STATIC ACTION DEFINITIONS
 ===============================================================================
 
-This file is the central registry for CloudPilot action definitions.
+This file is the central action map for CloudPilot action definitions.
 
 Each action definition describes static orchestration metadata:
 - identity
@@ -42,7 +42,7 @@ All actions should follow the same stable structure so orchestration, prompts,
 and frontend-safe action payloads can rely on consistent naming.
 */
 
-const actionRegistry = {
+const actionMap = {
 
     //SERVICE: General Chat
     general_chat: {
@@ -377,7 +377,7 @@ function actionRequiresExecutionModeSelection(actionDefinition) {
     );
 }
 
-module.exports = actionRegistry;
+module.exports = actionMap;
 
 Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
     value: actionRequiresExecutionModeSelection,

@@ -100,7 +100,7 @@ Phase C  (entry points) →  capabilities C1–C7
 |------|---------|
 | `chat/CloudPilotChat.js` | `responses/buildCloudPilotResponse.js` (STEP 7) |
 | `classes/AtlasExecution.js` | `CloudPilotChat.js` |
-| All handlers, formatters, `actionRegistry.js` | STEP 6 |
+| All handlers, formatters, `actionMap.js` | STEP 6 |
 
 **Verify after U2:** Same smokes as U1; grep for removed symbol names returns nothing in live code.
 

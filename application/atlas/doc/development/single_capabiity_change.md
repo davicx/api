@@ -189,7 +189,7 @@ Functions that **move out** of `atlasEC2Functions.js`:
 | `understanding/understandMessage.js` | WHAT |
 | `decision/decideNextStep.js` | WHAT |
 | `requests/functions/requestFunctions.js` | WHAT |
-| `actions/actionRegistry.js` | Still maps `action_type` → handler |
+| `actions/actionMap.js` | Still maps `action_type` → handler |
 | `responses/buildCloudPilotResponse.js` | STEP 7 copy for CloudPilot actions |
 | `responses/buildResponse.js` | Router only — one path to general chat at C6 |
 | `chat/openAI/openAIFunctions.js` | Engine layer — SDK stays here; called by `generalChat()` |
@@ -264,7 +264,7 @@ capabilities/
 
 - [ ] No new STEP — still 1–7, 6B for history
 - [ ] Handlers stay thick — 6 files change one import + one call each
-- [ ] Registry untouched — `actionRegistry.js` does not need edits
+- [ ] Registry untouched — `actionMap.js` does not need edits
 - [ ] OpenAI stays engine — `openAIFunctions.js` not duplicated
 - [ ] History not in capabilities — `executionFunctions.js` still owns `saveHistory()`
 - [ ] Fourth group is `conversation/` — not `chat/`

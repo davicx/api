@@ -17,7 +17,7 @@ NOTES:
 - This is NOT runtime state.
 - This is NOT execution output.
 - This is the static "definition" of an action.
-- Every action in actionRegistry should follow this structure consistently.
+- Every action in actionMap should follow this structure consistently.
 
 CANONICAL SHAPE:
 

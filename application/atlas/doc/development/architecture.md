@@ -65,7 +65,7 @@
 ### Three layers
 
 ```text
-1. Action definition (static)     actionRegistry.js — scan_ec2, toggle_ec2, …
+1. Action definition (static)     actionMap.js — scan_ec2, toggle_ec2, …
 2. Request (user request)           cloudpilot_requests row — collect fields, confirm, cancel, resume
 3. Execution (actual work)        Atlas/AWS run — today updates request row; target: cloudpilot_executions
 ```
@@ -189,7 +189,7 @@ See [development_undo_feature.md](./development_undo_feature.md) for history tab
 | `executions/functions/executionFunctions.js` | Still STEP 6 orchestrator — calls handlers, then `saveHistory()` for changes |
 | `actions/*Handler.js` | Still thick — understanding fields, Navigator, chat |
 | `atlasEC2Functions.scanEC2()` etc. | Move into `capabilities/scans/` or `capabilities/changes/` over time |
-| `actionRegistry.js` | Unchanged — maps `action_type` → handler; handlers delegate to capabilities |
+| `actionMap.js` | Unchanged — maps `action_type` → handler; handlers delegate to capabilities |
 
 Do **not** collapse handlers into capabilities. Registry + handlers = product/orchestration; capabilities = reusable AWS/Atlas operations.
 
@@ -354,7 +354,7 @@ Destructive actions (`create_ec2`, `delete_ec2`, `toggle_ec2`): fields → `4` (
 | `services/requests/functions/requestStatusFunctions.js` | Request status rules (`waiting_on_fields`, …) |
 | `services/executions/functions/executionFunctions.js` | STEP 6 |
 | `services/responses/buildCloudPilotResponse.js` | STEP 7 |
-| `services/actions/actionRegistry.js` | Static action definitions |
+| `services/actions/actionMap.js` | Static action definitions |
 | `services/requests/classes/Request.js` | MySQL `cloudpilot_requests` |
 | `services/history/classes/History.js` | MySQL `cloudpilot_history` |
 | `services/history/functions/historyFunctions.js` | Save + lookup history (H1/H2) |

@@ -1,7 +1,7 @@
-const actionRegistry = require('../../actions/actionRegistry');
+const actionMap = require('../../actions/actionMap');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
-const RunActionFunctions = require('./runAction');
+const UserRequestedAutomaticFunctions = require('../../responses/modes/userRequestedAutomatic');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
 
 /*
@@ -53,7 +53,7 @@ async function executeRequest(decision, context) {
         });
     }
 
-    const actionDefinition = actionRegistry[actionType];
+    const actionDefinition = actionMap[actionType];
 
     if (!actionDefinition || typeof actionDefinition.executionFunction !== 'function') {
         if (workflowId) {
@@ -95,8 +95,11 @@ async function executeRequest(decision, context) {
     let executionResult;
 
     try {
-        //RUN layer — runAction → handler → capability → atlasPost
-        executionResult = await RunActionFunctions.runAction(actionType, executionContext);
+        //RUN layer — userRequestedAutomatic (mode 4) → runAction → handler → capability → atlasPost
+        executionResult = await UserRequestedAutomaticFunctions.userRequestedAutomatic(
+            actionType,
+            executionContext
+        );
     } catch (error) {
         if (workflowId) {
             const finishOutcome = await RequestFunctions.finishRequest(

@@ -8,7 +8,7 @@ Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `d
 
 | Question | Layer | Path |
 |----------|-------|------|
-| What does the user want? | WHAT | `services/understanding/` + `services/actions/actionRegistry.js` |
+| What does the user want? | WHAT | `services/understanding/` + `services/actions/actionMap.js` |
 | When is it ready to run? | WHEN | `services/decision/` |
 | Open request state? | Persist | `services/requests/` |
 | What runs? | RUN | `services/executions/functions/runAction.js` |
@@ -47,7 +47,7 @@ application/atlas/
     ├── README.md
     ├── cloudPilotMessageFunctions.js  ← orchestrator STEPS 1–7
     ├── actions/
-    │   ├── actionRegistry.js          ← detect (match) + run (executionFunction)
+    │   ├── actionMap.js          ← detect (match) + run (executionFunction)
     │   ├── aws/
     │   │   ├── atlasAWSFunctions.js
     │   │   └── inventoryAWS/
