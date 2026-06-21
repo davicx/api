@@ -6,21 +6,28 @@
 
 | Doc | Role |
 |-----|------|
-| [use_single_function_entry_points.md](./use_single_function_entry_points.md) | Step-by-step plan (C0–C9) |
-| [architecture.md](./architecture.md) | Four layers, history rules |
+| [capability_migration.md](./capability_migration.md) | Step-by-step plan (C0–C9) |
+| [architecture.md](./architecture.md) | Four layers + History, history rules |
 
 **Last reviewed:** 2026-06-09
 
 ---
 
-## Four layers
+## Four layers + History
 
-| Layer | Question | Pipeline home |
-|-------|----------|---------------|
+Four **layers** answer WHAT / WHEN / HOW / WHERE. **History** is a fifth **concept** — cross-cutting, not a layer.
+
+| Concept | Question | Pipeline home |
+|---------|----------|---------------|
 | **Conversation** | **What** should happen? | STEPS 3–5 — understand, decide, request state |
 | **Execution** | **When** should it happen? | STEP 6 — gate on `execution_started` / `immediate_execution` |
-| **Capability** | **How** do we do it? | Thin functions — `scanEC2()`, `toggleEC2()`, `generalChat()` |
+| **Capability** | **How** do we do it? | `capabilities/` — `scanEC2()`, `toggleEC2()`, `generalChat()` |
 | **Engine** | **Where** do we talk? | Atlas HTTP, OpenAI SDK, GitHub, Jira |
+| **History** | **What changed?** | Cross-cutting — STEP 6B in `executionFunctions.js`; **not part of HOW** |
+
+```text
+executeRequest() → handler → toggleEC2() → Atlas → saveHistory()
+```
 
 **History rule (locked):** Capabilities return structured results. `saveHistory()` stays in STEP 6B (`executionFunctions.js`). Capabilities do not insert history rows.
 
@@ -34,23 +41,23 @@
 
 | File | Purpose |
 |------|---------|
-| `services/capabilities/README.md` | Conventions: return shape, thin-only, history stays STEP 6B |
-| `services/capabilities/index.js` | Optional re-exports — not required if handlers import directly |
+| `capabilities/README.md` | Conventions: return shape, thin-only, history stays STEP 6B |
+| `capabilities/index.js` | Optional re-exports — not required if handlers import directly |
 
 Empty folders at C1:
 
 ```text
-services/capabilities/scans/
-services/capabilities/inventory/
-services/capabilities/mutations/
-services/capabilities/conversation/
+capabilities/scans/
+capabilities/inventory/
+capabilities/mutations/
+capabilities/conversation/
 ```
 
 Optional shared engine helper (could wait until C2):
 
 | File | Purpose |
 |------|---------|
-| `services/capabilities/_shared/fetchAtlasMutation.js` | Extract `fetchAtlasMutation()` from `atlasEC2Functions.js` — shared by mutations |
+| `capabilities/_shared/fetchAtlasMutation.js` | Extract `fetchAtlasMutation()` from `atlasEC2Functions.js` — shared by mutations |
 
 ---
 
@@ -58,7 +65,7 @@ Optional shared engine helper (could wait until C2):
 
 | File | New function |
 |------|----------------|
-| `services/capabilities/mutations/toggleEC2.js` | `toggleEC2(requestBody)` — Atlas `POST /ec2/toggle` |
+| `capabilities/mutations/toggleEC2.js` | `toggleEC2(requestBody)` — Atlas `POST /ec2/toggle` |
 
 ---
 
@@ -66,7 +73,7 @@ Optional shared engine helper (could wait until C2):
 
 | File | New function |
 |------|----------------|
-| `services/capabilities/scans/scanEC2.js` | `scanEC2(region)` — Atlas `POST /scan/ec2` |
+| `capabilities/scans/scanEC2.js` | `scanEC2(region)` — Atlas `POST /scan/ec2` |
 
 ---
 
@@ -74,7 +81,7 @@ Optional shared engine helper (could wait until C2):
 
 | File | New function |
 |------|----------------|
-| `services/capabilities/inventory/getAllResources.js` | `getAllResources(options?)` — Atlas `POST /inventory/aws` (today’s `inventoryAWS()` body) |
+| `capabilities/inventory/getAllResources.js` | `getAllResources(options?)` — Atlas `POST /inventory/aws` (today’s `inventoryAWS()` body) |
 
 Handler can remain `inventoryAWSHandler`; capability name aligns with product language.
 
@@ -84,9 +91,9 @@ Handler can remain `inventoryAWSHandler`; capability name aligns with product la
 
 | File | New function |
 |------|----------------|
-| `services/capabilities/mutations/createEC2.js` | `createEC2(requestBody)` |
-| `services/capabilities/mutations/deleteEC2.js` | `deleteEC2(requestBody)` |
-| `services/capabilities/scans/scanS3.js` | `scanS3(region)` |
+| `capabilities/mutations/createEC2.js` | `createEC2(requestBody)` |
+| `capabilities/mutations/deleteEC2.js` | `deleteEC2(requestBody)` |
+| `capabilities/scans/scanS3.js` | `scanS3(region)` |
 
 ---
 
@@ -94,7 +101,7 @@ Handler can remain `inventoryAWSHandler`; capability name aligns with product la
 
 | File | New function |
 |------|----------------|
-| `services/capabilities/conversation/generalChat.js` | `generalChat({ message, conversationID, context })` — wraps OpenAI engine |
+| `capabilities/conversation/generalChat.js` | `generalChat({ message, conversationID, context })` — wraps OpenAI engine |
 
 Use **`conversation/`** not **`chat/`** — avoids collision with existing `services/chat/`.
 
@@ -130,6 +137,14 @@ See [development_undo_feature.md](./development_undo_feature.md) H4.
 | `actions/aws/inventoryAWS/inventoryAWSHandler.js` | → `capabilities/inventory/getAllResources(...)` |
 
 Handlers **keep:** field reads from `context.state.collected`, formatters, Navigator adapters, message builders, execution-mode branches (instructions / cli / pr).
+
+**Import paths** (from `services/actions/…`):
+
+| Handler | Require |
+|---------|---------|
+| `ec2/toggleEC2/toggleEC2Handler.js` | `../../../../capabilities/mutations/toggleEC2` |
+| `ec2/scanEC2/scanEC2Handler.js` | `../../../../capabilities/scans/scanEC2` |
+| `responses/buildGeneralChatResponse.js` | `../../capabilities/conversation/generalChat` |
 
 ---
 
@@ -179,7 +194,7 @@ Functions that **move out** of `atlasEC2Functions.js`:
 | `responses/buildResponse.js` | Router only — one path to general chat at C6 |
 | `chat/openAI/openAIFunctions.js` | Engine layer — SDK stays here; called by `generalChat()` |
 | All formatters / Navigator adapters / message builders | Handler concerns, not capabilities |
-| `classes/AtlasExecution.js` | Legacy; not on critical path |
+| `executions/AtlasExecution.js` | Legacy; not on critical path |
 
 ---
 
@@ -203,7 +218,7 @@ Handler names stay the same (`toggleEC2Handler`, `scanEC2Handler`, etc.) — onl
 ## Target folder layout
 
 ```text
-services/capabilities/
+capabilities/
 ├── _shared/
 │   └── fetchAtlasMutation.js       ← optional
 ├── scans/
@@ -260,9 +275,9 @@ services/capabilities/
 
 Roughly **4 new files, 1 handler edit, 1 legacy shim**:
 
-1. `services/capabilities/README.md`
-2. `services/capabilities/mutations/toggleEC2.js`
-3. Optional `services/capabilities/_shared/fetchAtlasMutation.js`
+1. `capabilities/README.md`
+2. `capabilities/mutations/toggleEC2.js`
+3. Optional `capabilities/_shared/fetchAtlasMutation.js`
 4. Edit `toggleEC2Handler.js` — one import + one call
 5. `atlasEC2Functions.js` — thin re-export or trim
 
@@ -275,3 +290,4 @@ Roughly **4 new files, 1 handler edit, 1 legacy shim**:
 | Date | Change |
 |------|--------|
 | 2026-06-09 | Initial inventory — new/changed files and functions for C1–C8 |
+| 2026-06-09 | `capabilities/` at atlas root; History as cross-cutting WHAT CHANGED |
