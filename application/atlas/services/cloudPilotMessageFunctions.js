@@ -7,6 +7,23 @@ const ExecutionFunctions = require('./executions/functions/executionFunctions');
 const ResponseFunctions = require('./responses/buildResponse');
 
 /*
+CloudPilot Pipeline (processMessage)
+
+STEP 1  Normalize message
+STEP 2  Load active requests
+STEP 3  Understand          WHAT  (understanding/)
+STEP 4  Decide                WHEN  (decision/ — e.g. execution_started = permission to run)
+STEP 5  Request update        Persist (requests/ — internal bookkeeping)
+STEP 6  Execute               RUN   (executions/runAction → handler → capability → atlasPost)
+STEP 6B History               WHAT CHANGED (inside executionFunctions — changes only)
+STEP 7  Build response        Respond (responses/)
+
+HOW  = capabilities/
+WHERE = capabilities/atlas/atlasPost.js
+
+*/
+
+/*
 FUNCTIONS A: CloudPilot (Atlas) — STEPS 1–7 pipeline
     1) Function A1: Process Message
 
@@ -73,7 +90,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     await ActionStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
 
 
-    //STEP 3: Understand the user message
+    //STEP 3: Understand the user message uses the understanding layer (WHAT)
     const messageUnderstanding = await UnderstandingFunctions.understandMessage(currentUserMessage);
 
     console.log("STEP 3: MESSAGE UNDERSTANDING:");
@@ -81,7 +98,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(" ");
 
 
-    //STEP 4: Decision
+    //STEP 4: Decision (WHEN)
     const decision = DecisionFunctions.decideNextStep({
         understanding: messageUnderstanding,
         requestState: currentActionState
@@ -92,7 +109,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(" ");
 
 
-    //STEP 5: Request update
+    //STEP 5: Request update in the database
     const requestOutcome = await RequestFunctions.applyDecision(decision, {
         conversationID: conversationID,
         context: processMessageContext,
@@ -113,6 +130,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     }
 
     //STEP 6: Execute request via Atlas (finish row here when workflowId exists)
+    //RUN: executeRequest → runAction() → handler → capability → atlasPost → Atlas
     const executionOutcome = await ExecutionFunctions.executeRequest(decision, {
         conversationID: conversationID,
         context: processMessageContext,

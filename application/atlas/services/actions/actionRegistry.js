@@ -6,6 +6,18 @@ const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
 const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
 
 /*
+What this file answers:
+
+* What actions exist?
+* How are actions detected? (match rules — used by understanding/search/searchMessageForAction.js)
+* What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
+
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, scan_s3, general_chat
+
+See doc/development/action_map.md.
+*/
+
+/*
 ===============================================================================
 CANONICAL STATIC ACTION DEFINITIONS
 ===============================================================================

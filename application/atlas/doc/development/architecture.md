@@ -26,6 +26,7 @@
 | [finished_development.md](./finished_development.md) | Shipped |
 | [future_development.md](./future_development.md) | Deferred / vision |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
+| [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |
 | [capability_migration.md](./capability_migration.md) | Capability layer — step plan (C0–C9) |
 | [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
 | [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — U1–U5 |

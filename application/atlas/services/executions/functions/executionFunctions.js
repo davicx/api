@@ -1,7 +1,20 @@
 const actionRegistry = require('../../actions/actionRegistry');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
+const RunActionFunctions = require('./runAction');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
+
+/*
+What this file answers:
+
+* Should work run now? (shouldRunExecution)
+* Run approved work (delegates handler call to runAction.js)
+* Finish requests after execution
+* Save history (STEP 6B — recordExecutionHistory)
+
+This is STEP 6 orchestration. Handler lookup and call: runAction.js.
+See doc/development/action_map.md.
+*/
 
 /*
 FUNCTIONS A: STEP 6 — run execution when STEP 4 decided execution_started
@@ -18,6 +31,7 @@ FUNCTIONS B: Helpers
 */
 
 //Function A1: Registry handler → Atlas HTTP; finish request row when workflowId exists
+//NOTE: Handler call delegated to runAction.js (RUN layer). STEP 4 grants permission; STEP 6 runs.
 async function executeRequest(decision, context) {
     if (!shouldRunExecution(decision)) {
         return null;
@@ -81,7 +95,8 @@ async function executeRequest(decision, context) {
     let executionResult;
 
     try {
-        executionResult = await actionDefinition.executionFunction(executionContext);
+        //RUN layer — runAction → handler → capability → atlasPost
+        executionResult = await RunActionFunctions.runAction(actionType, executionContext);
     } catch (error) {
         if (workflowId) {
             const finishOutcome = await RequestFunctions.finishRequest(
@@ -182,6 +197,7 @@ async function executeRequest(decision, context) {
 }
 
 //Function B1: Run when STEP 4 marked execution_started or immediate_execution
+//NOTE: STEP 4 = permission to run; this gate checks that permission before the handler runs
 function shouldRunExecution(decision) {
     if (!decision || !decision.response) {
         return false;

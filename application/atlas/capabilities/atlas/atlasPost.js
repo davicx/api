@@ -1,6 +1,17 @@
 const ATLAS_BASE_URL = process.env.ATLAS_BASE_URL || 'http://127.0.0.1:8000';
 
 /*
+What this file answers:
+
+* Where does Atlas HTTP happen?
+
+This is the WHERE layer. All Atlas capabilities (scans, changes, inventory)
+eventually call atlasPost() to POST JSON to Atlas.
+
+See doc/development/action_map.md and doc/code/allCode.js (snapshot).
+*/
+
+/*
 FUNCTIONS A: Atlas HTTP — POST JSON to Atlas (used by capabilities)
     1) Function A1: atlasPost
 */

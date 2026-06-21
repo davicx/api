@@ -3,6 +3,20 @@ const ActionStatusFunctions = require('../requests/functions/requestStatusFuncti
 const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
 
 /*
+What this file answers:
+
+* When is a request ready to run?
+* What should happen next?
+
+Examples: ask_for_missing_fields, awaiting_confirmation, execution_started,
+immediate_execution (inventory_aws), general_chat
+
+This is the WHEN layer (STEP 4).
+
+See doc/development/action_map.md.
+*/
+
+/*
 FUNCTIONS A: Decision layer — target request state + response type (no DB, no chat, no Atlas)
     1) Function A1: decideNextStep
 
