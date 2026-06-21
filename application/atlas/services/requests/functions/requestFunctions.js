@@ -329,6 +329,10 @@ function resolveSkipReasonForNoRequest(decision) {
         return 'conversation_intent_only';
     }
 
+    if (responseType === RESPONSE_TYPE.UNDO_EXECUTION) {
+        return 'conversation_intent_only';
+    }
+
     if (responseType === RESPONSE_TYPE.AMBIGUOUS_ACTION) {
         return 'ambiguous_no_write';
     }

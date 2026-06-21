@@ -1,6 +1,7 @@
 const actionMap = require('../../actions/actionMap');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
+const UndoFunctions = require('../../history/functions/undoFunctions');
 const UserRequestedAutomaticFunctions = require('../../responses/modes/userRequestedAutomatic');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
 
@@ -33,6 +34,10 @@ FUNCTIONS B: Helpers
 //Function A1: Registry handler → Atlas HTTP; finish request row when workflowId exists
 //NOTE: Handler call delegated to runAction.js (RUN layer). STEP 4 grants permission; STEP 6 runs.
 async function executeRequest(decision, context) {
+    if (shouldRunUndoExecution(decision)) {
+        return UndoFunctions.executeUndo(decision, context);
+    }
+
     if (!shouldRunExecution(decision)) {
         return null;
     }
@@ -199,10 +204,14 @@ async function executeRequest(decision, context) {
     });
 }
 
-//Function B1: Run when STEP 4 marked execution_started or immediate_execution
+//Function B1: Run when STEP 4 marked execution_started, immediate_execution, or undo
 //NOTE: STEP 4 = permission to run; this gate checks that permission before the handler runs
 function shouldRunExecution(decision) {
     if (!decision || !decision.response) {
+        return false;
+    }
+
+    if (decision.response.type === RESPONSE_TYPE.UNDO_EXECUTION) {
         return false;
     }
 
@@ -215,6 +224,14 @@ function shouldRunExecution(decision) {
     }
 
     return false;
+}
+
+function shouldRunUndoExecution(decision) {
+    if (!decision || !decision.response) {
+        return false;
+    }
+
+    return decision.response.type === RESPONSE_TYPE.UNDO_EXECUTION;
 }
 
 //Function B2: Open request action, or immediate execute payload from STEP 4

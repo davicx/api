@@ -58,6 +58,10 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.REQUEST_STATUS);
     }
 
+    if (u.conversation === 'undo') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.UNDO_EXECUTION);
+    }
+
     if (state.pendingAction && state.status === ActionStatusFunctions.STATUS.RUNNING) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.WORKFLOW_RUNNING);
     }

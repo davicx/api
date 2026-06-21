@@ -37,6 +37,7 @@ async function buildCloudPilotResponse(decision, context) {
     const responseType = decision.response && decision.response.type ? decision.response.type : '';
 
     // Modes 1–3 at STEP 7. Mode 4 (automatic): CloudPilotChat confirmation here; STEP 6 → userRequestedAutomatic.js
+    // Undo (H4): STEP 6 executeUndo → executionOutcome picked up above
     const userRequestedModeResponse = buildUserRequestedModeResponse(responseType, decision.chatType);
 
     if (userRequestedModeResponse) {

@@ -1,6 +1,6 @@
 # CloudPilot Change History — Development Plan
 
-**Last reviewed:** 2026-06-16
+**Last reviewed:** 2026-06-06
 
 > Read [architecture.md](./architecture.md) first. Active work: [current_development.md](./current_development.md). Schema source of truth: [sql/master_sql.sql](../sql/master_sql.sql).
 
@@ -37,8 +37,74 @@ cloudpilot_history   = what CloudPilot actually changed       → history.histor
 | 1 | `conversation_id` on history | **Yes** — denormalize for fast chat-scoped queries |
 | 2 | `executed_by_user` on history | **Yes** — audit who changed what without joining requests |
 | 3 | `target_id` for toggle (MVP) | `primary_instance_id:secondary_instance_id` e.g. `i-123:i-456` |
-| 4 | Undo row `action_name` | **`undo_toggle_ec2`** |
+| 4 | Undo row `action_name` | **`undo_toggle_ec2`** (pattern: `undo_<original_action>`) |
 | 5 | Failed mutations | **Yes — always store** with `history_status = failed`, `undo_available = 0` |
+| 6 | Undo `create_ec2` | **Delete** the instance that was created (`undo_payload` → Atlas `/ec2/delete`) |
+| 7 | Undo `delete_ec2` | **Recreate** — not “undo delete.” AWS terminate is irreversible; spawn a **new** instance from pre-delete snapshot |
+| 8 | Delete “undo” UX copy | Say **recreate** / **replace instance** — never imply the same `instance_id` comes back |
+
+### Undo semantics — create & delete _(planned, post-toggle MVP)_
+
+Toggle undo is shipped (H4). Create and delete use the same pipeline (`saveHistory` → `undo_payload` → `undoRegistry`) but different recipes.
+
+#### `create_ec2` — undo = delete what we created
+
+Straightforward mirror of toggle:
+
+```text
+User creates i-new123
+↓
+history row: resource_state_after includes instance_id
+↓
+undo_payload: delete that instance (region + instance_id)
+↓
+undo row action_name: undo_create_ec2
+```
+
+#### `delete_ec2` — undo = recreate a replacement (NOT restore)
+
+**Do not** try to “undo delete” or resurrect the terminated instance. Terminated EC2 is gone.
+
+Instead, at **delete time**, capture what the instance **had before** termination — at minimum:
+
+```text
+region
+name
+instance_type
+tags
+```
+
+Store that in `resource_state_before` on the `delete_ec2` history row. The `undo_payload` is a **create recipe**, not a restore:
+
+```json
+{
+  "type": "recreate_ec2",
+  "region": "us-west-2",
+  "name": "my-app-server",
+  "instance_type": "t3.micro",
+  "tags": { "Environment": "lab", "Owner": "davey" }
+}
+```
+
+When the user says `undo` on that row:
+
+```text
+Load undo_payload (recreate_ec2)
+↓
+Atlas POST /ec2/create with stored fields
+↓
+New instance_id (different from the deleted one)
+↓
+undo row action_name: undo_delete_ec2
+↓
+Mark original delete row reverted
+```
+
+**User-facing message must be honest:** e.g. “Created a replacement instance `i-0new…` with the same name, type, and tags as the one you deleted. This is a new resource, not the original.”
+
+**Atlas dependency:** delete flow must return (or preflight must fetch) enough metadata to fill `resource_state_before` — tags, instance type, name, region. If Atlas cannot supply a field, omit from recreate or set `undo_available = 0`.
+
+**Out of scope for v1 recreate:** same subnet, security groups, AMI, elastic IP, volumes — add later if Atlas exposes them.
 
 ### `target_id` — toggle (MVP)
 
@@ -76,6 +142,8 @@ delete_rds        (future)
 create_s3         (future)
 delete_s3         (future)
 undo_toggle_ec2   (restore rows)
+undo_create_ec2   (delete created instance)
+undo_delete_ec2   (recreate replacement — not restore)
 ```
 
 ### NO — read-only (nothing changed)
@@ -151,7 +219,7 @@ On failure — still insert:
 
 ---
 
-### Step 2 — User says `undo` _(later — after Step 1 milestone)_
+### Step 2 — User says `undo`
 
 ```text
 Find latest undoable history row
@@ -310,6 +378,16 @@ update original row (reverted, undo_available = false)
 - [ ] Undo button / “undo last toggle”
 - [ ] Change history list _(later)_
 
+### LATER — change history table (post-MVP)
+
+MVP undo reverses the **latest undoable change** in the conversation when the user says `undo`.
+
+**Later:** undo (or a dedicated “show history” intent) returns a **table of the last ten changes** for the conversation — e.g. action name, target, timestamp, `undo_available`, history id.
+
+**Kite:** render that table in the UI; each row gets an **Undo** button. Chat can also target a specific row: `undo toggle_ec2` or `undo change #3` (exact phrasing TBD).
+
+Until then, chat `undo` = latest undoable row only (toggle_ec2 MVP).
+
 ---
 
 ## API checklist (full feature)
@@ -317,10 +395,12 @@ update original row (reverted, undo_available = false)
 - [x] **H0** — `cloudpilot_history` in `master_sql.sql`
 - [x] **H1** — `saveHistory()` wired to toggle automatic success → row in DB
 - [x] **H2** — `getLatestUndoable()` log only (`STEP 6C` after save)
-- [ ] **H3** — Undo intent → log `undo_payload` only
-- [ ] **H4** — Execute undo + link rows
+- [x] **H3** — Undo intent → log `undo_payload` only _(superseded by H4 — dry run removed)_
+- [x] **H4** — Execute undo + link rows (`undoRegistry`, `undoFunctions`, STEP 6)
 - [ ] **H5** — Failed toggle → history row with `history_status = failed`
 - [ ] **H6** — API / Kite `undoAvailable` hint
+- [ ] **H7** — `create_ec2` history + undo (delete instance)
+- [ ] **H8** — `delete_ec2` history + recreate undo (new instance from `resource_state_before`)
 
 ---
 
@@ -494,11 +574,17 @@ Registry example:
 
 ```javascript
 {
-  toggle_ec2_restore: restoreToggleEC2,
-  recreate_ec2: recreateEC2,
-  restore_s3_policy: restoreS3Policy
+  toggle_ec2_restore: restoreToggleEC2,   // true restore (swap toggle)
+  delete_ec2_undo: deleteCreatedEc2,      // undo create → delete instance
+  recreate_ec2: recreateDeletedEc2        // undo delete → create replacement (new instance_id)
 }
 ```
+
+| Payload type | Original action | What runs | Same resource? |
+|--------------|-----------------|-----------|----------------|
+| `toggle_ec2_restore` | `toggle_ec2` | Atlas `/ec2/toggle` (swapped targets) | Yes — same pair |
+| `delete_ec2_undo` | `create_ec2` | Atlas `/ec2/delete` | Yes — deletes created id |
+| `recreate_ec2` | `delete_ec2` | Atlas `/ec2/create` from snapshot | **No** — new instance |
 
 | Layer | Job |
 |-------|-----|
@@ -525,15 +611,16 @@ functions/
 │   └── undoRegistry.js            ← execute information (H4 — payload.type → handler)
 ```
 
-**Step 1 ships:** `classes/History.js`, `history/historyFunctions.js`, `historyBuilders/toggleEc2History.js` only.
+**Step 1 ships:** `classes/History.js`, `history/historyFunctions.js`, `historyBuilders/toggleEc2History.js`, `undoRegistry.js`, `history/functions/undoFunctions.js`.
 
 ---
 
 ## Atlas
 
+- [x] Reuse toggle with swapped targets from `undo_payload` _(H4)_
 - [ ] Toggle response includes before/after states _(preferred for saveHistory)_
-- [ ] Reuse toggle with swapped targets from `undo_payload` _(task 4)_
-- [ ] Test mock includes state fields
+- [ ] Delete response (or preflight) includes instance metadata for recreate: name, instance_type, tags, region
+- [ ] Test mock includes state fields for toggle; recreate fields for delete
 
 ```json
 {

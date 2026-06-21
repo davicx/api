@@ -1,7 +1,15 @@
 /*
-FUNCTIONS A: Conversation intent extraction from user message (status / list / focus)
+FUNCTIONS A: Conversation intent extraction from user message (status / list / focus / undo)
     1) Function A1: searchMessageForConversation
 */
+
+const UNDO_PHRASES = [
+    'undo',
+    'undo last',
+    'undo that',
+    'undo last toggle',
+    'undo last change'
+];
 
 const LIST_OPEN_PHRASES = [
     'show open actions',
@@ -38,6 +46,13 @@ function searchMessageForConversation(message) {
 
     if (!text) {
         return null;
+    }
+
+    for (let i = 0; i < UNDO_PHRASES.length; i++) {
+        const phrase = UNDO_PHRASES[i];
+        if (text === phrase || text.includes(phrase)) {
+            return 'undo';
+        }
     }
 
     for (let i = 0; i < LIST_OPEN_PHRASES.length; i++) {
