@@ -26,6 +26,7 @@
 | [finished_development.md](./finished_development.md) | Shipped |
 | [future_development.md](./future_development.md) | Deferred / vision |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
+| [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |
 | [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |
 | [capability_migration.md](./capability_migration.md) | Capability layer — step plan (C0–C9) |
 | [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
