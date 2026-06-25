@@ -97,7 +97,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
     currentUserMessage = currentUserMessageOutcome.currentUserMessage;
 
-    //STEP 2: Load active requests
+    //STEP 2: Load active request
     currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
     activeRequestAction = currentRequestState.pendingAction;
 
@@ -124,6 +124,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(" ");
 
 
+    
     //STEP 5: Request update in the database
     const requestOutcome = await RequestFunctions.applyDecision(decision, {
         conversationID: conversationID,
@@ -166,6 +167,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     }
 
     await RequestStateFunctions.printUsersActionState(conversationID, "FINAL STATE:");
+
 
     //STEP 7: Build response (words only — no DB, no Atlas)
     const responseOutcome = await ResponseFunctions.buildResponse(decision, {
@@ -210,7 +212,6 @@ async function processMessage(rawUserMessage, conversationID, context) {
         actionReady
     );
 
-  
 
     return processMessageOutcome;
 
