@@ -2,7 +2,7 @@ const ScanEC2Functions = require('../../../../capabilities/scans/scanEC2');
 const atlasEC2Formatter = require('./atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./atlasEC2MessageBuilder');
 const atlasEC2ScanNavigatorAdapter = require('./atlasEC2ScanNavigatorAdapter');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../executions/outcomes/outcomeRegistry');
 
 async function scanEC2Handler(context) {
 

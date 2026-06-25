@@ -8,7 +8,7 @@ What this file answers:
 This is the WHERE layer. All Atlas capabilities (scans, changes, inventory)
 eventually call atlasPost() to POST JSON to Atlas.
 
-See doc/development/action_map.md and doc/code/allCode.js (snapshot).
+See doc/development/architecture/action_map.md and doc/code/allCode.js (snapshot).
 */
 
 /*

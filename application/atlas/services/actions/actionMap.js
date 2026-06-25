@@ -14,7 +14,7 @@ What this file answers:
 
 Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, scan_s3, general_chat
 
-See doc/development/action_map.md.
+See doc/development/architecture/action_map.md.
 */
 
 /*

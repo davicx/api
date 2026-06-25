@@ -2,7 +2,7 @@
 
 Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `doc/` — this file is **code layout only**.
 
-**Message architecture:** [doc/development/code_cleanup.md](./doc/development/code_cleanup.md)
+**Message architecture:** [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md)
 
 ## Design principle
 
@@ -18,7 +18,7 @@ Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `d
 User Message → Understand → Decide → Conversation → Workflow → Capabilities → Atlas
 ```
 
-Conversation (General or Request) is **one layer** — see [code_cleanup.md](./doc/development/code_cleanup.md).
+Conversation (General or Request) is **one layer** — see [code_cleanup.md](./doc/development/architecture/code_cleanup.md).
 
 ### Glossary
 
@@ -31,8 +31,9 @@ Conversation (General or Request) is **one layer** — see [code_cleanup.md](./d
 | **Information request** | Read-only work — scan, inventory. No change strategy. |
 | **Change request** | Mutating work — toggle, create, delete. Strategy menu when ready. |
 | **Change strategy** | How a change is applied — instructions, CLI, PR, automatic (user picks 1–4) |
+| **CloudPilotMessage** | How CloudPilot speaks — single voice (templates today; engine later) |
 
-Full model: [code_cleanup.md § Request types and change strategies](./doc/development/code_cleanup.md#request-types-and-change-strategies)
+Full model: [code_cleanup.md § Request types and change strategies](./doc/development/architecture/code_cleanup.md#request-types-and-change-strategies)
 
 ### First gate (after STEP 3 + 4)
 
@@ -106,24 +107,26 @@ application/atlas/
     │           ├── atlasS3MessageBuilder.js
     │           └── atlasS3ScanNavigatorAdapter.js
     ├── conversation/
+    │   ├── CloudPilotMessage.js            ← how CloudPilot speaks (single voice)
+    │   ├── templates/
+    │   │   ├── fieldPromptExamples.js
+    │   │   └── requestTemplates.js         ← request workflow copy
     │   ├── general/
     │   │   ├── GeneralConversation.js
     │   │   └── workflow.js                 ← no-op stub
     │   └── request/
-    │       ├── RequestConversation.js        ← speak (STEP 7) — all requests
-    │       └── workflow.js                 ← store + execute (STEP 5–6) — all requests
+    │       ├── RequestConversation.js      ← speak routing (STEP 7)
+    │       └── workflow.js                 ← store + execute (STEP 5–6)
     ├── change/
     │   └── strategies/
-    │       ├── automatic.js                 ← STEP 6 — automatic strategy
-    │       ├── cli.js                       ← STEP 7 — CLI strategy
-    │       ├── instructions.js              ← STEP 7 — instructions strategy
-    │       └── pr.js                        ← STEP 7 — PR strategy
-    ├── chat/
-    │   ├── CloudPilotChat.js               ← request speak (templates)
-    │   ├── chatOutcomeRegistry.js
-    │   ├── fieldPromptExamples.js
-    │   └── openAI/
-    │       └── openAIFunctions.js          ← OpenAI SDK + sendGeneralChat
+    │       ├── automatic.js
+    │       ├── cli.js
+    │       ├── instructions.js
+    │       └── pr.js
+    ├── engines/
+    │   └── llm/
+    │       └── openai/
+    │           └── openAIFunctions.js      ← OpenAI SDK
     ├── config/
     │   └── chatGPTconfig.js
     ├── decision/
@@ -131,6 +134,8 @@ application/atlas/
     │   └── decisionTypes.js
     ├── executions/
     │   ├── AtlasExecution.js               ← legacy
+    │   ├── outcomes/
+    │   │   └── outcomeRegistry.js          ← handler outcome copy
     │   └── functions/
     │       ├── executionFunctions.js         ← STEP 6 + 6B
     │       └── runAction.js
@@ -167,17 +172,18 @@ application/atlas/
 
 ---
 
-## Folder tree — target (remaining migration)
+## Folder tree — migration status
 
-`responses/` removed (Phase 2). `conversation/request/workflow.js` added (Phase 3). `change/strategies/` added (Phase 3b). Still to migrate: `chat/` → `engines/llm/`.
+`responses/` removed (Phase 2). `change/strategies/` (Phase 3b). `chat/` removed — `CloudPilotMessage`, `engines/llm/`, `executions/outcomes/` (Phase 4).
 
 ```text
 services/
-    conversation/          ← general/ + request/ (workflow + speak only)
-    change/strategies/     ← change-only strategies (live)
-    engines/llm/             ← target for chat/openAI/ + config
-    chat/                    ← legacy until engines migration
+    conversation/          ← General + Request + CloudPilotMessage + templates
+    change/strategies/
+    engines/llm/openai/
 ```
+
+No `chat/` folder.
 
 ---
 
@@ -193,12 +199,11 @@ routes/messageRoutes.js
        STEP 4  decide
 
        General Conversation?
-           → conversation/general/GeneralConversation.js  → return
+           → GeneralConversation → CloudPilotMessage  → return
 
        STEP 5  Request Conversation — maintain state   (requests/)
-       STEP 6  Request Conversation — perform work    (executions/; automatic strategy)
-       STEP 7  Request Conversation — speak           (conversation/request/RequestConversation.js)
-                                                         (instructions / CLI / PR strategies when applicable)
+       STEP 6  Request Conversation — perform work    (executions/)
+       STEP 7  Request Conversation — speak           (RequestConversation → CloudPilotMessage)
 ```
 
 ---
@@ -213,7 +218,7 @@ routes/messageRoutes.js
 | `delete_ec2` | `deleteEC2Handler` | ⚠️ `atlasEC2Functions` |
 | `scan_s3` | `scanS3Handler` | ⚠️ `atlasS3Functions` |
 | `inventory_aws` | `inventoryAWSHandler` | ⚠️ `atlasAWSFunctions` |
-| `general_chat` | — (not STEP 6) | ⚠️ stub; engine in `chat/openAI/` |
+| `general_chat` | — (not STEP 6) | ⚠️ stub; engine in `engines/llm/openai/` |
 
 ---
 
@@ -223,5 +228,7 @@ routes/messageRoutes.js
 |------|--------|
 | [services/README.md](./services/README.md) | Pipeline folders + STEP map |
 | [capabilities/README.md](./capabilities/README.md) | HOW / WHERE layout |
-| [doc/development/code_cleanup.md](./doc/development/code_cleanup.md) | **Message architecture** + Phase 1 plan |
-| [doc/development/architecture.md](./doc/development/architecture.md) | Full system reference |
+| [doc/development/To_do.md](./doc/development/To_do.md) | **Active work** — checklists |
+| [doc/development/finished.md](./doc/development/finished.md) | **Shipped** work |
+| [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md) | **Message architecture** |
+| [doc/development/architecture/architecture.md](./doc/development/architecture/architecture.md) | Full system reference |

@@ -11,7 +11,7 @@
 --   3. cloudpilot_history   — audit trail + undo (planned)
 --
 -- Docs: doc/database/database.md
---       doc/development/development_undo_feature.md (history)
+--       doc/development/architecture/development_undo_feature.md (history)
 --
 -- Usage:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS cloudpilot_requests (
 -- 3. cloudpilot_history
 -- -----------------------------------------------------------------------------
 -- CloudPilot Change History — audit, undo, version timeline (planned).
--- See doc/development/development_undo_feature.md
+-- See doc/development/architecture/development_undo_feature.md
 --
 -- Columns: id (history id), organization, conversation_id, request_id,
 --          executed_by_user, action_name, history_status,

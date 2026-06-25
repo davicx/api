@@ -1,7 +1,7 @@
 /*
 Automatic change strategy — user picked option 4.
 STEP 6 entry: run action handler → capability → Atlas.
-STEP 7 confirmation ("Would you like me to execute?") stays in CloudPilotChat.
+STEP 7 confirmation ("Would you like me to execute?") stays in CloudPilotMessage request templates.
 */
 
 const actionMap = require('../../actions/actionMap');

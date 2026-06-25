@@ -2,7 +2,7 @@
 
 **Purpose:** CloudPilot’s message pipeline — how every user message is understood, decided, and handled. **Conversation** (General vs Request) is one layer of this architecture, not the whole story.
 
-**Status:** Phase 1–3b done. Phase 4: context layer, `engines/llm/` migration.
+**Status:** Phase 1–4 done. `chat/` removed. Optional: `context.js`, wire live OpenAI in `CloudPilotMessage`.
 
 **Related:**
 
@@ -202,7 +202,7 @@ CloudPilot is not asking *“how should I answer this request?”* It is asking 
 | Strategy selection gate | `actionRequiresExecutionModeSelection()` in `actionMap.js` |
 | User picks 1–4 | `decideNextStep.js` → `handleExecutionModeSelection()` |
 | Automatic strategy (STEP 6) | `executionFunctions.js` → `change/strategies/automatic.js` |
-| Instructions / CLI / PR (STEP 7) | `conversation/request/RequestConversation.js` → `change/strategies/` |
+| Instructions / CLI / PR (STEP 7) | `RequestConversation` → `change/strategies/` or `CloudPilotMessage.speakKnown()` |
 
 Policy metadata may keep the word **destructive** (`actionTier`) even as architecture docs use **change** for product intent.
 
@@ -308,22 +308,27 @@ Decision signal today: `decision.chatType === 'generalChatResponding'` (helper: 
 
 ```text
 services/conversation/
+    CloudPilotMessage.js      ← how CloudPilot speaks (single voice)
+    templates/
+        fieldPromptExamples.js
+        requestTemplates.js   ← request workflow copy (was CloudPilotChat)
     general/
-        GeneralConversation.js  ← speak entry
-        workflow.js             ← no-op stub today (symmetry + future hooks)
+        GeneralConversation.js
+        workflow.js
         context.js              → later
-
     request/
-        RequestConversation.js  ← speak (STEP 7) — all requests
-        workflow.js             ← store(), execute() — all requests
+        RequestConversation.js
+        workflow.js
         context.js              → later
 
 services/change/
-    strategies/
-        instructions.js
-        cli.js
-        pr.js
-        automatic.js
+    strategies/ ...
+
+services/engines/
+    llm/openai/openAIFunctions.js
+
+services/executions/
+    outcomes/outcomeRegistry.js
 ```
 
 **`general/workflow.js`** — empty placeholder for now. Logs `General Conversation workflow not being used yet` and returns. General Conversation does not run store/execute today; the file keeps the folder symmetric with `request/` and leaves a hook for future work (memory, session context, safety gates, etc.).
@@ -337,14 +342,14 @@ Conversation systems **must not** bake in “OpenAI” as an architectural depen
 ```text
 services/engines/
     llm/                      ← or ai/ — architecture doc uses this level
-        openai/                 ← implementation only (today’s chat/openAI/)
+        openai/                 ← live (`openAIFunctions.js`)
         anthropic/              → future
         local/                  → future
 ```
 
-**Do not** put `engines/openai/` at the top level in architecture diagrams — that locks the model to one vendor. Phase 1 may still import from existing `chat/openAI/` paths; migrate under `engines/llm/openai/` when convenient. **Not blocking Phase 1.**
+**Do not** put `engines/openai/` at the top level in architecture diagrams — that locks the model to one vendor.
 
-Legacy `services/chat/` and `services/config/chatGPTconfig.js` → migrate into `engines/llm/openai/` over time.
+`services/chat/` **deleted** (Phase 4). `services/config/chatGPTconfig.js` may migrate under `engines/llm/openai/` later.
 
 ### No collision
 
@@ -366,6 +371,7 @@ Legacy `services/chat/` and `services/config/chatGPTconfig.js` → migrate into 
 | Understand | `understanding/` |
 | Decide | `decision/` |
 | Conversation | `conversation/general/`, `conversation/request/` |
+| CloudPilotMessage | `conversation/CloudPilotMessage.js` |
 | Workflow ops | `conversation/request/workflow.js` |
 | Change strategies | `change/strategies/` |
 | Capabilities | `capabilities/` |
@@ -379,12 +385,12 @@ Avoid **Response** as the name for conversation modules.
 
 ## Where things are today
 
-**No LLM API call on the live path.**
+**No LLM API call on the live general path.**
 
-- STEP 1 `normalizeUserMessageForModel()` — trim/validate only.
-- General: `buildGeneralChatResponse` → stubbed `sendGeneralChat`.
-- Request: `buildCloudPilotResponse` → `CloudPilotChat` (templates).
-- General path still runs STEPS 5–6 today (no-ops) — Phase 1 adds early exit after STEP 4.
+- STEP 1 `normalizeUserMessageForModel()` — `engines/llm/openai/openAIFunctions.js`
+- General: `GeneralConversation` → `CloudPilotMessage.speakGeneral()` (stub)
+- Request: `RequestConversation` → `CloudPilotMessage.speakRequest()` / `speakKnown()` (templates + strategies)
+- General path skips STEPS 5–6 after STEP 4
 
 ---
 
@@ -419,9 +425,19 @@ Moved logic from `responses/` into `conversation/`. Deleted `buildResponse.js`, 
 
 No behavior change — correct architectural home for change-only logic.
 
-### Phase 4 — Engines + docs
+### Phase 4 — CloudPilotMessage + retire `chat/` ✅ done
 
-Migrate `chat/openAI/` → `engines/llm/openai/`. Align [architecture.md](./architecture.md) vocabulary.
+1. Added `conversation/CloudPilotMessage.js` — single speak voice (`speakGeneral`, `speakRequest`, `speakKnown`).
+2. Moved `CloudPilotChat` → `conversation/templates/requestTemplates.js`.
+3. Moved `fieldPromptExamples` → `conversation/templates/`.
+4. Moved `openAI/` → `engines/llm/openai/`.
+5. Moved `chatOutcomeRegistry` → `executions/outcomes/outcomeRegistry.js`.
+6. Wired `GeneralConversation` and `RequestConversation` through `CloudPilotMessage`.
+7. Deleted `services/chat/`.
+
+### Phase 5 — Context + live engine (future)
+
+`context.js`, `prompts.js` per conversation side. Wire `sendGeneralChat` in `CloudPilotMessage.speakGeneral()`.
 
 ---
 
@@ -439,6 +455,7 @@ Migrate `chat/openAI/` → `engines/llm/openai/`. Align [architecture.md](./arch
 | **Information request** | Read-only action — no change strategy |
 | **Change request** | Mutating action — strategy menu when ready (`actionTier: destructive`) |
 | **Change strategy** | How a change is applied — instructions, CLI, PR, automatic |
+| **CloudPilotMessage** | How CloudPilot speaks — templates today; engine/hybrid later |
 | **Conversation command** | undo, status, list open, confirm, cancel — not a strategy |
 
 Orchestrator renames (done): `currentRequestState`, `activeRequestAction`, `RequestStateFunctions`.
@@ -456,6 +473,8 @@ Orchestrator renames (done): `currentRequestState`, `activeRequestAction`, `Requ
 | Hide STEPS 5–7 in orchestrator | Loses onboarding |
 | `responses/` as the conversation home | Wrong boundary |
 | `request/modes/` as home for strategy files | Strategies are change-only, not universal request logic |
+| **CloudPilotChat** as architecture | Absorbed into `CloudPilotMessage` + `templates/requestTemplates.js` |
+| **`chat/` folder** | Retired — each file re-homed by responsibility |
 | **Mode** as architecture term | Prefer **change strategy** in docs; `executionMode` in code is fine until rename |
 
 ---
@@ -482,6 +501,6 @@ Smoke: `"hello"` → General, skips 5–6. `"scan ec2"` → Request through 5–
 | Message architecture agreed | Pipeline + two conversations + four layers |
 | Phase 1 scope | Wrap + fork + comments only |
 | Risk | Low |
-| Consciously defer | `engines/llm/` migration |
+| Consciously defer | `context.js` / `prompts.js`; live OpenAI in `CloudPilotMessage` |
 
 Phase 1 changes how the story reads — not what the system does (except General skips 5–6). That is the right first commit.

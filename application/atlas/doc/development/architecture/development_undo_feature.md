@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-06-06
 
-> Read [architecture.md](./architecture.md) first. Active work: [current_development.md](./current_development.md). Schema source of truth: [sql/master_sql.sql](../sql/master_sql.sql).
+> Read [architecture.md](./architecture.md) first. **To do:** [../To_do.md](../To_do.md). Schema: [sql/master_sql.sql](../../sql/master_sql.sql).
 
 **Prerequisite:** Automatic `toggle_ec2` works E2E (Atlas Test or Live).
 
@@ -649,6 +649,6 @@ Diff between versions
 | Topic | Path |
 |-------|------|
 | Architecture & pipeline | [architecture.md](./architecture.md) |
-| Active work | [current_development.md](./current_development.md) |
-| Master SQL | [master_sql.sql](../sql/master_sql.sql) |
+| Active work | [../To_do.md](../To_do.md) |
+| Master SQL | [master_sql.sql](../../sql/master_sql.sql) |
 | Field reference | [database/database.md](../database/database.md) |

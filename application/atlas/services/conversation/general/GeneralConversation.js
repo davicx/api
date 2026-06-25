@@ -1,4 +1,5 @@
 const CloudPilotMessage = require('../CloudPilotMessage');
+const { CHAT_TYPE } = require('../../decision/decisionTypes');
 
 /*
 General Conversation — speak (entire non-request turn after STEP 4)
@@ -11,8 +12,6 @@ async function conversation(context) {
 
 //Function B1: True when STEP 4 routed to General Conversation
 function isGeneralConversation(decision) {
-    const { CHAT_TYPE } = require('../../decision/decisionTypes');
-
     return Boolean(
         decision && decision.chatType === CHAT_TYPE.GENERAL_CHAT_RESPONDING
     );

@@ -1,5 +1,5 @@
 const ChangeEC2Functions = require('../../capabilities/changes/changeEC2');
-const { buildOutcomeMessage, getFirstOutcomeCode } = require('../chat/chatOutcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode } = require('../executions/outcomes/outcomeRegistry');
 
 /*
 FUNCTIONS A: Undo payload execution — maps undo_payload.type → change capability

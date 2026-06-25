@@ -1,5 +1,5 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../executions/outcomes/outcomeRegistry');
 
 function buildTagsFromDefaults(defaults) {
     const raw = defaults && defaults.tags;
@@ -27,7 +27,7 @@ function mergeCreateEc2Tags(defaults, collected) {
     };
 }
 
-//Action only (create_ec2). Change strategy routing: change/strategies/
+//Action only (create_ec2). Speak routing: conversation/CloudPilotMessage.js
 async function createEC2Handler(context) {
 
     try {

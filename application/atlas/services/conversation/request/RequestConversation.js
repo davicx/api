@@ -1,5 +1,5 @@
 const actionMap = require('../../actions/actionMap');
-const CloudPilotChat = require('../../chat/CloudPilotChat');
+const CloudPilotMessage = require('../CloudPilotMessage');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
 const InstructionsStrategy = require('../../change/strategies/instructions');
 const CliStrategy = require('../../change/strategies/cli');
@@ -8,7 +8,7 @@ const PrStrategy = require('../../change/strategies/pr');
 /*
 Request Conversation — speak (STEP 7 only)
 
-Assembles user-facing words after STEPS 5–6. No DB writes or Atlas calls here.
+Orchestrates speak routing. CloudPilotMessage produces outgoing words.
 */
 
 //Function A1: Request Conversation speak entry
@@ -16,13 +16,13 @@ async function conversation(decision, context) {
     const executionOutcome = context.executionOutcome || null;
 
     if (executionOutcome && executionOutcome.ran && executionOutcome.cloudPilotMessage) {
-        return {
+        return CloudPilotMessage.speakKnown({
             success: Boolean(executionOutcome.success),
             cloudPilotMessage: executionOutcome.cloudPilotMessage,
             chatType: decision.chatType,
             atlasResponse: executionOutcome.atlasResponse || null,
             error: executionOutcome.error || null
-        };
+        });
     }
 
     const requestState = getRequestStateFromContext(context);
@@ -32,7 +32,7 @@ async function conversation(decision, context) {
     const changeStrategyResponse = buildChangeStrategyResponse(responseType, decision.chatType);
 
     if (changeStrategyResponse) {
-        return changeStrategyResponse;
+        return CloudPilotMessage.speakKnown(changeStrategyResponse);
     }
 
     const actionEvent = mapResponseTypeToActionEvent(responseType, requestOutcome);
@@ -40,13 +40,13 @@ async function conversation(decision, context) {
     const actionDefinition = actionMap[activeRequestAction] || null;
 
     if (!actionDefinition) {
-        return {
+        return CloudPilotMessage.speakKnown({
             success: false,
             cloudPilotMessage: '',
             chatType: decision.chatType,
             atlasResponse: null,
             error: 'no_action_definition_for_response'
-        };
+        });
     }
 
     const chatPayload = buildChatHandlerPayload({
@@ -57,19 +57,10 @@ async function conversation(decision, context) {
         requestState: requestState
     });
 
-    const chatResult = await CloudPilotChat.handleCloudPilotChat(chatPayload);
-    const cloudPilotMessage = chatResult.cloudPilotMessage || chatResult.message || '';
-
-    return {
-        success: Boolean(chatResult.success && cloudPilotMessage),
-        cloudPilotMessage: cloudPilotMessage,
-        chatType: decision.chatType,
-        atlasResponse: chatResult.atlasResponse || null,
-        error: chatResult.error || null
-    };
+    return CloudPilotMessage.speakRequest(chatPayload, decision.chatType);
 }
 
-//Function B1: TEMPORARY — map decision.response.type to CloudPilotChat actionEvent
+//Function B1: TEMPORARY — map decision.response.type to template actionEvent
 function mapResponseTypeToActionEvent(responseType, requestOutcome) {
     const requestAction = requestOutcome && requestOutcome.action ? requestOutcome.action : '';
 
@@ -124,7 +115,7 @@ function mapResponseTypeToActionEvent(responseType, requestOutcome) {
     return 'workflow_in_progress';
 }
 
-//Function B2: Shape passed into CloudPilotChat (presentation only)
+//Function B2: Shape passed into CloudPilotMessage request templates
 function buildChatHandlerPayload(options) {
     const requestState = options.requestState || {};
     const missingFields = copyStringArray(requestState.missing || []);

@@ -288,7 +288,7 @@ Mutation succeeds  →  cloudpilot_history row (audit + undo) — see `sql/maste
 
 **CloudPilot Change History** — what actually changed (audit, undo, future version timeline).
 
-**Source of truth:** [`sql/master_sql.sql`](../sql/master_sql.sql). Full plan: [`development/development_undo_feature.md`](../development/development_undo_feature.md).
+**Source of truth:** [`sql/master_sql.sql`](../sql/master_sql.sql). Full plan: [`development/architecture/development_undo_feature.md`](../development/architecture/development_undo_feature.md).
 
 Key columns: `conversation_id`, `executed_by_user`, `action_name` (no `action_id`), `history_status` (not `requests.status`), `target_id` (toggle MVP: `i-123:i-456`), `resource_state_before` / `resource_state_after`, `undo_payload`, `undo_available`, `restores_history_id`, `restored_by_history_id`.
 

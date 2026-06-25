@@ -33,7 +33,7 @@
 |----------|--------|
 | Open request state? | `services/requests/` — STEP 2 load, STEP 5 apply |
 | What changed? | `services/history/functions/historyFunctions.js` — STEP 6B after RUN |
-| What does the user see? | `services/conversation/request/RequestConversation.js` — STEP 7; change strategies in `change/strategies/` |
+| What does the user see? | `RequestConversation` → `CloudPilotMessage` — STEP 7 |
 
 ---
 
@@ -164,7 +164,7 @@ Undo, status, and list open are **conversation commands** — not strategies. Th
 | **WHEN** | Immediate — `decideNextStep` → `general_chat` response type; no open request |
 | **RUN** | **Does not run through STEP 6.** No `runAction`, no handler in execution pipeline. |
 | **HOW** | STEP 7 `responses/buildGeneralChatResponse.js` → `capabilities/conversation/generalChat.js` (C6) |
-| **WHERE** | OpenAI via `services/chat/openAI/openAIFunctions.js` — not Atlas |
+| **WHERE** | OpenAI via `services/engines/llm/openai/openAIFunctions.js` — not Atlas |
 | **HISTORY** | No |
 
 Do not search for `generalChatHandler` in STEP 6 — it does not exist.

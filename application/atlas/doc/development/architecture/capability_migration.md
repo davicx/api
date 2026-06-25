@@ -14,7 +14,7 @@
 | [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — do U1–U3 first |
 | [single_capabiity_change.md](./single_capabiity_change.md) | New & changed files map |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo reuses change capabilities |
-| [current_development.md](./current_development.md) | Active checklist |
+| [../To_do.md](../To_do.md) | Active checklist |
 
 **Last reviewed:** 2026-06-09
 

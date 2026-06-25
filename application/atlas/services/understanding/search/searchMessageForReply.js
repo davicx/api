@@ -6,6 +6,7 @@ User → Action → Mode → Handler → Capability → Atlas → AWS
 
 Mode reply (1–4) is parsed here (STEP 3). Routed in decideNextStep.handleExecutionModeSelection (STEP 4).
 Future strategies 1–3: change/strategies/ (STEP 7). Automatic (4): confirmation → STEP 6 handler → capability → Atlas.
+Request templates: conversation/CloudPilotMessage.js
 */
 
 const EXECUTION_MODES = {

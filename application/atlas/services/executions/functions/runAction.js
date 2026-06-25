@@ -30,7 +30,7 @@ capabilities/atlas/atlasPost.js  →  Atlas
 
 capabilities/changes/changeEC2.js (toggleEC2, createEC2, deleteEC2)
 
-See doc/development/action_map.md for the full action table.
+See doc/development/architecture/action_map.md for the full action table.
 */
 
 //Function A1: Call the action map handler for an approved action

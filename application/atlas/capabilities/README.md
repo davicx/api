@@ -47,6 +47,6 @@ toggleEC2Handler  →  changes/changeEC2.toggleEC2  →  atlas/atlasPost  →  A
 - `saveHistory()` stays in `services/executions/functions/executionFunctions.js` (STEP 6B).
 - Handlers stay in `services/actions/`; they delegate here for HOW.
 
-See [action_map.md](../doc/development/action_map.md) for WHAT / WHEN / RUN / HOW / WHERE per action.
+See [action_map.md](../doc/development/architecture/action_map.md) for WHAT / WHEN / RUN / HOW / WHERE per action.
 
-See [capability_migration.md](../doc/development/capability_migration.md) for the step-by-step plan.
+See [capability_migration.md](../doc/development/architecture/capability_migration.md) for the step-by-step plan.

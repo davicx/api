@@ -1,6 +1,6 @@
 # CloudPilot — Actions & Input Types
 
-Quick reference for understanding, decision, and local DB setup. Active planning docs (`.md` only) live in [`development/`](./development/) — start with [`development/architecture.md`](./development/architecture.md).
+Quick reference for understanding, decision, and local DB setup. Planning docs live in [`development/`](./development/) — start with [`development/To_do.md`](./development/To_do.md) and [`development/architecture/architecture.md`](./development/architecture/architecture.md).
 
 **`services/` folder map:** [`../services/README.md`](../services/README.md)
 
@@ -134,7 +134,7 @@ After understanding, `decideNextStep()` returns a **decision** with `chatType` (
 mysql -u USER -p DATABASE_NAME < application/atlas/doc/sql/master_sql.sql
 ```
 
-Field docs: `database/database.md`. Undo/history plan: `development/development_undo_feature.md`.
+Field docs: `database/database.md`. Undo/history plan: `development/architecture/development_undo_feature.md`.
 
 **Check:**
 
@@ -248,12 +248,12 @@ INSERT INTO cloudpilot_requests (
 
 | Topic | Path |
 |-------|------|
-| **Architecture (read first)** | `development/architecture.md` |
-| Active work (checklists) | `development/current_development.md` |
-| Shipped | `development/finished_development.md` |
-| Deferred / vision | `development/future_development.md` |
-| Undo / history feature | `development/development_undo_feature.md` |
-| History & changelog | `development/appendix.md` |
+| **Architecture (read first)** | `development/architecture/architecture.md` |
+| **To do** | `development/To_do.md` |
+| **Finished** | `development/finished.md` |
+| Undo / history feature (reference) | `development/architecture/development_undo_feature.md` |
+| Message architecture | `development/architecture/code_cleanup.md` |
+| History & changelog | `development/architecture/appendix.md` |
 | Database schema | `database/database.md` |
 | **Master SQL (source of truth)** | `sql/master_sql.sql` |
 | Add a new action | `instructions/adding_new_action.md` |

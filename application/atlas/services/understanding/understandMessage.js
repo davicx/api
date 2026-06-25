@@ -15,7 +15,7 @@ Outputs: action, values, reply, conversation, ambiguous, candidates
 This is the WHAT layer (STEP 3). Action phrases are matched via
 actions/actionMap.js match rules in search/searchMessageForAction.js.
 
-See doc/development/action_map.md.
+See doc/development/architecture/action_map.md.
 */
 
 /*

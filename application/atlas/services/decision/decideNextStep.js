@@ -14,7 +14,7 @@ immediate_execution (inventory_aws), general_chat
 This is the Decide layer (STEP 4) — what should happen next?
 (Request Workflow subtypes: new request, continue, commands, run work, or General Chat.)
 
-See doc/development/action_map.md.
+See doc/development/architecture/action_map.md.
 */
 
 /*
@@ -339,7 +339,7 @@ function buildFieldsMergedDecision(state, values) {
 //Function B9: User picked execution mode (Mode layer — STEP 4)
 // Mode 4 (automatic): persist execution_mode → waiting_on_confirmation → user confirms → STEP 6 handler → capability → Atlas.
 // Strategies 1–3 (instructions / cli / pr): STEP 7 → change/strategies/ (no STEP 6).
-// FUTURE: expand change/strategies/ when OpenAI / GitHub PR land.
+// Request templates: conversation/CloudPilotMessage.js → templates/requestTemplates.js
 function handleExecutionModeSelection(state, mode) {
     const request = buildRequestFromState(state);
     request.executionMode = mode;

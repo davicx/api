@@ -14,7 +14,7 @@ What this file answers:
 * Save history (STEP 6B — recordExecutionHistory)
 
 This is STEP 6 orchestration. Handler lookup and call: runAction.js.
-See doc/development/action_map.md.
+See doc/development/architecture/action_map.md.
 */
 
 /*

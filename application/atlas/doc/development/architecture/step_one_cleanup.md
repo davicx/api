@@ -13,7 +13,7 @@
 | [capability_migration.md](./capability_migration.md) | Capability layer — C0–C9 |
 | [single_capabiity_change.md](./single_capabiity_change.md) | New & changed files for capabilities |
 | [architecture.md](./architecture.md) | Four layers, pipeline reference |
-| [current_development.md](./current_development.md) | Active checklist |
+| [../To_do.md](../To_do.md) | Active checklist |
 
 **Last reviewed:** 2026-06-09
 
@@ -164,7 +164,7 @@ Still used as **in-memory fallback** in `requests/functions/requestLoadFunctions
 - DB mode is always on in dev/prod
 - Tests don't rely on in-memory state
 
-Track in [current_development.md](./current_development.md) — not part of U1–U2.
+Track in [../To_do.md](../To_do.md) — not part of U1–U2.
 
 ---
 

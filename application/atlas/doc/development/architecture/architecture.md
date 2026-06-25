@@ -16,15 +16,14 @@
 | **Master SQL (source of truth)** | `doc/sql/master_sql.sql` |
 | EC2 chat samples | `api/README.md` |
 | Create tags / delete safety (future) | `api/doc/instructions/cloudpilot_tagging_metadata.md` |
-| Pipeline rebuild history & old specs | `doc/development/appendix.md` |
+| Pipeline rebuild history & old specs | `doc/development/architecture/appendix.md` |
 
 **Related planning docs:**
 
 | Doc | Purpose |
 |-----|---------|
-| [current_development.md](./current_development.md) | Active work — checklists + details |
-| [finished_development.md](./finished_development.md) | Shipped |
-| [future_development.md](./future_development.md) | Deferred / vision |
+| [../To_do.md](../To_do.md) | Active work — checklists + details |
+| [../finished.md](../finished.md) | Shipped |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |
 | [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |
@@ -111,7 +110,7 @@ Handlers stay **thick** (formatting, Navigator, chat copy). Capability functions
 | **Conversation** | WHAT should happen? | STEPS 3–5 — understand, decide, request state |
 | **Execution** | WHEN should it happen? | STEP 6 — gate on `execution_started` / `immediate_execution` |
 | **Capability** | HOW do we do it? | `capabilities/` — `scanEC2()`, `toggleEC2()`, `generalChat()` |
-| **Engine** | WHERE do we talk? | Atlas HTTP, OpenAI SDK (`services/chat/openAI/`) |
+| **Engine** | WHERE do we talk? | Atlas HTTP, OpenAI SDK (`services/engines/llm/openai/`) |
 | **History** | WHAT CHANGED? | Cross-cutting — **not a layer**; STEP 6B in `executionFunctions.js` |
 
 History intentionally sits **outside** the capability path — a record of what happened, not part of HOW:
@@ -398,9 +397,12 @@ Strategy implementations: `change/strategies/` (target). See [code_cleanup.md](.
 | `services/requests/functions/requestFunctions.js` | STEP 5 — apply, start, update, finish |
 | `services/requests/functions/requestStatusFunctions.js` | Request status rules (`waiting_on_fields`, …) |
 | `services/executions/functions/executionFunctions.js` | STEP 6 |
-| `services/conversation/request/RequestConversation.js` | STEP 7 — Request Conversation speak |
+| `services/conversation/CloudPilotMessage.js` | How CloudPilot speaks (templates + future engine) |
+| `services/conversation/request/RequestConversation.js` | STEP 7 — Request Conversation speak routing |
 | `services/conversation/request/workflow.js` | STEP 5–6 — store + execute passthrough |
 | `services/change/strategies/` | Change strategies |
+| `services/engines/llm/openai/openAIFunctions.js` | OpenAI SDK |
+| `services/executions/outcomes/outcomeRegistry.js` | Handler outcome copy |
 | `services/actions/actionMap.js` | Static action definitions (`actionTier`, `executionModes`) |
 | `services/requests/classes/Request.js` | MySQL `cloudpilot_requests` |
 | `services/history/classes/History.js` | MySQL `cloudpilot_history` |
@@ -435,7 +437,7 @@ Test:  atlas/app/api/routes/test/ec2_operation_routes_test.py  → MOCK_* JSON
 
 Toggle in `atlas/app/main.py` — comment Live imports, uncomment Test imports, restart uvicorn.
 
-**From the product perspective (future):** `Mode = TEST` vs `Mode = LIVE`. User never sees Python import toggles. See [future_development.md](./future_development.md) — Learn / Test / Live.
+**From the product perspective (future):** `Mode = TEST` vs `Mode = LIVE`. User never sees Python import toggles. See [../To_do.md](../To_do.md) — Learn / Test / Live.
 
 ### Routes (operations)
 

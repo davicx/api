@@ -1,5 +1,5 @@
 const ChangeEC2Functions = require('../../../../capabilities/changes/changeEC2');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../executions/outcomes/outcomeRegistry');
 
 //Action only (toggle_ec2). Change strategy routing: change/strategies/
 async function toggleEC2Handler(context) {
