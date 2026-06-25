@@ -11,7 +11,8 @@ What this file answers:
 Examples: ask_for_missing_fields, awaiting_confirmation, execution_started,
 immediate_execution (inventory_aws), general_chat
 
-This is the WHEN layer (STEP 4).
+This is the Decide layer (STEP 4) — what should happen next?
+(Request Workflow subtypes: new request, continue, commands, run work, or General Chat.)
 
 See doc/development/action_map.md.
 */

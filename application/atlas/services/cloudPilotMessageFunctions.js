@@ -1,5 +1,5 @@
 const openAIFunctions = require('./chat/openAI/openAIFunctions');
-const ActionStateFunctions = require('./requests/functions/requestLoadFunctions');
+const RequestStateFunctions = require('./requests/functions/requestLoadFunctions');
 const UnderstandingFunctions = require('./understanding/understandMessage');
 const DecisionFunctions = require('./decision/decideNextStep');
 const RequestFunctions = require('./requests/functions/requestFunctions');
@@ -9,10 +9,25 @@ const ResponseFunctions = require('./responses/buildResponse');
 /*
 CloudPilot Pipeline (processMessage)
 
+Glossary
+  Request       — user wants CloudPilot to do something (workflow in cloudpilot_requests)
+  Action        — thing CloudPilot knows how to do (scan_ec2, toggle_ec2, … in actionMap)
+  General Chat  — not a request; OpenAI only; no DB; no Atlas
+
+First gate (STEP 3 + 4)
+  Request Workflow  → CloudPilot pipeline (steps 5–7; Atlas may run)
+  General Chat      → OpenAI only (steps 5–6 skipped)
+
+Request Workflow types (STEP 4 decides which)
+  New Request       → user named an action, start collecting fields
+  Continue Request  → fill fields, pick execution mode, confirm
+  Request Commands  → list_open, status, undo, focus_switch
+  Run Work          → execute now (immediate: inventory_aws; confirmed: scan_ec2, toggle_ec2, …)
+
 STEP 1  Normalize message
-STEP 2  Load active requests
-STEP 3  Understand            WHAT  (understand what the user is asking for)
-STEP 4  Decide                WHEN  (Decide what to do next) 
+STEP 2  Load active request
+STEP 3  Understand            What is the user trying to do?
+STEP 4  Decide                What should happen next?
 STEP 5  Request update        STORE (in database)
 STEP 6  Execute               RUN   (executions/runAction → handler → capability → atlasPost)
 STEP 6B History               WHAT CHANGED (inside executionFunctions — changes only)
@@ -39,8 +54,8 @@ FUNCTIONS B: Helpers
 async function processMessage(rawUserMessage, conversationID, context) {
     const processMessageContext = normalizeProcessMessageContext(context);
     var currentUserMessage = null;
-    var currentActionState = null;
-    var activeAction = null;
+    var currentRequestState = null;
+    var activeRequestAction = null;
 
     var processMessageOutcome = {
         success: false, 
@@ -83,14 +98,14 @@ async function processMessage(rawUserMessage, conversationID, context) {
     currentUserMessage = currentUserMessageOutcome.currentUserMessage;
 
     //STEP 2: Load active requests
-    currentActionState = await ActionStateFunctions.getUsersActionState(conversationID);
-    activeAction = currentActionState.pendingAction;
+    currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
+    activeRequestAction = currentRequestState.pendingAction;
 
     console.log("STEP 2: Initial State from User Request");
-    await ActionStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
+    await RequestStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
 
 
-    //STEP 3: Understand the user message uses the understanding layer (WHAT)
+    //STEP 3: Understand — what is the user trying to do?
     const messageUnderstanding = await UnderstandingFunctions.understandMessage(currentUserMessage);
 
     console.log("STEP 3: Message Understanding");
@@ -98,10 +113,10 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(" ");
 
 
-    //STEP 4: Decision (WHEN)
+    //STEP 4: Decide — what should happen next? (Request Workflow or General Chat)
     const decision = DecisionFunctions.decideNextStep({
         understanding: messageUnderstanding,
-        requestState: currentActionState
+        requestState: currentRequestState
     });
 
     console.log("STEP 4: Decision");
@@ -113,7 +128,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     const requestOutcome = await RequestFunctions.applyDecision(decision, {
         conversationID: conversationID,
         context: processMessageContext,
-        requestState: currentActionState
+        requestState: currentRequestState
     });
 
     console.log("STEP 5: Request Update");
@@ -121,8 +136,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(" ");
 
     if (requestOutcome.request) {
-        currentActionState = requestOutcome.request;
-        activeAction = currentActionState.pendingAction;
+        currentRequestState = requestOutcome.request;
+        activeRequestAction = currentRequestState.pendingAction;
     }
 
     if (requestOutcome.success) {
@@ -135,12 +150,12 @@ async function processMessage(rawUserMessage, conversationID, context) {
         conversationID: conversationID,
         context: processMessageContext,
         currentUserMessage: currentUserMessage,
-        requestState: currentActionState
+        requestState: currentRequestState
     });
 
     if (executionOutcome && executionOutcome.ran) {
-        currentActionState = await ActionStateFunctions.getUsersActionState(conversationID);
-        activeAction = currentActionState.pendingAction;
+        currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
+        activeRequestAction = currentRequestState.pendingAction;
 
         if (executionOutcome.success) {
             processMessageOutcome.cloudPilot.atlasExecution.status = 'completed';
@@ -150,23 +165,24 @@ async function processMessage(rawUserMessage, conversationID, context) {
         }
     }
 
-    await ActionStateFunctions.printUsersActionState(conversationID, "FINAL STATE:");
+    await RequestStateFunctions.printUsersActionState(conversationID, "FINAL STATE:");
 
     //STEP 7: Build response (words only — no DB, no Atlas)
     const responseOutcome = await ResponseFunctions.buildResponse(decision, {
         conversationID: conversationID,
         currentUserMessage: currentUserMessage,
         requestOutcome: requestOutcome,
-        requestState: currentActionState,
+        requestState: currentRequestState,
         executionOutcome: executionOutcome,
         context: processMessageContext
     });
 
-    //Summary
+    //Short Response Outcome 
     const shortResponseOutcome = buildShortResponseOutcome(responseOutcome);
     console.log("STEP 7: Response");
     console.log(JSON.stringify(shortResponseOutcome, null, 2));
-    //Full
+    
+    //Full Response Outcome for Testing
     //console.log(JSON.stringify(responseOutcome, null, 2));
     console.log(" ");
 
@@ -183,14 +199,14 @@ async function processMessage(rawUserMessage, conversationID, context) {
         processMessageOutcome.error = responseOutcome.error;
     }
 
-    if (activeAction) {
-        processMessageOutcome.cloudPilot.userRequest = activeAction;
+    if (activeRequestAction) {
+        processMessageOutcome.cloudPilot.userRequest = activeRequestAction;
     }
 
-    const actionReady = !currentActionState.missing || currentActionState.missing.length === 0;
+    const actionReady = !currentRequestState.missing || currentRequestState.missing.length === 0;
     processMessageOutcome.cloudPilot.actionStatus = cloneActionStatus(
-        currentActionState,
-        activeAction,
+        currentRequestState,
+        activeRequestAction,
         actionReady
     );
 
@@ -203,9 +219,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 //FUNCTIONS B: Helpers
 //Function B1: Clone Action Status
-function cloneActionStatus(state, activeAction, ready) {
+function cloneActionStatus(state, activeRequestAction, ready) {
     return {
-        type: activeAction,
+        type: activeRequestAction,
         ready: Boolean(ready),
         executionMode: state.executionMode || null,
         missingFields: [...(state.missing || [])],

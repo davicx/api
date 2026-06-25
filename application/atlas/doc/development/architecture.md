@@ -2,7 +2,7 @@
 
 **Purpose:** Stable reference for how the system works. Read this first.
 
-**Last reviewed:** 2026-06-09
+**Last reviewed:** 2026-06-23
 
 **Reference docs (how-to, not todo lists):**
 
@@ -60,7 +60,7 @@
 | workflow row | **request row** |
 | `cloudpilot_workflows` | **`cloudpilot_requests`** (target schema — see `database.md`) |
 
-**Code still uses legacy names** (`workflowId`, `focused_workflow_id`, `cloudpilot_workflows`, `ActionState`, etc.) until a dedicated rename pass.
+**Code still uses legacy names** (`workflowId`, `focused_workflow_id`, `cloudpilot_workflows`, `ActionState` class, `getUsersActionState`, etc.) until a dedicated rename pass. The orchestrator now uses **`currentRequestState`**, **`activeRequestAction`**, and import alias **`RequestStateFunctions`** (`requestLoadFunctions.js`).
 
 ### Three layers
 
@@ -193,6 +193,46 @@ See [development_undo_feature.md](./development_undo_feature.md) for history tab
 
 Do **not** collapse handlers into capabilities. Registry + handlers = product/orchestration; capabilities = reusable AWS/Atlas operations.
 
+### Glossary: Request vs Action vs General Chat
+
+| Term | Meaning |
+|------|---------|
+| **Request** | User wants CloudPilot to do something — workflow tracked in `cloudpilot_requests` (fields, status, confirm, cancel) |
+| **Action** | Thing CloudPilot knows how to do — `scan_ec2`, `toggle_ec2`, `inventory_aws` in `actionMap.js` |
+| **General Chat** | Not a request — casual conversation; OpenAI only; no DB write; no Atlas |
+
+Do not confuse **request** (workflow row) with **action** (registry entry). The open request’s `pendingAction` field is which action the request is for.
+
+### First gate: Request Workflow vs General Chat
+
+After STEP 3 (Understand) and STEP 4 (Decide), every message lands in one of two paths:
+
+```text
+STEP 3  Understand     What is the user trying to do?
+STEP 4  Decide         What should happen next?
+        │
+        ├─ Request Workflow   → CloudPilot pipeline (steps 5–7; Atlas may run)
+        └─ General Chat       → OpenAI only (steps 5–6 skipped)
+```
+
+**Request Workflow** — CloudPilot orchestrates the turn. Subtypes (STEP 4 decides which):
+
+```text
+Request Workflow
+    ├─ New Request          → user named an action; start collecting fields
+    ├─ Continue Request     → fill fields, pick execution mode, confirm
+    ├─ Request Commands     → list_open, status, undo, focus_switch
+    └─ Run Work             → execute now
+          ├─ immediate      → inventory_aws (Atlas, no request row)
+          └─ confirmed      → scan_ec2, toggle_ec2, … (Atlas, with request row)
+```
+
+CloudPilot owns the reply today. OpenAI may assist wording later, but the request pipeline still runs.
+
+**General Chat** — not about the request system. Even if an open request exists, a message like “hello” stays General Chat; the row is untouched.
+
+Decision signal in code: `decision.chatType` — `cloudPilotResponding` (Request Workflow) vs `generalChatResponding` (General Chat).
+
 ### `processMessage` pipeline (STEP 1–7)
 
 **Golden rule:** understand once → decide once → apply once → execute (if needed) → respond once.
@@ -201,8 +241,8 @@ Do **not** collapse handlers into capabilities. Registry + handlers = product/or
 Message
   ↓ STEP 1  Normalize message
   ↓ STEP 2  Load current request (DB)
-  ↓ STEP 3  Understand message        → understanding/
-  ↓ STEP 4  Decide next step          → decision/
+  ↓ STEP 3  Understand message        → understanding/   (what is the user trying to do?)
+  ↓ STEP 4  Decide next step          → decision/        (what should happen next?)
   ↓ STEP 5  Apply decision to request → requests/ (start / update / finish / cancel / skip)
   ↓ STEP 6  Execute (if needed)       → executions/ → Atlas HTTP
   ↓ STEP 7  Respond once              → responses/ + chat/
@@ -211,7 +251,7 @@ Message
 | Step | Status | Entry |
 |------|--------|-------|
 | STEP 1 Normalize | ✅ Live | `getCurrentUserMessage` |
-| STEP 2 Load request | ✅ Live | `ActionStateFunctions.getUsersActionState` |
+| STEP 2 Load request | ✅ Live | `RequestStateFunctions.getUsersActionState` (`requestLoadFunctions.js`) |
 | STEP 3 Understand | ✅ Live | `understandMessage.js` |
 | STEP 4 Decide | ✅ Live | `decideNextStep.js` |
 | STEP 5 Apply | ✅ Live | `applyDecision.js` |

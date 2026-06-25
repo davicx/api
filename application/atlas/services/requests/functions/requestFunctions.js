@@ -1,6 +1,6 @@
 const actionMap = require('../../actions/actionMap');
 const Request = require('../classes/Request');
-const ActionStateFunctions = require('./requestLoadFunctions');
+const RequestStateFunctions = require('./requestLoadFunctions');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
 
 /*
@@ -25,7 +25,7 @@ FUNCTIONS C: Helpers
 
 //Function A1: Route decision to start, update, or skip (D1 — finish/cancel in D2)
 async function applyDecision(decision, context) {
-    const requestState = context.requestState || ActionStateFunctions.emptyActionState();
+    const requestState = context.requestState || RequestStateFunctions.emptyActionState();
     const conversationID = context.conversationID;
     const targetRequest = decision.request || null;
 
@@ -46,19 +46,19 @@ async function applyDecision(decision, context) {
         return buildSkipOutcome(requestState, reason);
     }
 
-    const hasOpenRequest = !ActionStateFunctions.actionStateIsEmpty(requestState);
+    const hasOpenRequest = !RequestStateFunctions.actionStateIsEmpty(requestState);
 
     if (!hasOpenRequest) {
         return startRequest(decision, context);
     }
 
     if (decision.replaceOpenRequest === true) {
-        await ActionStateFunctions.closeOpenActionBeforeStartingNew(conversationID);
+        await RequestStateFunctions.closeOpenActionBeforeStartingNew(conversationID);
         return startRequest(decision, context);
     }
 
     if (targetRequest.action !== requestState.pendingAction) {
-        await ActionStateFunctions.closeOpenActionBeforeStartingNew(conversationID);
+        await RequestStateFunctions.closeOpenActionBeforeStartingNew(conversationID);
         return startRequest(decision, context);
     }
 
@@ -134,7 +134,7 @@ async function startRequest(decision, context) {
                 action: 'created',
                 reason: null,
                 requestID: workflowId,
-                request: ActionStateFunctions.mapActionToState(dbAction),
+                request: RequestStateFunctions.mapActionToState(dbAction),
                 error: updateOutcome.errors
             };
         }
@@ -151,14 +151,14 @@ async function startRequest(decision, context) {
         action: 'created',
         reason: null,
         requestID: workflowId,
-        request: ActionStateFunctions.mapActionToState(dbAction),
+        request: RequestStateFunctions.mapActionToState(dbAction),
         error: null
     };
 }
 
 //Function B2: Sync decision.request onto the open row
 async function updateRequest(decision, context) {
-    const requestState = context.requestState || ActionStateFunctions.emptyActionState();
+    const requestState = context.requestState || RequestStateFunctions.emptyActionState();
     const workflowId = requestState.workflowId;
     const targetRequest = decision.request;
 
@@ -199,7 +199,7 @@ async function updateRequest(decision, context) {
         action: 'updated',
         reason: null,
         requestID: workflowId,
-        request: ActionStateFunctions.mapActionToState(updateOutcome.action),
+        request: RequestStateFunctions.mapActionToState(updateOutcome.action),
         error: null
     };
 }
@@ -225,7 +225,7 @@ async function finishRequest(workflowId, status, outcomeCode) {
     return {
         success: true,
         requestID: workflowId,
-        request: ActionStateFunctions.mapActionToState(finishOutcome.action),
+        request: RequestStateFunctions.mapActionToState(finishOutcome.action),
         error: null
     };
 }

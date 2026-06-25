@@ -2,7 +2,9 @@
 
 CloudPilot API orchestration lives here (formerly `functions/`). **Full atlas code tree:** [../README.md](../README.md) (code only, no `doc/`).
 
-**Orchestrator (root):** `cloudPilotMessageFunctions.js` — STEPS 1–7 entry (`processMessage`).
+**Orchestrator (root):** `cloudPilotMessageFunctions.js` — STEPS 1–7 entry (`processMessage`). Uses `currentRequestState`, `activeRequestAction`, and `RequestStateFunctions` (import alias for `requestLoadFunctions.js`).
+
+**Glossary:** **Request** = user workflow · **Action** = registry entry (`actionMap`) · **General Chat** = not a request. First gate after STEP 3+4: **Request Workflow** (CloudPilot) vs **General Chat** (OpenAI). Details: `doc/development/architecture.md`.
 
 **Capabilities (sibling folder):** `../capabilities/` — thin execution surface (`scanEC2`, `toggleEC2`, `generalChat`, …). Handlers in `actions/` delegate here for HOW; see `capabilities/README.md`.
 
@@ -30,13 +32,13 @@ CloudPilot API orchestration lives here (formerly `functions/`). **Full atlas co
 ```text
 cloudPilotMessageFunctions.js
   STEP 1  normalize (local helper)
-  STEP 2  requests/          load open request
-  STEP 3  understanding/     messageUnderstanding
-  STEP 4  decision/          decision
-  STEP 5  requests/          applyDecision
+  STEP 2  requests/          load open request (RequestStateFunctions)
+  STEP 3  understanding/     what is the user trying to do?
+  STEP 4  decision/          what should happen next?
+  STEP 5  requests/          applyDecision (Request Workflow only)
   STEP 6  executions/        executeRequest → runAction → handler → ../capabilities/
   STEP 6B history/           saveHistory() (changes only — after Atlas returns)
-  STEP 7  responses/         buildResponse
+  STEP 7  responses/         buildResponse (CloudPilot or OpenAI)
 ```
 
 Handlers in `actions/` call `../capabilities/` for Atlas/OpenAI work. History is saved from `executions/functions/executionFunctions.js`, not from capabilities.

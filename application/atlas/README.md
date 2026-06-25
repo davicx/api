@@ -6,10 +6,29 @@ Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `d
 
 ## Mental model
 
+### Glossary
+
+| Term | Meaning |
+|------|---------|
+| **Request** | User wants CloudPilot to do something — workflow in `cloudpilot_requests` |
+| **Action** | Thing CloudPilot knows how to do — `scan_ec2`, `toggle_ec2`, … in `actionMap.js` |
+| **General Chat** | Not a request — OpenAI only; no DB; no Atlas |
+
+### First gate (STEP 3 + 4)
+
+| Path | Who owns the turn | Pipeline |
+|------|-------------------|----------|
+| **Request Workflow** | CloudPilot | Steps 5–7 (Atlas may run) |
+| **General Chat** | OpenAI | Steps 5–6 skipped |
+
+Request Workflow subtypes: New Request · Continue Request · Request Commands · Run Work. See `doc/development/architecture.md`.
+
+### Pipeline layers
+
 | Question | Layer | Path |
 |----------|-------|------|
-| What does the user want? | WHAT | `services/understanding/` + `services/actions/actionMap.js` |
-| When is it ready to run? | WHEN | `services/decision/` |
+| What is the user trying to do? | Understand | `services/understanding/` + `services/actions/actionMap.js` |
+| What should happen next? | Decide | `services/decision/` |
 | Open request state? | Persist | `services/requests/` |
 | What runs? | RUN | `services/executions/functions/runAction.js` |
 | How does it work? | HOW | `capabilities/` |
@@ -84,7 +103,7 @@ application/atlas/
     ├── config/
     │   └── chatGPTconfig.js
     ├── decision/
-    │   ├── decideNextStep.js          ← WHEN
+    │   ├── decideNextStep.js          ← Decide (STEP 4)
     │   └── decisionTypes.js
     ├── executions/
     │   ├── AtlasExecution.js          ← legacy path via CloudPilotChat
@@ -114,7 +133,7 @@ application/atlas/
     │   ├── buildCloudPilotResponse.js
     │   └── buildGeneralChatResponse.js← general chat (STEP 7)
     └── understanding/
-        ├── understandMessage.js       ← WHAT (STEP 3)
+        ├── understandMessage.js       ← Understand (STEP 3)
         └── search/
             ├── searchMessageForAction.js
             ├── searchMessageForConversation.js
@@ -136,13 +155,13 @@ routes/messageRoutes.js
   → logic/messages.js
   → cloudPilotMessageFunctions.processMessage()
        STEP 1  normalize
-       STEP 2  requests/           load
-       STEP 3  understanding/      WHAT
-       STEP 4  decision/           WHEN
-       STEP 5  requests/           persist
+       STEP 2  requests/           load (RequestStateFunctions)
+       STEP 3  understanding/      what is the user trying to do?
+       STEP 4  decision/           what should happen next?
+       STEP 5  requests/           persist (Request Workflow only)
        STEP 6  executions/         RUN → runAction → handler → capabilities/
        STEP 6B history/            WHAT CHANGED (changes only)
-       STEP 7  responses/          respond
+       STEP 7  responses/          respond (CloudPilot or OpenAI)
 ```
 
 ---
