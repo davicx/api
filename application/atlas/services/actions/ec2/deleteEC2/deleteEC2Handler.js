@@ -1,7 +1,7 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
 const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
 
-//Action only (delete_ec2). Mode routing: responses/modes/userRequested*.js
+//Action only (delete_ec2). Change strategy routing: change/strategies/
 async function deleteEC2Handler(context) {
 
     try {

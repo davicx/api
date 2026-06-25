@@ -2,7 +2,7 @@
 
 **Purpose:** CloudPilot’s message pipeline — how every user message is understood, decided, and handled. **Conversation** (General vs Request) is one layer of this architecture, not the whole story.
 
-**Status:** Phase 1 done — conversation modules + orchestrator fork. Phase 2 (peel `responses/`) pending.
+**Status:** Phase 1–3b done. Phase 4: context layer, `engines/llm/` migration.
 
 **Related:**
 
@@ -133,6 +133,101 @@ Conversation = intent. Workflow = operations inside Request Conversation. Capabi
 
 Do not change this four-layer split.
 
+**Change** and **Strategy** are not additional pipeline layers — they are a **fork inside Request Workflow** when the active action mutates infrastructure. See [Request types and change strategies](#request-types-and-change-strategies).
+
+---
+
+## Request types and change strategies
+
+A **request** is the full thing the user is trying to accomplish this turn — scan EC2, toggle EC2, undo, status, list open, etc. That is what **Request Conversation** orchestrates.
+
+Not every request is the same *kind* of work. After Decide, when the active action is known:
+
+```text
+Request Conversation
+        │
+        ▼
+What kind of action is this?
+
+Information                    Change
+(scan, inventory, status)      (toggle, create, delete)
+        │                              │
+        ▼                              ▼
+Continue workflow              Once ready: choose change strategy
+(no strategy menu)                     │
+                                       ▼
+                               How should CloudPilot apply this change?
+
+                               1 Instructions
+                               2 CLI
+                               3 PR
+                               4 Automatic
+```
+
+### Which requests use strategies?
+
+| Request / action | Uses change strategies? |
+|------------------|-------------------------|
+| Scan EC2 | No |
+| Inventory AWS | No |
+| Scan S3 | No |
+| Undo | No — conversation command |
+| Status | No — conversation command |
+| List open | No — conversation command |
+| Toggle EC2 | Yes |
+| Create EC2 | Yes |
+| Delete EC2 | Yes |
+
+The four options are **not** a request concern. They apply only when the active action is a **change** (today: `actionTier: 'destructive'` in `actionMap.js` with `executionModes` defined).
+
+CloudPilot is not asking *“how should I answer this request?”* It is asking *“how should I apply this change?”* — a different question.
+
+### Vocabulary
+
+| Term | Meaning |
+|------|---------|
+| **Information request** | Read-only or reporting work — scan, inventory. No strategy menu. |
+| **Change request** | Mutates infrastructure — toggle, create, delete. Strategy required when ready. |
+| **Change strategy** | How the change is carried out — instructions, CLI, PR, automatic. User picks 1–4. |
+| **Conversation command** | Workflow/decision control — undo, status, list open, confirm, cancel. Not a strategy. |
+
+**Strategy** is stronger than **mode** long-term: it describes the user's choice (*how should this change happen?*), not a slot label. Code may still use `executionMode` / `executionModes` in state and `actionMap` until renamed.
+
+### Code alignment today
+
+| Concept | Code location |
+|---------|----------------|
+| Information vs change | `actionMap.js` — `actionTier: 'informational' \| 'destructive'` |
+| Strategy list per action | `actionMap.js` — `executionModes: ['instructions', 'cli', 'pr', 'automatic']` |
+| Strategy selection gate | `actionRequiresExecutionModeSelection()` in `actionMap.js` |
+| User picks 1–4 | `decideNextStep.js` → `handleExecutionModeSelection()` |
+| Automatic strategy (STEP 6) | `executionFunctions.js` → `change/strategies/automatic.js` |
+| Instructions / CLI / PR (STEP 7) | `conversation/request/RequestConversation.js` → `change/strategies/` |
+
+Policy metadata may keep the word **destructive** (`actionTier`) even as architecture docs use **change** for product intent.
+
+### Strategy implementations
+
+Strategies are **not** children of `conversation/request/`. They are shared modules invoked from Request Workflow (automatic) and Request Conversation speak (instructions, CLI, PR).
+
+```text
+services/
+    conversation/
+        general/
+        request/
+            workflow.js         ← universal: all requests
+            RequestConversation.js     ← universal: all requests
+
+    change/
+        strategies/
+            instructions.js     ← STEP 7 speak
+            cli.js
+            pr.js
+            automatic.js        ← STEP 6 execute
+```
+
+Future strategies (Terraform, CloudFormation, GitHub Actions) add files under `change/strategies/` without renaming the concept.
+
 ---
 
 ## Context layer (symmetric future)
@@ -214,19 +309,26 @@ Decision signal today: `decision.chatType === 'generalChatResponding'` (helper: 
 ```text
 services/conversation/
     general/
-        conversation.js       ← entry (Phase 1)
+        GeneralConversation.js  ← speak entry
         workflow.js             ← no-op stub today (symmetry + future hooks)
         context.js              → later
 
     request/
-        conversation.js         ← speak (STEP 7 entry)
-        workflow.js             ← store(), execute()
+        RequestConversation.js  ← speak (STEP 7) — all requests
+        workflow.js             ← store(), execute() — all requests
         context.js              → later
+
+services/change/
+    strategies/
+        instructions.js
+        cli.js
+        pr.js
+        automatic.js
 ```
 
 **`general/workflow.js`** — empty placeholder for now. Logs `General Conversation workflow not being used yet` and returns. General Conversation does not run store/execute today; the file keeps the folder symmetric with `request/` and leaves a hook for future work (memory, session context, safety gates, etc.).
 
-**Naming note:** Prefer **`conversation.js`** as the entry file over `chat.js`. Phase 1 may ship `chat.js` and rename later without behavior change.
+**Naming note:** Entry files are **`GeneralConversation.js`** and **`RequestConversation.js`** (not generic `conversation.js` — avoids collision with Kite `functions/classes/Conversation.js`).
 
 ### Engines (implementation — vendor-agnostic in architecture)
 
@@ -265,6 +367,7 @@ Legacy `services/chat/` and `services/config/chatGPTconfig.js` → migrate into 
 | Decide | `decision/` |
 | Conversation | `conversation/general/`, `conversation/request/` |
 | Workflow ops | `conversation/request/workflow.js` |
+| Change strategies | `change/strategies/` |
 | Capabilities | `capabilities/` |
 | Atlas | `capabilities/atlas/atlasPost.js` |
 | Engines | `engines/llm/*` (implementation) |
@@ -299,13 +402,22 @@ Architecture change without behavior change (except General skips 5–6).
 
 Do **not** make Phase 1 bigger. No engine folder move required yet.
 
-### Phase 2 — Peel
+### Phase 2 — Peel ✅ done
 
-Move logic from `responses/` into conversation modules. Consider `chat.js` → `conversation.js` rename.
+Moved logic from `responses/` into `conversation/`. Deleted `buildResponse.js`, `buildCloudPilotResponse.js`, `buildGeneralChatResponse.js`. Strategy stubs interim home was `conversation/request/modes/` → now `change/strategies/` (Phase 3b ✅).
 
-### Phase 3 — Workflow module + context
+### Phase 3 — Workflow module ✅ done
 
-`workflow.js` wraps store/execute. `context.js` / `prompts.js` per side.
+`conversation/request/workflow.js` — thin `store()` / `execute()` passthrough. Context layer (`context.js`, `prompts.js`) still future.
+
+### Phase 3b — Change strategies folder ✅ done
+
+1. Created `services/change/strategies/`.
+2. Moved `conversation/request/modes/userRequested*.js` → `change/strategies/` (`instructions.js`, `cli.js`, `pr.js`, `automatic.js`).
+3. Updated imports in `executionFunctions.js`, `conversation/request/RequestConversation.js`.
+4. Deleted `request/modes/`.
+
+No behavior change — correct architectural home for change-only logic.
 
 ### Phase 4 — Engines + docs
 
@@ -324,6 +436,10 @@ Migrate `chat/openAI/` → `engines/llm/openai/`. Align [architecture.md](./arch
 | **Request** | User wants something done — `cloudpilot_requests` row |
 | **Action** | Thing CloudPilot can do — `actionMap` entry |
 | **Workflow** (internal) | store + execute inside Request Conversation |
+| **Information request** | Read-only action — no change strategy |
+| **Change request** | Mutating action — strategy menu when ready (`actionTier: destructive`) |
+| **Change strategy** | How a change is applied — instructions, CLI, PR, automatic |
+| **Conversation command** | undo, status, list open, confirm, cancel — not a strategy |
 
 Orchestrator renames (done): `currentRequestState`, `activeRequestAction`, `RequestStateFunctions`.
 
@@ -339,6 +455,8 @@ Orchestrator renames (done): `currentRequestState`, `activeRequestAction`, `Requ
 | Third top-level “Request Workflow” in diagrams | Workflow is inside Request Conversation |
 | Hide STEPS 5–7 in orchestrator | Loses onboarding |
 | `responses/` as the conversation home | Wrong boundary |
+| `request/modes/` as home for strategy files | Strategies are change-only, not universal request logic |
+| **Mode** as architecture term | Prefer **change strategy** in docs; `executionMode` in code is fine until rename |
 
 ---
 
@@ -364,6 +482,6 @@ Smoke: `"hello"` → General, skips 5–6. `"scan ec2"` → Request through 5–
 | Message architecture agreed | Pipeline + two conversations + four layers |
 | Phase 1 scope | Wrap + fork + comments only |
 | Risk | Low |
-| Consciously defer | `engines/llm/` migration; `conversation.js` rename; `architecture.md` full pass |
+| Consciously defer | `engines/llm/` migration |
 
 Phase 1 changes how the story reads — not what the system does (except General skips 5–6). That is the right first commit.

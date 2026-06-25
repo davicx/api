@@ -221,7 +221,7 @@ const actionMap = {
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //Execution mode selection (Mode layer — destructive actions only; scan/inventory skip this)
+        //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
             'instructions',
             'cli',
@@ -273,7 +273,7 @@ const actionMap = {
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //Execution mode selection (Mode layer — destructive actions only; scan/inventory skip this)
+        //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
             'instructions',
             'cli',
@@ -332,7 +332,7 @@ const actionMap = {
         requiresWorkflow: true,
         requiresExecution: false,
 
-        //Execution mode selection (Mode layer — destructive actions only; scan/inventory skip this)
+        //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
             'instructions',
             'cli',

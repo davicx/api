@@ -2,10 +2,9 @@ const openAIFunctions = require('./chat/openAI/openAIFunctions');
 const RequestStateFunctions = require('./requests/functions/requestLoadFunctions');
 const UnderstandingFunctions = require('./understanding/understandMessage');
 const DecisionFunctions = require('./decision/decideNextStep');
-const RequestFunctions = require('./requests/functions/requestFunctions');
-const ExecutionFunctions = require('./executions/functions/executionFunctions');
-const GeneralConversation = require('./conversation/general/conversation');
-const RequestConversation = require('./conversation/request/conversation');
+const RequestWorkflow = require('./conversation/request/workflow');
+const GeneralConversation = require('./conversation/general/GeneralConversation');
+const RequestConversation = require('./conversation/request/RequestConversation');
 
 /*
 CloudPilot Message Pipeline (processMessage)
@@ -19,17 +18,17 @@ Glossary
   Request Conversation — help user accomplish work (orchestrates STEPS 5–7)
 
 First gate (after STEP 4)
-  General Conversation  → conversation/general/conversation.js → return (skip 5–6)
+  General Conversation  → conversation/general/GeneralConversation.js → return (skip 5–6)
   Request Conversation  → STEPS 5–7 (maintain state → perform work → speak)
 
 STEP 1  Normalize message
 STEP 2  Load active request
 STEP 3  Understand            What is the user trying to do?
 STEP 4  Decide                Which conversation is this?
-STEP 5  Request Conversation  Maintain state (STORE)
-STEP 6  Request Conversation  Perform work (RUN — runAction → handler → capability → atlasPost)
+STEP 5  Request Conversation  Maintain state (conversation/request/workflow.js → store)
+STEP 6  Request Conversation  Perform work (conversation/request/workflow.js → execute)
 STEP 6B History               WHAT CHANGED (inside executionFunctions — changes only)
-STEP 7  Request Conversation  Speak (conversation/request/conversation.js)
+STEP 7  Request Conversation  Speak (conversation/request/RequestConversation.js)
 
 HOW  = capabilities/
 WHERE = capabilities/atlas/atlasPost.js
@@ -145,7 +144,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     }
 
     //STEP 5: Request Conversation — maintain state
-    const requestOutcome = await RequestFunctions.applyDecision(decision, {
+    const requestOutcome = await RequestWorkflow.store(decision, {
         conversationID: conversationID,
         context: processMessageContext,
         requestState: currentRequestState
@@ -166,7 +165,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
     //STEP 6: Request Conversation — perform work
     //RUN: executeRequest → runAction() → handler → capability → atlasPost → Atlas
-    const executionOutcome = await ExecutionFunctions.executeRequest(decision, {
+    const executionOutcome = await RequestWorkflow.execute(decision, {
         conversationID: conversationID,
         context: processMessageContext,
         currentUserMessage: currentUserMessage,

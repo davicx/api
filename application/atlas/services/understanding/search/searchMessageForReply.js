@@ -5,7 +5,7 @@ Capability = implementation | Handler = orchestration
 User → Action → Mode → Handler → Capability → Atlas → AWS
 
 Mode reply (1–4) is parsed here (STEP 3). Routed in decideNextStep.handleExecutionModeSelection (STEP 4).
-Future modes 1–3: responses/modes/userRequested*.js (STEP 7). Mode 4 (automatic): confirmation → STEP 6 handler → capability → Atlas.
+Future strategies 1–3: change/strategies/ (STEP 7). Automatic (4): confirmation → STEP 6 handler → capability → Atlas.
 */
 
 const EXECUTION_MODES = {

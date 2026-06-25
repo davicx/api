@@ -27,7 +27,12 @@ Conversation (General or Request) is **one layer** — see [code_cleanup.md](./d
 | **Request** | User wants CloudPilot to do something — row in `cloudpilot_requests` |
 | **Action** | Thing CloudPilot knows how to do — `scan_ec2`, `toggle_ec2`, … in `actionMap.js` |
 | **General Conversation** | User is just talking — not a request |
-| **Request Conversation** | Orchestrates a request turn — state, work, speak |
+| **Request Conversation** | Orchestrates a request turn — state, work, speak (all request types) |
+| **Information request** | Read-only work — scan, inventory. No change strategy. |
+| **Change request** | Mutating work — toggle, create, delete. Strategy menu when ready. |
+| **Change strategy** | How a change is applied — instructions, CLI, PR, automatic (user picks 1–4) |
+
+Full model: [code_cleanup.md § Request types and change strategies](./doc/development/code_cleanup.md#request-types-and-change-strategies)
 
 ### First gate (after STEP 3 + 4)
 
@@ -102,12 +107,19 @@ application/atlas/
     │           └── atlasS3ScanNavigatorAdapter.js
     ├── conversation/
     │   ├── general/
-    │   │   ├── conversation.js               ← General Conversation (Phase 1)
+    │   │   ├── GeneralConversation.js
     │   │   └── workflow.js                 ← no-op stub
     │   └── request/
-    │       └── conversation.js               ← Request Conversation speak (Phase 1)
-    ├── chat/                               ← legacy mix (see target layout below)
-    │   ├── CloudPilotChat.js               ← request speak (templates); → request/chat.js
+    │       ├── RequestConversation.js        ← speak (STEP 7) — all requests
+    │       └── workflow.js                 ← store + execute (STEP 5–6) — all requests
+    ├── change/
+    │   └── strategies/
+    │       ├── automatic.js                 ← STEP 6 — automatic strategy
+    │       ├── cli.js                       ← STEP 7 — CLI strategy
+    │       ├── instructions.js              ← STEP 7 — instructions strategy
+    │       └── pr.js                        ← STEP 7 — PR strategy
+    ├── chat/
+    │   ├── CloudPilotChat.js               ← request speak (templates)
     │   ├── chatOutcomeRegistry.js
     │   ├── fieldPromptExamples.js
     │   └── openAI/
@@ -139,15 +151,6 @@ application/atlas/
     │       ├── requestFunctions.js           ← STEP 5 apply
     │       ├── requestLoadFunctions.js       ← STEP 2 load
     │       └── requestStatusFunctions.js
-    ├── responses/                          ← legacy STEP 7 (→ conversation/request/)
-    │   ├── buildResponse.js                ← dual-path router (remove)
-    │   ├── buildCloudPilotResponse.js
-    │   ├── buildGeneralChatResponse.js
-    │   └── modes/
-    │       ├── userRequestedAutomatic.js
-    │       ├── userRequestedCLI.js
-    │       ├── userRequestedInstructions.js
-    │       └── userRequestedPR.js
     └── understanding/
         ├── understandMessage.js            ← STEP 3
         └── search/
@@ -164,35 +167,17 @@ application/atlas/
 
 ---
 
-## Folder tree — target (after Phase 1+)
+## Folder tree — target (remaining migration)
 
-**Decision:** `services/conversation/` for conversation systems. Legacy `services/chat/` retires. Engines are **vendor-agnostic** in architecture (`engines/llm/`, not `engines/openai/` at top level).
+`responses/` removed (Phase 2). `conversation/request/workflow.js` added (Phase 3). `change/strategies/` added (Phase 3b). Still to migrate: `chat/` → `engines/llm/`.
 
 ```text
 services/
-    conversation/
-        general/
-            conversation.js                 ← entry (Phase 1)
-            workflow.js                     ← no-op stub (symmetry; future hooks)
-            context.js, prompts.js          ← later
-        request/
-            conversation.js                 ← speak (STEP 7)
-            workflow.js                     ← store(), execute()
-            context.js, prompts.js          ← later
-
-    engines/
-        llm/                                ← architecture level (or ai/)
-            openai/                         ← implementation (from chat/openAI/)
-            anthropic/                      → future
-
-    chat/                                   ← delete after migration
+    conversation/          ← general/ + request/ (workflow + speak only)
+    change/strategies/     ← change-only strategies (live)
+    engines/llm/             ← target for chat/openAI/ + config
+    chat/                    ← legacy until engines migration
 ```
-
-| Path | Role |
-|------|------|
-| `conversation/` | General vs Request **conversation systems** |
-| `engines/llm/*` | LLM vendor SDKs — conversation picks engine, not vice versa |
-| `capabilities/conversation/` | Thin capability HOW wrapper |
 
 ---
 
@@ -208,14 +193,13 @@ routes/messageRoutes.js
        STEP 4  decide
 
        General Conversation?
-           → conversation/general/chat.js  → return
+           → conversation/general/GeneralConversation.js  → return
 
        STEP 5  Request Conversation — maintain state   (requests/)
-       STEP 6  Request Conversation — perform work    (executions/)
-       STEP 7  Request Conversation — speak           (conversation/request/chat.js)
+       STEP 6  Request Conversation — perform work    (executions/; automatic strategy)
+       STEP 7  Request Conversation — speak           (conversation/request/RequestConversation.js)
+                                                         (instructions / CLI / PR strategies when applicable)
 ```
-
-Today STEP 7 still goes through `responses/buildResponse.js` until Phase 1 cleanup lands.
 
 ---
 

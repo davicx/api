@@ -4,7 +4,7 @@ CloudPilot API orchestration lives here (formerly `functions/`). **Full atlas co
 
 **Orchestrator (root):** `cloudPilotMessageFunctions.js` — STEPS 1–7 entry (`processMessage`). Uses `currentRequestState`, `activeRequestAction`, and `RequestStateFunctions` (import alias for `requestLoadFunctions.js`).
 
-**Glossary:** **Message pipeline** + **General / Request Conversation** — [code_cleanup.md](../doc/development/code_cleanup.md).
+**Glossary:** **Message pipeline** + **General / Request Conversation** + **Change strategies** — [code_cleanup.md](../doc/development/code_cleanup.md).
 
 **Capabilities (sibling folder):** `../capabilities/` — thin execution surface (`scanEC2`, `toggleEC2`, `generalChat`, …). Handlers in `actions/` delegate here for HOW; see `capabilities/README.md`.
 
@@ -15,14 +15,13 @@ CloudPilot API orchestration lives here (formerly `functions/`). **Full atlas co
 | Folder | Role |
 |--------|------|
 | `conversation/` | Conversation **systems** (General / Request) |
+| `change/strategies/` | **Change strategies** — how mutating actions apply (instructions, CLI, PR, automatic) |
 | `engines/llm/*` | LLM vendor SDKs — **not** in architecture as `openai/` top-level |
 | `capabilities/conversation/` | Thin HOW wrapper |
 
-Legacy `chat/`, `responses/` → migrate during [code_cleanup.md](../doc/development/code_cleanup.md) phases.
+Legacy `chat/` → `engines/llm/` (Phase 4). `responses/` removed in Phase 2. `change/strategies/` live (Phase 3b).
 
-**Entry file:** prefer `conversation.js` over `chat.js` long-term; Phase 1 may use `chat.js`.
-
-**Symmetry:** `general/workflow.js` exists as a no-op stub today (logs, returns) — reserved for future General Conversation hooks. `request/workflow.js` owns store/execute when Phase 1+ lands.
+**Symmetry:** `general/workflow.js` no-op stub. `request/workflow.js` — `store()` + `execute()` (thin passthrough to requests/ + executions/).
 
 ---
 
@@ -31,15 +30,14 @@ Legacy `chat/`, `responses/` → migrate during [code_cleanup.md](../doc/develop
 | Folder | Role | Pipeline step |
 |--------|------|----------------|
 | `actions/` | Action registry + handlers | Handlers at STEP 6 |
-| `chat/` | **Legacy** — SDK, CloudPilotChat, prompts | → `conversation/` + `engines/llm/` |
-| `config/` | Configuration | `chatGPTconfig.js` (→ `engines/llm/openai/` optional) |
-| `conversation/` | **Target** — General + Request conversation systems | General: after STEP 4; Request: STEP 5–7 |
+| `conversation/` | General + Request conversation systems | STEP 4 exit (General) / STEP 7 (Request speak) |
+| `change/strategies/` | Change strategy implementations | STEP 6 (automatic) / STEP 7 (instructions, CLI, PR) |
+| `chat/` | **Legacy** — CloudPilotChat, OpenAI SDK | → `engines/llm/` |
 | `decision/` | Decide which conversation | **STEP 4** |
 | `executions/` | Perform work (Request Conversation) | **STEP 6** |
 | `history/` | Change history + undo | **STEP 6B** |
 | `navigator/` | Navigator / dashboard shaping | Response shaping |
 | `requests/` | Request state persistence | **STEP 2**, **STEP 5** |
-| `responses/` | **Legacy** STEP 7 routers/builders | → `conversation/request/conversation.js` |
 | `understanding/` | Intent + entity extraction | **STEP 3** |
 
 ---
@@ -53,9 +51,12 @@ cloudPilotMessageFunctions.js
   General Conversation? → conversation/general/ → return
 
   STEP 5  Request Conversation — maintain state   (requests/)
-  STEP 6  Request Conversation — perform work    (executions/)
+  STEP 6  Request Conversation — perform work    (executions/; automatic change strategy)
   STEP 7  Request Conversation — speak           (conversation/request/)
+                                                   (instructions / CLI / PR strategies when applicable)
 ```
+
+Change strategies apply only to **change** actions (`actionTier: destructive` with `executionModes` in `actionMap.js`). Scan, inventory, undo, and conversation commands skip the strategy menu. See [code_cleanup.md § Request types and change strategies](../doc/development/code_cleanup.md#request-types-and-change-strategies).
 
 Handlers in `actions/` call `../capabilities/` for Atlas/OpenAI work. History is saved from `executions/functions/executionFunctions.js`, not from capabilities.
 

@@ -1,14 +1,13 @@
-const openAIFunctions = require('../chat/openAI/openAIFunctions');
-const { CHAT_TYPE } = require('../decision/decisionTypes');
+const { CHAT_TYPE } = require('../../decision/decisionTypes');
 
 /*
-FUNCTIONS A: STEP 7 — general chat response (OpenAI)
-    1) Function A1: buildGeneralChatResponse
+General Conversation — speak (entire non-request turn after STEP 4)
 */
 
-//Function A1: Return general chat text when decision routes to OpenAI
-async function buildGeneralChatResponse(context) {
+//Function A1: General Conversation entry
+async function conversation(context) {
     const currentUserMessage = context.currentUserMessage || '';
+    // const openAIFunctions = require('../../chat/openAI/openAIFunctions');
     // const openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage);
     const openAIResult = {
         success: true,
@@ -36,6 +35,14 @@ async function buildGeneralChatResponse(context) {
     };
 }
 
+//Function B1: True when STEP 4 routed to General Conversation
+function isGeneralConversation(decision) {
+    return Boolean(
+        decision && decision.chatType === CHAT_TYPE.GENERAL_CHAT_RESPONDING
+    );
+}
+
 module.exports = {
-    buildGeneralChatResponse
+    conversation,
+    isGeneralConversation
 };

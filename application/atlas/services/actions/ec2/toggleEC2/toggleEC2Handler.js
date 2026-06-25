@@ -1,7 +1,7 @@
 const ChangeEC2Functions = require('../../../../capabilities/changes/changeEC2');
 const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../chat/chatOutcomeRegistry');
 
-//Action only (toggle_ec2). Mode routing: responses/modes/userRequested*.js
+//Action only (toggle_ec2). Change strategy routing: change/strategies/
 async function toggleEC2Handler(context) {
 
     try {

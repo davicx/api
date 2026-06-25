@@ -46,7 +46,7 @@ async function handleCloudPilotChat(payload) {
         return cloudPilotRespondExecutionStarted(payload);
     }
 
-// FUTURE (modes 1–3): handled in buildCloudPilotResponse → responses/modes/userRequested*.js
+// FUTURE (strategies 1–3): handled in conversation/request/RequestConversation.js → change/strategies/
 
     // STEP 5A: Workflow still collecting fields (repeat intent)
     if (payload.actionEvent === "workflow_in_progress") {

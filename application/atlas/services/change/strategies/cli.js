@@ -1,10 +1,9 @@
 /*
-Mode 2 — User picked CLI Commands (option 2).
-STEP 7 response only. Not a capability or handler.
-Future: OpenAI CLI commands from collected action fields.
+CLI change strategy — user picked option 2.
+STEP 7 response only.
 */
 
-function userRequestedCLI(chatType) {
+function buildCliStrategy(chatType) {
     return {
         success: true,
         cloudPilotMessage:
@@ -16,4 +15,4 @@ function userRequestedCLI(chatType) {
     };
 }
 
-module.exports = { userRequestedCLI };
+module.exports = { buildCliStrategy };

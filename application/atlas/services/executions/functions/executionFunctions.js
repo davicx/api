@@ -2,7 +2,7 @@ const actionMap = require('../../actions/actionMap');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const UndoFunctions = require('../../history/functions/undoFunctions');
-const UserRequestedAutomaticFunctions = require('../../responses/modes/userRequestedAutomatic');
+const AutomaticStrategy = require('../../change/strategies/automatic');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
 
 /*
@@ -100,8 +100,8 @@ async function executeRequest(decision, context) {
     let executionResult;
 
     try {
-        //RUN layer — userRequestedAutomatic (mode 4) → runAction → handler → capability → atlasPost
-        executionResult = await UserRequestedAutomaticFunctions.userRequestedAutomatic(
+        //RUN layer — automatic strategy → runAction → handler → capability → atlasPost
+        executionResult = await AutomaticStrategy.runAutomaticStrategy(
             actionType,
             executionContext
         );

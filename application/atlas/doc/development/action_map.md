@@ -11,7 +11,9 @@
 
 **No runtime behavior** — pointers to live files only.
 
-**Last reviewed:** 2026-06-09
+**Last reviewed:** 2026-06-23
+
+**Related:** [code_cleanup.md § Request types and change strategies](./code_cleanup.md#request-types-and-change-strategies) — information vs change requests; change strategies (instructions, CLI, PR, automatic).
 
 ---
 
@@ -31,7 +33,7 @@
 |----------|--------|
 | Open request state? | `services/requests/` — STEP 2 load, STEP 5 apply |
 | What changed? | `services/history/functions/historyFunctions.js` — STEP 6B after RUN |
-| What does the user see? | `services/responses/` — STEP 7 |
+| What does the user see? | `services/conversation/request/RequestConversation.js` — STEP 7; change strategies in `change/strategies/` |
 
 ---
 
@@ -48,6 +50,29 @@
 | `general_chat` | no action match / idle chat | immediate — no request row | **N/A — not STEP 6** | `capabilities/conversation/generalChat.js` | OpenAI (not Atlas) | No | ⚠️ STEP 7 stub |
 
 **Wired legend:** ✅ handler calls capability · ⚠️ handler still calls `atlasEC2Functions` / `atlasS3Functions` / `atlasAWSFunctions` or STEP 7 only
+
+---
+
+## Action tiers and change strategies
+
+`actionMap.js` tags every action with `actionTier`:
+
+| Tier | Request kind | Strategy menu (1–4)? | Actions |
+|------|--------------|------------------------|---------|
+| `general_chat` | — | No | fallback when no action match |
+| `informational` | Information request | No | `scan_ec2`, `scan_s3`, `inventory_aws` |
+| `destructive` | Change request | Yes — when fields ready | `toggle_ec2`, `create_ec2`, `delete_ec2` |
+
+**Change strategies** (`executionModes` in `actionMap`; user picks `1`–`4` in chat):
+
+| User input | Strategy | STEP | Implementation (target) |
+|------------|----------|------|-------------------------|
+| `1` | Instructions | 7 speak | `change/strategies/instructions.js` |
+| `2` | CLI | 7 speak | `change/strategies/cli.js` |
+| `3` | PR | 7 speak | `change/strategies/pr.js` |
+| `4` | Automatic | 6 execute | `change/strategies/automatic.js` |
+
+Undo, status, and list open are **conversation commands** — not strategies. They flow through `decideNextStep` and request workflow, not `executionModes`.
 
 ---
 

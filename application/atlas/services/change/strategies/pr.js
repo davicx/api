@@ -1,10 +1,9 @@
 /*
-Mode 3 — User picked Pull Request (option 3).
-STEP 7 response only. Not a capability or handler.
-Future: diff + PR description + GitHub PR link.
+PR change strategy — user picked option 3.
+STEP 7 response only.
 */
 
-function userRequestedPR(chatType) {
+function buildPrStrategy(chatType) {
     return {
         success: true,
         cloudPilotMessage:
@@ -16,4 +15,4 @@ function userRequestedPR(chatType) {
     };
 }
 
-module.exports = { userRequestedPR };
+module.exports = { buildPrStrategy };

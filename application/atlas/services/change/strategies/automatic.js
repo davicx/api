@@ -1,16 +1,15 @@
 /*
-Mode 4 — User picked Automatic (option 4).
+Automatic change strategy — user picked option 4.
 STEP 6 entry: run action handler → capability → Atlas.
 STEP 7 confirmation ("Would you like me to execute?") stays in CloudPilotChat.
-Actions without a mode menu (e.g. scan_ec2) skip mode checks.
 */
 
 const actionMap = require('../../actions/actionMap');
 const RunActionFunctions = require('../../executions/functions/runAction');
 
-const NON_AUTOMATIC_MODES = ['instructions', 'cli', 'pr'];
+const NON_AUTOMATIC_STRATEGIES = ['instructions', 'cli', 'pr'];
 
-async function userRequestedAutomatic(actionType, executionContext) {
+async function runAutomaticStrategy(actionType, executionContext) {
     const actionDefinition = actionMap[actionType];
     const needsExecutionMode = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
     const executionMode =
@@ -19,12 +18,12 @@ async function userRequestedAutomatic(actionType, executionContext) {
             : null;
 
     if (needsExecutionMode) {
-        if (NON_AUTOMATIC_MODES.includes(executionMode)) {
+        if (NON_AUTOMATIC_STRATEGIES.includes(executionMode)) {
             return {
                 success: false,
                 cloudPilotMessage:
-                    'That delivery mode does not run through automatic execution.',
-                error: 'mode_not_automatic',
+                    'That change strategy does not run through automatic execution.',
+                error: 'strategy_not_automatic',
                 atlasResponse: null
             };
         }
@@ -43,4 +42,4 @@ async function userRequestedAutomatic(actionType, executionContext) {
     return RunActionFunctions.runAction(actionType, executionContext);
 }
 
-module.exports = { userRequestedAutomatic };
+module.exports = { runAutomaticStrategy };

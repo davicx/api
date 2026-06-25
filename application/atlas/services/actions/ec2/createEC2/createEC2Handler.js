@@ -27,7 +27,7 @@ function mergeCreateEc2Tags(defaults, collected) {
     };
 }
 
-//Action only (create_ec2). Mode routing: responses/modes/userRequested*.js
+//Action only (create_ec2). Change strategy routing: change/strategies/
 async function createEC2Handler(context) {
 
     try {

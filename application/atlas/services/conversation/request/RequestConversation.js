@@ -1,25 +1,18 @@
-const actionMap = require('../actions/actionMap');
-const CloudPilotChat = require('../chat/CloudPilotChat');
-const { RESPONSE_TYPE } = require('../decision/decisionTypes');
-const UserRequestedInstructionsFunctions = require('./modes/userRequestedInstructions');
-const UserRequestedCLIFunctions = require('./modes/userRequestedCLI');
-const UserRequestedPRFunctions = require('./modes/userRequestedPR');
+const actionMap = require('../../actions/actionMap');
+const CloudPilotChat = require('../../chat/CloudPilotChat');
+const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
+const InstructionsStrategy = require('../../change/strategies/instructions');
+const CliStrategy = require('../../change/strategies/cli');
+const PrStrategy = require('../../change/strategies/pr');
 
 /*
-FUNCTIONS A: STEP 7 — CloudPilot chat text (assembly only)
-    1) Function A1: buildCloudPilotResponse
+Request Conversation — speak (STEP 7 only)
 
-FUNCTIONS B: Helpers
-    1) Function B1: mapResponseTypeToActionEvent
-    2) Function B2: buildChatHandlerPayload
-    3) Function B3: copyObject
-    4) Function B4: copyStringArray
-    5) Function B5: isRequestReady
-    6) Function B6: buildUserRequestedModeResponse — modes 1–3 at STEP 7 (mode 4: userRequestedAutomatic at STEP 6)
+Assembles user-facing words after STEPS 5–6. No DB writes or Atlas calls here.
 */
 
-//Function A1: Assemble CloudPilotChat input and return chat text
-async function buildCloudPilotResponse(decision, context) {
+//Function A1: Request Conversation speak entry
+async function conversation(decision, context) {
     const executionOutcome = context.executionOutcome || null;
 
     if (executionOutcome && executionOutcome.ran && executionOutcome.cloudPilotMessage) {
@@ -36,17 +29,15 @@ async function buildCloudPilotResponse(decision, context) {
     const requestOutcome = context.requestOutcome || {};
     const responseType = decision.response && decision.response.type ? decision.response.type : '';
 
-    // Modes 1–3 at STEP 7. Mode 4 (automatic): CloudPilotChat confirmation here; STEP 6 → userRequestedAutomatic.js
-    // Undo (H4): STEP 6 executeUndo → executionOutcome picked up above
-    const userRequestedModeResponse = buildUserRequestedModeResponse(responseType, decision.chatType);
+    const changeStrategyResponse = buildChangeStrategyResponse(responseType, decision.chatType);
 
-    if (userRequestedModeResponse) {
-        return userRequestedModeResponse;
+    if (changeStrategyResponse) {
+        return changeStrategyResponse;
     }
 
     const actionEvent = mapResponseTypeToActionEvent(responseType, requestOutcome);
-    const activeAction = requestState.pendingAction;
-    const actionDefinition = actionMap[activeAction] || null;
+    const activeRequestAction = requestState.pendingAction;
+    const actionDefinition = actionMap[activeRequestAction] || null;
 
     if (!actionDefinition) {
         return {
@@ -80,10 +71,6 @@ async function buildCloudPilotResponse(decision, context) {
 
 //Function B1: TEMPORARY — map decision.response.type to CloudPilotChat actionEvent
 function mapResponseTypeToActionEvent(responseType, requestOutcome) {
-    /*
-    TEMPORARY COMPATIBILITY LAYER
-    DELETE AFTER CloudPilotChat USES decision.response.type DIRECTLY
-    */
     const requestAction = requestOutcome && requestOutcome.action ? requestOutcome.action : '';
 
     if (responseType === RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS) {
@@ -161,7 +148,6 @@ function buildChatHandlerPayload(options) {
     };
 }
 
-//Function B3: Shallow copy of a plain object
 function copyObject(source) {
     const copy = {};
     const keys = Object.keys(source || {});
@@ -174,7 +160,6 @@ function copyObject(source) {
     return copy;
 }
 
-//Function B4: Copy an array of strings
 function copyStringArray(source) {
     const copy = [];
 
@@ -189,7 +174,6 @@ function copyStringArray(source) {
     return copy;
 }
 
-//Function B5: Are all required fields collected?
 function isRequestReady(missingFields) {
     if (!Array.isArray(missingFields)) {
         return true;
@@ -210,23 +194,22 @@ function getRequestStateFromContext(context) {
     return {};
 }
 
-//Function B6: Route to responses/modes/ — options 1–3 (STEP 7 reply)
-function buildUserRequestedModeResponse(responseType, chatType) {
+function buildChangeStrategyResponse(responseType, chatType) {
     if (responseType === RESPONSE_TYPE.EXECUTION_INSTRUCTIONS) {
-        return UserRequestedInstructionsFunctions.userRequestedInstructions(chatType);
+        return InstructionsStrategy.buildInstructionsStrategy(chatType);
     }
 
     if (responseType === RESPONSE_TYPE.EXECUTION_CLI) {
-        return UserRequestedCLIFunctions.userRequestedCLI(chatType);
+        return CliStrategy.buildCliStrategy(chatType);
     }
 
     if (responseType === RESPONSE_TYPE.EXECUTION_PR) {
-        return UserRequestedPRFunctions.userRequestedPR(chatType);
+        return PrStrategy.buildPrStrategy(chatType);
     }
 
     return null;
 }
 
 module.exports = {
-    buildCloudPilotResponse
+    conversation
 };

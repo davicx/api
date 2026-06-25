@@ -373,15 +373,19 @@ Do not fold scans or handlers into a generic `scan/` service until there is a cl
 | `delete_ec2` | `region`, `instance_id` |
 | `inventory_aws` | _(none — immediate execution)_ |
 
-**Reply** — `yes`/`confirm` → `confirm`; `1`–`4` → execution modes; `cancel` → `cancel`.
+**Reply** — `yes`/`confirm` → `confirm`; `1`–`4` → **change strategies** (instructions, CLI, PR, automatic); `cancel` → `cancel`.
 
-**Conversation** — `list_open`, `status`, `focus_switch`.
+**Conversation commands** — `list_open`, `status`, `focus_switch`, `undo` — workflow control, not change strategies.
 
-### Destructive action flow
+### Information vs change action flow
 
-Informational actions (`scan_ec2`): fields → `yes` → execute.
+**Information actions** (`scan_ec2`, `inventory_aws`): collect fields (if any) → confirm (`yes` where required) → execute. No strategy menu.
 
-Destructive actions (`create_ec2`, `delete_ec2`, `toggle_ec2`): fields → `4` (automatic) → `yes` → execute.
+**Change actions** (`toggle_ec2`, `create_ec2`, `delete_ec2`): collect fields → user picks strategy `1`–`4` → for automatic (`4`), confirm → execute.
+
+Example (toggle): fields ready → user sends `4` (automatic strategy) → user sends `yes` → STEP 6 runs handler.
+
+Strategy implementations: `change/strategies/` (target). See [code_cleanup.md](./code_cleanup.md#request-types-and-change-strategies).
 
 ### Key files
 
@@ -394,8 +398,10 @@ Destructive actions (`create_ec2`, `delete_ec2`, `toggle_ec2`): fields → `4` (
 | `services/requests/functions/requestFunctions.js` | STEP 5 — apply, start, update, finish |
 | `services/requests/functions/requestStatusFunctions.js` | Request status rules (`waiting_on_fields`, …) |
 | `services/executions/functions/executionFunctions.js` | STEP 6 |
-| `services/responses/buildCloudPilotResponse.js` | STEP 7 |
-| `services/actions/actionMap.js` | Static action definitions |
+| `services/conversation/request/RequestConversation.js` | STEP 7 — Request Conversation speak |
+| `services/conversation/request/workflow.js` | STEP 5–6 — store + execute passthrough |
+| `services/change/strategies/` | Change strategies |
+| `services/actions/actionMap.js` | Static action definitions (`actionTier`, `executionModes`) |
 | `services/requests/classes/Request.js` | MySQL `cloudpilot_requests` |
 | `services/history/classes/History.js` | MySQL `cloudpilot_history` |
 | `services/history/functions/historyFunctions.js` | Save + lookup history (H1/H2) |
