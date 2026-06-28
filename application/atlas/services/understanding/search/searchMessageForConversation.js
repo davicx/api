@@ -11,6 +11,18 @@ const UNDO_PHRASES = [
     'undo last change'
 ];
 
+const LIST_HISTORY_PHRASES = [
+    'show my history',
+    'show my recent history',
+    'recent history',
+    'change history',
+    'what did i change',
+    'what did i change recently',
+    'show recent changes',
+    'recent changes',
+    'history'
+];
+
 const LIST_OPEN_PHRASES = [
     'show open actions',
     'show my open actions',
@@ -52,6 +64,13 @@ function searchMessageForConversation(message) {
         const phrase = UNDO_PHRASES[i];
         if (text === phrase || text.includes(phrase)) {
             return 'undo';
+        }
+    }
+
+    for (let i = 0; i < LIST_HISTORY_PHRASES.length; i++) {
+        const phrase = LIST_HISTORY_PHRASES[i];
+        if (text === phrase || text.includes(phrase)) {
+            return 'list_history';
         }
     }
 

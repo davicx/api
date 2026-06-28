@@ -101,7 +101,8 @@ async function startRequest(decision, context) {
         actionType: actionType,
         requiredFields: requiredFields,
         actionName: displayName,
-        displayName: displayName
+        displayName: null,
+        userProvidedDisplayName: false
     });
 
     if (!createOutcome.success) {
@@ -264,6 +265,12 @@ function buildDbUpdatesFromTargetRequest(targetRequest) {
 
     if (targetRequest.collected) {
         updates.collected = copyObject(targetRequest.collected);
+
+        const requestName = String(targetRequest.collected.request_name || '').trim();
+
+        if (requestName) {
+            updates.display_name = requestName;
+        }
     }
 
     if (targetRequest.missing) {
@@ -318,6 +325,10 @@ function resolveSkipReasonForNoRequest(decision) {
     }
 
     if (responseType === RESPONSE_TYPE.LIST_OPEN_REQUESTS) {
+        return 'conversation_intent_only';
+    }
+
+    if (responseType === RESPONSE_TYPE.LIST_HISTORY) {
         return 'conversation_intent_only';
     }
 

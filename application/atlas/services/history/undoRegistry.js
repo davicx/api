@@ -7,10 +7,12 @@ FUNCTIONS A: Undo payload execution — maps undo_payload.type → change capabi
 
 FUNCTIONS B: Handlers
     1) Function B1: restoreToggleEc2
+    2) Function B2: deleteCreatedEc2
 */
 
 const UNDO_HANDLERS = {
-    toggle_ec2_restore: restoreToggleEc2
+    toggle_ec2_restore: restoreToggleEc2,
+    delete_ec2_undo: deleteCreatedEc2
 };
 
 //Function A1: Dispatch undo_payload.type to the matching restore handler
@@ -101,6 +103,77 @@ async function restoreToggleEc2(payload) {
         return {
             success: false,
             cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'toggle_ec2'),
+            error: 'atlas_unreachable',
+            atlasResponse: null
+        };
+    }
+}
+
+//Function B2: Undo create_ec2 by terminating the created instance
+async function deleteCreatedEc2(payload) {
+    const region = String(payload.region || '').trim();
+    const instanceId = String(payload.instance_id || '').trim();
+
+    if (!region || !instanceId) {
+        return {
+            success: false,
+            cloudPilotMessage: 'Undo payload is missing required delete fields.',
+            error: 'invalid_undo_payload',
+            atlasResponse: null
+        };
+    }
+
+    const requestBody = {
+        region: region,
+        instance_id: instanceId
+    };
+
+    console.log('UNDO EXECUTION: Atlas delete created instance request body:');
+    console.log(JSON.stringify(requestBody, null, 2));
+
+    try {
+        const atlasResponseRaw = await ChangeEC2Functions.deleteEC2(requestBody);
+
+        if (
+            atlasResponseRaw &&
+            atlasResponseRaw.success === true &&
+            atlasResponseRaw.data &&
+            atlasResponseRaw.data.instance_id
+        ) {
+            const instanceIdOut = atlasResponseRaw.data.instance_id;
+            const regionOut = atlasResponseRaw.data.region || region;
+            const stateOut = atlasResponseRaw.data.state || 'terminating';
+
+            return {
+                success: true,
+                cloudPilotMessage:
+                    'Undo completed. Termination requested for ' +
+                    instanceIdOut +
+                    ' in ' +
+                    regionOut +
+                    ' (' +
+                    stateOut +
+                    ').',
+                error: null,
+                atlasResponse: atlasResponseRaw.data
+            };
+        }
+
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage(errCode, {}, 'delete_ec2'),
+            error: errCode || 'undo_execution_failed',
+            atlasResponse: null
+        };
+    } catch (error) {
+        console.log('UNDO EXECUTION: Atlas delete created instance error');
+        console.log(error);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'delete_ec2'),
             error: 'atlas_unreachable',
             atlasResponse: null
         };

@@ -1,5 +1,8 @@
 const AtlasExecution = require('../../executions/AtlasExecution');
-const { buildMissingFieldsMessage } = require('./fieldPromptExamples');
+const {
+    buildMissingFieldsMessage,
+    buildOptionalRequestNamePrompt
+} = require('./fieldPromptExamples');
 
 /*
 Request template copy — deterministic workflow UX (missing fields, modes, confirmation, status).
@@ -69,7 +72,12 @@ async function buildRequestTemplateMessage(payload) {
 async function cloudPilotRespondNewRequest(payload) {
     const actionDefinition = payload.actionDefinition;
     const missingFields = payload.actionState.missingFields || [];
-    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+    const collectedFields = payload.actionState.collectedFields || {};
+    const missingFieldsMessage = buildMissingFieldsMessage(
+        actionDefinition,
+        missingFields,
+        collectedFields
+    );
     const message = missingFieldsMessage || actionDefinition.messages.started;
 
     return {
@@ -89,13 +97,26 @@ async function cloudPilotRespondMissingFieldsGiven(payload) {
 
     let acknowledgement = 'Great, I updated the workflow.';
 
-    if (latestField) {
+    if (latestField === 'request_name') {
+        acknowledgement =
+            'Got it — I will call this request "' + String(collectedFields.request_name).trim() + '".';
+    } else if (latestField) {
         acknowledgement = 'Great, I now have the ' + latestField.replaceAll('_', ' ') + '.';
     }
 
     if (missingFields.length > 0) {
-        const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+        const missingFieldsMessage = buildMissingFieldsMessage(
+            actionDefinition,
+            missingFields,
+            collectedFields
+        );
         acknowledgement += '\n\n' + missingFieldsMessage;
+    } else {
+        const requestNamePrompt = buildOptionalRequestNamePrompt(actionDefinition, collectedFields);
+
+        if (requestNamePrompt) {
+            acknowledgement += '\n\n' + requestNamePrompt;
+        }
     }
 
     return {
@@ -107,15 +128,25 @@ async function cloudPilotRespondMissingFieldsGiven(payload) {
 }
 
 async function cloudPilotRespondAwaitingExecutionMode(payload) {
+    const actionDefinition = payload.actionDefinition;
+    const collectedFields = payload.actionState.collectedFields || {};
+    const requestNamePrompt = buildOptionalRequestNamePrompt(actionDefinition, collectedFields);
+
+    let message =
+        'Everything is ready.\n\n' +
+        'How would you like me to perform this action?\n\n' +
+        '1. Instructions\n' +
+        '2. CLI Commands\n' +
+        '3. Pull Request\n' +
+        '4. Cloud Pilot Does It';
+
+    if (requestNamePrompt) {
+        message += '\n\n' + requestNamePrompt;
+    }
+
     return {
         success: true,
-        message:
-            'Everything is ready.\n\n' +
-            'How would you like me to perform this action?\n\n' +
-            '1. Instructions\n' +
-            '2. CLI Commands\n' +
-            '3. Pull Request\n' +
-            '4. Cloud Pilot Does It',
+        message: message,
         atlasResponse: null,
         error: null
     };
@@ -148,7 +179,12 @@ async function cloudPilotRespondWorkflowInProgress(payload) {
     const actionDefinition = payload.actionDefinition;
     const actionLabel = actionDefinition.actionLabel || actionDefinition.type || 'workflow';
     const missingFields = payload.actionState.missingFields || [];
-    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+    const collectedFields = payload.actionState.collectedFields || {};
+    const missingFieldsMessage = buildMissingFieldsMessage(
+        actionDefinition,
+        missingFields,
+        collectedFields
+    );
 
     let message = 'You already have a ' + actionLabel + ' workflow in progress.';
 
@@ -205,7 +241,12 @@ async function cloudPilotRespondRequestStatus(payload) {
     const actionDefinition = payload.actionDefinition;
     const actionLabel = actionDefinition.actionLabel || actionDefinition.type || 'request';
     const missingFields = payload.actionState.missingFields || [];
-    const missingFieldsMessage = buildMissingFieldsMessage(actionDefinition, missingFields);
+    const collectedFields = payload.actionState.collectedFields || {};
+    const missingFieldsMessage = buildMissingFieldsMessage(
+        actionDefinition,
+        missingFields,
+        collectedFields
+    );
     const ready = payload.actionReady === true;
 
     let message = 'Your ' + actionLabel + ' request is open.';

@@ -1,5 +1,6 @@
 const db = require('../../../../functions/conn');
 const { initialStatusForNewAction } = require('../functions/requestStatusFunctions');
+const RequestNameFunctions = require('../functions/requestNameFunctions');
 
 /*
 METHODS A: CREATE WORKFLOW RELATED
@@ -45,6 +46,7 @@ class Request {
         requiredFields,
         actionName,
         displayName,
+        userProvidedDisplayName,
         actionNotes,
         priority
     }) {
@@ -92,12 +94,11 @@ class Request {
             const collected = {};
             const asked = {};
             const initialStatus = initialStatusForNewAction(missingFields);
-            const resolvedDisplayName =
-                displayName != null && String(displayName).trim() !== ''
+            const userNamedRequest = userProvidedDisplayName === true;
+            const insertDisplayName =
+                userNamedRequest && displayName != null && String(displayName).trim() !== ''
                     ? String(displayName).trim()
-                    : actionName != null && String(actionName).trim() !== ''
-                      ? String(actionName).trim()
-                      : null;
+                    : null;
 
             const insertResults = await runQuery(
                 connection,
@@ -122,7 +123,7 @@ class Request {
                     String(requestedByUserName || '').trim(),
                     actionId,
                     actionName || null,
-                    resolvedDisplayName,
+                    insertDisplayName,
                     actionNotes || null,
                     initialStatus,
                     priority || 'normal',
@@ -135,9 +136,45 @@ class Request {
             const workflowId = insertResults.insertId;
             const loaded = await Request.getAction(workflowId);
 
-            outcome.success = loaded.success;
+            if (!loaded.success || !loaded.action) {
+                outcome.success = false;
+                outcome.workflowId = workflowId;
+                outcome.errors.push({
+                    code: 'request_load_failed_after_create',
+                    message: 'Request row was created but could not be loaded for naming.'
+                });
+                return outcome;
+            }
+
+            const createdAction = loaded.action;
+            const displayNameInternal = RequestNameFunctions.buildDisplayNameInternal({
+                actionType: actionType,
+                collected: createdAction.collected || collected,
+                requestId: workflowId,
+                createdAt: createdAction.createdAt
+            });
+
+            const resolvedDisplayName = userNamedRequest
+                ? insertDisplayName
+                : RequestNameFunctions.buildDefaultDisplayName({
+                      requestedByUser: requestedByUserName,
+                      actionLabel: actionName || actionType,
+                      createdAt: createdAction.createdAt
+                  });
+
+            await runQuery(
+                connection,
+                `UPDATE cloudpilot_requests
+                 SET display_name_internal = ?, display_name = ?
+                 WHERE id = ?`,
+                [displayNameInternal, resolvedDisplayName, workflowId]
+            );
+
+            const reloaded = await Request.getAction(workflowId);
+
+            outcome.success = reloaded.success;
             outcome.workflowId = workflowId;
-            outcome.action = loaded.action || null;
+            outcome.action = reloaded.action || null;
 
             return outcome;
 
@@ -631,6 +668,7 @@ function mapRowToAction(row) {
         actionType: row.action_type,
         actionName: row.action_name,
         displayName: row.display_name,
+        displayNameInternal: row.display_name_internal,
         actionNotes: row.action_notes,
         status: row.status,
         outcomeCode: row.outcome_code,

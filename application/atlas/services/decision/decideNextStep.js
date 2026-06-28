@@ -51,6 +51,10 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
     }
 
+    if (u.conversation === 'list_history') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_HISTORY);
+    }
+
     if (u.conversation === 'focus_switch') {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.FOCUS_REQUEST);
     }
@@ -183,6 +187,10 @@ function hasApplicableValues(state, values) {
             continue;
         }
 
+        if (fieldName === 'request_name') {
+            return true;
+        }
+
         if (missing.includes(fieldName) || requiredFields.includes(fieldName)) {
             return true;
         }
@@ -208,6 +216,11 @@ function mergeValuesIntoRequest(collected, requiredFields, values, defaults, cur
             const fieldValue = values[fieldName];
 
             if (fieldValue == null || fieldValue === '') {
+                continue;
+            }
+
+            if (fieldName === 'request_name') {
+                newCollected.request_name = String(fieldValue).trim();
                 continue;
             }
 

@@ -141,7 +141,8 @@ async function startNewUsersAction(conversationID, processMessageContext, action
             actionType: actionDefinition.type,
             requiredFields: actionDefinition.requiredFields || [],
             actionName: actionDefinition.actionLabel || null,
-            displayName: actionDefinition.actionLabel || null
+            displayName: null,
+            userProvidedDisplayName: false
         });
 
         if (createActionOutcome.success) {
@@ -164,7 +165,8 @@ async function startNewUsersAction(conversationID, processMessageContext, action
         actionType: actionDefinition.type,
         requiredFields: actionDefinition.requiredFields || [],
         actionName: actionDefinition.actionLabel || null,
-        displayName: actionDefinition.actionLabel || null
+        displayName: null,
+        userProvidedDisplayName: false
     });
 
     if (!createActionOutcome.success) {

@@ -140,7 +140,7 @@ application/atlas/
     │       ├── executionFunctions.js         ← STEP 6 + 6B history
     │       └── runAction.js                ← lookup handler and call capability
     ├── history/
-    │   ├── classes/History.js              ← cloudpilot_history DB CRUD
+    │   ├── classes/History.js              ← cloudpilot_history DB CRUD (A4 list recent → planned)
     │   ├── functions/
     │   │   ├── historyFunctions.js         ← saveHistory, getLatestUndoable
     │   │   └── undoFunctions.js            ← execute undo (STEP 6)
@@ -270,7 +270,7 @@ application/atlas/
 
 | File | What it does |
 |------|----------------|
-| `classes/History.js` | MySQL CRUD for `cloudpilot_history` rows. |
+| `classes/History.js` | MySQL CRUD for `cloudpilot_history` rows (A4 `listRecentByConversation` planned). |
 | `functions/historyFunctions.js` | `saveHistory` and `getLatestUndoable` orchestration. |
 | `functions/undoFunctions.js` | Runs undo from latest undoable history row (STEP 6). |
 | `historyBuilders/toggleEc2History.js` | Builds history row + undo_payload for toggle_ec2. |
@@ -350,7 +350,8 @@ routes/messageRoutes.js
 |------|--------|
 | [services/README.md](./services/README.md) | Pipeline folders + STEP map |
 | [capabilities/README.md](./capabilities/README.md) | HOW / WHERE layout |
-| [doc/development/To_do.md](./doc/development/To_do.md) | **Active work** — checklists |
+| [doc/development/history.md](./doc/development/history.md) | **Active** — history, undo, recent history/requests |
+| [doc/development/To_do.md](./doc/development/To_do.md) | Future backlog |
 | [doc/development/finished.md](./doc/development/finished.md) | **Shipped** work |
 | [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md) | **Message architecture** |
 | [doc/development/architecture/architecture.md](./doc/development/architecture/architecture.md) | Full system reference |

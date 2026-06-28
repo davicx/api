@@ -25,13 +25,19 @@ function buildToggleEc2HistoryFields(options) {
         atlasData.secondary_instance_id || collected.secondary_instance_id || ''
     ).trim();
 
-    if (!primaryId || !secondaryId) {
+    const isCompleted = historyStatus === 'completed';
+
+    if (!isCompleted && !primaryId && !secondaryId) {
         return null;
     }
 
-    const targetId = primaryId + ':' + secondaryId;
+    if (isCompleted && (!primaryId || !secondaryId)) {
+        return null;
+    }
+
+    const targetId = buildTargetId(primaryId, secondaryId);
     const snapshots = buildBeforeAfterSnapshots(atlasData, primaryId, secondaryId, historyStatus);
-    const undoAvailable = historyStatus === 'completed';
+    const undoAvailable = isCompleted;
 
     const fields = {
         target_type: TARGET_TYPE,
@@ -91,6 +97,14 @@ function normalizeSnapshotBlock(block, primaryId, secondaryId) {
         block.primary_state != null ? block.primary_state : block.primaryState,
         block.secondary_state != null ? block.secondary_state : block.secondaryState
     );
+}
+
+function buildTargetId(primaryId, secondaryId) {
+    if (primaryId && secondaryId) {
+        return primaryId + ':' + secondaryId;
+    }
+
+    return primaryId || secondaryId;
 }
 
 function buildSnapshot(primaryId, secondaryId, primaryState, secondaryState) {

@@ -111,13 +111,22 @@ async function postMessage(req, res) {
         messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
     }
 
-    //Step 6C: Add formatted Atlas data to response
+    //Step 6C: Add undo availability hint for clients (H6)
+    if (
+        cloudPilotResult &&
+        cloudPilotResult.cloudPilot &&
+        typeof cloudPilotResult.cloudPilot.undoAvailable === 'boolean'
+    ) {
+        messageOutcome.data.undoAvailable = cloudPilotResult.cloudPilot.undoAvailable;
+    }
+
+    //Step 6D: Add formatted Atlas data to response
     messageOutcome.data.atlasResponse = null;
     if (cloudPilotResult && cloudPilotResult.atlasResponse) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
     }
 
-    //Step 6D: HTTP success when user message saved and CloudPilot chat turn completed
+    //Step 6E: HTTP success when user message saved and CloudPilot chat turn completed
     const userMessageSaved = currentUserMessageOutcome.outcome == 200;
     const cloudPilotTurnCompleted = Boolean(cloudPilotResult && cloudPilotReplyText);
 

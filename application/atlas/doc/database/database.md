@@ -290,9 +290,9 @@ Mutation succeeds  →  cloudpilot_history row (audit + undo) — see `sql/maste
 
 **Source of truth:** [`sql/master_sql.sql`](../sql/master_sql.sql). Full plan: [`development/architecture/development_undo_feature.md`](../development/architecture/development_undo_feature.md).
 
-Key columns: `conversation_id`, `executed_by_user`, `action_name` (no `action_id`), `history_status` (not `requests.status`), `target_id` (toggle MVP: `i-123:i-456`), `resource_state_before` / `resource_state_after`, `undo_payload`, `undo_available`, `restores_history_id`, `restored_by_history_id`.
+Key columns: `conversation_id`, `executed_by_user`, `action_name` (machine key, no `action_id`), `action_display_name` (UI label), `action_record_key` (`action_name_date_time`, no seconds), `history_status` (not `requests.status`), `target_id` (toggle MVP: `i-123:i-456`), `resource_state_before` / `resource_state_after`, `undo_payload`, `undo_available`, `restores_history_id`, `restored_by_history_id`.
 
-**First coding milestone (H1):** save history row after successful `toggle_ec2` automatic — no undo yet. See plan doc.
+**Naming:** See [history.md](../development/history.md) — History row naming section.
 
 ---
 

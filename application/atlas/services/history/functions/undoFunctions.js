@@ -1,5 +1,7 @@
 const History = require('../classes/History');
 const HistoryFunctions = require('./historyFunctions');
+const HistoryActionNameFunctions = require('./historyActionNameFunctions');
+const RequestNameFunctions = require('../../requests/functions/requestNameFunctions');
 const UndoRegistry = require('../undoRegistry');
 
 /*
@@ -13,7 +15,8 @@ FUNCTIONS B: Helpers
 */
 
 const UNDO_ACTION_NAMES = {
-    toggle_ec2: 'undo_toggle_ec2'
+    toggle_ec2: 'undo_toggle_ec2',
+    create_ec2: 'undo_create_ec2'
 };
 
 //Function A1: Lookup latest undoable row → Atlas restore → link history rows
@@ -200,6 +203,10 @@ async function saveUndoHistoryRow(options) {
 
     const resourceStateBefore = originalHistory.resourceStateAfter || null;
     const resourceStateAfter = originalHistory.resourceStateBefore || null;
+    const undoNames = buildUndoHistoryNames({
+        undoActionName: options.undoActionName,
+        originalHistory: originalHistory
+    });
 
     return History.insertHistoryRow({
         organization: originalHistory.organization || processContextOrganization(options.processContext),
@@ -207,6 +214,8 @@ async function saveUndoHistoryRow(options) {
         requestId: originalHistory.requestId,
         executedByUser: String(options.processContext.requestedByUserName || '').trim(),
         actionName: options.undoActionName,
+        actionDisplayName: undoNames.actionDisplayName,
+        actionRecordKey: undoNames.actionRecordKey,
         historyStatus: options.historyStatus,
         targetType: originalHistory.targetType,
         targetId: originalHistory.targetId,
@@ -225,6 +234,40 @@ function processContextOrganization(processContext) {
     }
 
     return 'Cloud Pilot';
+}
+
+function buildUndoHistoryNames(options) {
+    const originalHistory = options.originalHistory || {};
+    const undoActionName = String(options.undoActionName || '').trim();
+    const originalDisplayName = String(originalHistory.actionDisplayName || '').trim();
+
+    let actionDisplayName = '';
+
+    if (originalDisplayName) {
+        actionDisplayName = 'Undo ' + originalDisplayName;
+    } else {
+        const fallback = HistoryActionNameFunctions.buildHistoryActionNames({
+            actionName: undoActionName,
+            originalHistory: originalHistory
+        });
+        actionDisplayName = fallback.actionDisplayName;
+    }
+
+    const collected = {
+        region: originalHistory.targetRegion || 'global'
+    };
+
+    const actionRecordKey = RequestNameFunctions.buildDisplayNameInternal({
+        actionType: undoActionName,
+        collected: collected,
+        requestId: originalHistory.requestId || originalHistory.id,
+        createdAt: new Date()
+    });
+
+    return {
+        actionDisplayName: actionDisplayName,
+        actionRecordKey: actionRecordKey
+    };
 }
 
 module.exports = {

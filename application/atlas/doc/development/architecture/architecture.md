@@ -22,7 +22,8 @@
 
 | Doc | Purpose |
 |-----|---------|
-| [../To_do.md](../To_do.md) | Active work — checklists + details |
+| [../history.md](../history.md) | **Active work** — history, undo, recent history/requests |
+| [../To_do.md](../To_do.md) | Future backlog |
 | [../finished.md](../finished.md) | Shipped |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |

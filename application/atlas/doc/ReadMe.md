@@ -1,6 +1,6 @@
 # CloudPilot — Actions & Input Types
 
-Quick reference for understanding, decision, and local DB setup. Planning docs live in [`development/`](./development/) — start with [`development/To_do.md`](./development/To_do.md) and [`development/architecture/architecture.md`](./development/architecture/architecture.md).
+Quick reference for understanding, decision, and local DB setup. Planning docs live in [`development/`](./development/) — **active work:** [`development/history.md`](./development/history.md).
 
 **`services/` folder map:** [`../services/README.md`](../services/README.md)
 
@@ -250,6 +250,7 @@ INSERT INTO cloudpilot_requests (
 |-------|------|
 | **Architecture (read first)** | `development/architecture/architecture.md` |
 | **To do** | `development/To_do.md` |
+| **History & undo (active)** | `development/history.md` |
 | **Finished** | `development/finished.md` |
 | Undo / history feature (reference) | `development/architecture/development_undo_feature.md` |
 | Message architecture | `development/architecture/code_cleanup.md` |

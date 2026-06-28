@@ -21,6 +21,7 @@ const RESPONSE_TYPE = {
     REQUEST_FAILED: 'request_failed',
     REQUEST_CANCELLED: 'request_cancelled',
     LIST_OPEN_REQUESTS: 'list_open_requests',
+    LIST_HISTORY: 'list_history',
     FOCUS_REQUEST: 'focus_request',
     REQUEST_STATUS: 'request_status',
     AMBIGUOUS_ACTION: 'ambiguous_action',

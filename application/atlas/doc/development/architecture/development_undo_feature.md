@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-06-06
 
-> Read [architecture.md](./architecture.md) first. **To do:** [../To_do.md](../To_do.md). Schema: [sql/master_sql.sql](../../sql/master_sql.sql).
+> Read [architecture.md](./architecture.md) first. **Active checklist:** [../history.md](../history.md). Schema: [sql/master_sql.sql](../../sql/master_sql.sql).
 
 **Prerequisite:** Automatic `toggle_ec2` works E2E (Atlas Test or Live).
 
@@ -378,29 +378,25 @@ update original row (reverted, undo_available = false)
 - [ ] Undo button / “undo last toggle”
 - [ ] Change history list _(later)_
 
-### LATER — change history table (post-MVP)
+### LATER — change history table
 
-MVP undo reverses the **latest undoable change** in the conversation when the user says `undo`.
-
-**Later:** undo (or a dedicated “show history” intent) returns a **table of the last ten changes** for the conversation — e.g. action name, target, timestamp, `undo_available`, history id.
-
-**Kite:** render that table in the UI; each row gets an **Undo** button. Chat can also target a specific row: `undo toggle_ec2` or `undo change #3` (exact phrasing TBD).
-
-Until then, chat `undo` = latest undoable row only (toggle_ec2 MVP).
+Moved to **[../history.md](../history.md)** Phase 2 (H9–H14): `list_history`, `list_recent_requests`, Method A4, chat + optional Navigator table.
 
 ---
 
 ## API checklist (full feature)
+
+**Active checklist:** [../history.md](../history.md). Shipped items below; open items moved to `history.md`.
 
 - [x] **H0** — `cloudpilot_history` in `master_sql.sql`
 - [x] **H1** — `saveHistory()` wired to toggle automatic success → row in DB
 - [x] **H2** — `getLatestUndoable()` log only (`STEP 6C` after save)
 - [x] **H3** — Undo intent → log `undo_payload` only _(superseded by H4 — dry run removed)_
 - [x] **H4** — Execute undo + link rows (`undoRegistry`, `undoFunctions`, STEP 6)
-- [ ] **H5** — Failed toggle → history row with `history_status = failed`
-- [ ] **H6** — API / Kite `undoAvailable` hint
-- [ ] **H7** — `create_ec2` history + undo (delete instance)
-- [ ] **H8** — `delete_ec2` history + recreate undo (new instance from `resource_state_before`)
+- [ ] **H5** — Failed toggle → history row with `history_status = failed` → see [history.md](../history.md)
+- [ ] **H6** — API / Kite `undoAvailable` hint → see [history.md](../history.md)
+- [ ] **H7** — `create_ec2` history + undo → see [history.md](../history.md)
+- [ ] **H8** — `delete_ec2` history + recreate undo → see [history.md](../history.md)
 
 ---
 
@@ -415,7 +411,9 @@ Until then, chat `undo` = latest undoable row only (toggle_ec2 MVP).
 | `conversation_id` | Chat thread — denormalized from request |
 | `request_id` | FK → `cloudpilot_requests.id` (nullable) |
 | `executed_by_user` | Who ran this change |
-| `action_name` | Literal — `toggle_ec2`, `undo_toggle_ec2`, … **No `action_id`.** |
+| `action_name` | Literal — `toggle_ec2`, `undo_toggle_ec2`, … **No `action_id`.** Routing + builders. |
+| `action_display_name` | Frozen UI label — e.g. `Toggle EC2 for Kite` |
+| `action_record_key` | Computer key — `toggle_ec2_may_2_2026_2:00_pm` (no seconds) |
 | `history_status` | `completed` \| `failed` \| `reverted` — **not** `requests.status` |
 | `target_type` | e.g. `ec2_toggle_pair` |
 | `target_id` | e.g. `i-123:i-456` |
@@ -440,6 +438,8 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
     executed_by_user VARCHAR(255) NOT NULL,
 
     action_name VARCHAR(100) NOT NULL,
+    action_display_name VARCHAR(255) NULL,
+    action_record_key VARCHAR(255) NULL,
     history_status VARCHAR(50) NOT NULL,
 
     target_type VARCHAR(100) NULL,
@@ -649,6 +649,6 @@ Diff between versions
 | Topic | Path |
 |-------|------|
 | Architecture & pipeline | [architecture.md](./architecture.md) |
-| Active work | [../To_do.md](../To_do.md) |
+| Active checklist | [../history.md](../history.md) |
 | Master SQL | [master_sql.sql](../../sql/master_sql.sql) |
 | Field reference | [database/database.md](../database/database.md) |

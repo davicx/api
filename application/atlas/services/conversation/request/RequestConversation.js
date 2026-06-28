@@ -1,5 +1,6 @@
 const actionMap = require('../../actions/actionMap');
 const CloudPilotMessage = require('../CloudPilotMessage');
+const HistoryFunctions = require('../../history/functions/historyFunctions');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
 const InstructionsStrategy = require('../../change/strategies/instructions');
 const CliStrategy = require('../../change/strategies/cli');
@@ -28,6 +29,18 @@ async function conversation(decision, context) {
     const requestState = getRequestStateFromContext(context);
     const requestOutcome = context.requestOutcome || {};
     const responseType = decision.response && decision.response.type ? decision.response.type : '';
+
+    if (responseType === RESPONSE_TYPE.LIST_HISTORY) {
+        const historyResponse = await HistoryFunctions.buildHistoryResponse(context.conversationID);
+
+        return CloudPilotMessage.speakKnown({
+            success: historyResponse.success,
+            cloudPilotMessage: historyResponse.cloudPilotMessage,
+            chatType: decision.chatType,
+            atlasResponse: historyResponse.atlasResponse || null,
+            error: historyResponse.error || null
+        });
+    }
 
     const changeStrategyResponse = buildChangeStrategyResponse(responseType, decision.chatType);
 

@@ -5,6 +5,7 @@ METHODS A: cloudpilot_history CRUD
     1) Method A1: insertHistoryRow
     2) Method A2: getLatestUndoableRow
     3) Method A3: markHistoryReverted
+    4) Method A4: listRecentHistoryByConversation
 */
 
 class History {
@@ -30,6 +31,8 @@ class History {
                     request_id,
                     executed_by_user,
                     action_name,
+                    action_display_name,
+                    action_record_key,
                     history_status,
                     target_type,
                     target_id,
@@ -40,13 +43,15 @@ class History {
                     undo_available,
                     restores_history_id,
                     restored_by_history_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     String(data.organization || 'Cloud Pilot').trim(),
                     Number(data.conversationId),
                     data.requestId != null ? Number(data.requestId) : null,
                     String(data.executedByUser || '').trim(),
                     String(data.actionName || '').trim(),
+                    data.actionDisplayName != null ? String(data.actionDisplayName).trim() : null,
+                    data.actionRecordKey != null ? String(data.actionRecordKey).trim() : null,
                     String(data.historyStatus || '').trim(),
                     data.targetType || null,
                     data.targetId || null,
@@ -67,6 +72,8 @@ class History {
             outcome.history = {
                 id: historyId,
                 actionName: data.actionName,
+                actionDisplayName: data.actionDisplayName,
+                actionRecordKey: data.actionRecordKey,
                 historyStatus: data.historyStatus,
                 targetType: data.targetType,
                 targetId: data.targetId,
@@ -170,6 +177,51 @@ class History {
             return outcome;
         }
     }
+
+    //Method A4: List change history for a conversation (newest first)
+    static async listRecentHistoryByConversation({ conversationId, limit = 5 }) {
+        const connection = db.getConnection();
+
+        const outcome = {
+            success: false,
+            history: [],
+            errors: []
+        };
+
+        const conversationIdNumber = Number(conversationId);
+        const limitNumber = Number(limit) > 0 ? Number(limit) : 5;
+
+        if (!conversationIdNumber) {
+            outcome.errors.push({
+                code: 'invalid_conversation_id',
+                message: 'conversationId is required for history list'
+            });
+            return outcome;
+        }
+
+        try {
+            const rows = await runQuery(
+                connection,
+                `SELECT *
+                 FROM cloudpilot_history
+                 WHERE conversation_id = ?
+                 ORDER BY created_at DESC
+                 LIMIT ?`,
+                [conversationIdNumber, limitNumber]
+            );
+
+            outcome.success = true;
+            outcome.history = (rows || []).map(mapHistoryRowFromDb);
+            return outcome;
+
+        } catch (err) {
+            console.log('History.listRecentHistoryByConversation failed', err);
+            outcome.errors.push(err);
+            return outcome;
+        }
+    }
+
+    //Method A5: Revert Specific History Item
 }
 
 function stringifyJsonColumn(value) {
@@ -204,6 +256,8 @@ function mapHistoryRowFromDb(row) {
         requestId: row.request_id,
         executedByUser: row.executed_by_user,
         actionName: row.action_name,
+        actionDisplayName: row.action_display_name,
+        actionRecordKey: row.action_record_key,
         historyStatus: row.history_status,
         targetType: row.target_type,
         targetId: row.target_id,

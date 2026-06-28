@@ -1,24 +1,25 @@
 # To Do
 
-**Last reviewed:** 2026-06-23
+**Last reviewed:** 2026-06-27
 
+> **Active work:** [history.md](./history.md) (Phase 1B H8, Kite undo) · **[remediations.md](./remediations.md)** (Mode 3 — Pull Request strategy)  
 > **Done:** [finished.md](./finished.md) · **Architecture & reference:** [architecture/](./architecture/)
 
 ---
 
 ## Checklist (in order)
 
-### Current — undo & history
+### Current
 
-- [ ] **H5** — Failed toggle → `cloudpilot_history` row (`history_status = failed`, `undo_available = 0`)
-- [ ] **H6** — API / Kite `undoAvailable` hint on message response
-- [ ] **H7** — `create_ec2` history + undo (delete created instance)
-- [ ] **H8** — `delete_ec2` history + recreate undo (new instance from `resource_state_before`)
-- [ ] **Atlas** — Toggle response includes before/after states (preferred for `saveHistory`)
-- [ ] **Atlas** — Delete response / preflight includes metadata for recreate (name, instance_type, tags, region)
-- [ ] **Atlas** — Test mocks include state fields for toggle; recreate fields for delete
-- [ ] **Kite** — Show “Undo available” when `undo_available = true`
-- [ ] **Kite** — Undo button / “undo last toggle”
+All active API work is **history Phase 1B** — see **[history.md](./history.md)**. **PR remediations (mode 3)** — see **[remediations.md](./remediations.md)**.
+
+#### Remediations — delivery strategies (PR = option 3)
+
+- [ ] Full plan — [remediations.md](./remediations.md) (R0–R3; Remediation entity, intent YAML, thin Actions)
+- [ ] `POST /remediation/apply` + remediation record
+- [ ] GitHub repo + thin `cloudpilot-on-merge.yml`
+- [ ] Replace `change/strategies/pr.js` stub
+- [ ] Undo via existing undo strategies (PR create → delete instance)
 
 ### Future
 
@@ -33,7 +34,6 @@
 - [ ] Opt-in developer `raw` mode (default off)
 - [ ] Multi-open requests UI — table with **Run** per row; `run 1` disambiguation
 - [ ] Learn / Test / Live mode indicator in UI (when product mode ships)
-- [ ] Change history list UI _(post-MVP undo)_
 
 #### API — hardening & smoke
 
@@ -100,24 +100,9 @@
 
 ## Full description
 
-### Current — undo & history
+### Current
 
-**Goal:** Finish **CloudPilot Change History** beyond toggle undo MVP.
-
-Shipped: schema (H0), save on toggle success (H1), undoable lookup log (H2), full undo vertical slice for toggle (H4). **Remaining:** failed-mutation rows, create/delete history builders, recreate semantics for delete, API hints for Kite, Atlas metadata for rich `resource_state_before/after`.
-
-**Full reference:** [architecture/development_undo_feature.md](./architecture/development_undo_feature.md)
-
-| Task | Notes |
-|------|-------|
-| H5 | Insert history on failed toggle — `history_status = failed`, `undo_available = 0` |
-| H6 | Expose `undoAvailable` (or equivalent) on `POST /message` response for Kite |
-| H7 | `create_ec2` → history row + `undo_create_ec2` (delete instance) |
-| H8 | `delete_ec2` → capture pre-delete state + `recreate_ec2` undo (new instance_id — honest UX) |
-| Atlas | Before/after on toggle; delete metadata for recreate; Test mocks updated |
-| Kite | Undo affordance after H6 |
-
-**Exit criteria (current milestone):** Toggle success/failure both recorded; create/delete history + undo recipes designed and wired; Kite can show undo when available.
+See **[history.md](./history.md)** — undo (H5–H8), Atlas metadata, Kite undo UI, and new chat commands for **recent history** and **recent requests** (H9–H14).
 
 ---
 
@@ -125,7 +110,7 @@ Shipped: schema (H0), save on toggle success (H1), undoable lookup log (H2), ful
 
 #### Kite integration
 
-Connect Kite to `POST /message`. Required: `conversationID` on every message. Render `CloudPilotActionStatus`, `navigatorResponse`, and (when P3C ships) open actions table. Polish: React Query cache, column formatting, multi-open UI, mode indicator.
+Connect Kite to `POST /message`. Required: `conversationID` on every message. Render `CloudPilotActionStatus`, `navigatorResponse`, and (when P3C ships) open actions table. Polish: React Query cache, column formatting, multi-open UI, mode indicator. History table UI: [history.md](./history.md) Phase 2–3.
 
 #### API — field hardening P0
 

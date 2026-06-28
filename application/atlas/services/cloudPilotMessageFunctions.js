@@ -5,6 +5,7 @@ const DecisionFunctions = require('./decision/decideNextStep');
 const RequestWorkflow = require('./conversation/request/workflow');
 const GeneralConversation = require('./conversation/general/GeneralConversation');
 const RequestConversation = require('./conversation/request/RequestConversation');
+const HistoryFunctions = require('./history/functions/historyFunctions');
 
 /*
 CloudPilot Message Pipeline (processMessage)
@@ -45,6 +46,7 @@ FUNCTIONS B: Helpers
     3) Function B3: Get Current User Message
     4) Function B4: Normalize processMessage context
     5) Function B5: Build short response outcome (STEP 7 debug log)
+    6) Function B6: Attach undoAvailable hint after history is recorded
 */
 
 //FUNCTIONS A: CloudPilot (Atlas) — STEPS 1–7 pipeline
@@ -77,7 +79,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
                 startedAt: null,
                 completedAt: null,
                 error: null
-            }
+            },
+            undoAvailable: false
         },
         atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
         error: null 
@@ -135,11 +138,14 @@ async function processMessage(rawUserMessage, conversationID, context) {
         console.log(JSON.stringify(shortResponseOutcome, null, 2));
         console.log(" ");
 
-        return applyConversationToProcessMessageOutcome(
-            processMessageOutcome,
-            conversationOutcome,
-            currentRequestState,
-            activeRequestAction
+        return await attachUndoAvailable(
+            applyConversationToProcessMessageOutcome(
+                processMessageOutcome,
+                conversationOutcome,
+                currentRequestState,
+                activeRequestAction
+            ),
+            conversationID
         );
     }
 
@@ -206,11 +212,14 @@ async function processMessage(rawUserMessage, conversationID, context) {
     //console.log(JSON.stringify(conversationOutcome, null, 2));
     console.log(" ");
 
-    return applyConversationToProcessMessageOutcome(
-        processMessageOutcome,
-        conversationOutcome,
-        currentRequestState,
-        activeRequestAction
+    return await attachUndoAvailable(
+        applyConversationToProcessMessageOutcome(
+            processMessageOutcome,
+            conversationOutcome,
+            currentRequestState,
+            activeRequestAction
+        ),
+        conversationID
     );
 
 }
@@ -247,6 +256,15 @@ function applyConversationToProcessMessageOutcome(
         activeRequestAction,
         actionReady
     );
+
+    return processMessageOutcome;
+}
+
+//Function B6: After execute + record history, expose whether undo is available (H6)
+async function attachUndoAvailable(processMessageOutcome, conversationID) {
+    processMessageOutcome.cloudPilot.undoAvailable = await HistoryFunctions.hasUndoAvailable({
+        conversationId: conversationID
+    });
 
     return processMessageOutcome;
 }

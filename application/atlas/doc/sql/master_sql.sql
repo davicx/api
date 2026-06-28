@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS cloudpilot_actions (
 -- 2. cloudpilot_requests
 -- -----------------------------------------------------------------------------
 -- Columns: id, organization, conversation_id, conversation_title,
---          requested_by_user, action_id, action_name, display_name,
+--          requested_by_user, action_id, action_name, display_name_internal, display_name,
 --          action_notes, status, outcome_code, priority, execution_mode,
 --          is_open, collected, missing, asked, completed_at,
 --          created_at, updated_at
@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS cloudpilot_requests (
     action_id BIGINT UNSIGNED NOT NULL,
 
     action_name VARCHAR(255) NULL,
+
+    display_name_internal VARCHAR(255) NULL,
 
     display_name VARCHAR(255) NULL,
 
@@ -102,7 +104,8 @@ CREATE TABLE IF NOT EXISTS cloudpilot_requests (
     INDEX idx_requests_status (status),
     INDEX idx_requests_open (is_open),
     INDEX idx_requests_action (action_id),
-    INDEX idx_requests_outcome (outcome_code)
+    INDEX idx_requests_outcome (outcome_code),
+    UNIQUE INDEX idx_cloudpilot_requests_display_name_internal (display_name_internal)
 );
 
 
@@ -113,7 +116,8 @@ CREATE TABLE IF NOT EXISTS cloudpilot_requests (
 -- See doc/development/architecture/development_undo_feature.md
 --
 -- Columns: id (history id), organization, conversation_id, request_id,
---          executed_by_user, action_name, history_status,
+--          executed_by_user, action_name, action_display_name, action_record_key,
+--          history_status,
 --          target_type, target_id, target_region,
 --          resource_state_before, resource_state_after, undo_payload,
 --          undo_available, restores_history_id, restored_by_history_id,
@@ -133,6 +137,8 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
     executed_by_user VARCHAR(255) NOT NULL,
 
     action_name VARCHAR(100) NOT NULL,
+    action_display_name VARCHAR(255) NULL,
+    action_record_key VARCHAR(255) NULL,
     history_status VARCHAR(50) NOT NULL,
 
     target_type VARCHAR(100) NULL,

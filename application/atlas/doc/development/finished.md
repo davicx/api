@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-06-23
 
-> **To do:** [To_do.md](./To_do.md) · **Architecture & reference:** [architecture/](./architecture/)
+> **To do:** [To_do.md](./To_do.md) · **Active:** [history.md](./history.md) · **Architecture:** [architecture/](./architecture/)
 
 ---
 
@@ -83,6 +83,8 @@
 - [x] **H3** — Undo intent dry run _(superseded by H4)_
 - [x] **H4** — Execute undo + link rows (`undoRegistry`, `undoFunctions`, STEP 6)
 - [x] Atlas — reuse toggle with swapped targets from `undo_payload`
+
+**Remaining:** [history.md](./history.md) (H5–H14).
 
 ### API — Navigator contract
 
