@@ -12,6 +12,7 @@
 | Database schema (actions, requests, executions) | `doc/database/database.md` |
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
+| Scan expansion (S3 / RDS / Pipeline) | `doc/development/add_s3.md`, `add_rds.md`, `add_pipeline.md` |
 | Legacy request SQL (historical) | `doc/sql/cloudpilot_workflows_phase1.sql` |
 | **Master SQL (source of truth)** | `doc/sql/master_sql.sql` |
 | EC2 chat samples | `api/README.md` |

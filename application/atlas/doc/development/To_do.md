@@ -13,13 +13,16 @@
 
 All active API work is **history Phase 1B** — see **[history.md](./history.md)**. **PR remediations (mode 3)** — see **[remediations.md](./remediations.md)**.
 
-#### Remediations — delivery strategies (PR = option 3)
+#### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
-- [ ] Full plan — [remediations.md](./remediations.md) (R0–R3; Remediation entity, intent YAML, thin Actions)
-- [ ] `POST /remediation/apply` + remediation record
-- [ ] GitHub repo + thin `cloudpilot-on-merge.yml`
-- [ ] Replace `change/strategies/pr.js` stub
-- [ ] Undo via existing undo strategies (PR create → delete instance)
+- [x] Phase 0 — `cloudpilot_infrastructure` repo scaffold
+- [x] Phase 1 — `config/github/githubClient.js`
+- [x] Phase 2 script — `test/scripts/createDemoPullRequest.js`
+- [ ] Phase 2 run — real PR on GitHub (stop here until demo works)
+- [ ] Phase 3 — `cloudpilot-apply.yml` + `POST /github/apply` + Atlas
+- [ ] Phase 4 — wire `change/strategies/pr.js` (`create_ec2` only)
+- [ ] Phase 5 — history after PR apply
+- [ ] Phase 6 — undo revert PR
 
 ### Future
 
@@ -74,6 +77,12 @@ All active API work is **history Phase 1B** — see **[history.md](./history.md)
 - [ ] `context.js` / `prompts.js` per conversation side
 
 #### Scan expansion
+
+Planning docs (bill investigation — **no code**):
+
+- [add_s3.md](./add_s3.md) — expand S3 rules (demo tier shipped)
+- [add_rds.md](./add_rds.md) — RDS scanner + chat action
+- [add_pipeline.md](./add_pipeline.md) — CodePipeline / CodeBuild scan
 
 - [ ] `ec2_low_cpu` — only evaluate when `state == running`
 - [ ] Register all EC2 rules in `rule_registry.py` (aliases per rule)
@@ -132,7 +141,7 @@ Product modes: **Learn** (explain only), **Test** (mocks), **Live** (AWS). Today
 
 #### Scan expansion
 
-**Principle:** EC2 complete → S3 → Security Groups → EBS → RDS → orchestration. Quality bar: plain-English title, severity, concrete recommendation. S3 demo tier largely shipped — see [finished.md](./finished.md).
+**Principle:** EC2 complete → S3 → Security Groups → EBS → RDS → orchestration. Quality bar: plain-English title, severity, concrete recommendation. S3 demo tier largely shipped — see [finished.md](./finished.md). Per-service plans: [add_s3.md](./add_s3.md), [add_rds.md](./add_rds.md), [add_pipeline.md](./add_pipeline.md).
 
 #### Atlas (future)
 

@@ -6,7 +6,25 @@
 
 **Scope:** How CloudPilot delivers mutating actions when the user does **not** choose automatic mode — especially **Pull Request** (chat option 3). Atlas always owns AWS execution; GitHub owns approval.
 
-**Status today:** Chat option 3 routes to `change/strategies/pr.js` (*“coming soon”*). Automatic delivery (option 4) is shipped with history + undo. No remediation record, no GitHub integration, no apply endpoint.
+**Status today:** Chat option 3 → `change/strategies/pr.js` (*“coming soon”*). Automatic delivery (option 4) shipped with history + undo. **Phase 0** repo scaffold on `cloudpilot_infrastructure`. **Phase 1** `services/config/github/githubClient.js` built. **Phase 2** `test/scripts/createDemoPullRequest.js` ready to run. No apply workflow, no `/github/apply`, no chat wiring yet.
+
+---
+
+## Phased plan (locked — demo one piece at a time)
+
+| Phase | What | Demoable outcome |
+|-------|------|------------------|
+| **0** | Repo scaffold on `cloud_pilot_mvp` | Folders + README; no Actions, no JSON files yet |
+| **1** | `config/github/githubClient.js` | GitHub helper (env + REST calls) |
+| **2** | `createDemoPullRequest.js` | **Real PR** with `changes/create_demo_server.json` |
+| **3** | `cloudpilot-apply.yml` + `/github/apply` | Merge → Atlas → AWS |
+| **4** | Wire `pr.js` (`create_ec2` only) | Chat option 3 opens PR |
+| **5** | History after apply | Same row as automatic |
+| **6** | Undo revert PR | Second PR removes file → delete |
+
+**Stop after Phase 2** until a real PR works. Do **not** build Actions until outbound PRs are proven.
+
+Infra repo: [`cloudpilot_infrastructure`](../../../../../cloudpilot_infrastructure) — `README.md` + `changes/` only.
 
 ---
 
@@ -45,17 +63,22 @@ Create EC2: demo-server
 
 Files changed: 1
 
-.cloudpilot/
-└── changes/
-    └── create_demo_server.json
+changes/
+└── create_demo_server.json
 ```
 
 ```json
 {
+  "cloudpilotVersion": 1,
+  "kind": "InfrastructureChange",
+  "displayName": "Create EC2 demo-server",
   "action": "create_ec2",
-  "name": "demo-server",
-  "instance_type": "t3.micro",
-  "region": "us-west-2"
+  "resource": {
+    "type": "ec2",
+    "region": "us-west-2",
+    "instanceType": "t3.micro",
+    "name": "demo-server"
+  }
 }
 ```
 
@@ -94,7 +117,7 @@ Revert "Create EC2 demo-server"
 
 Files changed: 1
 
-.cloudpilot/changes/
+changes/
   - create_demo_server.json   (removed)
 ```
 
@@ -179,56 +202,55 @@ CloudPilot generates the file. The GitHub Action reads it. **No human edits it**
 **Repo layout** — folder is `changes/`, not `requests/`. Every PR literally contains a **change**:
 
 ```text
-.cloudpilot/
-  changes/
-    create_demo_server.json
+changes/
+  create_demo_server.json   ← added by CloudPilot PR
 .github/
-  workflows/
-    cloudpilot-on-merge.yml
+  workflows/                ← cloudpilot-apply.yml in Phase 3
 ```
 
 Later, one repo can hold many pending changes:
 
 ```text
-.cloudpilot/changes/
+changes/
   create_demo_server.json
   resize_database.json
-  create_bucket.json
 ```
 
-**Example file** (entire PR change can be this one file):
+**Example file** (what Phase 2 script commits in the PR):
 
 ```json
 {
+  "cloudpilotVersion": 1,
+  "kind": "InfrastructureChange",
+  "displayName": "Create EC2 demo-server",
   "action": "create_ec2",
-  "name": "demo-server",
-  "instance_type": "t3.micro",
-  "region": "us-west-2"
+  "resource": {
+    "type": "ec2",
+    "region": "us-west-2",
+    "instanceType": "t3.micro",
+    "name": "demo-server"
+  }
 }
 ```
 
-Optional metadata for idempotency and audit (add when wiring apply):
+Optional metadata for apply/idempotency (Phase 3+):
 
 ```json
 {
-  "action": "create_ec2",
-  "name": "demo-server",
-  "instance_type": "t3.micro",
-  "region": "us-west-2",
   "request_id": 14,
   "display_name_internal": "create_ec2_us-west-2_20260626_143252_15"
 }
 ```
 
-Filename can be `{display_name_internal}.json` or a slug like `create_ec2_demo_server.json` — pick one convention and stick to it for MVP.
+Filename convention: `create_demo_server.json` for MVP.
 
 **No `applied/` folder.** History + `resource_state_after` are source of truth.
 
 ---
 
-## Thin GitHub Action
+## Thin GitHub Action (Phase 3 — not before Phase 2 works)
 
-The Action does **not** call Atlas, parse business rules, or write history. It notices a new/changed/removed file under `.cloudpilot/changes/` and notifies CloudPilot.
+Do **not** add the workflow until CloudPilot can open real PRs.
 
 ```text
 PR merged
@@ -254,7 +276,7 @@ Content-Type: application/json
 
 CloudPilot maps `action` → existing capability (`createEC2`, …) — **no new execution engine**. Same path as automatic STEP 6, different trigger.
 
-Alternative naming (`POST /github/apply`) is fine; one authenticated endpoint that accepts intent JSON is the requirement.
+Alternative naming (`POST /github/apply`) is fine; one authenticated endpoint that accepts the InfrastructureChange JSON is the requirement.
 
 | Input | Purpose |
 |-------|---------|
@@ -270,11 +292,11 @@ Alternative naming (`POST /github/apply`) is fine; one authenticated endpoint th
 Example workflow (conceptual — ~50 lines total):
 
 ```yaml
-# on merge to main — if .cloudpilot/changes/** changed
+# on merge to main — if changes/** changed
 - run: |
     curl -X POST "$CLOUDPILOT_URL/remediation/apply" \
       -H "Authorization: Bearer $CLOUDPILOT_TOKEN" \
-      -d @.cloudpilot/changes/create_demo_server.json
+      -d @changes/create_demo_server.json
 ```
 
 All business logic stays in CloudPilot.
@@ -391,7 +413,7 @@ Optional PR context in `resource_state_after`:
   "delivery": "pull_request",
   "pr_number": 42,
   "merge_commit_sha": "abc123",
-  "intent_path": ".cloudpilot/changes/create_demo_server.json",
+  "intent_path": "changes/create_demo_server.json",
   "instance_id": "i-0abc..."
 }
 ```
@@ -404,7 +426,7 @@ Optional PR context in `resource_state_after`:
 
 | Step | What the audience sees |
 |------|------------------------|
-| Undo click | CloudPilot opens PR removing `create_demo_server.json` |
+| Undo click | CloudPilot opens PR removing `changes/create_demo_server.json` |
 | Merge | Action runs → Atlas deletes EC2 |
 | History | Original row shows **Reverted** |
 
@@ -431,58 +453,62 @@ Fallback for development: chat undo → direct delete without a second PR (faste
 ## Planned code layout
 
 ```text
-services/remediations/
-  remediationFunctions.js       ← create remediation, apply, status
-  githubClient.js               ← branch, commit JSON, open PR
-  intentBuilders/
-    createEc2Intent.js          ← MVP only
-routes/
-  remediationRoutes.js          ← POST /remediation/apply
+services/config/github/
+  githubClient.js               ← Phase 1 — GitHub helper (not orchestration)
 
-change/strategies/pr.js         ← STEP 7: start remediation, return PR URL
+test/scripts/
+  createDemoPullRequest.js      ← Phase 2 — integration test / demo PR
+
+services/remediations/          ← Phase 3+ (apply orchestration)
+  remediationFunctions.js
+routes/
+  remediationRoutes.js          ← POST /github/apply or /remediation/apply
+
+change/strategies/pr.js         ← Phase 4 — chat option 3
 
 capabilities/                   ← unchanged
-history/                        ← unchanged — saveHistory after apply
+history/                        ← Phase 5 — saveHistory after apply
 ```
 
 ---
 
 ## MVP checklist
 
-### Phase R0 — Design lock
+### Phase 0 — Repo scaffold (`cloudpilot_infrastructure`)
 
-- [x] One demo: **create_ec2 via PR**
-- [x] Intent = **JSON** (not Terraform; YAML optional later)
-- [x] PR = proof of approval, not full IaC
-- [x] CloudPilot orchestrates apply; Actions stay thin (~50 lines)
-- [x] Remediation concept between request and history
-- [x] History only after AWS changed; no `applied/` in Git
-- [ ] Lock JSON fields for `create_ec2` intent v1
-- [ ] Lock `POST /remediation/apply` contract (body = intent JSON)
-- [ ] GitHub App vs PAT; repo config
-- [ ] Remediation storage: table vs JSON on request
+- [x] README + empty `changes/` folder
+- [x] `.github/workflows/` placeholder (no workflow yet)
+- [ ] Commit + push to `cloud_pilot_mvp` on GitHub
 
-### Phase R1 — create_ec2 via PR (the demo)
+### Phase 1 — GitHub client
 
-- [ ] Remediation record + create on strategy confirm
-- [ ] GitHub client — branch, commit `.cloudpilot/changes/*.json`, open PR
-- [ ] Replace `pr.js` stub — return PR URL; request → `awaiting_merge`
-- [ ] `cloudpilot-on-merge.yml` — read JSON, POST apply
-- [ ] `/remediation/apply` — route to existing `createEC2` + **saveHistory**
-- [ ] E2E: chat → PR #N → merge → instance + history row
+- [x] `services/config/github/githubClient.js`
+- [x] Env: `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_DEFAULT_BRANCH`
 
-### Phase R2 — undo (demo finish)
+### Phase 2 — Open one real PR
 
-- [ ] Undo opens revert PR (remove change file) → merge → Atlas delete
-- [ ] History row → **Reverted** (same undo registry as automatic)
+- [x] `test/scripts/createDemoPullRequest.js`
+- [ ] Run script → real PR with `changes/create_demo_server.json`
+- [ ] **Stop here** — demo outbound PR before Actions
+
+### Phase 3 — Merge → apply
+
+- [ ] `cloudpilot-apply.yml` in infra repo
+- [ ] `POST /github/apply` → Atlas `create_ec2` + **saveHistory**
+- [ ] E2E: merge demo PR → instance created
+
+### Phase 4 — Chat wiring
+
+- [ ] Replace `pr.js` stub — `create_ec2` only; request → `awaiting_merge`
+
+### Phase 5 — History
+
+- [ ] Same history row as automatic after PR apply
+
+### Phase 6 — Undo revert PR
+
+- [ ] Undo opens PR removing change file → merge → Atlas delete
 - [ ] Kite undo button ([history.md](./history.md))
-
-### Later
-
-- [ ] Second action (e.g. one S3 operation)
-- [ ] YAML or Terraform intent if humans edit files
-- [ ] Instructions / CLI delivery (same intent builders)
-- [ ] Org repo settings UI
 
 ---
 
@@ -522,7 +548,8 @@ history/                        ← unchanged — saveHistory after apply
 
 | Date | Change |
 |------|--------|
-| 2026-06-27 | Signature demo script; `.cloudpilot/changes/`; revert PR undo as demo story |
+| 2026-06-27 | Phased plan 0–6; `displayName` schema; Actions deferred until PR spike works |
+| 2026-06-27 | Infra repo simplified: `changes/` only; no doc/ or cloudpilot/ folder |
 | 2026-06-27 | Ultra-simple MVP: JSON intent, create_ec2-only demo, PR as approval proof |
 | 2026-06-27 | Delivery-strategy architecture, remediation entity, thin Actions |
 | 2026-06-26 | Initial remediations doc |
