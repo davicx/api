@@ -1,5 +1,9 @@
--- Request naming: display_name_internal (user already ran this on live DB)
--- Safe to re-run only the index if column exists.
+-- Request naming: display_name_internal
+-- Run on any DB that was created before this column existed.
+-- Prefer the idempotent script (safe to re-run):
+--   node test/scripts/ensure-cloudpilot-requests-display-name-internal.js
+--
+-- Or run this SQL once (fails if column/index already exist).
 
 ALTER TABLE cloudpilot_requests
     ADD COLUMN display_name_internal VARCHAR(255) NULL

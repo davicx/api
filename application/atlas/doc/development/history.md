@@ -1,10 +1,174 @@
 # History & Requests — To Do
 
-**Last reviewed:** 2026-06-26
+**Last reviewed:** 2026-07-03
 
 > **Shipped (H0–H7, H9–H14, naming):** [finished.md](./finished.md) · **Deep reference:** [architecture/development_undo_feature.md](./architecture/development_undo_feature.md) · **Main backlog:** [To_do.md](./To_do.md)
 
 **Scope:** `cloudpilot_history` (what CloudPilot **changed**) and listing **recent requests** (`cloudpilot_requests`). Not the same as `list_open` (open workflows only).
+
+---
+
+## Core principle
+
+**History = change tracking and rollback. The mutation is just the recipe.**
+
+Every change has the same lifecycle:
+
+```text
+Scan
+↓
+Mutation
+↓
+History
+↓
+Undo
+```
+
+History is **not** “the EC2 undo feature.” It is the framework for representing and reversing **any** cloud change. The mutation is pluggable:
+
+| Today | Tomorrow | Later |
+|-------|----------|-------|
+| `update_ec2_tag` | `resize_ec2`, `update_s3_tag` | `update_s3_bucket_policy`, `terraform_pr` |
+
+Nothing in the History engine changes — only the mutation recipe and its undo payload.
+
+**Undo is not the product.** Undo is the first consumer of Change History. Same table later powers: audit trail, diffs, version restore, change UI.
+
+---
+
+## Change categories (by operational impact)
+
+Categorize by **risk / operational impact**, not by “metadata vs infrastructure.” Updating an IAM or S3 bucket policy is metadata but can break production.
+
+| Category | Role | Examples |
+|----------|------|----------|
+| **Safe changes** | Build and demo History/Undo with almost no operational risk | `update_ec2_tag`, `update_s3_tag`, rename-style updates |
+| **Operational changes** | Same history engine; higher impact | `toggle_ec2`, `resize_ec2`, security groups, CFN/TF apply |
+
+Both are first-class. Safe changes are the **golden path** while the framework hardens. Operational changes already proved the pipeline (`toggle_ec2`, `create_ec2`) and stay supported — they are not demoted.
+
+---
+
+## Canonical example: `update_ec2_tag` (golden path)
+
+**Next priority.** Smallest safe mutation that proves the full architecture:
+
+```text
+User → Navigator → Atlas → AWS Update Tag → History → Undo
+```
+
+No instance stop/start, no downtime, no cost, instant.
+
+### Action design
+
+- **`action_name`:** `update_ec2_tag` (generic — not tied to one key)
+- **Default tag key in development:** `CloudPilot-Test` (demo default only; user can pass `Environment`, `Owner`, `Project`, etc.)
+- **Fields (MVP):** `region`, `instance_id`, `tag_key` (default `CloudPilot-Test`), `tag_value`
+
+### Store only what changed
+
+Do **not** snapshot every tag on the instance. Store only keys CloudPilot touched:
+
+```json
+{
+  "before": { "CloudPilot-Test": "A" },
+  "after": { "CloudPilot-Test": "B" }
+}
+```
+
+If the key was absent before:
+
+```json
+{
+  "before": {},
+  "after": { "CloudPilot-Test": "A" }
+}
+```
+
+### Undo payload = desired end state
+
+Payload describes **what should exist after undo**, not a procedure flag.
+
+Tag existed before (restore value):
+
+```json
+{
+  "type": "restore_ec2_tag",
+  "instance_id": "i-123",
+  "region": "us-west-2",
+  "tag_key": "CloudPilot-Test",
+  "tag_exists": true,
+  "tag_value": "A"
+}
+```
+
+Tag was missing before (remove key):
+
+```json
+{
+  "type": "restore_ec2_tag",
+  "instance_id": "i-123",
+  "region": "us-west-2",
+  "tag_key": "CloudPilot-Test",
+  "tag_exists": false
+}
+```
+
+Undo handler:
+
+```text
+tag_exists?
+  yes → write tag_key = tag_value
+  no  → delete tag_key
+```
+
+### Three-state matrix
+
+| Before | After | Undo |
+|--------|-------|------|
+| missing | `A` | delete tag |
+| `A` | `B` | set tag to `A` |
+| failed update | — | history row, `undo_available = 0` |
+
+### Golden path demo
+
+```text
+Scan EC2
+↓
+Found instance
+↓
+Update CloudPilot-Test tag (update_ec2_tag)
+↓
+History row (before/after + undo_payload)
+↓
+Undo
+↓
+Tag restored or removed
+```
+
+Once this is rock solid, other mutations are “another recipe”: `update_s3_tag`, `toggle_ec2`, `resize_ec2`, PR apply, etc.
+
+---
+
+## History builders (resource-oriented)
+
+Builders understand the **resource type**, not every individual action.
+
+**Do not** add `updateEc2TagHistory.js`. Prefer:
+
+```text
+history/
+    historyBuilders/
+        ec2History.js      ← EC2 mutations (tag today; toggle/resize/create later)
+        s3History.js       ← later
+        iamHistory.js      ← later
+```
+
+Today `ec2History.js` builds history for `update_ec2_tag`. Later the same module can branch on `action_name` for `toggle_ec2`, `resize_ec2`, `create_ec2`, etc. — same history object shape.
+
+**Existing files** (`toggleEc2History.js`, `createEc2History.js`) stay until folded into `ec2History.js` (optional cleanup, not blocking). New work goes through the resource-oriented builder.
+
+**History row shape is shared.** Only `action_name`, `target_*`, `resource_state_*`, and `undo_payload` differ per recipe.
 
 ---
 
@@ -65,17 +229,34 @@ User reply `request_name: "My label"` updates `display_name` on the request row 
 
 ## Checklist (in order)
 
-### Phase 1 — Finish recording & undo
+### Phase G — Golden path: `update_ec2_tag` (next — do this first)
+
+Safe change that proves History end-to-end. Prefer this over new operational recipes (H8, etc.) until solid.
+
+- [ ] **G1** — Catalog + understanding — seed `update_ec2_tag` action; phrases (`update ec2 tag`, `set cloudpilot test tag`, …)
+- [ ] **G2** — Fields — collect `region`, `instance_id`, `tag_key` (default `CloudPilot-Test`), `tag_value`
+- [ ] **G3** — Capability / Atlas — get current tag value; set tag; delete tag (for undo when `tag_exists: false`)
+- [ ] **G4** — Automatic execution — STEP 6 runs `update_ec2_tag` like other mutations
+- [ ] **G5** — History builder — `historyBuilders/ec2History.js` for `update_ec2_tag` (touched keys only in before/after)
+- [ ] **G6** — `saveHistory` on success and failure (`failed` → `undo_available = 0`)
+- [ ] **G7** — Undo payload — `restore_ec2_tag` with `tag_exists` + optional `tag_value` (desired end state)
+- [ ] **G8** — `undoRegistry` — handler: exists → write value; missing → delete key; undo row `undo_update_ec2_tag`
+- [ ] **G9** — E2E golden path — scan EC2 → update tag → list history → undo → tag restored/removed
+- [ ] **G10** — Docs — note in [finished.md](./finished.md) when G1–G9 ship; optional fold of `toggleEc2History` / `createEc2History` into `ec2History.js`
+
+**Exit criteria:** User can update a tag, see a history row with before/after, and undo restores the prior desired state — without touching instance power state.
+
+### Phase 1 — Finish recording & undo (operational — already mostly shipped)
 
 - [x] **H5** — Failed toggle → `cloudpilot_history` row (`history_status = failed`, `undo_available = 0`)
 - [x] **H6** — API `undoAvailable` hint on `POST /message` response _(Kite UI still open)_
 - [x] **H7** — `create_ec2` history + undo (delete created instance)
-- [ ] **H8** — `delete_ec2` history + recreate undo (new instance from `resource_state_before`) — **Phase 1B**
+- [ ] **H8** — `delete_ec2` history + recreate undo (new instance from `resource_state_before`) — **defer until after Phase G**
 - [ ] **Atlas** — Toggle response includes before/after states (preferred for `saveHistory`)
 - [ ] **Atlas** — Delete response / preflight includes metadata for recreate (name, instance_type, tags, region)
 - [ ] **Atlas** — Test mocks include state fields for toggle; recreate fields for delete
 - [ ] **Kite** — Show “Undo available” when `undoAvailable: true`
-- [ ] **Kite** — Undo button / “undo last toggle”
+- [ ] **Kite** — Undo button / “undo last change” (not toggle-specific)
 
 ### Phase 2 — Show recent history & requests (chat commands)
 
@@ -89,9 +270,10 @@ User reply `request_name: "My label"` updates `display_name` on the request row 
 
 ### Phase 3 — Later
 
-- [ ] **H15** — Targeted undo — `undo change #3` / `undo toggle_ec2` (not only latest)
-- [ ] **H16** — `deleteEc2History.js` builder _(createEc2History.js shipped in H7)_
+- [ ] **H15** — Targeted undo — `undo change #3` / `undo update_ec2_tag` (not only latest)
+- [ ] **H16** — More EC2 recipes in `ec2History.js` (e.g. `delete_ec2` recreate) — **not** one tiny builder file per action
 - [ ] **H17** — Change history UI — full audit trail, diffs, version restore
+- [ ] **H18** — Other safe recipes — `update_s3_tag`, `update_iam_tag`, … (same pattern, resource builders)
 
 ---
 
@@ -101,18 +283,42 @@ User reply `request_name: "My label"` updates `display_name` on the request row 
 
 **CloudPilot Change History** (`cloudpilot_history`) records every mutating action — what changed, before/after, whether undo is available. **Undo** is the first consumer; **list recent history** is the second.
 
+The mutation is pluggable. History does not care whether the recipe is a tag update or an instance toggle — only that `resource_state_before` / `resource_state_after` and `undo_payload` (desired end state) are reliable.
+
 **Recent requests** is a sibling feature: show the last few **request rows** (`cloudpilot_requests`) — what the user asked CloudPilot to do — whether or not a history row exists (e.g. scan still in progress, or failed before mutation).
 
 | User says | Data source | Today |
 |-----------|-------------|--------|
 | “list open actions” / `list_open` | Open `cloudpilot_requests` only | ✅ shipped |
-| “undo” | Latest undoable `cloudpilot_history` row | ✅ shipped (toggle) |
+| “undo” | Latest undoable `cloudpilot_history` row | ✅ shipped (toggle; **next:** tag) |
 | “show my recent **history**” | Last 5 `cloudpilot_history` rows | ✅ shipped (H9–H14) |
 | “show my recent **requests**” | Last 5 `cloudpilot_requests` rows | ❌ H11–H13 |
 
 ---
 
-### Phase 1 — Finish recording & undo
+### Phase G — Golden path plan (`update_ec2_tag`)
+
+Implement in order. Reuse existing pipeline: STEP 6 → capability → `saveHistory` (STEP 6B) → `undoRegistry`. Do not invent a second history path.
+
+| Step | Work | Notes |
+|------|------|-------|
+| **G1** | Action catalog + phrases | `cloudpilot_actions` row; understanding maps chat → `update_ec2_tag` |
+| **G2** | Field collection | `region`, `instance_id`, `tag_key` (default `CloudPilot-Test`), `tag_value` |
+| **G3** | Atlas / capability | Read tag (or missing); put tag; delete tag |
+| **G4** | Automatic mode | Same delivery path as toggle/create |
+| **G5** | `ec2History.js` | Build `target_*`, before/after (**touched keys only**), `undo_payload` |
+| **G6** | Success + failure history | Failed → `history_status = failed`, `undo_available = 0` |
+| **G7–G8** | Undo | `restore_ec2_tag` desired end state; register in `undoRegistry.js` |
+| **G9** | Manual E2E | Scan → update tag → history list → undo |
+| **G10** | Cleanup / docs | Optional merge of older EC2 builders into `ec2History.js` |
+
+**Touch points:** `actionMap` / actions seed, understanding search, EC2 capability (or Atlas tag endpoints), `executionFunctions.js` (STEP 6B), `history/historyBuilders/ec2History.js`, `undoRegistry.js`, request naming defaults.
+
+**Do not:** name builders after tags; store full tag maps; use `delete_if_missing` — use `tag_exists` + `tag_value`.
+
+---
+
+### Phase 1 — Finish recording & undo (operational)
 
 **Shipped:** H0 schema, H1 save on toggle success, H2 undoable log, H4 full undo vertical slice, **H5–H7 Phase 1A**, request/history naming, **H9–H14 list history**.
 
@@ -121,13 +327,13 @@ User reply `request_name: "My label"` updates `display_name` on the request row 
 | **H5** | On failed toggle (Atlas error or handler failure), still `INSERT` history — `history_status = failed`, `undo_available = 0` |
 | **H6** | Response field e.g. `undoAvailable: true` when latest row qualifies — Kite can show affordance without parsing message text |
 | **H7** | After `create_ec2` automatic success — history builder + `undo_create_ec2` (delete instance) |
-| **H8** | Before `delete_ec2` — capture `resource_state_before`; undo = **recreate** new instance (honest UX) |
+| **H8** | Before `delete_ec2` — capture `resource_state_before`; undo = **recreate** new instance (honest UX). **After Phase G.** |
 | **Atlas** | Rich before/after on toggle; delete preflight returns name, type, tags, region for recreate |
-| **Kite** | Undo chip/button after H6 |
+| **Kite** | Undo chip/button after H6 — label as undo **change**, not toggle-only |
 
 **Touch points:** `executionFunctions.js` (STEP 6B), `history/historyBuilders/`, `history/classes/History.js`, `undoRegistry.js`, handlers.
 
-**Exit criteria:** Success and failure both recorded for toggle; create/delete history + undo recipes wired; Kite shows undo when available.
+**Exit criteria (operational):** Success and failure both recorded for toggle; create/delete history + undo recipes wired; Kite shows undo when available.
 
 ---
 
@@ -213,8 +419,9 @@ If Kite should render a table (like scan findings), add a small adapter under `n
 ### Phase 3 — Later
 
 - **H15** — Disambiguated undo (pick row from history list)
-- **H16** — Additional history builders as new actions ship
+- **H16** — More recipes inside resource builders (`ec2History.js`, later `s3History.js`) — not one file per action
 - **H17** — Full change-history product UI
+- **H18** — More safe changes (`update_s3_tag`, …) once Phase G is solid
 
 ---
 
@@ -228,23 +435,22 @@ services/history/
         Method A3  markHistoryReverted
         Method A4  listRecentByConversation   ← H9
     functions/
-        historyFunctions.js                   ← listRecentHistory wrapper
+        historyFunctions.js                   ← listRecentHistory, buildHistoryResponse, saveHistory
         undoFunctions.js
-    historyBuilders/
-        toggleEc2History.js
-        createEc2History.js                   ← H7
-        deleteEc2History.js                   ← H8
-    historyNavigatorAdapter.js
-    functions/
-        historyFunctions.js                   ← listRecentHistory, buildHistoryResponse
         historyActionNameFunctions.js         ← action_display_name, action_record_key
-    undoRegistry.js
+    historyBuilders/
+        ec2History.js                         ← Phase G (update_ec2_tag; later other EC2 recipes)
+        toggleEc2History.js                   ← existing; optional fold into ec2History.js
+        createEc2History.js                   ← H7; optional fold into ec2History.js
+        s3History.js                          ← later (H18)
+    historyNavigatorAdapter.js
+    undoRegistry.js                           ← restore_ec2_tag (G8), toggle_ec2_restore, delete_ec2_undo, …
 
 services/requests/classes/Request.js
     getActionsByConversation(id, { limit: 5 })  ← already exists for H11
 
 services/understanding/search/
-    searchMessageForConversation.js           ← H10, H11 phrases
+    searchMessageForConversation.js           ← H10, H11, G1 phrases
 
 services/decision/decideNextStep.js           ← H12
 
@@ -260,4 +466,5 @@ services/conversation/templates/requestTemplates.js   ← H13 speak
 | Schema | `doc/database/database.md` · `doc/sql/master_sql.sql` |
 | Undo semantics (create/delete) | [architecture/development_undo_feature.md](./architecture/development_undo_feature.md) |
 | Pipeline / conversation commands | [architecture/architecture.md](./architecture/architecture.md) |
+| Tagging metadata (create defaults) | [../../../../doc/instructions/cloudpilot_tagging_metadata.md](../../../../doc/instructions/cloudpilot_tagging_metadata.md) |
 | Code map | [../README.md](../README.md) |
