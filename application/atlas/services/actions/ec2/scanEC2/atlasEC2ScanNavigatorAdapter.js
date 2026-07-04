@@ -75,7 +75,14 @@ function buildEC2InstancesTable(instances) {
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "instance_type", label: "Type", type: "text" }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "state", label: "State", type: "status" }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "avg_cpu", label: "Avg CPU", type: "number" }),
-            navigatorResponseFunctions.createNavigatorTableColumn({ key: "role", label: "Role", type: "text" })
+            navigatorResponseFunctions.createNavigatorTableColumn({ key: "role", label: "Role", type: "text" }),
+            navigatorResponseFunctions.createNavigatorTableColumn({
+                key: "tags_count",
+                label: "Tags",
+                type: "number",
+                clickable: true,
+                detailKey: "tags_detail"
+            })
         ],
         rows: instances.map(buildEC2InstanceRow)
     });
@@ -83,16 +90,33 @@ function buildEC2InstancesTable(instances) {
 
 //Function B2: Build EC2 Instance Row
 function buildEC2InstanceRow(instance) {
+    const tags = Array.isArray(instance.tags) ? instance.tags : [];
+    const instanceId = instance.instanceID || null;
+    const name = instance.name || null;
+    const detailTitle = name
+        ? "Tags — " + name
+        : instanceId
+            ? "Tags — " + instanceId
+            : "Tags";
+
     return {
         row_id: buildEC2RowID(instance.instanceID, instance.name, instance.region),
-        name: instance.name || null,
-        instance_id: instance.instanceID || null,
+        name: name,
+        instance_id: instanceId,
         region: instance.region || null,
         instance_type: instance.instanceType || null,
         state: instance.state || null,
         avg_cpu: instance.avgCPU,
         role: instance.role || null,
-        environment_name: instance.environmentName || null
+        environment_name: instance.environmentName || null,
+        tags: tags,
+        tags_count: tags.length,
+        tags_detail: navigatorResponseFunctions.buildKeyValueTable(tags, {
+            id: "tags_" + (instanceId || "unknown"),
+            title: detailTitle,
+            keyLabel: "Tag Key",
+            valueLabel: "Value"
+        })
     };
 }
 

@@ -3,6 +3,7 @@ const scanS3Handler = require('./s3/scanS3/scanS3Handler');
 const toggleEC2Handler = require('./ec2/toggleEC2/toggleEC2Handler');
 const createEC2Handler = require('./ec2/createEC2/createEC2Handler');
 const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
+const updateEC2TagHandler = require('./ec2/updateEC2Tag/updateEC2TagHandler');
 const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
 
 /*
@@ -365,6 +366,74 @@ const actionMap = {
             executing: 'Terminating EC2 instance.',
             success: 'EC2 instance termination requested.',
             failed: 'EC2 delete failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Update EC2 tag (Phase G golden path)
+    update_ec2_tag: {
+        //Identity
+        type: 'update_ec2_tag',
+        actionLabel: 'Update EC2 Tag',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies (destructive actions only)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+            if (normalized.includes('update') && normalized.includes('tag') && normalized.includes('ec2')) {
+                return true;
+            }
+            if (normalized.includes('update') && normalized.includes('tag') && normalized.includes('instance')) {
+                return true;
+            }
+            if (normalized.includes('update') && normalized.includes('cloudpilot-test')) {
+                return true;
+            }
+            if (normalized.includes('update ec2 tag')) {
+                return true;
+            }
+            return false;
+        },
+
+        //Fields Required Before Ready (tag_key defaults to CloudPilot-Test)
+        requiredFields: [
+            'region',
+            'instance_id',
+            'tag_key',
+            'tag_value'
+        ],
+
+        //Optional Defaults
+        defaults: {
+            tag_key: 'CloudPilot-Test'
+        },
+
+        //Execution
+        executionFunction: updateEC2TagHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 tag update.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 tag update.',
+            executing: 'Updating EC2 tag.',
+            success: 'EC2 tag updated.',
+            failed: 'EC2 tag update failed.'
         }
     }
 };

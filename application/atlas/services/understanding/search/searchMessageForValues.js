@@ -3,6 +3,7 @@ const SearchMessageForStructuredFieldsFunctions = require('./searchMessageForStr
 const SearchMessageForInstanceIdFunctions = require('./searchMessageForInstanceId');
 const SearchMessageForInstanceTypeFunctions = require('./searchMessageForInstanceType');
 const SearchMessageForNameFunctions = require('./searchMessageForName');
+const SearchMessageForTagUpdateFunctions = require('./searchMessageForTagUpdate');
 
 /*
 FUNCTIONS A: Structured field extraction from user message
@@ -45,6 +46,15 @@ function searchMessageForValues(message) {
     const nameResult = SearchMessageForNameFunctions.searchMessageForName(message);
     if (nameResult.name && values.name === undefined) {
         values.name = nameResult.name;
+    }
+
+    const tagUpdateResult =
+        SearchMessageForTagUpdateFunctions.searchMessageForTagUpdate(message);
+    if (tagUpdateResult.tag_key && values.tag_key === undefined) {
+        values.tag_key = tagUpdateResult.tag_key;
+    }
+    if (tagUpdateResult.tag_value && values.tag_value === undefined) {
+        values.tag_value = tagUpdateResult.tag_value;
     }
 
     return values;

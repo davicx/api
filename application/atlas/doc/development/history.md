@@ -1,6 +1,6 @@
 # History & Requests — To Do
 
-**Last reviewed:** 2026-07-03
+**Last reviewed:** 2026-07-03 (Phase T + G golden path verified; tag inspect UX polish backlog)
 
 > **Shipped (H0–H7, H9–H14, naming):** [finished.md](./finished.md) · **Deep reference:** [architecture/development_undo_feature.md](./architecture/development_undo_feature.md) · **Main backlog:** [To_do.md](./To_do.md)
 
@@ -17,7 +17,11 @@ Every change has the same lifecycle:
 ```text
 Scan
 ↓
-Mutation
+Find resource
+↓
+Inspect
+↓
+Change (mutation)
 ↓
 History
 ↓
@@ -49,15 +53,176 @@ Both are first-class. Safe changes are the **golden path** while the framework h
 
 ---
 
+## Product UX model
+
+```text
+Scan → Find → Inspect → Change → History → Undo
+```
+
+Not a separate Tag Manager. Enrich scan results; users discover a resource, inspect metadata, make a small change, then use History/Undo — all in one workflow.
+
+**Milestone (end-to-end):**
+
+```text
+Scan EC2
+↓
+Tags: 5 (click)
+↓
+See CloudPilot-Test = A
+↓
+Update tag → B
+↓
+History
+↓
+Undo → A
+```
+
+---
+
+## Phase T — Tag discovery (dashboard only; before Phase G)
+
+Prerequisite for a natural golden path. **No chat inspection yet** — that is a separate problem (remembering scan results + inspect intents). Dashboard is enough for the first complete story.
+
+### T1 — Scan includes tags
+
+Atlas already returns `instance.tags`. Formatter keeps the full set as an array (not only `cloudpilot-role`):
+
+```json
+{
+  "instanceID": "i-065…",
+  "name": "Kite-env",
+  "state": "running",
+  "tags": [
+    { "key": "Name", "value": "Kite-env" },
+    { "key": "cloudpilot-role", "value": "primary" },
+    { "key": "CloudPilot-Test", "value": "A" }
+  ]
+}
+```
+
+Still derive `role` from tags for the Role column. No new AWS calls.
+
+**Touch:** `atlasEC2Formatter.js` (+ Atlas test mocks if tags are omitted).
+
+### T2 — Instances table: Tags = count (clickable)
+
+| Name | Instance ID | … | Role | **Tags** |
+|------|-------------|---|------|----------|
+| Kite-env | i-065… | … | primary | **5** |
+
+- Cell value = `tags.length` (or `0`)
+- Count is **clickable** — do not dump all keys in the main table
+- Row carries full `tags` so click needs no extra AWS call
+
+**Touch:** `atlasEC2ScanNavigatorAdapter.js` + **Kite** (open detail on click).
+
+### T3 — Click → key/value detail table
+
+| Tag Key | Value | Actions |
+|---------|-------|---------|
+| Name | Kite-env | *(empty for now)* |
+| cloudpilot-role | primary | |
+| CloudPilot-Test | A | |
+
+Rules:
+
+- First column is **Tag Key**, not Name (AWS tags are key/value pairs)
+- **Actions** column exists now (empty) so Update later is seamless — do not implement edit yet
+- Detail context includes `instance_id`, `region`, `name` for future `update_ec2_tag`
+
+**Shared builder (not tag-specific):**
+
+```text
+buildKeyValueTable([{ key, value }, …])
+→ columns: Key | Value | Actions
+```
+
+Today: EC2 tags. Tomorrow: S3/IAM tags, env vars, Parameter Store, headers, metadata — same builder.
+
+**Touch:** navigator helpers (e.g. `navigatorFunctions` or small shared adapter) + Kite detail view.
+
+### Phase T checklist
+
+- [x] **T1** — Scan model includes `tags[]` on each instance
+- [x] **T2** — Tags count column on EC2 instances table (clickable)
+- [x] **T3** — Click → Tag Key \| Value \| Actions via `buildKeyValueTable` (Actions empty)
+
+**Exit criteria:** After scan EC2, user can click Tags count and see all tag key/value pairs for that instance. ✅ Verified (2026-07-03).
+
+### Tag inspect UX polish (future — after Phase G)
+
+Dashboard tag detail works as the **inspection view** that complements chat (not a dashboard replacing chat). Keep that balance.
+
+**What works (keep):**
+
+- Tags count → click → detail table is natural
+- Tag Key / Value clearer than cramming tags into the main EC2 table
+- Empty **Actions** column reserves space for Update later without redesign
+- Title **"Tags — Kite-env"** gives good context
+
+**Improvements (do not implement yet):**
+
+- [ ] **Sort CloudPilot tags first** — surface `CloudPilot-*`, `cloudpilot-*`, `Name` above AWS-generated keys (`aws:*`, `elasticbeanstalk:*`, `aws:cloudformation:*`). Optional separator row e.g. `--- AWS Tags ---`
+- [ ] **Wrap or truncate long values** — CloudFormation ARNs dominate the table; wrap nicely or truncate with `…` and click to copy/expand
+- [ ] **Actions column affordance** — before edit exists, show subtle `Coming Soon` or disabled `Update` so the column purpose is obvious
+- [ ] **Soft-fill from last scan** — missing-field examples use real `region` / `instance_id` from last scan in conversation (examples only; not auto-`collected`)
+
+**Golden path demo (end-to-end story):**
+
+```text
+Scan EC2
+    ↓
+See "Tags: 12"
+    ↓
+Click
+    ↓
+CloudPilot-Test = B
+    ↓
+Update to A (chat: update_ec2_tag)
+    ↓
+History
+    ↓
+Undo
+    ↓
+CloudPilot-Test = B
+```
+
+### Deferred — chat inspection (not Phase T)
+
+Do **not** build yet:
+
+- `tags_name` / `tags_resource_id` special fields
+- Resolve tags from “last scan results” in conversation
+
+Those mix tag discovery with conversation memory. Dashboard already covers inspect.
+
+**Later (after Phase G is solid):** natural-language **inspect** intent, not special fields:
+
+```text
+intent = inspect_ec2_tags
+collected: { resource_name: "Kite-env" }  or  { instance_id: "i-065…" }
+```
+
+Phrases: “Show me the tags for Kite-env”, “What tags does Kite-env have?” Same pattern later for security groups, volumes, ENIs, etc. — all **inspect** intents.
+
+---
+
 ## Canonical example: `update_ec2_tag` (golden path)
 
-**Next priority.** Smallest safe mutation that proves the full architecture:
+**After Phase T.** Smallest safe mutation that proves the full architecture:
 
 ```text
 User → Navigator → Atlas → AWS Update Tag → History → Undo
 ```
 
 No instance stop/start, no downtime, no cost, instant.
+
+Chat is enough to drive the mutation (no chat inspect required):
+
+```text
+Update CloudPilot-Test to B
+Update tag CloudPilot-Test on Kite-env
+```
 
 ### Action design
 
@@ -135,9 +300,11 @@ tag_exists?
 ```text
 Scan EC2
 ↓
-Found instance
+Tags: 5 (click) — Phase T
 ↓
-Update CloudPilot-Test tag (update_ec2_tag)
+See CloudPilot-Test = A
+↓
+Update CloudPilot-Test tag (update_ec2_tag) — Phase G
 ↓
 History row (before/after + undo_payload)
 ↓
@@ -229,22 +396,32 @@ User reply `request_name: "My label"` updates `display_name` on the request row 
 
 ## Checklist (in order)
 
-### Phase G — Golden path: `update_ec2_tag` (next — do this first)
+### Phase T — Tag discovery (dashboard; do this first)
 
-Safe change that proves History end-to-end. Prefer this over new operational recipes (H8, etc.) until solid.
+- [x] **T1** — Scan includes `tags[]` on each instance
+- [x] **T2** — Tags count column (clickable)
+- [x] **T3** — Click → Tag Key \| Value \| Actions via `buildKeyValueTable` (Actions empty)
 
-- [ ] **G1** — Catalog + understanding — seed `update_ec2_tag` action; phrases (`update ec2 tag`, `set cloudpilot test tag`, …)
-- [ ] **G2** — Fields — collect `region`, `instance_id`, `tag_key` (default `CloudPilot-Test`), `tag_value`
-- [ ] **G3** — Capability / Atlas — get current tag value; set tag; delete tag (for undo when `tag_exists: false`)
-- [ ] **G4** — Automatic execution — STEP 6 runs `update_ec2_tag` like other mutations
-- [ ] **G5** — History builder — `historyBuilders/ec2History.js` for `update_ec2_tag` (touched keys only in before/after)
-- [ ] **G6** — `saveHistory` on success and failure (`failed` → `undo_available = 0`)
-- [ ] **G7** — Undo payload — `restore_ec2_tag` with `tag_exists` + optional `tag_value` (desired end state)
-- [ ] **G8** — `undoRegistry` — handler: exists → write value; missing → delete key; undo row `undo_update_ec2_tag`
-- [ ] **G9** — E2E golden path — scan EC2 → update tag → list history → undo → tag restored/removed
+**Exit criteria:** Scan → click Tags count → see key/value pairs. No chat inspect. ✅
+
+**Polish (future):** sort CloudPilot tags first; truncate long values; Actions affordance; soft-fill from last scan — see [Tag inspect UX polish](#tag-inspect-ux-polish-future--after-phase-g).
+
+### Phase G — Golden path: `update_ec2_tag` (after Phase T)
+
+Safe change that proves History end-to-end. Prefer this over new operational recipes (H8, etc.) until solid. Chat can drive the update; dashboard already covers inspect.
+
+- [x] **G1** — Catalog + understanding — seed `update_ec2_tag` action; phrases (`update ec2 tag`, `update CloudPilot-Test to B`, …)
+- [x] **G2** — Fields — collect `region`, `instance_id`, `tag_key` (default `CloudPilot-Test`), `tag_value`
+- [x] **G3** — Capability / Atlas — get current tag value; set tag; delete tag (for undo when `tag_exists: false`)
+- [x] **G4** — Automatic execution — STEP 6 runs `update_ec2_tag` like other mutations
+- [x] **G5** — History builder — `historyBuilders/ec2History.js` for `update_ec2_tag` (touched keys only in before/after)
+- [x] **G6** — `saveHistory` on success and failure (`failed` → `undo_available = 0`)
+- [x] **G7** — Undo payload — `restore_ec2_tag` with `tag_exists` + optional `tag_value` (desired end state)
+- [x] **G8** — `undoRegistry` — handler: exists → write value; missing → delete key; undo row `undo_update_ec2_tag`
+- [x] **G9** — E2E — scan → click tags → update tag → list history → undo → tag restored/removed
 - [ ] **G10** — Docs — note in [finished.md](./finished.md) when G1–G9 ship; optional fold of `toggleEc2History` / `createEc2History` into `ec2History.js`
 
-**Exit criteria:** User can update a tag, see a history row with before/after, and undo restores the prior desired state — without touching instance power state.
+**Exit criteria:** Full milestone — scan → inspect (dashboard) → update → history → undo — without touching instance power state. ✅ Core path verified (2026-07-03).
 
 ### Phase 1 — Finish recording & undo (operational — already mostly shipped)
 
@@ -274,6 +451,11 @@ Safe change that proves History end-to-end. Prefer this over new operational rec
 - [ ] **H16** — More EC2 recipes in `ec2History.js` (e.g. `delete_ec2` recreate) — **not** one tiny builder file per action
 - [ ] **H17** — Change history UI — full audit trail, diffs, version restore
 - [ ] **H18** — Other safe recipes — `update_s3_tag`, `update_iam_tag`, … (same pattern, resource builders)
+- [ ] **T4** — Chat inspect — `intent = inspect_ec2_tags` with `resource_name` or `instance_id` (natural language; **not** `tags_name` / `tags_resource_id`). After Phase G only.
+- [ ] **T5** — More inspect intents — security groups, volumes, ENIs, etc.
+- [ ] **T6** — Tag detail polish — CloudPilot tags first; long-value wrap/truncate; Actions `Coming Soon` / disabled Update — see [Tag inspect UX polish](#tag-inspect-ux-polish-future--after-phase-g)
+- [ ] **T7** — Soft-fill field examples from last scan (region / instance_id) — examples only, not auto-collected
+- [ ] **H19** — **Saved Actions** — named reusable operations (structured `action` + `parameters` + `display_name`; `run Kite Security Scan`; not “macros”). Complements History/Undo — see [To_do.md](./To_do.md)
 
 ---
 
@@ -284,6 +466,20 @@ Safe change that proves History end-to-end. Prefer this over new operational rec
 **CloudPilot Change History** (`cloudpilot_history`) records every mutating action — what changed, before/after, whether undo is available. **Undo** is the first consumer; **list recent history** is the second.
 
 The mutation is pluggable. History does not care whether the recipe is a tag update or an instance toggle — only that `resource_state_before` / `resource_state_after` and `undo_payload` (desired end state) are reliable.
+
+**Future product trio** (with [Saved Actions](./To_do.md#api--saved-actions-future) — do not implement yet):
+
+| Concept | Role |
+|---------|------|
+| **Saved Actions** | Reusable operations (things users do often) — store structured request, not chat text |
+| **History** | Completed operations (things already done) |
+| **Undo** | Reverse a completed change |
+
+```text
+Saved Actions → Run "Toggle Backup" → History → Undo
+```
+
+Terminology: prefer **Saved Actions**, not “macros.”
 
 **Recent requests** is a sibling feature: show the last few **request rows** (`cloudpilot_requests`) — what the user asked CloudPilot to do — whether or not a history row exists (e.g. scan still in progress, or failed before mutation).
 
@@ -296,9 +492,25 @@ The mutation is pluggable. History does not care whether the recipe is a tag upd
 
 ---
 
+### Phase T — Tag discovery plan (dashboard)
+
+Implement **before** Phase G. Read-only; no mutation, no history rows.
+
+| Step | Work | Notes |
+|------|------|-------|
+| **T1** | Formatter keeps `tags[]` | Atlas already has tags; stop dropping them |
+| **T2** | Tags count column | Clickable; value = `tags.length` |
+| **T3** | Detail table | `buildKeyValueTable` → Tag Key \| Value \| Actions (empty) |
+
+**Do not:** chat inspect; `tags_name` / `tags_resource_id`; resolve from conversation scan memory; `buildEc2TagsTable` (use generic key/value builder).
+
+**Kite:** click Tags count → open key/value detail. API supplies tags on the instance row / detail payload.
+
+---
+
 ### Phase G — Golden path plan (`update_ec2_tag`)
 
-Implement in order. Reuse existing pipeline: STEP 6 → capability → `saveHistory` (STEP 6B) → `undoRegistry`. Do not invent a second history path.
+Implement **after** Phase T. Reuse existing pipeline: STEP 6 → capability → `saveHistory` (STEP 6B) → `undoRegistry`. Do not invent a second history path.
 
 | Step | Work | Notes |
 |------|------|-------|
@@ -309,12 +521,12 @@ Implement in order. Reuse existing pipeline: STEP 6 → capability → `saveHist
 | **G5** | `ec2History.js` | Build `target_*`, before/after (**touched keys only**), `undo_payload` |
 | **G6** | Success + failure history | Failed → `history_status = failed`, `undo_available = 0` |
 | **G7–G8** | Undo | `restore_ec2_tag` desired end state; register in `undoRegistry.js` |
-| **G9** | Manual E2E | Scan → update tag → history list → undo |
+| **G9** | Manual E2E | Scan → click tags → update tag → history → undo |
 | **G10** | Cleanup / docs | Optional merge of older EC2 builders into `ec2History.js` |
 
 **Touch points:** `actionMap` / actions seed, understanding search, EC2 capability (or Atlas tag endpoints), `executionFunctions.js` (STEP 6B), `history/historyBuilders/ec2History.js`, `undoRegistry.js`, request naming defaults.
 
-**Do not:** name builders after tags; store full tag maps; use `delete_if_missing` — use `tag_exists` + `tag_value`.
+**Do not:** name builders after tags; store full tag maps in history; use `delete_if_missing` — use `tag_exists` + `tag_value`.
 
 ---
 
@@ -422,12 +634,21 @@ If Kite should render a table (like scan findings), add a small adapter under `n
 - **H16** — More recipes inside resource builders (`ec2History.js`, later `s3History.js`) — not one file per action
 - **H17** — Full change-history product UI
 - **H18** — More safe changes (`update_s3_tag`, …) once Phase G is solid
+- **T4** — Chat inspect (`inspect_ec2_tags` intent; natural language; no special `tags_*` fields)
+- **T5** — More inspect intents (security groups, volumes, …)
 
 ---
 
 ## Code layout (target)
 
 ```text
+services/actions/ec2/scanEC2/
+    atlasEC2Formatter.js                      ← T1: keep tags[]
+    atlasEC2ScanNavigatorAdapter.js           ← T2: Tags count column
+
+services/navigator/functions/
+    navigatorFunctions.js                     ← T3: buildKeyValueTable (Key | Value | Actions)
+
 services/history/
     classes/History.js
         Method A1  insertHistoryRow
@@ -450,11 +671,14 @@ services/requests/classes/Request.js
     getActionsByConversation(id, { limit: 5 })  ← already exists for H11
 
 services/understanding/search/
-    searchMessageForConversation.js           ← H10, H11, G1 phrases
+    searchMessageForConversation.js           ← H10, H11, G1 phrases; T4 later (inspect)
 
 services/decision/decideNextStep.js           ← H12
 
 services/conversation/templates/requestTemplates.js   ← H13 speak
+
+Kite (Dashboard)
+    Click Tags count → key/value detail table   ← T2 / T3
 ```
 
 ---

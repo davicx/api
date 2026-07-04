@@ -78,6 +78,14 @@ function createNavigatorTableColumn(options = {}) {
         column.type = options.type;
     }
 
+    if (options.clickable === true) {
+        column.clickable = true;
+    }
+
+    if (options.detailKey) {
+        column.detail_key = options.detailKey;
+    }
+
     return column;
 }
 
@@ -105,6 +113,48 @@ function isSupportedNavigatorColumnType(columnType) {
     return Object.values(NAVIGATOR_COLUMN_TYPES).includes(columnType);
 }
 
+//Function B4: Key/value pairs → detail table (tags, metadata, etc.)
+function buildKeyValueTable(pairs, options = {}) {
+    const rows = Array.isArray(pairs)
+        ? pairs.map((pair, index) => {
+            const key =
+                pair && pair.key != null ? String(pair.key) : "";
+            const value =
+                pair && pair.value != null ? String(pair.value) : "";
+
+            return {
+                row_id: key || "kv_" + index,
+                key: key,
+                value: value,
+                actions: null
+            };
+        })
+        : [];
+
+    return createEmptyNavigatorTable({
+        id: options.id || "key_value",
+        title: options.title || "",
+        columns: [
+            createNavigatorTableColumn({
+                key: "key",
+                label: options.keyLabel || "Key",
+                type: NAVIGATOR_COLUMN_TYPES.TEXT
+            }),
+            createNavigatorTableColumn({
+                key: "value",
+                label: options.valueLabel || "Value",
+                type: NAVIGATOR_COLUMN_TYPES.TEXT
+            }),
+            createNavigatorTableColumn({
+                key: "actions",
+                label: options.actionsLabel || "Actions",
+                type: NAVIGATOR_COLUMN_TYPES.TEXT
+            })
+        ],
+        rows: rows
+    });
+}
+
 module.exports = {
     NAVIGATOR_TABLE_VIEW_TYPE,
     NAVIGATOR_COLUMN_TYPES,
@@ -113,5 +163,6 @@ module.exports = {
     createEmptyNavigatorTable,
     createNavigatorTableColumn,
     normalizeNavigatorTableColumns,
-    isSupportedNavigatorColumnType
+    isSupportedNavigatorColumnType,
+    buildKeyValueTable
 };

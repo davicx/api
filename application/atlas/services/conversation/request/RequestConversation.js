@@ -30,6 +30,18 @@ async function conversation(decision, context) {
     const requestOutcome = context.requestOutcome || {};
     const responseType = decision.response && decision.response.type ? decision.response.type : '';
 
+    const requestSeedErrorMessage = buildRequestSeedErrorMessage(requestOutcome);
+
+    if (requestSeedErrorMessage) {
+        return CloudPilotMessage.speakKnown({
+            success: false,
+            cloudPilotMessage: requestSeedErrorMessage,
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: 'action_type_not_found'
+        });
+    }
+
     if (responseType === RESPONSE_TYPE.LIST_HISTORY) {
         const historyResponse = await HistoryFunctions.buildHistoryResponse(context.conversationID);
 
@@ -212,6 +224,40 @@ function buildChangeStrategyResponse(responseType, chatType) {
     }
 
     return null;
+}
+
+//Function B3: Friendly copy when cloudpilot_actions is missing a seeded action type
+function buildRequestSeedErrorMessage(requestOutcome) {
+    if (!requestOutcome || requestOutcome.success !== false || !requestOutcome.error) {
+        return '';
+    }
+
+    const errors = Array.isArray(requestOutcome.error)
+        ? requestOutcome.error
+        : [requestOutcome.error];
+
+    for (let i = 0; i < errors.length; i++) {
+        const err = errors[i];
+        const code = err && err.code ? String(err.code) : '';
+
+        if (code === 'action_type_not_found') {
+            const actionType =
+                err.actionType != null && String(err.actionType).trim() !== ''
+                    ? String(err.actionType).trim()
+                    : 'that action';
+
+            return (
+                'I recognize ' +
+                actionType +
+                ', but it is not registered in the action catalog yet. ' +
+                'Seed cloudpilot_actions for "' +
+                actionType +
+                '" and try again.'
+            );
+        }
+    }
+
+    return '';
 }
 
 module.exports = {

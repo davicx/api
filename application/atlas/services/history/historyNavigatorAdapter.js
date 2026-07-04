@@ -15,9 +15,11 @@ const ACTION_LABELS = {
     toggle_ec2: 'Toggle EC2',
     create_ec2: 'Create EC2',
     delete_ec2: 'Delete EC2',
+    update_ec2_tag: 'Update EC2 Tag',
     undo_toggle_ec2: 'Undo Toggle EC2',
     undo_create_ec2: 'Undo Create EC2',
     undo_delete_ec2: 'Undo Delete EC2',
+    undo_update_ec2_tag: 'Undo Update EC2 Tag',
     scan_ec2: 'Scan EC2',
     scan_s3: 'Scan S3',
     inventory_aws: 'Inventory AWS'

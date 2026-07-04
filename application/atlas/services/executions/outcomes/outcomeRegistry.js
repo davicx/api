@@ -31,6 +31,12 @@ const OUTCOME_MESSAGES = {
         'I do not have a default AMI configured for {region} yet.',
     aws_run_instances_failed:
         'I could not create that EC2 instance. {detail}',
+    aws_tag_failed:
+        'I could not update that EC2 tag. {detail}',
+    missing_tag_key:
+        'Send the tag key:\ntag_key: "CloudPilot-Test"',
+    missing_tag_value:
+        'Send the tag value:\ntag_value: "B"',
     execution_failed:
         'That action did not complete. Please check your inputs and try again.'
 };
@@ -38,7 +44,8 @@ const OUTCOME_MESSAGES = {
 const DEFAULT_EXECUTION_FAILED = {
     toggle_ec2: 'I could not toggle the EC2 instances.',
     delete_ec2: 'I could not delete the EC2 instance.',
-    create_ec2: 'I could not create the EC2 instance.'
+    create_ec2: 'I could not create the EC2 instance.',
+    update_ec2_tag: 'I could not update that EC2 tag.'
 };
 
 function applyOutcomeTemplate(template, context) {

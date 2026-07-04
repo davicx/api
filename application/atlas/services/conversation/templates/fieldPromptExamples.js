@@ -13,6 +13,8 @@ const FIELD_FORMAT_EXAMPLES = {
     instance_id: 'i-0abc123',
     name: 'my-app-server',
     instance_type: 't3.micro',
+    tag_key: 'CloudPilot-Test',
+    tag_value: 'B',
     request_name: 'updating kite S3'
 };
 
@@ -20,6 +22,7 @@ const REQUEST_NAME_EXAMPLES_BY_ACTION = {
     toggle_ec2: 'Kite EC2 toggle',
     create_ec2: 'updating kite S3',
     delete_ec2: 'removing demo instance',
+    update_ec2_tag: 'update CloudPilot-Test tag',
     scan_ec2: 'Kite EC2 scan',
     scan_s3: 'updating kite S3',
     inventory_aws: 'Kite inventory'
@@ -29,7 +32,29 @@ function formatFieldPromptLine(fieldName, exampleValue) {
     return String(fieldName) + ': "' + String(exampleValue) + '"';
 }
 
-function buildMissingFieldPromptLines(missingFields, actionDefinition) {
+// Soft fill (A): prefer known examples (e.g. last scan) over static placeholders — never writes collected.
+function resolveFieldExample(fieldName, actionDefinition, exampleContext) {
+    const context = exampleContext || {};
+
+    if (context[fieldName] != null && String(context[fieldName]).trim() !== '') {
+        return String(context[fieldName]).trim();
+    }
+
+    const defaults =
+        actionDefinition && actionDefinition.defaults ? actionDefinition.defaults : {};
+
+    if (defaults[fieldName] != null && String(defaults[fieldName]).trim() !== '') {
+        return String(defaults[fieldName]).trim();
+    }
+
+    if (FIELD_FORMAT_EXAMPLES[fieldName] != null) {
+        return FIELD_FORMAT_EXAMPLES[fieldName];
+    }
+
+    return 'your_value_here';
+}
+
+function buildMissingFieldPromptLines(missingFields, actionDefinition, exampleContext) {
     const registryMessages =
         actionDefinition &&
         actionDefinition.messages &&
@@ -47,10 +72,7 @@ function buildMissingFieldPromptLines(missingFields, actionDefinition) {
             continue;
         }
 
-        const example =
-            FIELD_FORMAT_EXAMPLES[fieldName] != null
-                ? FIELD_FORMAT_EXAMPLES[fieldName]
-                : 'your_value_here';
+        const example = resolveFieldExample(fieldName, actionDefinition, exampleContext);
 
         lines.push(formatFieldPromptLine(fieldName, example));
     }
@@ -58,8 +80,8 @@ function buildMissingFieldPromptLines(missingFields, actionDefinition) {
     return lines;
 }
 
-function buildMissingFieldsMessage(actionDefinition, missingFields, collectedFields) {
-    const lines = buildMissingFieldPromptLines(missingFields, actionDefinition);
+function buildMissingFieldsMessage(actionDefinition, missingFields, collectedFields, exampleContext) {
+    const lines = buildMissingFieldPromptLines(missingFields, actionDefinition, exampleContext);
     const parts = [];
 
     if (lines.length > 0) {
@@ -113,6 +135,7 @@ module.exports = {
     FIELD_FORMAT_EXAMPLES,
     REQUEST_NAME_EXAMPLES_BY_ACTION,
     formatFieldPromptLine,
+    resolveFieldExample,
     buildMissingFieldPromptLines,
     buildMissingFieldsMessage,
     buildOptionalRequestNamePrompt,

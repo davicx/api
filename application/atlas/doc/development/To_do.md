@@ -60,6 +60,7 @@ All active API work is **history Phase 1B** — see **[history.md](./history.md)
 
 #### API — product & platform
 
+- [ ] **Saved Actions** — named reusable operations (structured request + `display_name`; `run Kite Security Scan` / fuzzy `kite security`; not “macros”)
 - [ ] Learn / Test / Live modes (product vision)
 - [ ] Execution persistence — `cloudpilot_executions` table
 - [ ] Multi-open requests (relax one-open-per-conversation)
@@ -134,6 +135,75 @@ Standardize HOW layer under `capabilities/` (C1–C7). Pre-cleanup U1–U3 remov
 #### API — Learn / Test / Live
 
 Product modes: **Learn** (explain only), **Test** (mocks), **Live** (AWS). Today Test = Atlas `main.py` import toggle. Future: per-deployment mode, user-facing copy, Learn handlers without Atlas.
+
+#### API — Saved Actions (future)
+
+**Do not implement yet.** First-class **named actions** (not “macros” — people associate macros with recorded UI/scripts). Solves real usability: stop re-entering the same fields for frequent operations.
+
+**Flow:**
+
+```text
+scan kite s3 for security issues
+  → action: scan_s3, parameters: { bucket, scan_type, region, … }
+Save as "Kite Security Scan"
+  …
+run Kite Security Scan
+  or even: kite security
+```
+
+Same for changes:
+
+```text
+toggle kite backup off
+  → action: update_ec2_tag, instance, tag, value
+CloudPilot still confirms:
+  "This will update Enabled on Kite Backup from true to false. Continue?"
+```
+
+**Store the structured request, not chat text:**
+
+```json
+{
+  "action": "scan_s3",
+  "parameters": {
+    "bucket": "kite",
+    "scan_type": "security"
+  },
+  "display_name": "Kite Security Scan"
+}
+```
+
+If NLU improves later, saved actions still work — they are not tied to the original utterance.
+
+**Product surface:**
+
+```text
+Saved Actions
+  • Kite Security Scan
+  • Daily Cost Scan
+  • Toggle Backup
+  • Deploy Dev
+  • Resize Web Server
+```
+
+Chat: `Run Daily Cost Scan` / `Run Toggle Backup`.
+
+**Pairs with History / Undo (three complementary concepts):**
+
+| Concept | Role |
+|---------|------|
+| **Scan** | Discover resources |
+| **Saved Actions** | Reusable operations (things users do often) |
+| **History** | Completed operations (things already done) |
+| **Undo** | Reverse a completed change |
+
+```text
+Saved Actions → Run "Toggle Backup" → History → Undo
+```
+
+**Depends on:** durable named action store (may start as `request_name` / `display_name` on requests, later first-class table), resolve by name / fuzzy match, confirm before destructive runs.
+
+**Related:** multi-open requests, P3C Run button, soft-fill from last scan, [history.md](./history.md) Phase 3.
 
 #### API — execution & requests
 

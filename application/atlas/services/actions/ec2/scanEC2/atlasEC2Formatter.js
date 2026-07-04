@@ -5,6 +5,18 @@ FUNCTIONS A: Atlas Data Formatting Functions
     1) Function A1: Format Atlas EC2 Output
 */
 
+//Function B1: Atlas tags dict → [{ key, value }] for dashboard inspect
+function formatInstanceTags(tags) {
+    if (!tags || typeof tags !== "object" || Array.isArray(tags)) {
+        return [];
+    }
+
+    return Object.keys(tags).map((key) => ({
+        key: key,
+        value: tags[key] == null ? "" : String(tags[key])
+    }));
+}
+
 //FUNCTIONS A: Atlas Data Formatting
 //Function A1: Format Atlas EC2 Output
 function formatAtlasEC2Output(atlasResponse) {
@@ -25,6 +37,7 @@ function formatAtlasEC2Output(atlasResponse) {
 
     //STEP 3: Simplify instances
     const formattedInstances = instances.map((instance) => {
+        const tags = formatInstanceTags(instance.tags);
 
         return {
             instanceID: instance.instance_id || null,
@@ -37,7 +50,9 @@ function formatAtlasEC2Output(atlasResponse) {
             role: instance.tags?.["cloudpilot-role"] || null,
 
             environmentName:
-                instance.tags?.["elasticbeanstalk:environment-name"] || null
+                instance.tags?.["elasticbeanstalk:environment-name"] || null,
+
+            tags: tags
         };
     });
 

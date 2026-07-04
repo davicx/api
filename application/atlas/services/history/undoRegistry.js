@@ -8,11 +8,13 @@ FUNCTIONS A: Undo payload execution — maps undo_payload.type → change capabi
 FUNCTIONS B: Handlers
     1) Function B1: restoreToggleEc2
     2) Function B2: deleteCreatedEc2
+    3) Function B3: restoreEc2Tag
 */
 
 const UNDO_HANDLERS = {
     toggle_ec2_restore: restoreToggleEc2,
-    delete_ec2_undo: deleteCreatedEc2
+    delete_ec2_undo: deleteCreatedEc2,
+    restore_ec2_tag: restoreEc2Tag
 };
 
 //Function A1: Dispatch undo_payload.type to the matching restore handler
@@ -174,6 +176,128 @@ async function deleteCreatedEc2(payload) {
         return {
             success: false,
             cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'delete_ec2'),
+            error: 'atlas_unreachable',
+            atlasResponse: null
+        };
+    }
+}
+
+//Function B3: Restore EC2 tag to desired end state (write value or delete key)
+async function restoreEc2Tag(payload) {
+    const region = String(payload.region || '').trim();
+    const instanceId = String(payload.instance_id || '').trim();
+    const tagKey = String(payload.tag_key || '').trim();
+    const tagExists = payload.tag_exists === true;
+    const tagValue =
+        payload.tag_value != null ? String(payload.tag_value).trim() : '';
+
+    if (!region || !instanceId || !tagKey) {
+        return {
+            success: false,
+            cloudPilotMessage: 'Undo payload is missing required tag fields.',
+            error: 'invalid_undo_payload',
+            atlasResponse: null
+        };
+    }
+
+    if (tagExists && !tagValue) {
+        return {
+            success: false,
+            cloudPilotMessage: 'Undo payload is missing the prior tag value.',
+            error: 'invalid_undo_payload',
+            atlasResponse: null
+        };
+    }
+
+    try {
+        if (tagExists) {
+            const requestBody = {
+                region: region,
+                instance_id: instanceId,
+                tag_key: tagKey,
+                tag_value: tagValue
+            };
+
+            console.log('UNDO EXECUTION: Atlas restore tag (write) request body:');
+            console.log(JSON.stringify(requestBody, null, 2));
+
+            const atlasResponseRaw = await ChangeEC2Functions.updateEC2Tag(requestBody);
+
+            if (
+                atlasResponseRaw &&
+                atlasResponseRaw.success === true &&
+                atlasResponseRaw.data &&
+                atlasResponseRaw.data.tag_key
+            ) {
+                return {
+                    success: true,
+                    cloudPilotMessage:
+                        'Undo completed. Restored tag ' +
+                        tagKey +
+                        ' to ' +
+                        tagValue +
+                        ' on ' +
+                        instanceId +
+                        ' in ' +
+                        region +
+                        '.',
+                    error: null,
+                    atlasResponse: atlasResponseRaw.data
+                };
+            }
+
+            const errCode = getFirstOutcomeCode(atlasResponseRaw);
+
+            return {
+                success: false,
+                cloudPilotMessage: buildOutcomeMessage(errCode, {}, 'update_ec2_tag'),
+                error: errCode || 'undo_execution_failed',
+                atlasResponse: null
+            };
+        }
+
+        const deleteBody = {
+            region: region,
+            instance_id: instanceId,
+            tag_key: tagKey
+        };
+
+        console.log('UNDO EXECUTION: Atlas restore tag (delete) request body:');
+        console.log(JSON.stringify(deleteBody, null, 2));
+
+        const atlasResponseRaw = await ChangeEC2Functions.deleteEC2Tag(deleteBody);
+
+        if (atlasResponseRaw && atlasResponseRaw.success === true && atlasResponseRaw.data) {
+            return {
+                success: true,
+                cloudPilotMessage:
+                    'Undo completed. Removed tag ' +
+                    tagKey +
+                    ' from ' +
+                    instanceId +
+                    ' in ' +
+                    region +
+                    '.',
+                error: null,
+                atlasResponse: atlasResponseRaw.data
+            };
+        }
+
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage(errCode, {}, 'update_ec2_tag'),
+            error: errCode || 'undo_execution_failed',
+            atlasResponse: null
+        };
+    } catch (error) {
+        console.log('UNDO EXECUTION: Atlas restore tag error');
+        console.log(error);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'update_ec2_tag'),
             error: 'atlas_unreachable',
             atlasResponse: null
         };
