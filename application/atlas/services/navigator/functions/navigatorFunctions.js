@@ -3,7 +3,8 @@ const NAVIGATOR_COLUMN_TYPES = {
     TEXT: "text",
     CURRENCY: "currency",
     STATUS: "status",
-    NUMBER: "number"
+    NUMBER: "number",
+    ACTION: "action"
 };
 
 

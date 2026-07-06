@@ -176,12 +176,14 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
 INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) VALUES
     ('general_chat', 'General Chat', 0),
     ('inventory_aws', 'Inventory AWS Resources', 1),
+    ('show_billing', 'AWS Billing', 1),
     ('scan_ec2', 'Scan EC2', 0),
     ('scan_s3', 'Scan S3', 0),
     ('toggle_ec2', 'Toggle EC2', 0),
     ('create_ec2', 'Create EC2', 0),
     ('delete_ec2', 'Delete EC2', 0),
     ('update_ec2_tag', 'Update EC2 Tag', 0)
+AS new_action
 ON DUPLICATE KEY UPDATE
-    display_name = VALUES(display_name),
-    requires_execution = VALUES(requires_execution);
+    display_name = new_action.display_name,
+    requires_execution = new_action.requires_execution;

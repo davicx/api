@@ -53,7 +53,9 @@ function buildS3BucketsTable(buckets) {
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "region", label: "Region", type: "text" }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "encryption_enabled", label: "Encryption", type: "status" }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "lifecycle_configured", label: "Lifecycle", type: "status" }),
-            navigatorResponseFunctions.createNavigatorTableColumn({ key: "public_access_block", label: "Public Block", type: "status" })
+            navigatorResponseFunctions.createNavigatorTableColumn({ key: "public_access_block", label: "Public Block", type: "status" }),
+            navigatorResponseFunctions.createNavigatorTableColumn({ key: "versioning_enabled", label: "Versioning", type: "status" }),
+            navigatorResponseFunctions.createNavigatorTableColumn({ key: "access_logging_enabled", label: "Logging", type: "status" })
         ],
         rows: buckets.map(buildS3BucketRow)
     });
@@ -66,7 +68,9 @@ function buildS3BucketRow(bucket) {
         region: bucket.region || null,
         encryption_enabled: bucket.defaultEncryptionEnabled === true ? "enabled" : "disabled",
         lifecycle_configured: bucket.hasLifecycleRules === true ? "yes" : "no",
-        public_access_block: bucket.publicAccessBlockConfigured === true ? "enabled" : "disabled"
+        public_access_block: bucket.publicAccessBlockConfigured === true ? "enabled" : "disabled",
+        versioning_enabled: bucket.versioningEnabled === true ? "enabled" : "disabled",
+        access_logging_enabled: bucket.accessLoggingEnabled === true ? "enabled" : "disabled"
     };
 }
 

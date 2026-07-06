@@ -1,8 +1,9 @@
 # To Do
 
-**Last reviewed:** 2026-06-27
+**Last reviewed:** 2026-07-05
 
-> **Active work:** [history.md](./history.md) (Phase 1B H8, Kite undo) · **[remediations.md](./remediations.md)** (Mode 3 — Pull Request strategy)  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
+> **History (MVP done):** [history.md](./history.md) · **Deferred:** [future_work.md](./future_work.md)  
 > **Done:** [finished.md](./finished.md) · **Architecture & reference:** [architecture/](./architecture/)
 
 ---
@@ -11,7 +12,9 @@
 
 ### Current
 
-All active API work is **history Phase 1B** — see **[history.md](./history.md)**. **PR remediations (mode 3)** — see **[remediations.md](./remediations.md)**.
+**History MVP is complete** — see [history.md](./history.md) and [finished.md](./finished.md). Deferred history items: [future_work.md](./future_work.md).
+
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md).
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
@@ -81,9 +84,7 @@ All active API work is **history Phase 1B** — see **[history.md](./history.md)
 
 Planning docs (bill investigation — **no code**):
 
-- [add_s3.md](./add_s3.md) — expand S3 rules (demo tier shipped)
-- [add_rds.md](./add_rds.md) — RDS scanner + chat action
-- [add_pipeline.md](./add_pipeline.md) — CodePipeline / CodeBuild scan
+- [scans.md](./scans.md) — active scan MVP (EC2 → S3 → RDS → IAM → SG → Lambda)
 
 - [ ] `ec2_low_cpu` — only evaluate when `state == running`
 - [ ] Register all EC2 rules in `rule_registry.py` (aliases per rule)
@@ -112,7 +113,7 @@ Planning docs (bill investigation — **no code**):
 
 ### Current
 
-See **[history.md](./history.md)** — undo (H5–H8), Atlas metadata, Kite undo UI, and new chat commands for **recent history** and **recent requests** (H9–H14).
+See **[future_work.md](./future_work.md)** for deferred History items (H8, H11, targeted undo, tag polish). Platform and Kite backlog remains below.
 
 ---
 
@@ -120,7 +121,7 @@ See **[history.md](./history.md)** — undo (H5–H8), Atlas metadata, Kite undo
 
 #### Kite integration
 
-Connect Kite to `POST /message`. Required: `conversationID` on every message. Render `CloudPilotActionStatus`, `navigatorResponse`, and (when P3C ships) open actions table. Polish: React Query cache, column formatting, multi-open UI, mode indicator. History table UI: [history.md](./history.md) Phase 2–3.
+Connect Kite to `POST /message`. Required: `conversationID` on every message. Render `CloudPilotActionStatus`, `navigatorResponse`, and (when P3C ships) open actions table. Polish: React Query cache, column formatting, multi-open UI, mode indicator. History dashboard: shipped — see [finished.md](./finished.md).
 
 #### API — field hardening P0
 
@@ -203,7 +204,7 @@ Saved Actions → Run "Toggle Backup" → History → Undo
 
 **Depends on:** durable named action store (may start as `request_name` / `display_name` on requests, later first-class table), resolve by name / fuzzy match, confirm before destructive runs.
 
-**Related:** multi-open requests, P3C Run button, soft-fill from last scan, [history.md](./history.md) Phase 3.
+**Related:** multi-open requests, P3C Run button, soft-fill from last scan, [future_work.md](./future_work.md).
 
 #### API — execution & requests
 
@@ -211,7 +212,7 @@ Saved Actions → Run "Toggle Backup" → History → Undo
 
 #### Scan expansion
 
-**Principle:** EC2 complete → S3 → Security Groups → EBS → RDS → orchestration. Quality bar: plain-English title, severity, concrete recommendation. S3 demo tier largely shipped — see [finished.md](./finished.md). Per-service plans: [add_s3.md](./add_s3.md), [add_rds.md](./add_rds.md), [add_pipeline.md](./add_pipeline.md).
+**Principle:** See [scans.md](./scans.md) for service order and MVP rules. Quality bar: plain-English title, severity, category, concrete recommendation. S3 demo tier shipped — [finished.md](./finished.md).
 
 #### Atlas (future)
 

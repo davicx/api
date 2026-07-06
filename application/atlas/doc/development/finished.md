@@ -1,8 +1,8 @@
 # Finished
 
-**Last reviewed:** 2026-06-23
+**Last reviewed:** 2026-07-05
 
-> **To do:** [To_do.md](./To_do.md) · **Active:** [history.md](./history.md) · **Architecture:** [architecture/](./architecture/)
+> **To do:** [To_do.md](./To_do.md) · **Scans:** [scans.md](./scans.md) · **History status:** [history.md](./history.md) · **Deferred:** [future_work.md](./future_work.md) · **Architecture:** [architecture/](./architecture/)
 
 ---
 
@@ -75,16 +75,56 @@
 - [x] Open-actions list + focus switch (P3B)
 - [x] `services/` folder restructure (requests / history / executions / navigator / conversation)
 
-### API — change history & undo (partial)
+### API — change history & undo (MVP — 2026-07)
 
 - [x] **H0** — `cloudpilot_history` in `master_sql.sql`
 - [x] **H1** — `saveHistory()` after toggle automatic success (`STEP 6B`)
 - [x] **H2** — `getLatestUndoable()` log after save (`STEP 6C`)
 - [x] **H3** — Undo intent dry run _(superseded by H4)_
 - [x] **H4** — Execute undo + link rows (`undoRegistry`, `undoFunctions`, STEP 6)
+- [x] **H5** — Failed toggle → history row (`failed`, `undo_available = 0`)
+- [x] **H6** — API `undoAvailable` hint on `POST /message` response
+- [x] **H7** — `create_ec2` history + undo (delete created instance)
+- [x] **H9** — `History.listRecentHistoryByConversation()` (limit 5)
+- [x] **H10** — Understanding — `list_history` phrases
+- [x] **H12** — `decideNextStep` — `LIST_HISTORY` conversation command
+- [x] **H13** — Speak — chat message + Navigator table (`buildHistoryResponse`)
+- [x] **H14** — History Navigator table — **Change** column, Resource, Status, Undo, When
+- [x] Request/history naming — `action_display_name`, `action_record_key`, optional `request_name`
 - [x] Atlas — reuse toggle with swapped targets from `undo_payload`
+- [x] Atlas — `restore_ec2_tag` undo path
 
-**Remaining:** [history.md](./history.md) (H5–H14).
+**Phase T — Tag discovery (dashboard)**
+
+- [x] **T1** — Scan model includes `tags[]` on each instance
+- [x] **T2** — Tags count column (clickable)
+- [x] **T3** — Click → Tag Key | Value | Actions via `buildKeyValueTable`
+
+**Phase G — Golden path `update_ec2_tag`**
+
+- [x] **G1–G9** — action, fields, Atlas tag read/write/delete, `ec2History.js`, undo, E2E verified
+
+**Kite — History dashboard (2026-07)**
+
+- [x] Dashboard renders History table from `navigatorResponse`
+- [x] **Change** timeline copy (not Action Name)
+- [x] Resource truncation + `resource_full` hover
+- [x] **Undo** button — newest undoable row only (stack undo; calls chat `undo`)
+- [x] `chatContext` in `AtlasFindingsContext` for dashboard undo
+
+**Deferred:** [future_work.md](./future_work.md) (H8, H11, H15+, tag polish, targeted undo).
+
+### API — Billing (Phase B1 — 2026-07)
+
+- [x] `show_billing` — Cost Explorer by service (`ce:GetCostAndUsage`)
+- [x] `capabilities/billing/getBillingSummary.js` + `billingAWS/` handler, message, navigator
+- [x] Atlas `POST /billing/summary` + test mock route
+
+See [billing.md](./billing.md).
+
+### API — scan (EC2 + S3 demo)
+
+See [scans.md](./scans.md) for MVP plan and service order.
 
 ### API — Navigator contract
 

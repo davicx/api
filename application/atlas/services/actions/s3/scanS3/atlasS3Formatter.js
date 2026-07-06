@@ -28,7 +28,14 @@ function formatAtlasS3Output(atlasResponse) {
             defaultEncryptionEnabled: bucket.default_encryption_enabled === true,
             hasLifecycleRules: bucket.has_lifecycle_rules === true,
             publicAccessBlockConfigured:
-                bucket.public_access_block?.configured === true
+                bucket.public_access_block?.configured === true,
+            versioningEnabled: bucket.versioning_enabled === true,
+            accessLoggingEnabled: bucket.access_logging_enabled === true,
+            bucketPolicyMayAllowPublic: bucket.bucket_policy_may_allow_public === true,
+            hasPublicAcl: bucket.has_public_acl === true,
+            tagsCount: bucket.tags && typeof bucket.tags === "object"
+                ? Object.keys(bucket.tags).length
+                : 0
         };
     });
 

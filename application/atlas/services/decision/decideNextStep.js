@@ -9,7 +9,7 @@ What this file answers:
 * What should happen next?
 
 Examples: ask_for_missing_fields, awaiting_confirmation, execution_started,
-immediate_execution (inventory_aws), general_chat
+immediate_execution (inventory_aws, show_billing), general_chat
 
 This is the Decide layer (STEP 4) — what should happen next?
 (Request Workflow subtypes: new request, continue, commands, run work, or General Chat.)
@@ -32,7 +32,7 @@ FUNCTIONS B: Helpers
     8) Function B8: buildFieldsMergedDecision
     9) Function B9: handleExecutionModeSelection
     10) Function B10: resolveRequestChat
-    11) Function B11: shouldStartImmediateExecution
+    11) Function B11: resolveImmediateExecutionAction
     12) Function B12: shouldStartExecutionOnConfirm
     13) Function B13: buildExecutionStartedDecision
     14) Function B14: buildGeneralChatDecision
@@ -96,12 +96,14 @@ function decideNextStep({ understanding, requestState }) {
         return buildExecutionStartedDecision(state);
     }
 
-    if (shouldStartImmediateExecution(state, u)) {
+    const immediateAction = resolveImmediateExecutionAction(state, u);
+
+    if (immediateAction) {
         return {
             chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
             request: null,
             response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
-            execute: { action: 'inventory_aws' }
+            execute: { action: immediateAction }
         };
     }
 
@@ -405,23 +407,30 @@ function resolveRequestChat(state) {
     return cloudpilotDecision(request, responseType);
 }
 
-//Function B11: inventory_aws — immediate execution, no request row
-function shouldStartImmediateExecution(state, understanding) {
-    if (understanding.action !== 'inventory_aws') {
-        return false;
+//Function B11: informational actions that run immediately (no request row)
+function resolveImmediateExecutionAction(state, understanding) {
+    const actionName =
+        understanding && understanding.action ? String(understanding.action).trim() : '';
+
+    if (!actionName || actionName === 'general_chat') {
+        return null;
     }
 
-    const actionDefinition = actionMap.inventory_aws;
+    const actionDefinition = actionMap[actionName];
 
     if (!actionDefinition || actionDefinition.requiresWorkflow || !actionDefinition.requiresExecution) {
-        return false;
+        return null;
     }
 
     if (!state.pendingAction) {
-        return true;
+        return actionName;
     }
 
-    return ActionStatusFunctions.isTerminalStatus(state.status);
+    if (ActionStatusFunctions.isTerminalStatus(state.status)) {
+        return actionName;
+    }
+
+    return null;
 }
 
 //Function B12: User said yes — start execution when confirmation rules are met

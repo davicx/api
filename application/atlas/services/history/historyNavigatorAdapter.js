@@ -7,8 +7,12 @@ FUNCTIONS A: Change history Navigator data
 
 FUNCTIONS B: Display helpers (DB values unchanged)
     1) Function B1: formatActionDisplayName
-    2) Function B2: formatResourceDisplay
-    3) Function B3: formatHistoryStatus
+    2) Function B2: formatChange
+    3) Function B3: formatResourceDisplay
+    4) Function B4: formatResourceFull
+    5) Function B5: formatHistoryStatus
+    6) Function B6: findNewestUndoableHistoryId
+    7) Function B7: buildUndoConfirmMessage
 */
 
 const ACTION_LABELS = {
@@ -49,52 +53,191 @@ function buildHistoryNavigatorResponse(historyRows, options = {}) {
 }
 
 function buildHistoryTable(historyRows) {
+    const rows = Array.isArray(historyRows) ? historyRows : [];
+    const newestUndoableId = findNewestUndoableHistoryId(rows);
+
     return navigatorResponseFunctions.createEmptyNavigatorTable({
-        id: 'recent_change_history',
-        title: 'Recent changes',
+        id: 'change_history',
+        title: 'History',
         columns: [
             navigatorResponseFunctions.createNavigatorTableColumn({
-                key: 'action_name',
-                label: 'Action Name',
+                key: 'change',
+                label: 'Change',
                 type: 'text'
             }),
-            navigatorResponseFunctions.createNavigatorTableColumn({
-                key: 'resource',
-                label: 'Resource',
-                type: 'text'
-            }),
+            Object.assign(
+                navigatorResponseFunctions.createNavigatorTableColumn({
+                    key: 'resource',
+                    label: 'Resource',
+                    type: 'text'
+                }),
+                { title_key: 'resource_full' }
+            ),
             navigatorResponseFunctions.createNavigatorTableColumn({
                 key: 'status',
                 label: 'Status',
                 type: 'status'
             }),
-            navigatorResponseFunctions.createNavigatorTableColumn({
-                key: 'undo',
-                label: 'Undo',
-                type: 'text'
-            }),
-            navigatorResponseFunctions.createNavigatorTableColumn({
-                key: 'when',
-                label: 'When',
-                type: 'text'
-            })
+            Object.assign(
+                navigatorResponseFunctions.createNavigatorTableColumn({
+                    key: 'undo',
+                    label: 'Undo',
+                    type: 'action'
+                }),
+                { action: 'undo_latest' }
+            ),
+            Object.assign(
+                navigatorResponseFunctions.createNavigatorTableColumn({
+                    key: 'when',
+                    label: 'When',
+                    type: 'text'
+                }),
+                { title_key: 'when_exact' }
+            )
         ],
-        rows: historyRows.map(buildHistoryTableRow)
+        rows: rows.map(function mapHistoryRow(historyRow) {
+            return buildHistoryTableRow(historyRow, newestUndoableId);
+        })
     });
 }
 
-function buildHistoryTableRow(historyRow) {
+function buildHistoryTableRow(historyRow, newestUndoableId) {
     const row = historyRow || {};
+    const resourceDisplay = formatResourceDisplay(row.targetId);
+    const resourceFull = formatResourceFull(row.targetId);
+    const change = formatChange(row);
+    const undoEnabled =
+        newestUndoableId != null && Number(row.id) === Number(newestUndoableId);
 
     return {
-        action_name: formatActionDisplayName(row.actionDisplayName, row.actionName),
-        resource: formatResourceDisplay(row.targetId),
+        change: change,
+        resource: resourceDisplay,
+        resource_display: resourceDisplay,
+        resource_full: resourceFull,
         status: formatHistoryStatus(row.historyStatus),
-        undo: row.undoAvailable ? 'Yes' : 'No',
+        undo: undoEnabled ? 'Undo' : '—',
+        undo_enabled: undoEnabled,
+        undo_confirm: undoEnabled ? buildUndoConfirmMessage(change) : '',
         when: AtlasTimeFunctions.formatRelativeTime(row.createdAt),
         when_exact: AtlasTimeFunctions.formatExactTimestamp(row.createdAt),
-        action_record_key: row.actionRecordKey || null
+        action_record_key: row.actionRecordKey || null,
+        history_id: row.id != null ? row.id : null
     };
+}
+
+//Function B6: Newest completed row with undo_available (list is newest-first)
+function findNewestUndoableHistoryId(historyRows) {
+    const rows = Array.isArray(historyRows) ? historyRows : [];
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] || {};
+
+        if (!row.undoAvailable) {
+            continue;
+        }
+
+        if (String(row.historyStatus || '').trim().toLowerCase() !== 'completed') {
+            continue;
+        }
+
+        return row.id;
+    }
+
+    return null;
+}
+
+//Function B7: Confirm copy for dashboard Undo button
+function buildUndoConfirmMessage(changeText) {
+    const change = String(changeText || '').trim();
+
+    if (change) {
+        return 'Undo this change?\n\n' + change;
+    }
+
+    return 'Undo the most recent change?';
+}
+
+//Function B2: Timeline sentence — what changed?
+function formatChange(row) {
+    const actionName = String(row.actionName || '').trim();
+
+    if (actionName.indexOf('undo_') === 0) {
+        return formatUndoChange(actionName);
+    }
+
+    if (actionName === 'update_ec2_tag') {
+        return formatTagChange(row.resourceStateBefore, row.resourceStateAfter);
+    }
+
+    if (actionName === 'toggle_ec2') {
+        return 'Toggled EC2';
+    }
+
+    if (actionName === 'create_ec2') {
+        return 'Created EC2 instance';
+    }
+
+    if (actionName === 'delete_ec2') {
+        return 'Deleted EC2 instance';
+    }
+
+    return formatActionDisplayName(row.actionDisplayName, row.actionName);
+}
+
+function formatUndoChange(actionName) {
+    if (actionName === 'undo_toggle_ec2') {
+        return 'Undid EC2 toggle';
+    }
+
+    if (actionName === 'undo_create_ec2') {
+        return 'Undid EC2 create';
+    }
+
+    if (actionName === 'undo_delete_ec2') {
+        return 'Undid EC2 delete';
+    }
+
+    if (actionName === 'undo_update_ec2_tag') {
+        return 'Undid tag change';
+    }
+
+    return 'Undid change';
+}
+
+function formatTagChange(resourceStateBefore, resourceStateAfter) {
+    const beforeTags =
+        resourceStateBefore && resourceStateBefore.tags ? resourceStateBefore.tags : {};
+    const afterTags =
+        resourceStateAfter && resourceStateAfter.tags ? resourceStateAfter.tags : {};
+    const keys =
+        Object.keys(afterTags).length > 0
+            ? Object.keys(afterTags)
+            : Object.keys(beforeTags);
+    const tagKey = keys.length > 0 ? keys[0] : 'tag';
+    const beforeValue = beforeTags[tagKey];
+    const afterValue = afterTags[tagKey];
+    const beforeText =
+        beforeValue != null && String(beforeValue).trim() !== ''
+            ? String(beforeValue)
+            : null;
+    const afterText =
+        afterValue != null && String(afterValue).trim() !== ''
+            ? String(afterValue)
+            : null;
+
+    if (beforeText && afterText) {
+        return 'Changed tag ' + tagKey + ' from ' + beforeText + ' to ' + afterText;
+    }
+
+    if (afterText) {
+        return 'Set tag ' + tagKey + ' to ' + afterText;
+    }
+
+    if (beforeText) {
+        return 'Removed tag ' + tagKey;
+    }
+
+    return 'Changed tag ' + tagKey;
 }
 
 function formatActionDisplayName(actionDisplayName, actionName) {
@@ -136,6 +279,11 @@ function formatResourceDisplay(targetId) {
     }
 
     return truncateResourceId(raw);
+}
+
+//Function B4: Full resource string for tooltip / debug (untouched target_id)
+function formatResourceFull(targetId) {
+    return String(targetId || '').trim();
 }
 
 function truncateResourceId(value, headLength, tailLength) {

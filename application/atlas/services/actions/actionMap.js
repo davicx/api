@@ -5,6 +5,7 @@ const createEC2Handler = require('./ec2/createEC2/createEC2Handler');
 const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
 const updateEC2TagHandler = require('./ec2/updateEC2Tag/updateEC2TagHandler');
 const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
+const billingAWSHandler = require('./aws/billingAWS/billingAWSHandler');
 
 /*
 What this file answers:
@@ -13,7 +14,7 @@ What this file answers:
 * How are actions detected? (match rules — used by understanding/search/searchMessageForAction.js)
 * What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
 
-Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, scan_s3, general_chat
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, scan_s3, general_chat
 
 See doc/development/architecture/action_map.md.
 */
@@ -120,6 +121,53 @@ const actionMap = {
             executing: 'Gathering AWS resources.',
             success: 'Great, I found your AWS resources and added them to your dashboard.',
             failed: 'AWS inventory failed.'
+        }
+    },
+
+    //SERVICE: AWS
+    //Action: AWS Billing summary
+    show_billing: {
+        //Identity
+        type: 'show_billing',
+        actionLabel: 'AWS Billing',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('show my billing') ||
+            text.includes('show my aws bill') ||
+            text.includes('show aws billing') ||
+            text.includes('why is my aws bill') ||
+            text.includes('why is my bill so high') ||
+            text.includes('where is my money going') ||
+            text.includes('what am i being charged'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {
+            period_days: 30
+        },
+
+        //Execution
+        executionFunction: billingAWSHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing AWS billing summary.',
+            missingFields: {},
+            ready: 'Everything is ready for AWS billing.',
+            executing: 'Loading AWS billing.',
+            success: 'Here is your AWS billing summary.',
+            failed: 'AWS billing summary failed.'
         }
     },
 

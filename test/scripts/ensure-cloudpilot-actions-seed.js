@@ -13,11 +13,13 @@ const db = require('../../application/functions/conn');
 const ACTIONS = [
     { action_type: 'general_chat', display_name: 'General Chat', requires_execution: 0 },
     { action_type: 'inventory_aws', display_name: 'Inventory AWS Resources', requires_execution: 1 },
+    { action_type: 'show_billing', display_name: 'AWS Billing', requires_execution: 1 },
     { action_type: 'scan_ec2', display_name: 'Scan EC2', requires_execution: 0 },
     { action_type: 'scan_s3', display_name: 'Scan S3', requires_execution: 0 },
     { action_type: 'toggle_ec2', display_name: 'Toggle EC2', requires_execution: 0 },
     { action_type: 'create_ec2', display_name: 'Create EC2', requires_execution: 0 },
-    { action_type: 'delete_ec2', display_name: 'Delete EC2', requires_execution: 0 }
+    { action_type: 'delete_ec2', display_name: 'Delete EC2', requires_execution: 0 },
+    { action_type: 'update_ec2_tag', display_name: 'Update EC2 Tag', requires_execution: 0 }
 ];
 
 function runQuery(connection, queryString, params) {
