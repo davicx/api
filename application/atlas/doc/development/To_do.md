@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-05
 
-> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[cloud_pilot_chat.md](./cloud_pilot_chat.md)**  
 > **History (MVP done):** [history.md](./history.md) · **Deferred:** [future_work.md](./future_work.md)  
 > **Done:** [finished.md](./finished.md) · **Architecture & reference:** [architecture/](./architecture/)
 
@@ -14,7 +14,7 @@
 
 **History MVP is complete** — see [history.md](./history.md) and [finished.md](./finished.md). Deferred history items: [future_work.md](./future_work.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md). **Chat context & enhanced replies:** [cloud_pilot_chat.md](./cloud_pilot_chat.md).
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
@@ -26,6 +26,15 @@
 - [ ] Phase 4 — wire `change/strategies/pr.js` (`create_ec2` only)
 - [ ] Phase 5 — history after PR apply
 - [ ] Phase 6 — undo revert PR
+
+#### CloudPilot Chat — context & enhanced replies ([cloud_pilot_chat.md](./cloud_pilot_chat.md))
+
+- [ ] Phase C1 — `buildCloudPilotContext` + `OPENAI_ENHANCED_REPLIES` toggle
+- [ ] Phase C2 — Wire `speakGeneral` with fallback
+- [ ] Phase C3 — Workflow `relevant_context`
+- [ ] Phase C4 — Post-scan chat summaries (S3/EC2)
+- [ ] Phase C5 — Knowledge files per `rule_id`
+- [ ] Dashboard section — deferred (see doc)
 
 ### Future
 
