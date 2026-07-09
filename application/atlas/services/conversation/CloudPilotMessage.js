@@ -1,22 +1,55 @@
 const { CHAT_TYPE } = require('../decision/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
-// const openAIFunctions = require('../engines/llm/openai/openAIFunctions');
+const openAIFunctions = require('../engines/llm/openai/openAIFunctions');
+const { buildGeneralConversationContext } = require('../context/buildGeneralConversationContext');
+const { buildSystemPrompt } = require('../context/buildSystemPrompt');
 
 /*
 CloudPilotMessage — how CloudPilot communicates with the user.
 
 Single voice for General and Request Conversation.
-Today: general stub + request templates. Tomorrow: engine, hybrid, formatting.
+General: context build → log → optional OpenAI. Request: templates.
 */
+
+const GENERAL_CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
+
+function isOpenAiEnhancedRepliesEnabled() {
+    return process.env.OPENAI_ENHANCED_REPLIES === 'true';
+}
+
+function logGeneralConversationContext(contextLog) {
+    console.log('______________________________________________________________');
+    console.log('STEP 7a: Build General Conversation Context');
+    console.log(JSON.stringify(contextLog, null, 2));
+    console.log('______________________________________________________________');
+    console.log(' ');
+}
 
 //Function A1: General Conversation speak
 async function speakGeneral(context) {
     const currentUserMessage = context.currentUserMessage || '';
-    // const openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage);
-    const openAIResult = {
-        success: true,
-        data: 'Open AI will respond when Live'
-    };
+    const builtContext = buildGeneralConversationContext({
+        userMessage: currentUserMessage
+    });
+
+    const aiEnabled = isOpenAiEnhancedRepliesEnabled();
+
+    logGeneralConversationContext({
+        ...builtContext.log,
+        aiEnabled: aiEnabled
+    });
+
+    let openAIResult;
+
+    if (aiEnabled) {
+        const systemPrompt = buildSystemPrompt(builtContext);
+        openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage, systemPrompt);
+    } else {
+        openAIResult = {
+            success: true,
+            data: GENERAL_CHAT_STUB_MESSAGE
+        };
+    }
 
     if (!openAIResult.success) {
         return formatOutgoing({

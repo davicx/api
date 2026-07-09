@@ -29,8 +29,8 @@
 
 #### CloudPilot Chat — context & enhanced replies ([cloud_pilot_chat.md](./cloud_pilot_chat.md))
 
-- [ ] Phase C1 — `buildCloudPilotContext` + `OPENAI_ENHANCED_REPLIES` toggle
-- [ ] Phase C2 — Wire `speakGeneral` with fallback
+- [x] Phase C1 — context build + STEP 7a log (`context/`)
+- [ ] Phase C2 — verify `OPENAI_ENHANCED_REPLIES=true` in production demo
 - [ ] Phase C3 — Workflow `relevant_context`
 - [ ] Phase C4 — Post-scan chat summaries (S3/EC2)
 - [ ] Phase C5 — Knowledge files per `rule_id`

@@ -4,7 +4,9 @@
 
 > **Related:** [make_scans_useful.md](./make_scans_useful.md) · [remediations.md](./remediations.md) · [To_do.md](./To_do.md) · [architecture/architecture.md](./architecture/architecture.md)
 
-**Status:** Planning lock — not implemented. OpenAI SDK exists (`engines/llm/openai/`); `CloudPilotMessage.speakGeneral` still uses a stub. Enhanced replies are optional and demo-toggleable.
+**Status:** C1 shipped — General Conversation context builds and logs (STEP 7a). `OPENAI_ENHANCED_REPLIES=false` keeps stub reply; `true` calls OpenAI with `buildSystemPrompt()`.
+
+**Folder:** `services/context/` — `cloudPilotContext.js`, `currentQuestionContext.js`, `organizationKnowledgeContext.js`, `buildGeneralConversationContext.js`, `buildSystemPrompt.js`
 
 ---
 
@@ -247,10 +249,14 @@ Knowledge layer expands each `rule_id` into meaning / risk / tradeoff **before**
 
 ### Phase C1 — Context builder + toggle
 
-- [ ] `services/knowledge/buildCloudPilotContext.js`
-- [ ] `services/knowledge/generalContext.js` (static MVP copy)
-- [ ] `OPENAI_ENHANCED_REPLIES` env flag
-- [ ] Refactor `openAIFunctions` to accept built system prompt (not hardcoded blocks)
+- [x] `services/context/cloudPilotContext.js` — `getCloudPilotContext()`
+- [x] `services/context/currentQuestionContext.js` — `buildCurrentQuestionContext()`
+- [x] `services/context/organizationKnowledgeContext.js` — `getOrganizationKnowledgeContext()`
+- [x] `services/context/buildGeneralConversationContext.js`
+- [x] `services/context/buildSystemPrompt.js`
+- [x] `OPENAI_ENHANCED_REPLIES` env flag (read in `speakGeneral`, not builder)
+- [x] STEP 7a log + STEP 7b speak
+- [x] `sendGeneralChat` accepts optional system prompt
 
 ### Phase C2 — General chat live
 

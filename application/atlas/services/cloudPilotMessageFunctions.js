@@ -134,7 +134,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
         });
 
         const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
-        console.log("STEP 7: General Conversation — speak");
+        console.log("STEP 7b: Speak General Conversation");
         console.log(JSON.stringify(shortResponseOutcome, null, 2));
         console.log(" ");
 

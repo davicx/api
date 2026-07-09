@@ -155,7 +155,7 @@ async function sendChatWithAction(userMessage, action) {
  * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
  */
 //Function A5: Send General Chat
-async function sendGeneralChat(userMessage) {
+async function sendGeneralChat(userMessage, systemPrompt) {
     const norm = normalizeUserMessageForModel(userMessage);
     if (!norm.ok) {
         return { success: false, message: norm.message, data: null };
@@ -180,24 +180,26 @@ async function sendGeneralChat(userMessage) {
     const config = CHAT_CONFIG.LOW;
     console.log('[sendGeneralChat] model=%s max_tokens=%s temperature=%s', config.model, config.max_tokens, config.temperature);
 
+    const defaultSystemContent =
+        'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
+        'Prioritize:\n' +
+        '- AWS terminology\n' +
+        '- operationally useful answers\n' +
+        '- exact AWS resource names\n' +
+        '- exact AWS region identifiers when relevant\n\n' +
+        'Keep responses brief, practical, and natural.\n' +
+        'Keep responses under 15 words unless a short follow-up question is needed.\n' +
+        'Do not claim AWS actions were executed.';
+
     const result = await createOpenAiChatCompletion(client, {
         model: config.model,
-            messages: [
-                {
-                    role: 'system',
-                    content:
-                        'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
-                        'Prioritize:\n' +
-                        '- AWS terminology\n' +
-                        '- operationally useful answers\n' +
-                        '- exact AWS resource names\n' +
-                        '- exact AWS region identifiers when relevant\n\n' +
-                        'Keep responses brief, practical, and natural.\n' +
-                        'Keep responses under 15 words unless a short follow-up question is needed.\n' +
-                        'Do not claim AWS actions were executed.'
-                },
-                { role: 'user', content: text }
-            ],
+        messages: [
+            {
+                role: 'system',
+                content: systemPrompt || defaultSystemContent
+            },
+            { role: 'user', content: text }
+        ],
         max_tokens: config.max_tokens,
         temperature: config.temperature
     });
