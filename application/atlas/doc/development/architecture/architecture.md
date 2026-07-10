@@ -12,7 +12,7 @@
 | Database schema (actions, requests, executions) | `doc/database/database.md` |
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
-| Scan expansion | [scans.md](./scans.md) · [future_work.md](./future_work.md) |
+| Scan expansion (deferred) | [../long_term/scans.md](../long_term/scans.md) · [../long_term/future_work.md](../long_term/future_work.md) |
 | Legacy request SQL (historical) | `doc/sql/cloudpilot_workflows_phase1.sql` |
 | **Master SQL (source of truth)** | `doc/sql/master_sql.sql` |
 | EC2 chat samples | `api/README.md` |
@@ -23,9 +23,10 @@
 
 | Doc | Purpose |
 |-----|---------|
-| [../history.md](../history.md) | **Active work** — history, undo, recent history/requests |
-| [../To_do.md](../To_do.md) | Future backlog |
-| [../finished.md](../finished.md) | Shipped |
+| [../mvp.md](../mvp.md) | **Active work** — EC2 vertical slice |
+| [../long_term/to_do.md](../long_term/to_do.md) | Deferred backlog |
+| [../long_term/finished.md](../long_term/finished.md) | Shipped |
+| [../cloud_pilot_chat.md](../cloud_pilot_chat.md) | Chat context — part of MVP (M7) |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |
 | [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |

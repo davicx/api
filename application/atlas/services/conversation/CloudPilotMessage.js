@@ -1,8 +1,8 @@
 const { CHAT_TYPE } = require('../decision/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
 const openAIFunctions = require('../engines/llm/openai/openAIFunctions');
-const { buildGeneralConversationContext } = require('../context/buildGeneralConversationContext');
-const { buildSystemPrompt } = require('../context/buildSystemPrompt');
+const { buildConversationContext } = require('../context/buildConversationContext');
+const { buildCloudPilotInstructions } = require('../context/buildCloudPilotInstructions');
 
 /*
 CloudPilotMessage — how CloudPilot communicates with the user.
@@ -28,7 +28,7 @@ function logGeneralConversationContext(contextLog) {
 //Function A1: General Conversation speak
 async function speakGeneral(context) {
     const currentUserMessage = context.currentUserMessage || '';
-    const builtContext = buildGeneralConversationContext({
+    const builtContext = buildConversationContext({
         userMessage: currentUserMessage
     });
 
@@ -42,8 +42,8 @@ async function speakGeneral(context) {
     let openAIResult;
 
     if (aiEnabled) {
-        const systemPrompt = buildSystemPrompt(builtContext);
-        openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage, systemPrompt);
+        const cloudPilotInstructions = buildCloudPilotInstructions(builtContext);
+        openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage, cloudPilotInstructions);
     } else {
         openAIResult = {
             success: true,

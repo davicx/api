@@ -1,6 +1,11 @@
 /*
-CloudPilot personality — who CloudPilot is, tone, safety, clarity.
-Used by buildSystemPrompt(); logs show { loaded: true } only.
+TYPE 1 — IDENTITY
+Role: Who is CloudPilot? How should it speak? What are its goals and boundaries?
+
+This rarely changes. It is product voice — stays in code (not database).
+Source: code constant (optional env override for demo tuning later).
+
+Used by: buildConversationContext → buildCloudPilotInstructions → AI (IDENTITY section)
 */
 
 const CLOUDPILOT_PERSONALITY_TEXT =
