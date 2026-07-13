@@ -1,22 +1,43 @@
 /*
-TYPE 3 — KNOWLEDGE (organization slice)
-Role: What company-specific background should CloudPilot know before answering?
+TYPE 3 — KNOWLEDGE (organization slice + product slice)
+Role: What background should CloudPilot know before answering?
 
-Examples: Team tag required, Terraform-only, no prod auto-delete, change windows.
-Source: database per org/group (groupID) — NOT in repo.
+Organization: Team tag required, Terraform-only, etc. — database per org/group later.
+Product: AWS rule meanings from services/knowledge/ later.
 
-MVP: returns empty object. Product knowledge (AWS rules, rule meanings) lives separately
-in services/knowledge/ and is merged into the KNOWLEDGE prompt section at build time.
+MVP: organization empty; product [].
 
 Do not confuse with Situation (live state) or Identity (product voice).
 
-Used by: buildConversationContext → buildCloudPilotInstructions → AI (KNOWLEDGE section)
+Used by: buildAIContext → buildAISystemMessage → AI (KNOWLEDGE section)
 */
 
-function getOrganizationKnowledgeContext() {
+//Function A1: Organization knowledge slice (DB later)
+function getOrganizationKnowledgeData() {
     return {};
 }
 
+//Function A2: Return structured Knowledge context (data only)
+function getKnowledgeContext() {
+    const organization = getOrganizationKnowledgeData();
+    const product = [];
+
+    const knowledge = {
+        loaded: true,
+        type: 'knowledge',
+        data: {
+            organization: organization,
+            product: product
+        }
+    };
+
+    console.log('Building Knowledge Context');
+    console.log(JSON.stringify(knowledge, null, 2));
+
+    return knowledge;
+}
+
 module.exports = {
-    getOrganizationKnowledgeContext
+    getOrganizationKnowledgeData,
+    getKnowledgeContext
 };

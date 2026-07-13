@@ -1,49 +1,63 @@
 const { CHAT_TYPE } = require('../decision/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
 const openAIFunctions = require('../engines/llm/openai/openAIFunctions');
-const { buildConversationContext } = require('../context/buildConversationContext');
-const { buildCloudPilotInstructions } = require('../context/buildCloudPilotInstructions');
+const { OPENAI_CHAT_CONFIG } = require('../config/openAIChatConfig');
+const { buildAIContext } = require('../context/buildAIContext');
+const { buildAISystemMessage } = require('../context/buildAISystemMessage');
 
 /*
 CloudPilotMessage — how CloudPilot communicates with the user.
 
 Single voice for General and Request Conversation.
-General: context build → log → optional OpenAI. Request: templates.
+General: AI context → system message → optional OpenAI. Request: templates.
 */
 
 const GENERAL_CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
 
-function isOpenAiEnhancedRepliesEnabled() {
-    return process.env.OPENAI_ENHANCED_REPLIES === 'true';
-}
-
-function logGeneralConversationContext(contextLog) {
-    console.log('______________________________________________________________');
-    console.log('STEP 7a: Build General Conversation Context');
-    console.log(JSON.stringify(contextLog, null, 2));
-    console.log('______________________________________________________________');
-    console.log(' ');
-}
-
 //Function A1: General Conversation speak
 async function speakGeneral(context) {
     const currentUserMessage = context.currentUserMessage || '';
-    const builtContext = buildConversationContext({
-        userMessage: currentUserMessage
-    });
+    const aiContext = buildAIContext();
+    const systemMessage = buildAISystemMessage(aiContext);
 
-    const aiEnabled = isOpenAiEnhancedRepliesEnabled();
+    //STEP 7a: AI Context
+    console.log('______________________________________________________________');
+    console.log('STEP 7a: AI Context');
+    console.log(JSON.stringify(aiContext, null, 2));
+    console.log('organization knowledge: not used (empty)');
+    console.log('openAIChatConfig:', OPENAI_CHAT_CONFIG);
+    console.log('______________________________________________________________');
+    console.log(' ');
 
-    logGeneralConversationContext({
-        ...builtContext.log,
-        aiEnabled: aiEnabled
-    });
+    //STEP 7b: OpenAI System Message (optional)
+    if (OPENAI_CHAT_CONFIG.logPrompt) {
+        console.log('______________________________________________________________');
+        console.log('STEP 7b: OpenAI System Message');
+        console.log(systemMessage || '(empty system message)');
+        console.log('______________________________________________________________');
+        console.log(' ');
+    }
 
     let openAIResult;
 
-    if (aiEnabled) {
-        const cloudPilotInstructions = buildCloudPilotInstructions(builtContext);
-        openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage, cloudPilotInstructions);
+    if (OPENAI_CHAT_CONFIG.enhancedReplies) {
+        //STEP 7c: Send OpenAI Request
+        console.log('STEP 7c: Send OpenAI Request');
+
+        if (OPENAI_CHAT_CONFIG.logRequest) {
+            console.log(
+                JSON.stringify(
+                    {
+                        system: systemMessage,
+                        conversation: [{ role: 'user', content: currentUserMessage }]
+                    },
+                    null,
+                    2
+                )
+            );
+        }
+
+        openAIResult = await openAIFunctions.sendGeneralChat(currentUserMessage, systemMessage);
     } else {
         openAIResult = {
             success: true,

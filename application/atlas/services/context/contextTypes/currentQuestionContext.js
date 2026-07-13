@@ -5,9 +5,8 @@ Role: What is happening right now? (Full CloudPilot state this turn — not just
 Built from the pipeline: request row, handler output, decision, last action.
 Not prompt engineering — this IS the current state object.
 
-Target shape (fields added incrementally; only populated keys are sent):
+Target shape in data (fields added incrementally):
 {
-    userMessage,
     previousAction,
     openRequest,
     selectedResource,
@@ -17,16 +16,24 @@ Target shape (fields added incrementally; only populated keys are sent):
     capabilities
 }
 
-MVP today: userMessage only.
+MVP general chat: data is {} — the user's sentence lives in conversation history, not here.
 See: doc/development/cloud_pilot_chat.md
 
-Used by: buildConversationContext → buildCloudPilotInstructions → AI (CURRENT SITUATION section)
+Used by: buildAIContext → buildAISystemMessage → AI (CURRENT SITUATION section)
 */
 
-function buildCurrentQuestionContext({ userMessage }) {
-    return {
-        userMessage: typeof userMessage === 'string' ? userMessage.trim() : ''
+//Function A1: Return structured Situation context (data only)
+function buildCurrentQuestionContext() {
+    const situation = {
+        loaded: true,
+        type: 'situation',
+        data: {}
     };
+
+    console.log('Building Situation Context');
+    console.log(JSON.stringify(situation, null, 2));
+
+    return situation;
 }
 
 module.exports = {
