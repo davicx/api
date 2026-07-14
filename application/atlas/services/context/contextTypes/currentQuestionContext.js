@@ -1,33 +1,27 @@
+const CurrentQuestionContext = require('../classes/CurrentQuestionContext');
+
 /*
 TYPE 2 — SITUATION
-Role: What is happening right now? (Full CloudPilot state this turn — not just the user's words.)
+Role: What is happening right now?
 
-Built from the pipeline: request row, handler output, decision, last action.
-Not prompt engineering — this IS the current state object.
+Application owns this. Temporary for this turn.
+Build from processMessageContext — do not invent AWS facts.
 
-Target shape in data (fields added incrementally):
-{
-    previousAction,
-    openRequest,
-    selectedResource,
-    findings,
-    dashboardData,
-    executionMode,
-    capabilities
-}
+MVP: userMessage + selectedFinding (from request body).
+Later: open request, execution mode, conversation excerpts.
 
-MVP general chat: data is {} — the user's sentence lives in conversation history, not here.
-See: doc/development/cloud_pilot_chat.md
-
-Used by: buildAIContext → buildAISystemMessage → AI (CURRENT SITUATION section)
+Used by: buildAIContext → buildAISystemMessage → AI
 */
 
 //Function A1: Return structured Situation context (data only)
-function buildCurrentQuestionContext() {
+function buildCurrentQuestionContext(processMessageContext) {
+    const situationBuilder = new CurrentQuestionContext(processMessageContext);
+    const data = situationBuilder.toData();
+
     const situation = {
         loaded: true,
         type: 'situation',
-        data: {}
+        data: data
     };
 
     console.log('Building Situation Context');

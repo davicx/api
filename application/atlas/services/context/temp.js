@@ -239,7 +239,7 @@ General: context build → log → optional OpenAI. Request: templates.
 const GENERAL_CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
 
 function isOpenAiEnhancedRepliesEnabled() {
-    return process.env.OPENAI_ENHANCED_REPLIES === 'true';
+    return process.env.OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING === 'true';
 }
 
 function logGeneralConversationContext(contextLog) {

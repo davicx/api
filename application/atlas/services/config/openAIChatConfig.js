@@ -5,7 +5,8 @@
  * ceilings see chatGPTconfig.js.
  *
  * Env:
- *   OPENAI_ENHANCED_REPLIES=true|false
+ *   OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true|false
+ *     → true actually calls OpenAI (costs money). Default false.
  *   OPENAI_SEND_CONVERSATION_HISTORY=true|false
  *   OPENAI_CONVERSATION_HISTORY_LIMIT=12
  *   OPENAI_LOG_PROMPTS=true|false
@@ -37,8 +38,15 @@ function readEnvPositiveInt(envName, defaultValue, maxValue) {
 }
 
 const OPENAI_CHAT_CONFIG = {
-    /** Master switch: call OpenAI for general chat vs stub/template. */
-    enhancedReplies: readEnvBoolean('OPENAI_ENHANCED_REPLIES', false),
+    /**
+     * Master switch: actually send general chat to OpenAI (billing).
+     * Env: OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING
+     * Default false — logs/context still work without this.
+     */
+    liveSendAllMessagesWillCauseBilling: readEnvBoolean(
+        'OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING',
+        false
+    ),
 
     /** Include recent conversation messages in the OpenAI request (when wired). */
     sendConversationHistory: readEnvBoolean('OPENAI_SEND_CONVERSATION_HISTORY', true),

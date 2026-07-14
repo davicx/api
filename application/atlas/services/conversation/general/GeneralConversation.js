@@ -3,11 +3,13 @@ const { CHAT_TYPE } = require('../../decision/decisionTypes');
 
 /*
 General Conversation — speak (entire non-request turn after STEP 4)
+
+Receives processMessageContext (currentUserMessage, selectedFinding, …).
 */
 
 //Function A1: General Conversation entry
-async function conversation(context) {
-    return CloudPilotMessage.speakGeneral(context);
+async function conversation(processMessageContext) {
+    return CloudPilotMessage.speakGeneral(processMessageContext);
 }
 
 //Function B1: True when STEP 4 routed to General Conversation

@@ -15,9 +15,10 @@ General: AI context → system message → optional OpenAI. Request: templates.
 const GENERAL_CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
 
 //Function A1: General Conversation speak
-async function speakGeneral(context) {
+async function speakGeneral(processMessageContext) {
+    const context = processMessageContext || {};
     const currentUserMessage = context.currentUserMessage || '';
-    const aiContext = buildAIContext();
+    const aiContext = buildAIContext(context);
     const systemMessage = buildAISystemMessage(aiContext);
 
     //STEP 7a: AI Context
@@ -40,7 +41,7 @@ async function speakGeneral(context) {
 
     let openAIResult;
 
-    if (OPENAI_CHAT_CONFIG.enhancedReplies) {
+    if (OPENAI_CHAT_CONFIG.liveSendAllMessagesWillCauseBilling) {
         //STEP 7c: Send OpenAI Request
         console.log('STEP 7c: Send OpenAI Request');
 

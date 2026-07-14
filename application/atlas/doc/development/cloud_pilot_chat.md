@@ -711,7 +711,7 @@ No AWS logic in renderer. Intelligence stays in **assembling** `.data`; renderer
 
 ## MVP demo — what “working pretty good” means
 
-Three prompts must feel natural with `OPENAI_ENHANCED_REPLIES=true`:
+Three prompts must feel natural with `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true`:
 
 ### A) “What can you do?”
 
@@ -787,7 +787,7 @@ Natural explanation
 
 **Entry point:** `CloudPilotMessage.speakGeneral()` and (C4) optional AI wrap after scan explainers.
 
-Requires: `OPENAI_ENHANCED_REPLIES=true` + `OPENAI_API_KEY`. **Fallback** to templates if off or error.
+Requires: `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true` + `OPENAI_API_KEY`. **Fallback** to templates if off or error.
 
 ---
 
@@ -874,7 +874,7 @@ If only OpenAI can use it, it's in the wrong layer.
 ## Toggle (one flag for MVP)
 
 ```env
-OPENAI_ENHANCED_REPLIES=true
+OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true
 OPENAI_API_KEY=…
 ```
 
@@ -1029,7 +1029,7 @@ Knowledge layer expands each `rule_id` into meaning / risk / tradeoff **before**
 - [x] `contextTypes/organizationKnowledgeContext.js` — Type 3 empty object
 - [x] `buildConversationContext.js` — merges types _(update imports to `contextTypes/` when wiring)_
 - [x] `buildCloudPilotInstructions.js`
-- [x] `OPENAI_ENHANCED_REPLIES` in `speakGeneral`
+- [x] `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING` in `speakGeneral`
 - [x] STEP 7a log + OpenAI when enabled
 - [x] `sendGeneralChat` accepts system prompt
 
@@ -1141,7 +1141,7 @@ Detailed Findings           ← dashboard (unchanged data model)
 
 ## Open decisions (minor)
 
-1. **One flag vs split** — `OPENAI_ENHANCED_REPLIES` only for MVP?
+1. **One flag vs split** — `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING` only for MVP?
 2. **Post-scan:** AI wrap on `cloudPilotMessage` (C4) vs template-only with AI for follow-up questions?
 3. **Prompt presentation** — stay JSON until proven insufficient; then format in `buildCloudPilotInstructions` only
 4. **Dashboard summary** — chat-only for MVP demo?

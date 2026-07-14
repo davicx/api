@@ -84,11 +84,62 @@ function writeSituation(currentQuestionContext) {
         return '';
     }
 
-    const lines = Object.keys(data).map(function (key) {
-        return key + ': ' + JSON.stringify(data[key]);
-    });
+    const sections = [];
 
-    return 'Current CloudPilot situation:\n' + lines.join('\n');
+    if (data.userMessage) {
+        sections.push('The user asked: "' + data.userMessage + '"');
+    }
+
+    if (data.selectedFinding && typeof data.selectedFinding === 'object') {
+        const finding = data.selectedFinding;
+        const bullets = [];
+
+        if (finding.ruleId) {
+            bullets.push('Rule: ' + finding.ruleId);
+        }
+        if (finding.service) {
+            bullets.push('Service: ' + finding.service);
+        }
+        if (finding.instanceId) {
+            bullets.push('Instance: ' + finding.instanceId);
+        }
+        if (finding.name || finding.resourceName) {
+            bullets.push('Name: ' + (finding.name || finding.resourceName));
+        }
+        if (finding.title) {
+            bullets.push('Title: ' + finding.title);
+        }
+        if (finding.cpuAverage != null || finding.cpu != null) {
+            bullets.push('CPU average: ' + (finding.cpuAverage != null ? finding.cpuAverage : finding.cpu));
+        }
+        if (finding.lookbackDays != null) {
+            bullets.push('Lookback days: ' + finding.lookbackDays);
+        }
+        if (finding.currentType) {
+            bullets.push('Current type: ' + finding.currentType);
+        }
+        if (finding.recommendedType) {
+            bullets.push('Recommended type: ' + finding.recommendedType);
+        }
+        if (finding.estimatedSavings != null) {
+            bullets.push('Estimated savings: ' + finding.estimatedSavings);
+        }
+        if (finding.region) {
+            bullets.push('Region: ' + finding.region);
+        }
+
+        if (bullets.length > 0) {
+            sections.push(
+                'The user is currently looking at a finding:\n' + writeBulletList(bullets)
+            );
+        }
+    }
+
+    if (sections.length === 0) {
+        return '';
+    }
+
+    return sections.join('\n\n');
 }
 
 //Function B3: Write Knowledge (organization + product background)

@@ -74,7 +74,8 @@ async function postMessage(req, res) {
     try {
         cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID, {
             masterSite: masterSite,
-            requestedByUserName: messageFrom
+            requestedByUserName: messageFrom,
+            selectedFinding: req.body.selectedFinding || null
         });
         //console.log("CloudPilot Result:");
         //console.log("___________________");

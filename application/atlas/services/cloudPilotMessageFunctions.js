@@ -129,8 +129,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
         console.log("STEP 4: General Conversation — skip STEPS 5–6");
 
         const conversationOutcome = await GeneralConversation.conversation({
+            ...processMessageContext,
             currentUserMessage: currentUserMessage,
-            context: processMessageContext
+            conversationID: conversationID
         });
 
         const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
@@ -307,13 +308,14 @@ function getCurrentUserMessage(rawUserMessage) {
     };
 }
 
-//Function B4: Normalize processMessage context (masterSite, user)
+//Function B4: Normalize processMessage context (masterSite, user, selectedFinding)
 function normalizeProcessMessageContext(context) {
     const raw = context || {};
 
     return {
         masterSite: raw.masterSite || 'Cloud Pilot',
-        requestedByUserName: String(raw.requestedByUserName || raw.messageFrom || '').trim()
+        requestedByUserName: String(raw.requestedByUserName || raw.messageFrom || '').trim(),
+        selectedFinding: raw.selectedFinding || null
     };
 }
 

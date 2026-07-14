@@ -328,7 +328,7 @@ Other AWS services like S3 and RDS are coming soon. What would you like to do?
 - Static **MVP capabilities manifest** (one file or `actionMap` slice) — not generated from full registry (avoids listing hidden S3/RDS)
 - Detect via understanding layer (`conversation` intent or `general_chat` sub-intent) — no workflow row needed
 - If user asks for hidden service: short answer + “coming soon” + point back to EC2 list
-- Works with `OPENAI_ENHANCED_REPLIES=false` (template) and `true` (AI may rephrase; must not invent capabilities)
+- Works with `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=false` (template) and `true` (AI may rephrase; must not invent capabilities)
 
 - [ ] Define trigger phrases for “capabilities / help” intent
 - [ ] Define MVP capability copy (EC2 bullets above)
@@ -461,7 +461,7 @@ Tag + delete actions already exist — **copy + wiring + demo order**, not new a
 Context is the upgrade that makes it feel like ChatGPT. **Part of MVP — not a separate project.**
 
 - [x] **C1** — Context builder + STEP 7a log
-- [ ] **C2** — `OPENAI_ENHANCED_REPLIES=true` → live general chat; fallback to templates
+- [ ] **C2** — `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true` → live general chat; fallback to templates
 - [ ] **C3** — `relevant_context` from active request (action, fields, display name)
 - [ ] **C4** — Post-**EC2**-scan summary in chat (4–6 lines); full data behind “Show AWS details”
 - [ ] **C5** — Knowledge for **`ec2_low_cpu`** + **`ec2_missing_team_tag`** only (meaning, risk, tradeoff — never invent findings)
