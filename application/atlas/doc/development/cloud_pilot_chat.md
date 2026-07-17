@@ -1,10 +1,10 @@
 # CloudPilot Chat — context, knowledge & enhanced replies
 
-**Last reviewed:** 2026-07-12
+**Last reviewed:** 2026-07-15
 
 > **Related:** [mvp.md](./mvp.md) · [long_term/make_scans_useful.md](./long_term/make_scans_useful.md) · [long_term/remediations.md](./long_term/remediations.md) · [architecture/architecture.md](./architecture/architecture.md)
 
-**Status:** AI context collectors + system message shipped (`buildAIContext` / `buildAISystemMessage`). Config in `openAIChatConfig.js`. **Next:** conversation history via `CloudPilotContext` class (not wired yet).
+**Status:** AI context + system message shipped. **C1b:** `ConversationHistoryContext.getMessages(n)` + STEP 7c (human names) + `OPEN AI MESSAGE` structured payload; history sent when live billing is on.
 
 **Folder layout:**
 
@@ -15,43 +15,41 @@ services/context/
 │   ├── currentQuestionContext.js          ← Type 2: Situation (what's happening now)
 │   └── organizationKnowledgeContext.js    ← Type 3: Knowledge — org slice (empty MVP)
 ├── classes/
-│   └── CloudPilotContext.js               ← Conversation history from DB → OpenAI messages (planned)
+│   ├── CurrentQuestionContext.js          ← Situation builder for this turn
+│   └── ConversationHistoryContext.js      ← Past turns from DB → { role, content }
 ├── buildAIContext.js                      ← Collect Identity + Situation + Knowledge
 └── buildAISystemMessage.js                ← Write English system message
 
 services/config/
-    openAIChatConfig.js                    ← Enhanced replies, send history, limit, log flags
-
-services/knowledge/                        ← Type 3: Knowledge — product slice (repo, later)
-    ec2Rules.js
+    openAIChatConfig.js                    ← Live send, history limit, log flags
 ```
 
 **Naming note:** `cloudPilotContext` / `currentQuestionContext` / `organizationKnowledgeContext` stay. **Roles** are Identity / Situation / Knowledge.
 
-**Stable pattern:** CloudPilot **knows** three things (Identity / Situation / Knowledge). Separately, the **chat thread** is conversation history — not a 4th context type. History is loaded by `CloudPilotContext` from existing `messages` / `conversations` tables.
+**Stable pattern:** CloudPilot **knows** three things (Identity / Situation / Knowledge). Separately, the **chat thread** is conversation history — not a 4th context type. History is loaded by `ConversationHistoryContext` from existing `messages` / `conversations` tables.
 
 ---
 
-## Conversation history — `CloudPilotContext` class (planned)
+## Conversation history — `ConversationHistoryContext` (C1b)
 
-**Not built yet.** Config flags exist (`OPENAI_SEND_CONVERSATION_HISTORY`, `OPENAI_CONVERSATION_HISTORY_LIMIT`) but nothing loads history into the OpenAI request today.
+**Log-only shipped.** Config: `OPENAI_SEND_CONVERSATION_HISTORY`, `OPENAI_CONVERSATION_HISTORY_LIMIT` (message **rows**, not exchanges).
 
 ### Why a class
 
-Identity / Situation / Knowledge are small code builders. Chat history is different:
+Identity / Situation / Knowledge are small builders. Chat history is different:
 
 - Talks to the **database** (`messages` table — already saving user + CloudPilot replies)
 - Maps DB rows → OpenAI `{ role, content }` shape
-- Applies the history **limit** from `openAIChatConfig`
-- Belongs with other DB-facing classes under `context/classes/`
+- Caller passes **count** via `getMessages(messageHistoryCount)`
+- Belongs under `context/classes/`
 
 ```text
-services/context/classes/CloudPilotContext.js
+services/context/classes/ConversationHistoryContext.js
 ```
 
 ### Job (one sentence)
 
-> **Load recent chat messages for a conversation and format them for the AI request.**
+> **Load recent chat message rows for a conversation and format them for the AI request.**
 
 Not Identity. Not Situation. Not Knowledge. Just the thread.
 
@@ -70,10 +68,8 @@ Not Identity. Not Situation. Not Knowledge. Just the thread.
 
 | Method | What |
 |--------|------|
-| **Get recent messages** | Given `conversationId` + limit (from config), load last N from DB |
-| **Format for AI** | Map rows → `[{ role: 'user' \| 'assistant', content: '…' }, …]` chronological |
-
-Rough mapping:
+| **`getMessages(messageHistoryCount)`** | Last N **rows**, oldest → newest, exclude current user message already saved this turn |
+| Format | Map rows → `[{ role: 'user' \| 'assistant', content: '…' }, …]` |
 
 ```text
 message_from = davey (user)     → role: user
@@ -81,34 +77,32 @@ message_from = CloudPilot       → role: assistant
 message_caption                 → content
 ```
 
-Exact CloudPilot `message_from` value: match whatever `buildCloudPilotMessage` already writes.
-
 ### Where it fits in speakGeneral
 
 ```text
 buildAIContext()
-buildAISystemMessage()
+buildAISystemMessage()          ← STEP 7b (system only — no history text)
 
-CloudPilotContext.getRecentMessagesForAI(conversationId, limit)   ← when SEND_HISTORY=true
+ConversationHistoryContext.getMessages(limit)   ← STEP 7c log
 
-sendGeneralChat({ systemMessage, conversationMessages })
+sendGeneralChat(...)            ← STEP 7d — still current message only until send is wired
 ```
 
-When `OPENAI_SEND_CONVERSATION_HISTORY=false` → skip the class; send current user message only.
+When `OPENAI_SEND_CONVERSATION_HISTORY=false` → skip history load / STEP 7c.
 
 ### What this class does **not** do
 
 - No Identity / Situation / Knowledge building
 - No system message writing (`buildAISystemMessage` stays separate)
-- No OpenAI API call
-- No summarization / embeddings / “relevant” retrieval
+- No OpenAI API call (yet)
+- No summarization / embeddings
 - No new chat tables
 
-### OpenAI request (after this ships)
+### OpenAI request (after send wiring)
 
 ```text
 System     = buildAISystemMessage(aiContext)
-Messages   = CloudPilotContext recent turns (last 12 default)
+Messages   = [...conversationHistory, { role: 'user', content: current }]
 ```
 
 Config owns **whether** and **how many**. The class owns **get + format**.
@@ -1033,13 +1027,14 @@ Knowledge layer expands each `rule_id` into meaning / risk / tradeoff **before**
 - [x] STEP 7a log + OpenAI when enabled
 - [x] `sendGeneralChat` accepts system prompt
 
-### Phase C1b — Conversation history (`CloudPilotContext`) — next
+### Phase C1b — Conversation history (`ConversationHistoryContext`)
 
-- [ ] `context/classes/CloudPilotContext.js` — get recent messages + format for AI
-- [ ] Reuse `Message.getConversationMessages` (or thin query with LIMIT)
-- [ ] Wire `speakGeneral` when `OPENAI_SEND_CONVERSATION_HISTORY=true`
-- [ ] `sendGeneralChat({ systemMessage, conversationMessages })`
-- [ ] Log conversation block under STEP 7c / request log when `OPENAI_LOG_REQUEST=true`
+- [x] `context/classes/ConversationHistoryContext.js` — `getMessages(messageHistoryCount)`
+- [x] Reuse `Message.getConversationMessages`; take last N **rows**; exclude current user message
+- [x] STEP 7c log (oldest → newest, real speaker names); does not modify system message
+- [x] `OPEN AI MESSAGE` log — structured `{ role, content }` payload
+- [x] Wire into `sendGeneralChat({ systemMessage, conversationHistory, userMessage })`
+- [x] STEP 8 — speak outcome (STEP 7 = context)
 
 ### Phase C2 — General chat reliable (MVP Step 0 partial)
 

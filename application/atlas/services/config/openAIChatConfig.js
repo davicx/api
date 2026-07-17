@@ -9,6 +9,7 @@
  *     → true actually calls OpenAI (costs money). Default false.
  *   OPENAI_SEND_CONVERSATION_HISTORY=true|false
  *   OPENAI_CONVERSATION_HISTORY_LIMIT=12
+ *     → max message ROWS (not user/assistant pairs) for ConversationHistoryContext.getMessages(n)
  *   OPENAI_LOG_PROMPTS=true|false
  *   OPENAI_LOG_REQUEST=true|false
  */
@@ -51,7 +52,7 @@ const OPENAI_CHAT_CONFIG = {
     /** Include recent conversation messages in the OpenAI request (when wired). */
     sendConversationHistory: readEnvBoolean('OPENAI_SEND_CONVERSATION_HISTORY', true),
 
-    /** Max user+assistant turns to load when sendConversationHistory is true. */
+    /** Max message ROWS to load when sendConversationHistory is true (not exchange pairs). */
     conversationHistoryLimit: readEnvPositiveInt('OPENAI_CONVERSATION_HISTORY_LIMIT', 12, 50),
 
     /** Dev: log rendered system prompt before OpenAI. */

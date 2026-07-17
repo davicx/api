@@ -152,10 +152,27 @@ async function sendChatWithAction(userMessage, action) {
 
 /**
  * General conversation (unknown intent / type none). Same outcome shape as sendChatWithAction.
+ * @param {{ systemMessage?: string, conversationHistory?: Array<{ role: string, content: string }>, userMessage: string }|string} payload
+ * @param {string} [legacySystemPrompt] — old call style: sendGeneralChat(userMessage, systemPrompt)
  * @returns {Promise<{ success: boolean, data?: string|null, message?: string, error?: string, usage?: object|null }>}
  */
 //Function A5: Send General Chat
-async function sendGeneralChat(userMessage, systemPrompt) {
+async function sendGeneralChat(payload, legacySystemPrompt) {
+    let userMessage;
+    let systemPrompt;
+    let conversationHistory = [];
+
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+        userMessage = payload.userMessage;
+        systemPrompt = payload.systemMessage;
+        conversationHistory = Array.isArray(payload.conversationHistory)
+            ? payload.conversationHistory
+            : [];
+    } else {
+        userMessage = payload;
+        systemPrompt = legacySystemPrompt;
+    }
+
     const norm = normalizeUserMessageForModel(userMessage);
     if (!norm.ok) {
         return { success: false, message: norm.message, data: null };
@@ -191,15 +208,29 @@ async function sendGeneralChat(userMessage, systemPrompt) {
         'Keep responses under 15 words unless a short follow-up question is needed.\n' +
         'Do not claim AWS actions were executed.';
 
+    const messages = [
+        {
+            role: 'system',
+            content: systemPrompt || defaultSystemContent
+        }
+    ];
+
+    for (let i = 0; i < conversationHistory.length; i++) {
+        const item = conversationHistory[i];
+        if (!item || !item.content) {
+            continue;
+        }
+        messages.push({
+            role: item.role === 'assistant' ? 'assistant' : 'user',
+            content: String(item.content)
+        });
+    }
+
+    messages.push({ role: 'user', content: text });
+
     const result = await createOpenAiChatCompletion(client, {
         model: config.model,
-        messages: [
-            {
-                role: 'system',
-                content: systemPrompt || defaultSystemContent
-            },
-            { role: 'user', content: text }
-        ],
+        messages: messages,
         max_tokens: config.max_tokens,
         temperature: config.temperature
     });

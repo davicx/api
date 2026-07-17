@@ -87,7 +87,7 @@ function writeSituation(currentQuestionContext) {
     const sections = [];
 
     if (data.userMessage) {
-        sections.push('The user asked: "' + data.userMessage + '"');
+        sections.push('Current user message:\n"' + data.userMessage + '"');
     }
 
     if (data.selectedFinding && typeof data.selectedFinding === 'object') {
@@ -139,7 +139,7 @@ function writeSituation(currentQuestionContext) {
         return '';
     }
 
-    return sections.join('\n\n');
+    return 'Current Situation\n\n' + sections.join('\n\n');
 }
 
 //Function B3: Write Knowledge (organization + product background)
