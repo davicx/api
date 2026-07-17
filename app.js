@@ -34,6 +34,7 @@ const items = require('./application/routes/itemRoutes.js');
 //const messages = require('./application/routes/messageRoutes.js');
 const messages = require('./application/atlas/routes/messageRoutes.js');
 const todos = require('./application/atlas/routes/todoRoutes.js');
+const instructions = require('./application/atlas/routes/instructionRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');
 
 app.use(login);
@@ -50,6 +51,7 @@ app.use(simple);
 app.use(items);
 app.use(messages);
 app.use(todos);
+app.use(instructions);
 app.use(conversations);
 
 //Moved to doc backup

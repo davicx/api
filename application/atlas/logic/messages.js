@@ -125,6 +125,14 @@ async function postMessage(req, res) {
     messageOutcome.data.atlasResponse = null;
     if (cloudPilotResult && cloudPilotResult.atlasResponse) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
+        console.log(
+            'STEP 6D: atlasResponse attached to HTTP response:',
+            cloudPilotResult.atlasResponse.type || '(no type)',
+            'steps:',
+            Array.isArray(cloudPilotResult.atlasResponse.steps)
+                ? cloudPilotResult.atlasResponse.steps.length
+                : 0
+        );
     }
 
     //Step 6E: HTTP success when user message saved and CloudPilot chat turn completed

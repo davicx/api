@@ -54,7 +54,11 @@ async function conversation(decision, context) {
         });
     }
 
-    const changeStrategyResponse = buildChangeStrategyResponse(responseType, decision.chatType);
+    const changeStrategyResponse = await buildChangeStrategyResponse(
+        responseType,
+        decision.chatType,
+        requestState
+    );
 
     if (changeStrategyResponse) {
         return CloudPilotMessage.speakKnown(changeStrategyResponse);
@@ -210,9 +214,14 @@ function getRequestStateFromContext(context) {
     return {};
 }
 
-function buildChangeStrategyResponse(responseType, chatType) {
+async function buildChangeStrategyResponse(responseType, chatType, requestState) {
     if (responseType === RESPONSE_TYPE.EXECUTION_INSTRUCTIONS) {
-        return InstructionsStrategy.buildInstructionsStrategy(chatType);
+        const instructionFor =
+            requestState && requestState.pendingAction
+                ? requestState.pendingAction
+                : null;
+
+        return InstructionsStrategy.buildInstructionsStrategy(chatType, instructionFor);
     }
 
     if (responseType === RESPONSE_TYPE.EXECUTION_CLI) {

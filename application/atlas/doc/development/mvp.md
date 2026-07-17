@@ -10,88 +10,167 @@
 
 ---
 
-## Product reframe (locked)
+## Opening line (say this first)
 
-> **You're not demoing "AWS scanning."**  
-> **You're demoing "CloudPilot helping me make a good decision — and fitting into how engineering teams already work."**
+> **CloudPilot helps engineers understand, change, and safely manage AWS infrastructure.**
 
-That's the memorable product. Scan is input; **explain → decide → deliver change (instructions / CLI / PR / automatic) → undo** is the show.
+Then the whole demo maps to one story:
 
-**Work now is mostly editing, not building.** Chat, scan, tags, EC2 ops, four execution modes, undo, and context (C1) largely exist. MVP = **curate, hide, and polish copy + dashboard**.
+| Capability | Demo beat |
+|------------|-----------|
+| **Understand** | Scan + Chat (“Why?”) |
+| **Recommend** | Switch workload to prepared `t3.micro` |
+| **Change** | Instructions / CLI / PR / Automatic |
+| **Trust** | History + Undo |
 
----
+**Locked narrative: Option A — two-instance switch/toggle.**  
+Do **not** tell a one-instance “resize in place” story for MVP. If you only have one live instance, there is nothing to toggle to.
 
-## Official demo goal
-
-> Start from an existing small instance. Create a new micro instance **without executing** (show Instructions + CLI). Scan finds low CPU. Recommend moving production to the smaller instance via a **tiny Terraform Pull Request**. Then show **Automatic** with undo on a traffic-spike rollback. End on **History**.
-
-**Story constraint:** Keep Terraform intentionally tiny — one EC2 resource, one-line diff. The audience remembers the PR moment, not a wall of IaC.
-
-**Why PR lives on the switch (not create):**
-
-| Moment | Mode story | Why |
-|--------|------------|-----|
-| **Create micro** | Instructions + CLI only | Teaches “CloudPilot can give you commands if you don’t want automation.” A create PR is usually big and feels forced. |
-| **Switch / resize to micro** | **Pull Request** | Real engineering workflow. Tiny diff (`t3.small` → `t3.micro`) is instantly understandable. |
-| **Traffic spike rollback** | **Automatic** + Undo | Shows the other execution mode and trust. |
+**Stop adding demo scenarios after this.** This is already a strong ~6-minute MVP. Polish the loop and put it in front of engineers.
 
 ---
 
-## Super simple demo checklist
+## Locked setup: Option A (two instances)
 
-Run this end-to-end before calling MVP done. Chat leads. Dashboard supports.
+**Why Option A (not Option B):** MVP already has primary / secondary / toggle / history / undo. Option A uses that. Option B (single instance resize + undo resize) is closer to some real customers, but needs a real EC2 resize path and throws away the toggle work — skip for MVP.
 
-### 1) Existing small instance
+### Before the demo starts
 
-Live resource already in the account (e.g. `t3.small` / current primary).
+| Instance | Type | State |
+|----------|------|-------|
+| `production-small` | `t3.small` | 🟢 **Running** (production) |
+| `production-micro` | `t3.micro` | ⚪ **Stopped** (standby / prepared replacement) |
 
-- [ ] Instance is running and visible to scan
-- [ ] No PR on this beat — just the live baseline
+You don’t need a long explanation. Just say:
+
+> "I've already prepared a smaller replacement instance."
+
+CloudPilot’s job in the room is to **switch production over** — not invent a resize engine.
+
+### Option B (not MVP — one instance)
+
+One running `t3.small` → recommend resize to `t3.micro` → Automatic resizes → Undo resizes back. Cleaner “real customer” story someday; **not** the locked MVP path.
 
 ---
 
-### 2) Create new micro instance
+## Super simple To Do list
 
-Show guidance. **Do not execute.**
+Run end-to-end before calling MVP done.
+
+### 0) Pre-demo setup
+
+- [ ] `production-small` (`t3.small`) — **Running**
+- [ ] `production-micro` (`t3.micro`) — **Stopped**
+- [ ] Dashboard clean; history empty / quiet
+
+### 1) Existing environment
+
+- [ ] Show production: running small
+- [ ] Standby micro visible as prepared (stopped)
+- [ ] Line: *“I've already prepared a smaller replacement instance.”*
+
+### 2) Generate changes (optional short beat)
+
+Show that CloudPilot can **generate** (how you could prepare a replacement). **Do not execute create in the room.**
 
 - [ ] Instructions
 - [ ] CLI
-- [ ] _(Skip)_ CloudPilot Fix It / Automatic on this beat
-- [ ] _(Skip)_ Pull Request on create — feels forced; save PR for Beat 4
-
-**Teaching moment:** CloudPilot can give you commands when you don’t want automation.
-
----
+- [ ] _(Skip)_ Automatic create
+- [ ] _(Skip)_ Create Pull Request
 
 ### 3) Scan
 
-CloudPilot finds low CPU utilization.
+- [ ] Finding: running small is underutilized / low CPU
+- [ ] Recommendation: switch workload to the prepared micro
+- [ ] Ask “Why?” → CloudPilot explains in plain English
 
-- [ ] Scan runs cleanly on the account
-- [ ] Finding: underutilized / low CPU (plain language, not rule IDs)
-- [ ] Optional second finding: missing Team tag (if still in MVP profile)
-- [ ] Chat explains what it found and why it matters
+### 4) Apply recommendation — **PR (centerpiece)**
+
+- [ ] Mode picker: Instructions / CLI / **Pull Request** / Automatic
+- [ ] Demo selects **Pull Request**
+- [ ] Tiny Terraform diff shown (IaC story for the switch)
+- [ ] PR created confirmation
+
+### 5) Production change — Automatic (toggle)
+
+- [ ] After “PR reviewed and merged,” **Automatic** performs the switch
+- [ ] Start `production-micro` / stop `production-small` (toggle)
+- [ ] Shows CloudPilot can execute approved actions — not only generate code
+
+### 6) Traffic spike → History + Undo
+
+- [ ] Traffic increased (simulated is fine)
+- [ ] Recommend returning to the larger instance
+- [ ] History shows the switch
+- [ ] **Undo** switches back (micro stopped / small running again)
+- [ ] End
 
 ---
 
-### 4) Switch / resize — **this is the PR beat**
+## Demo story (words)
 
-CloudPilot recommends moving production from the current instance to the smaller one.
+### Pre-demo
 
-```text
-I recommend moving production from the current instance to the smaller instance.
+Account already has:
 
-How would you like to apply this?
+- 🟢 `production-small` (`t3.small`) — Running  
+- ⚪ `production-micro` (`t3.micro`) — Stopped  
 
-○ Instructions
-○ CLI
-● Pull Request
-○ Automatic
-```
+---
 
-- [ ] Mode picker shown with all four options
-- [ ] **Pull Request** selected for the demo climax
-- [ ] Tiny Terraform PR generated (intentionally one-file / one-resource if needed)
+### 1. Existing environment
+
+> "Here's my production environment."
+
+Running small is live. Micro is the prepared standby.
+
+> "I've already prepared a smaller replacement instance."
+
+---
+
+### 2. Generate changes (optional)
+
+> "CloudPilot can also generate the steps to prepare a replacement — Instructions or CLI — if you want to run them yourself."
+
+Show briefly. **Don't execute create** during the demo. The standby is already there.
+
+---
+
+### 3. Scan
+
+> "Let's see what CloudPilot notices."
+
+Finding:
+
+- Low CPU on the running small
+- Recommendation:
+
+  > "This workload appears overprovisioned. I recommend switching to the prepared t3.micro."
+
+Ask:
+
+> "Why?"
+
+CloudPilot explains in plain English.
+
+---
+
+### 4. Apply recommendation (PR)
+
+This is the centerpiece.
+
+CloudPilot:
+
+> I recommend switching this workload to the prepared t3.micro.
+
+Execution options:
+
+- Instructions
+- CLI
+- **Pull Request** ← Demo
+- Automatic
+
+Show a tiny Terraform diff (IaC representation of the switch / preferred instance).
 
 ```diff
 resource "aws_instance" "kite_env" {
@@ -100,50 +179,77 @@ resource "aws_instance" "kite_env" {
 }
 ```
 
-- [ ] Copy: *For organizations using Infrastructure as Code, CloudPilot doesn’t make the change directly — it prepares a pull request for review.*
-- [ ] PR created confirmation in chat
+PR created.
 
-**The 15-second moment people remember:**
-
-```text
-Recommended Action: Resize to t3.micro
-Execution Mode: ● Pull Request
-✓ Pull Request Created
-```
+This is the moment people remember.
 
 ---
 
-### 5) Traffic spike — Automatic + Undo
+### 5. Production change (Automatic toggle)
 
-Demonstrate Automatic (and that it can be reversed).
+> "After the PR is reviewed and merged, CloudPilot can perform the change."
 
-- [ ] Automatic execution path works for the rollback / switch-back story
-- [ ] Undo / Roll Back available after the change
-- [ ] CloudPilot switches back (or restores prior state) automatically when asked to undo
+Use **Automatic**:
+
+- Start `production-micro`
+- Stop `production-small`
+
+This demonstrates that CloudPilot isn't just generating code — it can also execute approved actions.
 
 ---
 
-### 6) History
+### 6. Traffic spike → History + Undo
 
-Show recent actions, then undo from history.
+A few minutes later...
+
+> "Traffic increased."
+
+Whether it's simulated or not doesn't matter.
+
+CloudPilot recommends returning to the larger instance.
+
+Show **History**, then **Undo** — switches back to the original state (small running, micro stopped).
 
 ```text
-Created EC2 instance
-Switched traffic
+History
+
+✓ Generated switch pull request
+✓ Switched workload to production-micro
 Undo
 ```
 
-- [ ] History lists the demo actions clearly
-- [ ] Click / ask Undo
-- [ ] Everything restores to the expected prior state
+Click Undo.
+
+Everything returns to the original state.
+
+End.
+
+---
+
+## Official demo goal
+
+> Start with two instances: running `t3.small` + stopped `t3.micro`. Scan finds the small underutilized and recommends switching to the prepared micro. Apply via **Pull Request** (tiny Terraform). After “merge,” **Automatic** toggles (start micro / stop small). On a traffic spike, **Undo** from History switches back. End.
+
+**Story constraint:** Keep Terraform intentionally tiny. Automatic = toggle you already have — not a live EC2 resize API for MVP.
+
+**Mode map (locked):**
+
+| Beat | Mode | Why |
+|------|------|-----|
+| Optional generate | Instructions + CLI only | CloudPilot **generates**; standby already prepared |
+| Apply recommendation | **Pull Request** | Enterprise climax — tiny, believable IaC |
+| Production change (post-merge) | **Automatic** | Toggle: start micro / stop small |
+| Traffic spike | **Undo** (from History) | Trust — restore original primary |
+| History | Shows PR + switch | Trust |
 
 ---
 
 ## Goal (one sentence)
 
-**Natural chat → existing small + guided create (instructions/CLI) → scan finds low CPU → PR for switch to micro → automatic rollback → history/undo — demoable in a few minutes.**
+**Understand → recommend switch → change (PR + Automatic toggle) → trust (History/Undo) — about a 6-minute demo on two prepared instances.**
 
 Not: “CloudPilot scans EC2, S3, RDS, IAM…”  
+Not: one-instance live resize for MVP  
 Yes: *“This understands infrastructure and fits how we ship changes.”*
 
 ---
@@ -152,9 +258,10 @@ Yes: *“This understands infrastructure and fits how we ship changes.”*
 
 Before starting any task, ask:
 
-> Does this make the **demo checklist above** clearer, or is it platform sprawl?
+> Does this make the **demo To Do list above** clearer, or is it platform sprawl?
 
-If sprawl → [long_term/](./long_term/). **Hide, don’t delete.**
+If sprawl → [long_term/](./long_term/). **Hide, don’t delete.**  
+**Do not add more demo scenarios** until this loop is polished and shown to real users.
 
 ---
 
@@ -168,54 +275,60 @@ Keep code; remove from default chat/demo path:
 | Extra EC2 rules (public IP, legacy type, stopped instance, …) | Rule files + registry entries |
 | Multi-open requests UI, capability migration, new service scans | [long_term/to_do.md](./long_term/to_do.md) |
 | Full Navigator wall (stats + instances + findings tables) | Adapters stay; MVP shows **decision card** first |
+| Real EC2 resize-in-place (Option B) | Later — use toggle for MVP |
 
 **Product label in chat when user asks for hidden features:** “Coming soon — we’re perfecting EC2 first.”
 
-**Mode 3 (PR) is MVP for the switch/resize beat** — not deferred. Keep create-instance PR out of the primary demo path (too noisy); use a tiny one-resource Terraform story for switch.
+**Mode 3 (PR) is MVP for the apply-recommendation beat** — not deferred. Keep create-instance PR out of the primary demo path (too noisy); use a tiny Terraform story for the preferred instance / switch.
 
 ---
 
-## 3-minute demo script (acceptance test)
+## Demo script (acceptance test)
 
-Same story as the super simple checklist — scripted for speaking aloud.
+Same story as the To Do list — scripted for speaking aloud. ~6 minutes.
 
-### Beat 1 — Existing small instance
+### Pre-demo
 
-Show the live baseline (current production-ish small instance). No change yet.
+`production-small` running. `production-micro` stopped.
 
-### Beat 2 — Create micro (instructions + CLI only)
+### Beat 1 — Existing environment
 
-**User:** “Create a new micro instance.”
+> "Here's my production environment. I've already prepared a smaller replacement instance."
 
-**CloudPilot:** shows Instructions and CLI — user can run them themselves. **Do not auto-execute.** Do not open a create PR.
+### Beat 2 — Generate (optional)
 
-### Beat 3 — Scan
+Briefly show Instructions / CLI as generate. **Don't create live.**
 
-**User:** “Scan my EC2 instances.”
+### Beat 3 — Scan + Why
 
-**CloudPilot:** “I found an underutilized instance.” _(plain language — avg CPU, lookback, savings)_
+> "Let's see what CloudPilot notices."
 
-### Beat 4 — Switch via Pull Request (star of the demo)
+Running small underutilized. Recommend switch to prepared micro. Ask **“Why?”**
 
-> I recommend moving production from the current instance to the smaller instance.
+### Beat 4 — Apply via Pull Request (centerpiece)
+
+> I recommend switching this workload to the prepared t3.micro.
 
 Mode picker → **Pull Request** → tiny Terraform diff → PR created.
 
-> For organizations using Infrastructure as Code, CloudPilot doesn't make the change directly—it prepares a pull request for review.
+### Beat 5 — Production change (Automatic toggle)
 
-### Beat 5 — Traffic spike → Automatic + Undo
+> "After the PR is reviewed and merged, CloudPilot can perform the change."
 
-Show Automatic for a rollback / switch-back. Undo / Roll Back restores prior state.
+**Automatic:** start micro / stop small.
 
-### Beat 6 — History
+### Beat 6 — Traffic spike → History + Undo
 
-History shows create / switch / undo. Click Undo. Everything restores.
+> "Traffic increased."
+
+History → **Undo** → original state (small running, micro stopped). End.
 
 ### Also verify
 
 1. **Empty account:** friendly empty message — not Atlas error, not a finding wall.
 2. **PR quality:** one-line `instance_type` change is visible and believable.
-3. **Teardown:** delete any leftover test instances after the room.
+3. **Toggle reliability:** Automatic switch and Undo always leave one primary running.
+4. **Teardown:** leave account in a known state after the room.
 
 Someone should walk away saying: *“I wish AWS worked like that.”*
 
@@ -231,8 +344,9 @@ Do these **in sequence**. Each step unlocks the next demo beat.
 | **1** | **M1** | Scan returns MVP rules; empty account message |
 | **2** | **M2** | Decision card dashboard (not table wall) |
 | **3** | **M7 (C2–C4)** | Chat explains scan in plain English (OpenAI optional) |
-| **4** | **M3 + M4** | Create shows Instructions + CLI; **switch uses PR**; Automatic for rollback |
-| **5** | **M5 + M6** | History + Undo on the automatic / reversible beat |
+| **4** | **M3 + M4** | Pre-demo two instances; **PR on recommend switch**; Automatic toggle; Undo from History |
+| **4b** | **M10** | Mode 1 Instructions — step table + API + simple stepper (`create_ec2`) |
+| **5** | **M5 + M6** | History + Undo — trust beat |
 | **6** | **M8** | Run full demo checklist; fix gaps |
 | **7** | **M9** | Document pattern for S3 later |
 
@@ -289,8 +403,8 @@ const MVP_ENABLED_ACTIONS = [
 | Action | Role |
 |--------|------|
 | `scan_ec2` | Find underutilized (+ optional missing Team tag) |
-| `create_ec2` | Stand up micro — **demo Instructions + CLI only** |
-| `toggle_ec2` | Switch / traffic story — **PR + Automatic + Undo** |
+| `create_ec2` | Optional / pre-demo — prepare standby micro (Instructions + CLI generate; standby ready before room) |
+| `toggle_ec2` | **Core demo** — Automatic switch + Undo |
 | `delete_ec2` | Teardown / optional cost delete path |
 | `update_ec2_tag` | Optional tag beat if still needed |
 | `general_chat` | Fallback + “what can you do?” |
@@ -387,7 +501,7 @@ Right now I can help you with EC2 instances, including:
 
 • Scanning for cost and setup issues (like underutilized instances)
 • Creating instances (I can show instructions or CLI)
-• Switching / resizing with a pull request or automatic change
+• Switching workloads with a pull request or automatic change
 • Undoing recent changes from history
 
 Other AWS services like S3 and RDS are coming soon. What would you like to do?
@@ -456,69 +570,71 @@ Recommendations
 
 ### M3 — Demo actions by beat (modes matter)
 
-**Beat 2 — Create micro:** teach non-automation.
+**Pre-demo / Beat 1 — Two instances ready:**
 
-- [ ] Create flow surfaces **Instructions** and **CLI**
-- [ ] Demo path does **not** require executing create
-- [ ] Demo path does **not** open a create-instance PR (too much Terraform noise)
+- [ ] `production-small` running, `production-micro` stopped
+- [ ] Line ready: *“I've already prepared a smaller replacement instance.”*
 
-**Beat 4 — Switch / resize:** enterprise PR climax.
+**Beat 2 — Generate (optional):**
 
-- [ ] Recommendation: move production to the smaller instance / resize to `t3.micro`
+- [ ] Instructions + CLI shown briefly
+- [ ] Do **not** execute create in the live room
+- [ ] Do **not** open a create-instance PR
+
+**Beat 4 — Apply recommendation:** enterprise PR climax.
+
+- [ ] Recommendation: switch workload to prepared `t3.micro`
 - [ ] Mode picker shows all four options
-- [ ] **Pull Request** path produces a **tiny** Terraform change (one resource / one line if “cheating” for MVP)
-- [ ] Copy explains IaC review workflow (CloudPilot prepares PR; does not force direct change)
+- [ ] **Pull Request** path produces a **tiny** Terraform change
+- [ ] Copy explains IaC review workflow
 
-**Beat 5 — Automatic + Undo:**
+**Beat 5 — Production change (Automatic toggle):**
 
-- [ ] Automatic path works for traffic spike / switch-back
-- [ ] Undo / Roll Back restores prior state
+- [ ] After “PR reviewed and merged,” **Automatic** starts micro / stops small
+- [ ] Uses existing toggle path — not a real resize API
+
+**Beat 6 — Traffic spike → History + Undo:**
+
+- [ ] Traffic spike narrative (simulated OK)
+- [ ] History lists PR + switch
+- [ ] **Undo** restores original primary (small running, micro stopped)
 
 **Optional — delete teardown:**
 
 - [ ] `delete_ec2` available for cleanup after the room
-- [ ] Honest copy: destructive delete is not the undo demo
 
 ---
 
 ### M4 — Execution modes 1–4 (show all four — different beats)
 
-All four modes appear in the **demo** — but not all on the same action. That's clearer storytelling.
+All four modes appear in the **demo** — but not all on the same action.
 
 | Mode | Label in demo | Where it shines |
 |------|---------------|-----------------|
-| **1** | Show Instructions | **Create micro** — trust / self-serve |
-| **2** | Generate CLI | **Create micro** — trust / self-serve |
-| **3** | Create Pull Request | **Switch / resize** — enterprise climax |
-| **4** | CloudPilot Fix It (Automatic) | **Traffic spike rollback** — then Undo |
+| **1** | Show Instructions | Optional generate / prepare story — **M10** loads steps from DB |
+| **2** | Generate CLI | Optional generate / prepare story |
+| **3** | Create Pull Request | **Apply recommendation** — enterprise climax |
+| **4** | CloudPilot Fix It (Automatic) | **Production toggle** (start micro / stop small) |
 
 - [ ] Mode picker copy clear (1–4 labels above)
-- [ ] Create beat: Instructions + CLI emphasized
-- [ ] Switch beat: PR emphasized (tiny diff)
-- [ ] Automatic beat: Fix It + Undo
+- [ ] Apply beat: PR emphasized (tiny diff)
+- [ ] Production beat: Automatic = toggle
+- [ ] Trust beat: History + Undo (not a second Automatic required)
 - [ ] Confirm → execute → friendly outcome where execution happens
 - [ ] `atlas_unreachable` / Atlas 500 → clear message (Atlas running? Python 3.13?)
 
-**Tiny Terraform tip (allowed for MVP):** manage one EC2 resource in one file. Audience doesn’t care that the whole “IaC” is:
-
-```terraform
-resource "aws_instance" "kite_env" {
-  instance_type = "t3.small"
-}
-```
-
-CloudPilot changes one line. Opens a PR. Looks fantastic.
+**Tiny Terraform tip (allowed for MVP):** one EC2 resource / one-line preferred-type change is enough. Audience doesn’t need a full account Terraform.
 
 ---
 
-### M5 — Undo (demo on Automatic / reversible change)
+### M5 — Undo (demo on toggle)
 
-History MVP is shipped — **demo undo on the reversible switch/rollback beat, not on create-PR.**
+History MVP is shipped — **demo undo on the Automatic toggle, not on create-PR.**
 
-- [ ] Automatic / toggle change saves history row; copy says undo available
-- [ ] “Undo last change” / History Undo → restores prior state
+- [ ] Toggle change saves history row; copy says undo available
+- [ ] History Undo → restores prior primary/standby state
 - [ ] Undo failure → friendly message, conversation continues
-- [ ] PR path: prepare for review — do **not** pretend PR merge is silently undone in AWS without history story
+- [ ] PR path: prepare for review — do **not** pretend PR merge is silently undone without history story
 
 See [long_term/history.md](./long_term/history.md) for shipped baseline.
 
@@ -526,14 +642,15 @@ See [long_term/history.md](./long_term/history.md) for shipped baseline.
 
 ### M6 — Full demo loop
 
-Aligns with the **super simple checklist** at the top.
+Aligns with the **super simple To Do list** at the top (**Option A**).
 
-- [ ] Existing small instance ready
-- [ ] Create micro — Instructions + CLI shown (no execute required)
-- [ ] Scan — low CPU finding
-- [ ] Switch recommendation — **PR** with tiny `instance_type` diff
-- [ ] Traffic spike / rollback — **Automatic** + Undo
-- [ ] History lists actions; Undo restores
+- [ ] Pre-demo: small running + micro stopped
+- [ ] Existing environment shown; standby explained in one line
+- [ ] Optional Instructions + CLI (generate only)
+- [ ] Scan — underutilized small + “Why?”
+- [ ] Apply recommendation — **PR**
+- [ ] Production change — **Automatic toggle**
+- [ ] Traffic spike → History + **Undo** → original state
 - [ ] Optional teardown via `delete_ec2`
 
 ---
@@ -551,13 +668,61 @@ Context is the upgrade that makes it feel like ChatGPT. **Part of MVP — not a 
 
 **MVP chat example (target — scan → recommend switch):**
 
-> I found an underutilized instance averaging about 2% CPU over the past week. I recommend moving production to the smaller instance. For teams using Infrastructure as Code, I can open a pull request with that change for review.
+> This workload appears overprovisioned. I recommend switching to the prepared t3.micro. For teams using Infrastructure as Code, I can open a pull request with that change for review.
+
+---
+
+### M10 — Instructions Mode 1 (teach first)
+
+**Philosophy:** CloudPilot teaches first, automates second.  
+**SQL:** [cloudpilot_instructions.sql](../sql/cloudpilot_instructions.sql)  
+**Shape:** one row = one step. No `total_steps` / `current_step` in DB (UI owns progress).
+
+```text
+Teach → user builds → (later) CloudPilot validates → recommend improvements
+```
+
+#### Phase A — Data + API (MVP foundation)
+
+- [ ] Create `cloudpilot_instructions` table (see SQL doc)
+- [ ] Seed ~5–8 steps for `create_ec2` (demo-quality copy; images optional)
+- [ ] API: get steps by `instruction_for`, ordered by `step_number`
+- [ ] Wire Mode 1 / “Show Instructions” to that endpoint
+
+#### Phase B — UI (MVP)
+
+- [ ] Simple stepper: title, instruction, warnings, estimated time, Next / Back / Skip optional
+- [ ] “Open in AWS Console” external link where useful
+- [ ] Mark complete in UI → “Instructions finished”
+- [ ] Optional screenshots per step (even 3–5 sell the story)
+
+#### Phase C — Validate after finish (north star — after Mode 1 works)
+
+- [ ] On finish: “I’ll quickly check that everything looks healthy…”
+- [ ] Targeted scan / checks on what should exist
+- [ ] Checklist results: ✓ / ⚠ with short recommendations
+- [ ] Only then offer `[Fix Automatically]` for safe items
+
+#### Phase D — Expand (later)
+
+- [ ] More `instruction_for` keys (`toggle_ec2`, `create_s3`, …)
+- [ ] Image annotations / highlight rectangles
+- [ ] Org-specific instruction overrides (if needed)
+
+**Warnings JSON example:**
+
+```json
+[
+  { "type": "cost", "message": "Choose t3.micro to stay in Free Tier." },
+  { "type": "security", "message": "Do not allow SSH from 0.0.0.0/0." }
+]
+```
 
 ---
 
 ### M8 — Polish & demo hardening
 
-- [ ] Run **super simple demo checklist** on a prepared account
+- [ ] Run **super simple To Do list** end-to-end (~6 minutes)
 - [ ] Test mode smoke: Atlas test routes for scan + toggle without AWS
 - [ ] Kite: `conversationID` on every message (if not already)
 - [ ] Remove or gate developer noise from default UI (raw Atlas, STEP logs in prod)
@@ -578,6 +743,10 @@ Only after M0–M8 green:
 
 - S3 / RDS / pipeline scan expansion
 - Create-instance Pull Request as the star of the demo (noisy Terraform)
+- One-instance live resize (Option B) as the MVP path
+- More demo scenarios beyond the locked Option A switch story
+- Instruction image highlight rectangles / annotated overlays (M10 Phase D)
+- Post-instruction mentor validate loop before Mode 1 steps ship (M10 Phase C — north star, not blocker)
 - 10+ rules per service
 - Multi-open requests, saved actions, Learn/Test/Live product modes
 - Capability migration cleanup
@@ -590,6 +759,7 @@ Only after M0–M8 green:
 | Doc | Role |
 |-----|------|
 | [cloud_pilot_chat.md](./cloud_pilot_chat.md) | Context, knowledge, enhanced replies — **M7** |
+| [../sql/cloudpilot_instructions.sql](../sql/cloudpilot_instructions.sql) | Instructions step table — **M10** |
 | [long_term/make_scans_useful.md](./long_term/make_scans_useful.md) | Conversation-first philosophy (reference) |
 | [long_term/history.md](./long_term/history.md) | Undo — shipped baseline for **M5** |
 | [long_term/remediations.md](./long_term/remediations.md) | PR / mode details beyond MVP polish |
@@ -607,4 +777,8 @@ Only after M0–M8 green:
 | 2026-07-09 | Cost fix = delete_ec2; undo demo = update_ec2_tag only (not delete) |
 | 2026-07-09 | M0b: “What can you do?” onboarding; recommended step order table |
 | 2026-07-09 | M0 hide mechanism: API allowlist + Atlas rule_registry comment-out (doc only, not implemented) |
-| 2026-07-17 | Demo reframe: existing small → create micro (Instructions+CLI) → scan → **PR on switch/resize** → Automatic+Undo → History; super simple checklist; toggle back in MVP allowlist |
+| 2026-07-17 | Demo reframe: existing small → create micro (Instructions+CLI+CloudPilot Fix It) → scan → **PR on switch/resize** → Automatic+Undo → History; super simple checklist; toggle back in MVP allowlist |
+| 2026-07-17 | Fix Beat 2: CloudPilot Fix It creates the micro instance (do not skip Automatic on create); still skip PR on create |
+| 2026-07-17 | Locked **switch/toggle** story: To Do list + demo words; Beat 2 generate-only again; PR → Automatic production change → Automatic traffic spike → History/Undo; stop adding scenarios |
+| 2026-07-17 | Locked **Option A** (two instances): running small + stopped micro; Automatic = toggle; traffic spike → History Undo; Option B resize deferred |
+| 2026-07-17 | **M10 Instructions**: one-step-per-row table + Phase A–D todos; SQL `cloudpilot_instructions.sql` |
