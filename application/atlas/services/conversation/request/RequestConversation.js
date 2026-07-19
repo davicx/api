@@ -225,7 +225,16 @@ async function buildChangeStrategyResponse(responseType, chatType, requestState)
     }
 
     if (responseType === RESPONSE_TYPE.EXECUTION_CLI) {
-        return CliStrategy.buildCliStrategy(chatType);
+        const cliAction =
+            requestState && requestState.pendingAction
+                ? requestState.pendingAction
+                : null;
+        const cliCollected =
+            requestState && requestState.collected
+                ? requestState.collected
+                : {};
+
+        return CliStrategy.buildCliStrategy(chatType, cliAction, cliCollected);
     }
 
     if (responseType === RESPONSE_TYPE.EXECUTION_PR) {

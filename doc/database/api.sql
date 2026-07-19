@@ -11,6 +11,7 @@ SELECT * FROM cloudpilot_actions;
 
 
 
+
 /*
 DELETE FROM cloudpilot_actions WHERE id > 0;
 DELETE FROM cloudpilot_requests WHERE id > 0;

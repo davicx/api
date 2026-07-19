@@ -627,6 +627,69 @@ All four modes appear in the **demo** — but not all on the same action.
 
 ---
 
+### M4b — Pull Request (toggle story — real GitHub, tiny Terraform)
+
+> **Goal:** Prove CloudPilot can **prepare a PR for infrastructure changes** — not that it can edit any repo.
+> **Action:** `toggle_ec2` only for the demo climax. Skip create-instance PR.
+> **Where:** Node (`pr.js`) — Atlas not involved (PR prepares source; Automatic later toggles AWS).
+
+**Infra repo:** [`cloudpilot_infrastructure`](../../../../../cloudpilot_infrastructure) — demo-only. Keep it tiny:
+
+```text
+cloudpilot_infrastructure/
+  README.md
+  main.tf
+  variables.tf
+  terraform.tfvars     ← only file CloudPilot edits for MVP
+```
+
+```hcl
+# terraform.tfvars (start)
+active_instance = "primary"
+```
+
+```hcl
+# after CloudPilot
+active_instance = "secondary"
+```
+
+`main.tf` can be locals/output only — it does **not** need to deploy AWS. The repo exists to show a PR.
+
+**Same pattern as CLI:** `pr.js` → `change/pr/prTemplates.js` → `buildToggleEc2Pr(collected)`.  
+String replace one value. No OpenAI. No Terraform parser for MVP.
+
+#### Build order (stop when demo works)
+
+| Milestone | What | Outcome |
+|-----------|------|---------|
+| **PR-1** | Tiny Terraform files on `cloud_pilot_mvp` | `active_instance = "primary"` in repo |
+| **PR-2** | Node builds before/after + chat message | Diff in chat — **no GitHub yet** |
+| **PR-3** | Branch + commit + push | e.g. `cloudpilot/pr-toggle-001` |
+| **PR-4** | GitHub API open PR | Base `cloud_pilot_mvp` ← compare branch |
+| **PR-5** | Chat returns PR URL | “Pull Request created → View on GitHub” |
+
+Wire into chat when PR-2 works; real PR URL is the climax (PR-4/5).
+
+**PR copy (demo):**
+
+```text
+Title: Switch production EC2 to secondary instance
+
+CloudPilot detected low utilization on the primary instance.
+This PR updates Terraform to mark the secondary instance as active.
+
+No infrastructure changes have been applied.
+Review and merge when ready. Then use Automatic to perform the switch.
+```
+
+**After “merge” in the room:** Automatic = existing Atlas toggle (stop primary / start secondary). Do **not** auto-apply Terraform on merge for MVP.
+
+**Later (not MVP):** OpenAI / parser edits richer Terraform; merge → apply workflow. Same `buildPrStrategy` entry point.
+
+> **Note:** [long_term/remediations.md](./long_term/remediations.md) still describes an older `create_ec2` + JSON intent path. **Locked MVP demo uses this toggle + `terraform.tfvars` path instead.**
+
+---
+
 ### M5 — Undo (demo on toggle)
 
 History MVP is shipped — **demo undo on the Automatic toggle, not on create-PR.**
