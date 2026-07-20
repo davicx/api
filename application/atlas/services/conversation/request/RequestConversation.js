@@ -238,7 +238,16 @@ async function buildChangeStrategyResponse(responseType, chatType, requestState)
     }
 
     if (responseType === RESPONSE_TYPE.EXECUTION_PR) {
-        return PrStrategy.buildPrStrategy(chatType);
+        const prAction =
+            requestState && requestState.pendingAction
+                ? requestState.pendingAction
+                : null;
+        const prCollected =
+            requestState && requestState.collected
+                ? requestState.collected
+                : {};
+
+        return PrStrategy.buildPrStrategy(chatType, prAction, prCollected);
     }
 
     return null;

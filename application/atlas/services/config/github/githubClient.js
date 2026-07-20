@@ -85,18 +85,53 @@ async function createBranch(branchName) {
     });
 }
 
-async function createFile({ branch, path, content, message }) {
+async function createFile({ branch, path, content, message, sha }) {
     const config = readGitHubConfig();
+    const body = {
+        message,
+        content: Buffer.from(content, 'utf8').toString('base64'),
+        branch
+    };
+
+    if (sha) {
+        body.sha = sha;
+    }
 
     return githubRequest(
         'PUT',
         '/repos/' + config.owner + '/' + config.repo + '/contents/' + path.split('/').map(encodeURIComponent).join('/'),
-        {
-            message,
-            content: Buffer.from(content, 'utf8').toString('base64'),
-            branch
-        }
+        body
     );
+}
+
+async function getFile({ path, branch }) {
+    const config = readGitHubConfig();
+    const ref = branch || config.defaultBranch;
+
+    const payload = await githubRequest(
+        'GET',
+        '/repos/' +
+            config.owner +
+            '/' +
+            config.repo +
+            '/contents/' +
+            path.split('/').map(encodeURIComponent).join('/') +
+            '?ref=' +
+            encodeURIComponent(ref)
+    );
+
+    if (!payload || !payload.content) {
+        throw new Error('GitHub file has no content: ' + path);
+    }
+
+    const encoding = payload.encoding || 'base64';
+    const content = Buffer.from(payload.content.replace(/\n/g, ''), encoding).toString('utf8');
+
+    return {
+        path: payload.path || path,
+        sha: payload.sha,
+        content: content
+    };
 }
 
 async function openPullRequest({ title, head, base, body }) {
@@ -110,9 +145,27 @@ async function openPullRequest({ title, head, base, body }) {
     });
 }
 
+async function listOpenPullRequests({ base } = {}) {
+    const config = readGitHubConfig();
+    const baseBranch = base || config.defaultBranch;
+
+    return githubRequest(
+        'GET',
+        '/repos/' +
+            config.owner +
+            '/' +
+            config.repo +
+            '/pulls?state=open&base=' +
+            encodeURIComponent(baseBranch) +
+            '&per_page=30'
+    );
+}
+
 module.exports = {
     readGitHubConfig,
     createBranch,
     createFile,
-    openPullRequest
+    getFile,
+    openPullRequest,
+    listOpenPullRequests
 };
