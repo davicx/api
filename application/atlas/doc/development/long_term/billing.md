@@ -2,8 +2,9 @@
 
 **Last reviewed:** 2026-07-04
 
-> Read-only. Answers: **“Where is my money going?”**  
-> Internal action: `show_billing` · User-facing: **Billing**
+> Read-only. Answers: **“Where is my money going?”** (AWS)  
+> Internal action: `show_billing` · User-facing: **Billing**  
+> OpenAI spend is separate: [ai_usage.md](../ai_usage.md) — do not mix.
 
 ---
 

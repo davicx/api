@@ -41,7 +41,7 @@ executeRequest() → handler → toggleEC2() → Atlas → saveHistory()
 
 | File | Purpose |
 |------|---------|
-| `capabilities/README.md` | Conventions: return shape, thin-only, history stays STEP 6B |
+| [atlas README](../../README.md) (`capabilities/` section) | Conventions: return shape, thin-only, history stays STEP 6B |
 | `capabilities/index.js` | Optional re-exports — not required if handlers import directly |
 
 Empty folders at C1:
@@ -275,7 +275,7 @@ capabilities/
 
 Roughly **4 new files, 1 handler edit, 1 legacy shim**:
 
-1. `capabilities/README.md`
+1. Atlas README — `capabilities/` section
 2. `capabilities/changes/toggleEC2.js`
 3. Optional `capabilities/_shared/fetchAtlasMutation.js`
 4. Edit `toggleEC2Handler.js` — one import + one call

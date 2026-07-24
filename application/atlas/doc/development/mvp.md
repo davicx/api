@@ -678,16 +678,16 @@ Aligns with the **super simple To Do list** at the top (**Option A**).
 
 ---
 
-### M7 — CloudPilot Chat ([cloud_pilot_chat.md](./cloud_pilot_chat.md))
+### M7 — CloudPilot Chat / AI enhancements ([cloud_pilot_chat.md](./cloud_pilot_chat.md))
 
-Context is the upgrade that makes it feel like ChatGPT. **Part of MVP — not a separate project.**
+Deterministic by default; optional AI behind **three independent flags**. **Part of MVP — not a separate project.**
 
-- [x] **C1** — Context builder + STEP 7a log
-- [ ] **C2** — `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true` → live general chat; fallback to templates
-- [ ] **C3** — `relevant_context` from active request (action, fields, display name)
-- [ ] **C4** — Post-**EC2**-scan summary in chat (4–6 lines); full data behind “Show AWS details”
-- [ ] **C5** — Knowledge for **`ec2_low_cpu`** (+ Team tag if still in profile)
-- [ ] Templates stay for confirmations, errors, mode picker — AI enhances explanation only
+- [x] Context builder + conversation history foundation
+- [ ] **Feature 1** — Explain findings (`OPENAI_EXPLAIN_FINDINGS`) — highest demo ROI
+- [ ] **Feature 2** — Friendly request conversations (`OPENAI_FRIENDLY_REQUESTS`) — one ask at a time
+- [ ] **Feature 3** — Intent understanding (`OPENAI_INTENT_UNDERSTANDING`) — same STEP 3 contract
+- [ ] Templates stay for confirmations, errors, mode picker — AI enhances explanation / asks / intent only
+- [ ] **Feature 4** — AI recommendations (prioritize what to do) — *not MVP*
 
 **MVP chat example (target — scan → recommend switch):**
 
@@ -781,7 +781,7 @@ Only after M0–M8 green:
 
 | Doc | Role |
 |-----|------|
-| [cloud_pilot_chat.md](./cloud_pilot_chat.md) | Context, knowledge, enhanced replies — **M7** |
+| [cloud_pilot_chat.md](./cloud_pilot_chat.md) | AI enhancements (scan / requests / intent) — **M7** |
 | [../sql/cloudpilot_instructions.sql](../sql/cloudpilot_instructions.sql) | Instructions step table — **M10** |
 | [long_term/make_scans_useful.md](./long_term/make_scans_useful.md) | Conversation-first philosophy (reference) |
 | [long_term/history.md](./long_term/history.md) | Undo — shipped baseline for **M5** |

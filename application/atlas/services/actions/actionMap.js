@@ -6,6 +6,7 @@ const deleteEC2Handler = require('./ec2/deleteEC2/deleteEC2Handler');
 const updateEC2TagHandler = require('./ec2/updateEC2Tag/updateEC2TagHandler');
 const inventoryAWSHandler = require('./aws/inventoryAWS/inventoryAWSHandler');
 const billingAWSHandler = require('./aws/billingAWS/billingAWSHandler');
+const showAiUsageHandler = require('./aiUsage/showAiUsageHandler');
 
 /*
 What this file answers:
@@ -14,7 +15,7 @@ What this file answers:
 * How are actions detected? (match rules — used by understanding/search/searchMessageForAction.js)
 * What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
 
-Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, scan_s3, general_chat
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, general_chat
 
 See doc/development/architecture/action_map.md.
 */
@@ -168,6 +169,61 @@ const actionMap = {
             executing: 'Loading AWS billing.',
             success: 'Here is your AWS billing summary.',
             failed: 'AWS billing summary failed.'
+        }
+    },
+
+    //SERVICE: CloudPilot
+    //Action: OpenAI / AI usage summary (local ai_usage table — not AWS)
+    show_ai_usage: {
+        //Identity
+        type: 'show_ai_usage',
+        actionLabel: 'AI Usage',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection — keep distinct from show_billing (AWS)
+        match: (text) =>
+            text.includes('openai spend') ||
+            text.includes('openai cost') ||
+            text.includes('openai usage') ||
+            text.includes('open ai spend') ||
+            text.includes('open ai cost') ||
+            text.includes('ai spend') ||
+            text.includes('ai usage') ||
+            text.includes('ai cost') ||
+            text.includes('how much have i spent on openai') ||
+            text.includes('how much have i spent on ai') ||
+            text.includes('how much did i spend on openai') ||
+            text.includes('how much did i spend on ai') ||
+            text.includes('show my openai') ||
+            text.includes('show openai') ||
+            text.includes('what is my openai') ||
+            text.includes("what's my openai") ||
+            text.includes('whats my openai'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: showAiUsageHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Checking OpenAI usage.',
+            missingFields: {},
+            ready: 'Everything is ready for AI usage.',
+            executing: 'Loading AI usage.',
+            success: 'Here is your estimated OpenAI spend.',
+            failed: 'AI usage summary failed.'
         }
     },
 

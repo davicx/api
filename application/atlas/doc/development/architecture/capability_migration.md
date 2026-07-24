@@ -199,7 +199,7 @@ Work in order. Each step is shippable and testable on its own. **Do not rename s
 **Tasks:**
 
 1. Create `application/atlas/capabilities/{scans,inventory,changes,conversation}/`
-2. Add `capabilities/README.md` — return shape, “thin only”, history stays STEP 6B
+2. Document capability conventions in [atlas README](../../README.md) (`capabilities/` section) — return shape, “thin only”, history stays STEP 6B
 3. Add `index.js` re-exports (optional) or direct requires from handlers
 
 **Verify:** App boots; no imports switched yet.

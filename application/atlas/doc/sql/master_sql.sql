@@ -9,17 +9,23 @@
 --   1. cloudpilot_actions   — static action catalog
 --   2. cloudpilot_requests  — user workflow / open request state
 --   3. cloudpilot_history   — audit trail + undo (planned)
+--   4. ai_usage             — OpenAI token/cost per CloudPilot call
 --
 -- Docs: doc/database/database.md
 --       doc/development/architecture/development_undo_feature.md (history)
+--       doc/development/ai_usage.md (ai_usage)
 --
 -- Usage:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
+--
+-- Or only AI usage on an existing DB:
+--   mysql -u USER -p DATABASE_NAME < doc/sql/ai_usage.sql
 --
 -- Verify:
 --   SELECT * FROM cloudpilot_actions;
 --   SELECT * FROM cloudpilot_requests;
 --   SELECT * FROM cloudpilot_history;
+--   SELECT * FROM ai_usage;
 -- =============================================================================
 
 
@@ -169,6 +175,35 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
 
 
 -- -----------------------------------------------------------------------------
+-- 4. ai_usage (OpenAI spend — see doc/development/ai_usage.md)
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS ai_usage (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    organization_id VARCHAR(100) NULL,
+    conversation_id VARCHAR(100) NULL,
+    request_id VARCHAR(100) NULL,
+
+    -- Optional: explain_findings | friendly_requests | intent | general_chat
+    feature VARCHAR(50) NULL,
+
+    model VARCHAR(100) NOT NULL,
+
+    input_tokens INT NOT NULL,
+    output_tokens INT NOT NULL,
+    total_tokens INT NOT NULL,
+
+    estimated_cost DECIMAL(10, 6) NOT NULL,
+
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_ai_usage_created (created_at),
+    INDEX idx_ai_usage_org_created (organization_id, created_at)
+);
+
+
+-- -----------------------------------------------------------------------------
 -- Seed: cloudpilot_actions (required before app can create requests)
 -- -----------------------------------------------------------------------------
 -- Matches actionMap.js. Re-run safe via ON DUPLICATE KEY UPDATE.
@@ -177,6 +212,7 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('general_chat', 'General Chat', 0),
     ('inventory_aws', 'Inventory AWS Resources', 1),
     ('show_billing', 'AWS Billing', 1),
+    ('show_ai_usage', 'AI Usage', 1),
     ('scan_ec2', 'Scan EC2', 0),
     ('scan_s3', 'Scan S3', 0),
     ('toggle_ec2', 'Toggle EC2', 0),

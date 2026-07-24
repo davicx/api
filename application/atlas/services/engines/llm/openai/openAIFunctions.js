@@ -1,5 +1,6 @@
 const OpenAI = require('openai');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../../../config/chatGPTconfig');
+const SaveAiUsageFunctions = require('../../../aiUsage/functions/saveAiUsage');
 
 /*
 FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPilotMessageFunctions for that)
@@ -44,7 +45,16 @@ function normalizeUserMessageForModel(raw) {
 
 /**
  * @param {import('openai').OpenAI} client
- * @param {{ model: string, messages: Array<{ role: string, content: string }>, max_tokens: number, temperature: number }} params
+ * @param {{
+ *   model: string,
+ *   messages: Array<{ role: string, content: string }>,
+ *   max_tokens: number,
+ *   temperature: number,
+ *   organizationId?: string|null,
+ *   conversationId?: string|number|null,
+ *   requestId?: string|number|null,
+ *   feature?: string|null
+ * }} params
  * @returns {Promise<{ success: true, data: string|null, usage: object|null } | { success: false, message: string, data: null, error?: string }>}
  */
 //Function A3: Create OpenAI Chat Completion
@@ -70,11 +80,23 @@ async function createOpenAiChatCompletion(client, params) {
 
         const choice = response.choices && response.choices[0] && response.choices[0].message;
         const data = choice && choice.content != null ? choice.content : null;
+        const usage = response.usage || null;
+
+        if (usage) {
+            void SaveAiUsageFunctions.saveAiUsageFromOpenAIResponse({
+                usage: usage,
+                model: model,
+                organizationId: params.organizationId,
+                conversationId: params.conversationId,
+                requestId: params.requestId,
+                feature: params.feature || 'general_chat'
+            });
+        }
 
         return {
             success: true,
             data,
-            usage: response.usage || null
+            usage: usage
         };
     } catch (error) {
         console.error('[createOpenAiChatCompletion] ChatGPT error:', error.message || error);

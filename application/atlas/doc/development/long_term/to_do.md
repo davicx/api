@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-05
 
-> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[cloud_pilot_chat.md](./cloud_pilot_chat.md)**  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[cloud_pilot_chat.md](../cloud_pilot_chat.md)**  
 > **History (MVP done):** [history.md](./history.md) · **Deferred:** [future_work.md](./future_work.md)  
 > **Done:** [finished.md](./finished.md) · **Architecture & reference:** [architecture/](./architecture/)
 
@@ -14,7 +14,7 @@
 
 **History MVP is complete** — see [history.md](./history.md) and [finished.md](./finished.md). Deferred history items: [future_work.md](./future_work.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md). **Chat context & enhanced replies:** [cloud_pilot_chat.md](./cloud_pilot_chat.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../pr_strategy.md). **AI enhancements (3 features):** [cloud_pilot_chat.md](../cloud_pilot_chat.md). **AI usage / OpenAI spend:** [ai_usage.md](../ai_usage.md).
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
@@ -27,14 +27,33 @@
 - [ ] Phase 5 — history after PR apply
 - [ ] Phase 6 — undo revert PR
 
-#### CloudPilot Chat — context & enhanced replies ([cloud_pilot_chat.md](./cloud_pilot_chat.md))
+#### CloudPilot AI enhancements ([cloud_pilot_chat.md](../cloud_pilot_chat.md)) — locked
 
-- [x] Phase C1 — context build + STEP 7a log (`context/`)
-- [ ] Phase C2 — verify `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING=true` in production demo
-- [ ] Phase C3 — Workflow `relevant_context`
-- [ ] Phase C4 — Post-scan chat summaries (S3/EC2)
-- [ ] Phase C5 — Knowledge files per `rule_id`
-- [ ] Dashboard section — deferred (see doc)
+Shared
+- [x] Context + conversation history foundation (C1 / C1b)
+- [x] Three feature flags in ENV (`openAIChatConfig.js`) — all default off
+- [ ] `AIService` scaffold + master billing gate + per-feature fallback
+
+Feature 3 — Intent understanding (`OPENAI_INTENT_UNDERSTANDING`) — **build next**
+- [ ] Router + rules parser untouched; validate vs `actionMap`
+- [ ] Fall back to rules on AI failure; STEP 3 engine logs
+
+Feature 1 — Explain findings (`OPENAI_EXPLAIN_FINDINGS`)
+- [ ] Curated findings → prioritized friendly chat; Navigator unchanged
+- [ ] Knowledge snippets per `rule_id` (quality)
+
+Feature 2 — Friendly request conversations (`OPENAI_FRIENDLY_REQUESTS`)
+- [ ] Natural **one-field-at-a-time** asks; hide checklist / field ids
+- [ ] Suggest defaults from history; structured fallback forever
+
+- [ ] Dashboard summary — deferred (see doc)
+
+#### AI Usage — OpenAI spend ([ai_usage.md](../ai_usage.md))
+
+- [x] Persist `usage` → `ai_usage` + `calculateOpenAICost` (after successful OpenAI calls)
+- [x] `GET /ai/usage/summary`
+- [x] Chat `show_ai_usage` (OpenAI only; AWS+AI combo deferred)
+- [ ] Kite AI Usage card
 
 ### Future
 

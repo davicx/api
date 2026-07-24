@@ -2,7 +2,7 @@
 
 Quick reference for understanding, decision, and local DB setup. Planning docs live in [`development/`](./development/) — **active work:** [`development/history.md`](./development/history.md).
 
-**`services/` folder map:** [`../services/README.md`](../services/README.md)
+**Code layout:** [`../README.md`](../README.md)
 
 Reference for **STEP 3: MESSAGE UNDERSTANDING**. These tables describe what `understandMessage()` extracts from a user message into `messageUnderstanding` — no DB writes or execution until STEP 5 apply.
 

@@ -8,7 +8,7 @@
 
 | Topic | Path |
 |-------|------|
-| Actions & input types (STEP 3 understanding) | `doc/ReadMe.md` |
+| Actions & input types (STEP 3 understanding) | `doc/understanding_actions.md` |
 | Database schema (actions, requests, executions) | `doc/database/database.md` |
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
@@ -26,7 +26,7 @@
 | [../mvp.md](../mvp.md) | **Active work** — EC2 vertical slice |
 | [../long_term/to_do.md](../long_term/to_do.md) | Deferred backlog |
 | [../long_term/finished.md](../long_term/finished.md) | Shipped |
-| [../cloud_pilot_chat.md](../cloud_pilot_chat.md) | Chat context — part of MVP (M7) |
+| [../cloud_pilot_chat.md](../cloud_pilot_chat.md) | AI enhancements (3 features) — MVP M7 |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |
 | [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |
