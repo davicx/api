@@ -1,5 +1,69 @@
 # CloudPilot — `application/atlas/`
 
+```text
+                    USER
+                      │
+                      ▼
+              ┌──────────────┐
+              │ UNDERSTANDING│
+              │ What do they │
+              │ mean?        │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │   DECISION   │
+              │ What should  │
+              │ happen?      │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │   REQUEST    │
+              │ What state   │
+              │ are we in?   │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │  EXECUTION   │
+              │ Do the work  │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │CONVERSATION  │
+              │ Explain it   │
+              └──────────────┘
+```
+
+```text
+src/
+
+├── capabilities/        // What CloudPilot CAN DO
+│   ├── billing/
+│   ├── changes/
+│   ├── inventory/
+│   └── scans/
+│
+├── ai/                  // Everything involving GenAI
+│   ├── client/
+│   ├── context/
+│   ├── understand/
+│   ├── respond/
+│   └── shared/
+│
+├── conversation/        // Handling a user's conversation
+│
+├── requests/            // Open action/request state
+│
+├── history/             // What CloudPilot has done
+│
+├── execution/           // Actually executing things
+│
+└── config/
+```
+
 Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `doc/` — this file is **code layout only**.
 
 **One README for this tree.** Do not add per-folder READMEs under `logic/`, `routes/`, `services/`, `capabilities/`, or `functions/`.
