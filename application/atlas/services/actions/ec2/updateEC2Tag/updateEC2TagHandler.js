@@ -1,5 +1,5 @@
-const ChangeEC2Functions = require('../../../../capabilities/changes/changeEC2');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../executions/outcomes/outcomeRegistry');
+const ChangeEC2Functions = require('../../../../aws/capabilities/changes/changeEC2');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../../cloudPilot/execution/outcomes/outcomeRegistry');
 
 //Action only (update_ec2_tag). Automatic mode runs via STEP 6.
 async function updateEC2TagHandler(context) {

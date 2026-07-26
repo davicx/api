@@ -3,10 +3,10 @@ const Message = require('../../functions/classes/Message');
 const Group = require('../../functions/classes/Group');
 const Notification = require('../../functions/classes/Notification');
 const messageFunctions = require('../../functions/messageFunctions');
-const cloudPilotMessageFunctions = require('../services/cloudPilotMessageFunctions');
+const cloudPilotMessageFunctions = require('../cloudPilot/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
-const openAIFunctions = require('../services/engines/llm/openai/openAIFunctions');
-const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../services/config/chatGPTconfig');
+const openAIFunctions = require('../ai/client/openAIClient');
+const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../config/chatGPTconfig');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)

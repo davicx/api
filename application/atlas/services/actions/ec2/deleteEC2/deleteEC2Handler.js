@@ -1,5 +1,5 @@
 const atlasEC2Functions = require('../atlasEC2Functions');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../executions/outcomes/outcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../../cloudPilot/execution/outcomes/outcomeRegistry');
 
 //Action only (delete_ec2). Change strategy routing: change/strategies/
 async function deleteEC2Handler(context) {

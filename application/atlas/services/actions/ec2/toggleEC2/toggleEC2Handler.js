@@ -1,5 +1,5 @@
-const ChangeEC2Functions = require('../../../../capabilities/changes/changeEC2');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../executions/outcomes/outcomeRegistry');
+const ChangeEC2Functions = require('../../../../aws/capabilities/changes/changeEC2');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../../cloudPilot/execution/outcomes/outcomeRegistry');
 
 //Action only (toggle_ec2). Change strategy routing: change/strategies/
 async function toggleEC2Handler(context) {

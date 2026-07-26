@@ -38,35 +38,42 @@
 ```
 
 ```text
-src/
+application/atlas/
 
-├── capabilities/        // What CloudPilot CAN DO
-│   ├── billing/
-│   ├── changes/
-│   ├── inventory/
-│   └── scans/
+├── README.md
 │
-├── ai/                  // Everything involving GenAI
-│   ├── client/
-│   ├── context/
-│   ├── understand/
-│   ├── respond/
-│   └── shared/
+├── cloudPilot/            // Workflow brain (STEPS 1–7)
+│   ├── cloudPilotMessageFunctions.js   // pipeline entry
+│   ├── conversation/      // understand, general, request, speak
+│   ├── decision/          // decideNextStep
+│   ├── requests/          // open request state
+│   ├── execution/         // run approved actions
+│   ├── history/           // what happened + undo
+│   └── changes/           // delivery strategies (instructions / CLI / PR / automatic)
 │
-├── conversation/        // Handling a user's conversation
+├── aws/                   // What CloudPilot CAN DO on AWS
+│   ├── capabilities/      // billing, changes, inventory, scans
+│   └── atlasClient/       // HTTP boundary to Python Atlas API
 │
-├── requests/            // Open action/request state
+├── ai/                    // Shared AI / OpenAI machinery
+│   ├── client/            // openAIClient.js
+│   ├── context/           // buildContext, buildSystemMessage, types, classes
+│   ├── usage/             // AiUsage, saveAiUsage, calculateOpenAICost
+│   └── shared/            // (empty — reserved)
 │
-├── history/             // What CloudPilot has done
+├── config/                // chatGPT / OpenAI chat / github
+├── logic/                 // HTTP logic (leave as-is)
+├── routes/                // Express routes (leave as-is)
+├── functions/             // Atlas-local helpers/classes (leave as-is)
 │
-├── execution/           // Actually executing things
-│
-└── config/
+└── services/              // Intentionally kept for now
+    ├── actions/           // actionMap + handlers
+    └── navigator/         // navigatorFunctions
 ```
 
 Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `doc/` — this file is **code layout only**.
 
-**One README for this tree.** Do not add per-folder READMEs under `logic/`, `routes/`, `services/`, `capabilities/`, or `functions/`.
+**One README for this tree.** Do not add per-folder READMEs under `logic/`, `routes/`, `services/`, `aws/`, `cloudPilot/`, or `functions/`.
 
 **Message architecture:** [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md)
 
@@ -112,12 +119,12 @@ Full model: [code_cleanup.md § Request types and change strategies](./doc/devel
 
 | Layer | Question | Location |
 |-------|----------|----------|
-| **Conversation** | What are we trying to accomplish? | `services/conversation/` |
-| **Workflow** | What needs to happen? | `conversation/request/workflow.js` |
-| **Capabilities** | How? | `capabilities/` |
-| **Atlas** | Where? | `capabilities/atlas/atlasPost.js` |
+| **Conversation** | What are we trying to accomplish? | `cloudPilot/conversation/` |
+| **Workflow** | What needs to happen? | `cloudPilot/conversation/request/workflow.js` |
+| **Capabilities** | How? | `aws/capabilities/` |
+| **Atlas** | Where? | `aws/atlasClient/atlasPost.js` |
 
-**Entry:** `logic/messages.js` → `services/cloudPilotMessageFunctions.js` (`processMessage`)
+**Entry:** `logic/messages.js` → `cloudPilot/cloudPilotMessageFunctions.js` (`processMessage`)
 
 ---
 
@@ -125,56 +132,61 @@ Full model: [code_cleanup.md § Request types and change strategies](./doc/devel
 
 | Folder | Role |
 |--------|------|
+| `cloudPilot/` | Workflow brain — STEPS 1–7, conversation, decision, requests, execution, history, changes |
+| `aws/` | Thin HOW / WHERE — capabilities + Atlas HTTP client |
+| `ai/` | Shared OpenAI client, context builders, usage |
+| `config/` | Chat / OpenAI flags + GitHub client |
 | `logic/` | HTTP handlers (`messages`, `aiUsage`, `todo`, `instructions`) |
 | `routes/` | Express route definitions |
-| `services/` | Orchestration — STEPS 1–7, actions, decision, speak |
-| `capabilities/` | Thin HOW / WHERE — Atlas HTTP + scan/change wrappers |
+| `services/` | Leftovers — `actions/` (actionMap + handlers), `navigator/` |
 | `functions/` | Shared helpers + ToDo / Instruction DB classes (non-pipeline) |
 | `doc/` | Planning and reference docs (not runtime) |
 
 ---
 
-## `services/` — orchestration (by pipeline step)
+## `cloudPilot/` — orchestration (by pipeline step)
 
-Orchestrator: `cloudPilotMessageFunctions.js` — STEPS 1–7 (`processMessage`).
+Orchestrator: `cloudPilot/cloudPilotMessageFunctions.js` — STEPS 1–7 (`processMessage`).
+
+| Folder | Role | Pipeline step |
+|--------|------|----------------|
+| `conversation/` | Understand + General / Request + CloudPilotMessage | STEP 3 / STEP 4 exit / STEP 7 |
+| `decision/` | Decide which conversation | **STEP 4** |
+| `requests/` | Request state persistence | **STEP 2**, **STEP 5** |
+| `execution/` | Perform work (Request Conversation) | **STEP 6** |
+| `history/` | Change history + undo | **STEP 6B** |
+| `changes/` | Strategies 1–4 + CLI/PR helpers | STEP 6 (automatic) / STEP 7 (1–3) |
+
+**Still under `services/`**
 
 | Folder | Role | Pipeline step |
 |--------|------|----------------|
 | `actions/` | Action registry + handlers | Handlers at STEP 6 |
-| `aiUsage/` | Persist OpenAI usage + summary queries | After OpenAI / `show_ai_usage` |
-| `conversation/` | General + Request + CloudPilotMessage | STEP 4 exit / STEP 7 |
-| `change/` | Strategies 1–4 + CLI/PR helpers | STEP 6 (automatic) / STEP 7 (1–3) |
-| `context/` | Identity / Situation / Knowledge for AI | Speak / enhancements |
-| `engines/llm/` | OpenAI SDK + cost helper | Completions; usage save |
-| `config/` | Chat / OpenAI flags + GitHub client | Config |
-| `decision/` | Decide which conversation | **STEP 4** |
-| `executions/` | Perform work (Request Conversation) | **STEP 6** |
-| `history/` | Change history + undo | **STEP 6B** |
 | `navigator/` | Navigator / dashboard shaping | Response shaping |
-| `requests/` | Request state persistence | **STEP 2**, **STEP 5** |
-| `understanding/` | Intent + entity extraction | **STEP 3** |
+
+**Also:** `ai/` (context / usage / OpenAI), `config/` (chat + GitHub).
 
 **Rules of thumb**
 
 | Area | Role |
 |------|------|
-| `conversation/` | Conversation systems + CloudPilotMessage (speak) + templates |
-| `change/strategies/` | How mutating actions apply (modes 1–4) |
-| `engines/llm/*` | LLM vendor SDKs — implementation only |
-| `executions/outcomes/` | Handler execution outcome copy |
+| `cloudPilot/conversation/` | Conversation systems + CloudPilotMessage (speak) + templates |
+| `cloudPilot/changes/strategies/` | How mutating actions apply (modes 1–4) |
+| `ai/*` | LLM vendor SDKs + context — implementation only |
+| `cloudPilot/execution/outcomes/` | Handler execution outcome copy |
 
 **Symmetry:** `general/workflow.js` no-op stub. `request/workflow.js` — `store()` + `execute()`.
 
 ### Pipeline flow
 
 ```text
-cloudPilotMessageFunctions.js
+cloudPilot/cloudPilotMessageFunctions.js
   STEP 1–4  normalize → load → understand → decide
 
   General Conversation? → GeneralConversation → CloudPilotMessage → return
 
-  STEP 5  Request Conversation — maintain state   (requests/)
-  STEP 6  Request Conversation — perform work    (executions/)
+  STEP 5  Request Conversation — maintain state   (cloudPilot/requests/)
+  STEP 6  Request Conversation — perform work    (cloudPilot/execution/)
   STEP 7  Request Conversation — speak           (RequestConversation → CloudPilotMessage)
 ```
 
@@ -182,18 +194,19 @@ Change strategies apply only to **change** actions (`actionTier: destructive` wi
 
 ---
 
-## `capabilities/` — HOW / WHERE
+## `aws/capabilities/` — HOW / WHERE
 
-Thin functions that call Atlas or OpenAI — one entry point per product action. Handlers in `services/actions/` import from here for HOW.
+Thin functions that call Atlas — one entry point per product action. Handlers in `services/actions/` import from here for HOW.
 
 ```text
-capabilities/
-├── scans/          scanEC2, scanS3
-├── changes/        changeEC2.js (toggleEC2, createEC2, deleteEC2)
-├── inventory/      getAllResources
-├── billing/        getBillingSummary
-├── conversation/   generalChat
-└── atlas/          atlasPost.js    ← how we POST to Atlas
+aws/
+├── capabilities/
+│   ├── scans/          scanEC2, scanS3
+│   ├── changes/        changeEC2.js (toggleEC2, createEC2, deleteEC2)
+│   ├── inventory/      getAllResources
+│   └── billing/        getBillingSummary
+└── atlasClient/
+    └── atlasPost.js    ← how we POST to Atlas
 ```
 
 | Folder | What it is |
@@ -202,174 +215,252 @@ capabilities/
 | `changes/` | Change AWS — toggle, create, delete (history at STEP 6B) |
 | `inventory/` | List what exists |
 | `billing/` | AWS cost summary |
-| `conversation/` | General chat via OpenAI |
-| `atlas/` | Shared Atlas HTTP helper — not a product action |
+| `atlasClient/` | Shared Atlas HTTP helper — not a product action |
 
 **Rules**
 
 - Capabilities return structured results — no request rows, no chat copy, no history inserts.
-- `saveHistory()` stays in `services/executions/functions/executionFunctions.js` (STEP 6B).
+- `saveHistory()` stays in `cloudPilot/execution/functions/executionFunctions.js` (STEP 6B).
 - Handlers stay in `services/actions/`; they delegate here for HOW.
 
 ---
 
-## Folder tree — current (code only)
+## Folder tree — all files and folders
+
+Complete listing of everything under `application/atlas/` (excludes hidden files / `node_modules`).
 
 ```text
 application/atlas/
-├── README.md
-├── logic/
-│   ├── messages.js
-│   ├── aiUsage.js
-│   ├── todo.js
-│   └── instructions.js
-├── routes/
-│   ├── messageRoutes.js
-│   ├── aiUsageRoutes.js
-│   ├── todoRoutes.js
-│   └── instructionRoutes.js
+├── ai/
+│   ├── client/
+│   │   └── openAIClient.js
+│   ├── context/
+│   │   ├── classes/
+│   │   │   ├── ConversationHistoryContext.js
+│   │   │   └── CurrentQuestionContext.js
+│   │   ├── contextTypes/
+│   │   │   ├── cloudPilotContext.js
+│   │   │   ├── currentQuestionContext.js
+│   │   │   └── organizationKnowledgeContext.js
+│   │   ├── buildContext.js
+│   │   └── buildSystemMessage.js
+│   ├── shared/
+│   └── usage/
+│       ├── AiUsage.js
+│       ├── calculateOpenAICost.js
+│       └── saveAiUsage.js
+├── aws/
+│   ├── atlasClient/
+│   │   └── atlasPost.js
+│   └── capabilities/
+│       ├── billing/
+│       │   └── getBillingSummary.js
+│       ├── changes/
+│       │   └── changeEC2.js
+│       ├── inventory/
+│       │   └── getAllResources.js
+│       └── scans/
+│           ├── scanEC2.js
+│           └── scanS3.js
+├── cloudPilot/
+│   ├── changes/
+│   │   ├── cli/
+│   │   │   └── cliTemplates.js
+│   │   ├── pr/
+│   │   │   ├── createToggleEc2PullRequest.js
+│   │   │   └── prTemplates.js
+│   │   └── strategies/
+│   │       ├── automatic.js
+│   │       ├── cli.js
+│   │       ├── instructions.js
+│   │       └── pr.js
+│   ├── conversation/
+│   │   ├── general/
+│   │   │   ├── generalChat.js
+│   │   │   ├── GeneralConversation.js
+│   │   │   └── workflow.js
+│   │   ├── request/
+│   │   │   ├── RequestConversation.js
+│   │   │   └── workflow.js
+│   │   ├── templates/
+│   │   │   ├── fieldPromptExamples.js
+│   │   │   └── requestTemplates.js
+│   │   ├── understand/
+│   │   │   ├── search/
+│   │   │   │   ├── searchMessageForAction.js
+│   │   │   │   ├── searchMessageForConversation.js
+│   │   │   │   ├── searchMessageForInstanceId.js
+│   │   │   │   ├── searchMessageForInstanceType.js
+│   │   │   │   ├── searchMessageForName.js
+│   │   │   │   ├── searchMessageForRegion.js
+│   │   │   │   ├── searchMessageForReply.js
+│   │   │   │   ├── searchMessageForStructuredFields.js
+│   │   │   │   ├── searchMessageForTagUpdate.js
+│   │   │   │   └── searchMessageForValues.js
+│   │   │   └── understandMessage.js
+│   │   └── CloudPilotMessage.js
+│   ├── decision/
+│   │   ├── decideNextStep.js
+│   │   └── decisionTypes.js
+│   ├── execution/
+│   │   ├── functions/
+│   │   │   ├── executionFunctions.js
+│   │   │   └── runAction.js
+│   │   ├── outcomes/
+│   │   │   └── outcomeRegistry.js
+│   │   └── AtlasExecution.js
+│   ├── history/
+│   │   ├── classes/
+│   │   │   └── History.js
+│   │   ├── functions/
+│   │   │   ├── historyActionNameFunctions.js
+│   │   │   ├── historyFunctions.js
+│   │   │   └── undoFunctions.js
+│   │   ├── historyBuilders/
+│   │   │   ├── createEc2History.js
+│   │   │   ├── ec2History.js
+│   │   │   └── toggleEc2History.js
+│   │   ├── historyNavigatorAdapter.js
+│   │   └── undoRegistry.js
+│   ├── requests/
+│   │   ├── classes/
+│   │   │   ├── ActionState.js
+│   │   │   └── Request.js
+│   │   └── functions/
+│   │       ├── requestFunctions.js
+│   │       ├── requestLoadFunctions.js
+│   │       ├── requestNameFunctions.js
+│   │       └── requestStatusFunctions.js
+│   └── cloudPilotMessageFunctions.js
+├── config/
+│   ├── github/
+│   │   └── githubClient.js
+│   ├── chatGPTconfig.js
+│   └── openAIChatConfig.js
+├── doc/
+│   ├── code/
+│   │   ├── allCode.js
+│   │   └── commentedCode.js
+│   ├── database/
+│   │   └── database.md
+│   ├── development/
+│   │   ├── architecture/
+│   │   │   ├── action_map.md
+│   │   │   ├── appendix.md
+│   │   │   ├── architecture.md
+│   │   │   ├── capability_migration.md
+│   │   │   ├── code_cleanup.md
+│   │   │   ├── development_undo_feature.md
+│   │   │   ├── single_capabiity_change.md
+│   │   │   └── step_one_cleanup.md
+│   │   ├── long_term/
+│   │   │   ├── billing.md
+│   │   │   ├── finished.md
+│   │   │   ├── future_work.md
+│   │   │   ├── history.md
+│   │   │   ├── make_scans_useful.md
+│   │   │   ├── remediations.md
+│   │   │   ├── scans.md
+│   │   │   └── to_do.md
+│   │   ├── ai_usage.md
+│   │   ├── cloud_pilot_chat.md
+│   │   ├── mvp.md
+│   │   └── pr_strategy.md
+│   ├── instructions/
+│   │   ├── adding_new_action.md
+│   │   ├── codeStyle.md
+│   │   └── converting_atlas_data.md
+│   ├── json/
+│   │   └── atlas/
+│   │       ├── ec2/
+│   │       │   └── atlasEC2.json
+│   │       ├── master/
+│   │       │   ├── actionDefinition.js
+│   │       │   ├── cloudPilotResponse.js
+│   │       │   └── operationState.js
+│   │       ├── messages/
+│   │       │   ├── messageResponseAllowed.json
+│   │       │   └── messageResponseBlocked.json
+│   │       ├── sort/
+│   │       │   └── cloudPilot.js
+│   │       └── master.js
+│   ├── sql/
+│   │   ├── ai_usage.sql
+│   │   ├── alter_cloudpilot_history_action_names.sql
+│   │   ├── alter_cloudpilot_requests_display_name_internal.sql
+│   │   ├── cloudpilot_instructions.sql
+│   │   ├── cloudpilot_instructions_update_image_paths.sql
+│   │   ├── cloudpilot_workflows_phase1.sql
+│   │   ├── master_sql.sql
+│   │   ├── seed_show_ai_usage.sql
+│   │   ├── todo.sql
+│   │   └── todo_seed_chat_context.sql
+│   ├── testing/
+│   │   ├── e2e-create-ec2.js
+│   │   └── e2e-delete-ec2.js
+│   └── understanding_actions.md
 ├── functions/
+│   ├── classes/
+│   │   ├── Instruction.js
+│   │   └── ToDo.js
 │   ├── atlasTimeFunctions.js
-│   ├── toDoFunctions.js
 │   ├── instructionFunctions.js
-│   └── classes/
-│       ├── ToDo.js
-│       └── Instruction.js
-├── capabilities/
-│   ├── atlas/atlasPost.js
-│   ├── billing/getBillingSummary.js
-│   ├── changes/changeEC2.js
-│   ├── conversation/generalChat.js
-│   ├── inventory/getAllResources.js
-│   └── scans/
-│       ├── scanEC2.js
-│       └── scanS3.js
-└── services/
-    ├── cloudPilotMessageFunctions.js
-    ├── actions/
-    │   ├── actionMap.js
-    │   ├── aiUsage/
-    │   │   ├── showAiUsageHandler.js
-    │   │   └── aiUsageMessageBuilder.js
-    │   ├── aws/
-    │   │   ├── atlasAWSFunctions.js
-    │   │   ├── billingAWS/
-    │   │   │   ├── billingAWSHandler.js
-    │   │   │   ├── atlasBillingFunctions.js
-    │   │   │   ├── atlasAWSBillingMessage.js
-    │   │   │   └── atlasAWSBillingNavigator.js
-    │   │   └── inventoryAWS/
-    │   │       ├── inventoryAWSHandler.js
-    │   │       ├── atlasAWSInventoryFormatter.js
-    │   │       ├── atlasAWSInventoryMessageBuilder.js
-    │   │       └── atlasAWSInventoryNavigatorAdapter.js
-    │   ├── ec2/
-    │   │   ├── atlasEC2Functions.js
-    │   │   ├── createEC2/createEC2Handler.js
-    │   │   ├── deleteEC2/deleteEC2Handler.js
-    │   │   ├── toggleEC2/toggleEC2Handler.js
-    │   │   ├── updateEC2Tag/updateEC2TagHandler.js
-    │   │   └── scanEC2/
-    │   │       ├── scanEC2Handler.js
-    │   │       ├── atlasEC2Formatter.js
-    │   │       ├── atlasEC2MessageBuilder.js
-    │   │       └── atlasEC2ScanNavigatorAdapter.js
-    │   └── s3/
-    │       ├── atlasS3Functions.js
-    │       └── scanS3/
-    │           ├── scanS3Handler.js
-    │           ├── atlasS3Formatter.js
-    │           ├── atlasS3MessageBuilder.js
-    │           └── atlasS3ScanNavigatorAdapter.js
-    ├── aiUsage/
-    │   ├── classes/AiUsage.js
-    │   └── functions/saveAiUsage.js
-    ├── conversation/
-    │   ├── CloudPilotMessage.js
-    │   ├── templates/
-    │   │   ├── fieldPromptExamples.js
-    │   │   └── requestTemplates.js
-    │   ├── general/
-    │   │   ├── GeneralConversation.js
-    │   │   └── workflow.js
-    │   └── request/
-    │       ├── RequestConversation.js
-    │       └── workflow.js
-    ├── change/
-    │   ├── strategies/
-    │   │   ├── automatic.js
-    │   │   ├── cli.js
-    │   │   ├── instructions.js
-    │   │   └── pr.js
-    │   ├── cli/cliTemplates.js
-    │   └── pr/
-    │       ├── createToggleEc2PullRequest.js
-    │       └── prTemplates.js
-    ├── context/
-    │   ├── buildAIContext.js
-    │   ├── buildAISystemMessage.js
-    │   ├── contextTypes/
-    │   │   ├── cloudPilotContext.js
-    │   │   ├── currentQuestionContext.js
-    │   │   └── organizationKnowledgeContext.js
-    │   ├── classes/
-    │   │   ├── ConversationHistoryContext.js
-    │   │   └── CurrentQuestionContext.js
-    │   └── temp.js                        ← scratch / not wired
-    ├── engines/llm/openai/
-    │   ├── openAIFunctions.js
-    │   └── calculateOpenAICost.js
-    ├── config/
-    │   ├── chatGPTconfig.js
-    │   ├── openAIChatConfig.js
-    │   └── github/githubClient.js
-    ├── decision/
-    │   ├── decideNextStep.js
-    │   └── decisionTypes.js
-    ├── executions/
-    │   ├── AtlasExecution.js
-    │   ├── outcomes/outcomeRegistry.js
-    │   └── functions/
-    │       ├── executionFunctions.js
-    │       └── runAction.js
-    ├── history/
-    │   ├── classes/History.js
-    │   ├── undoRegistry.js
-    │   ├── historyNavigatorAdapter.js
-    │   ├── functions/
-    │   │   ├── historyFunctions.js
-    │   │   ├── historyActionNameFunctions.js
-    │   │   └── undoFunctions.js
-    │   └── historyBuilders/
-    │       ├── toggleEc2History.js
-    │       ├── createEc2History.js
-    │       └── ec2History.js
-    ├── navigator/functions/navigatorFunctions.js
-    ├── requests/
-    │   ├── classes/
-    │   │   ├── Request.js
-    │   │   └── ActionState.js
-    │   └── functions/
-    │       ├── requestFunctions.js
-    │       ├── requestLoadFunctions.js
-    │       ├── requestNameFunctions.js
-    │       └── requestStatusFunctions.js
-    └── understanding/
-        ├── understandMessage.js
-        └── search/
-            ├── searchMessageForAction.js
-            ├── searchMessageForConversation.js
-            ├── searchMessageForReply.js
-            ├── searchMessageForValues.js
-            ├── searchMessageForStructuredFields.js
-            ├── searchMessageForRegion.js
-            ├── searchMessageForInstanceId.js
-            ├── searchMessageForInstanceType.js
-            ├── searchMessageForName.js
-            └── searchMessageForTagUpdate.js
+│   └── toDoFunctions.js
+├── logic/
+│   ├── aiUsage.js
+│   ├── instructions.js
+│   ├── messages.js
+│   └── todo.js
+├── routes/
+│   ├── aiUsageRoutes.js
+│   ├── instructionRoutes.js
+│   ├── messageRoutes.js
+│   └── todoRoutes.js
+├── services/
+│   ├── actions/
+│   │   ├── aiUsage/
+│   │   │   ├── aiUsageMessageBuilder.js
+│   │   │   └── showAiUsageHandler.js
+│   │   ├── aws/
+│   │   │   ├── billingAWS/
+│   │   │   │   ├── atlasAWSBillingMessage.js
+│   │   │   │   ├── atlasAWSBillingNavigator.js
+│   │   │   │   ├── atlasBillingFunctions.js
+│   │   │   │   └── billingAWSHandler.js
+│   │   │   ├── inventoryAWS/
+│   │   │   │   ├── atlasAWSInventoryFormatter.js
+│   │   │   │   ├── atlasAWSInventoryMessageBuilder.js
+│   │   │   │   ├── atlasAWSInventoryNavigatorAdapter.js
+│   │   │   │   └── inventoryAWSHandler.js
+│   │   │   └── atlasAWSFunctions.js
+│   │   ├── ec2/
+│   │   │   ├── createEC2/
+│   │   │   │   └── createEC2Handler.js
+│   │   │   ├── deleteEC2/
+│   │   │   │   └── deleteEC2Handler.js
+│   │   │   ├── scanEC2/
+│   │   │   │   ├── atlasEC2Formatter.js
+│   │   │   │   ├── atlasEC2MessageBuilder.js
+│   │   │   │   ├── atlasEC2ScanNavigatorAdapter.js
+│   │   │   │   └── scanEC2Handler.js
+│   │   │   ├── toggleEC2/
+│   │   │   │   └── toggleEC2Handler.js
+│   │   │   ├── updateEC2Tag/
+│   │   │   │   └── updateEC2TagHandler.js
+│   │   │   └── atlasEC2Functions.js
+│   │   ├── s3/
+│   │   │   ├── scanS3/
+│   │   │   │   ├── atlasS3Formatter.js
+│   │   │   │   ├── atlasS3MessageBuilder.js
+│   │   │   │   ├── atlasS3ScanNavigatorAdapter.js
+│   │   │   │   └── scanS3Handler.js
+│   │   │   └── atlasS3Functions.js
+│   │   └── actionMap.js
+│   └── navigator/
+│       └── functions/
+│           └── navigatorFunctions.js
+└── README.md
 ```
-
----
 
 ## File reference (one line each)
 
@@ -396,23 +487,23 @@ application/atlas/
 | `functions/classes/ToDo.js` | To Do DB class. |
 | `functions/classes/Instruction.js` | Instruction DB class. |
 
-### Capabilities (`capabilities/`)
+### Capabilities (`aws/capabilities/` + `aws/atlasClient/`)
 
 | File | What it does |
 |------|----------------|
-| `capabilities/atlas/atlasPost.js` | Posts JSON to Atlas HTTP routes. |
-| `capabilities/changes/changeEC2.js` | Thin entry for EC2 create, delete, and toggle. |
-| `capabilities/conversation/generalChat.js` | Capability wrapper for general chat (stub). |
-| `capabilities/inventory/getAllResources.js` | Thin entry for full AWS inventory. |
-| `capabilities/billing/getBillingSummary.js` | Thin entry for AWS billing summary. |
-| `capabilities/scans/scanEC2.js` | Thin entry for EC2 scan. |
-| `capabilities/scans/scanS3.js` | Thin entry for S3 scan. |
+| `aws/atlasClient/atlasPost.js` | Posts JSON to Atlas HTTP routes. |
+| `aws/capabilities/changes/changeEC2.js` | Thin entry for EC2 create, delete, and toggle. |
+| `cloudPilot/conversation/general/generalChat.js` | Capability wrapper for general chat (stub). |
+| `aws/capabilities/inventory/getAllResources.js` | Thin entry for full AWS inventory. |
+| `aws/capabilities/billing/getBillingSummary.js` | Thin entry for AWS billing summary. |
+| `aws/capabilities/scans/scanEC2.js` | Thin entry for EC2 scan. |
+| `aws/capabilities/scans/scanS3.js` | Thin entry for S3 scan. |
 
 ### Orchestrator
 
 | File | What it does |
 |------|----------------|
-| `services/cloudPilotMessageFunctions.js` | Runs STEPS 1–7 for every user message (`processMessage`). |
+| `cloudPilot/cloudPilotMessageFunctions.js` | Runs STEPS 1–7 for every user message (`processMessage`). |
 
 ### Actions (`services/actions/`)
 
@@ -445,14 +536,14 @@ application/atlas/
 | `s3/scanS3/atlasS3MessageBuilder.js` | S3 scan chat copy. |
 | `s3/scanS3/atlasS3ScanNavigatorAdapter.js` | S3 scan → Navigator. |
 
-### AI usage (`services/aiUsage/`)
+### AI usage (`ai/usage/`)
 
 | File | What it does |
 |------|----------------|
 | `classes/AiUsage.js` | Insert + summary aggregates for `ai_usage`. |
 | `functions/saveAiUsage.js` | Map OpenAI `usage` → cost → insert (never fails chat). |
 
-### Conversation (`services/conversation/`)
+### Conversation (`cloudPilot/conversation/`)
 
 | File | What it does |
 |------|----------------|
@@ -464,7 +555,7 @@ application/atlas/
 | `request/RequestConversation.js` | Request speak routing. |
 | `request/workflow.js` | Thin STEP 5 (`store`) and STEP 6 (`execute`) passthrough. |
 
-### Change (`services/change/`)
+### Change (`cloudPilot/changes/`)
 
 | File | What it does |
 |------|----------------|
@@ -476,7 +567,7 @@ application/atlas/
 | `pr/createToggleEc2PullRequest.js` | Opens GitHub PR for toggle_ec2. |
 | `pr/prTemplates.js` | PR strategy chat copy. |
 
-### Context (`services/context/`)
+### Context (`ai/context/`)
 
 | File | What it does |
 |------|----------------|
@@ -499,14 +590,14 @@ application/atlas/
 | `config/openAIChatConfig.js` | Live send, history, AI enhancement feature flags. |
 | `config/github/githubClient.js` | GitHub API for PR strategy. |
 
-### Decision (`services/decision/`)
+### Decision (`cloudPilot/decision/`)
 
 | File | What it does |
 |------|----------------|
 | `decideNextStep.js` | STEP 4 — conversation type, request updates, response.type. |
 | `decisionTypes.js` | Constants for `chatType`, `response.type`, action events. |
 
-### Executions (`services/executions/`)
+### Executions (`cloudPilot/execution/`)
 
 | File | What it does |
 |------|----------------|
@@ -515,7 +606,7 @@ application/atlas/
 | `outcomes/outcomeRegistry.js` | Maps error codes to friendly user messages. |
 | `AtlasExecution.js` | Legacy path for execution events in templates. |
 
-### History (`services/history/`)
+### History (`cloudPilot/history/`)
 
 | File | What it does |
 |------|----------------|
@@ -535,7 +626,7 @@ application/atlas/
 |------|----------------|
 | `functions/navigatorFunctions.js` | Assembles `navigatorResponse` stats and tables for Kite. |
 
-### Requests (`services/requests/`)
+### Requests (`cloudPilot/requests/`)
 
 | File | What it does |
 |------|----------------|
@@ -546,7 +637,7 @@ application/atlas/
 | `functions/requestNameFunctions.js` | Request display / internal naming. |
 | `functions/requestStatusFunctions.js` | Rules for `waiting_on_fields`, confirmation, etc. |
 
-### Understanding (`services/understanding/`)
+### Understanding (`cloudPilot/conversation/understand/`)
 
 | File | What it does |
 |------|----------------|
@@ -569,7 +660,7 @@ application/atlas/
 ```text
 routes/messageRoutes.js
   → logic/messages.js
-  → cloudPilotMessageFunctions.processMessage()
+  → cloudPilot/cloudPilotMessageFunctions.processMessage()
        STEP 1  normalize
        STEP 2  load request
        STEP 3  understand

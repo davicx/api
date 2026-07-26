@@ -1,4 +1,4 @@
-const AiUsage = require('../../aiUsage/classes/AiUsage');
+const AiUsage = require('../../../ai/usage/AiUsage');
 const AiUsageMessageBuilder = require('./aiUsageMessageBuilder');
 
 /*
