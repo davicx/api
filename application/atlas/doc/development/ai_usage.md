@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-22  
 **Status:** API slices 1–2 live (persist + summary). Kite card + chat action still open.  
-**Related:** [cloud_pilot_chat.md](./cloud_pilot_chat.md) · [long_term/billing.md](./long_term/billing.md) (`show_billing` = AWS only)
+**Related:** [current_development.md](./current_development.md) · [long_term/billing.md](./long_term/billing.md) (`show_billing` = AWS only)
 
 ---
 

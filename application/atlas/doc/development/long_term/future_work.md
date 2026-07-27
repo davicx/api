@@ -49,6 +49,127 @@ See [To_do.md](./To_do.md#api--saved-actions-future).
 
 ---
 
+## Open requests dashboard — Run when ready
+
+**Status:** Later UI feature. Do not redesign current AI / understanding work around this.
+
+Fits the existing request model (open request, status, collected fields, missing fields, execution mode).
+
+### Target UI
+
+| Request               | Action     | Status  | Missing  | Ready   |
+| --------------------- | ---------- | ------- | -------- | ------- |
+| Resize Production EC2 | Resize EC2 | Waiting | Instance | —       |
+| Dev Cleanup           | Delete EC2 | Ready   | —        | **Run** |
+| Add Team Tag          | Update Tag | Ready   | —        | **Run** |
+
+**Run** only appears / enables when the request is complete (nothing missing).
+
+### Flow
+
+```text
+User conversation
+       ↓
+Open Request
+       ↓
+CloudPilot collects information
+       ↓
+Request becomes READY
+       ↓
+User reviews it
+       ↓
+      RUN
+       ↓
+Execute
+       ↓
+History / Undo
+```
+
+### Why this matters
+
+Clean separation between:
+
+- **Understanding / planning** — CloudPilot gathers what the user wants  
+- **Changing infrastructure** — user explicitly hits **Run**
+
+Much of the data already exists conceptually: request/action, status, execution mode, collected fields, missing fields, open vs closed. This is primarily a **Kite multi-open-requests table** (+ optional chat `run 1` disambiguation), not a new backend model.
+
+Checklist pointer: [to_do.md](./to_do.md) (Kite → Multi-open requests UI).
+
+---
+
+## AI region understanding — ambiguous vs not provided
+
+**Status:** Future (after demo MVP). Current region OpenAI returns `{ region }` or `{}` only. Demo MVP does **not** need this to be perfect.
+
+### Problem we hit
+
+User (while CloudPilot is waiting for a region): `west`
+
+OpenAI correctly returned `{}` under “don’t invent / don’t default” — `west` is ambiguous (`us-west-1` vs `us-west-2`).
+
+But CloudPilot then treated that like **no region signal at all**, and the turn fell through to general chat (stub). The extractor was reasonable; the **overall experience** threw away useful but ambiguous input.
+
+### Three outcomes (not two)
+
+| Outcome | Example | Desired behavior |
+|---------|---------|------------------|
+| **FOUND** | `Oregon` | → `us-west-2` |
+| **AMBIGUOUS** | `west` | → clarify: “Did you mean us-west-1 (N. California) or us-west-2 (Oregon)?” |
+| **NOT PROVIDED** | `yes` / `sounds good` | → nothing region-related; keep asking for region (or ignore) |
+
+Do **not** silently choose `us-west-2`. Keep: **never invent infrastructure details**.
+
+### Possible richer OpenAI shape (later)
+
+Ambiguous:
+
+```json
+{
+  "region": null,
+  "regionMentioned": true,
+  "needsClarification": true,
+  "clarification": "Did you mean us-west-1 (N. California) or us-west-2 (Oregon)?"
+}
+```
+
+Not provided:
+
+```json
+{
+  "region": null,
+  "regionMentioned": false,
+  "needsClarification": false
+}
+```
+
+Public CloudPilot contract can stay simple for FOUND; AMBIGUOUS should drive a clarify reply while the open request stays `waiting_on_fields` — **not** general chat.
+
+### Demo conversation (target)
+
+```text
+CloudPilot: What region should I use?
+You: west
+CloudPilot: Did you mean us-west-1 (N. California) or us-west-2 (Oregon)?
+You: Oregon
+CloudPilot: Everything is ready for the EC2 scan. Would you like me to run it?
+```
+
+### Design rule
+
+```text
+understand
+  → if confident, fill it
+  → if ambiguous, clarify
+  → never silently invent infrastructure details
+```
+
+Also: when an open request is waiting on a field and understanding finds nothing applicable, prefer **re-ask missing fields** over falling through to general chat.
+
+Establish this pattern on **region** before expanding OpenAI to action search / other fields.
+
+---
+
 ## Billing message polish (optional)
 
 Smarter chat copy after billing summary (total first, cost-driver insight, Scan S3 when S3 dominates). See [billing.md](./billing.md).

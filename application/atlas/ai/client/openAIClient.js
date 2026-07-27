@@ -1,5 +1,6 @@
 const OpenAI = require('openai');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../../config/chatGPTconfig');
+const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 const SaveAiUsageFunctions = require('../usage/saveAiUsage');
 
 /*
@@ -217,7 +218,8 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
     }
 
     const config = CHAT_CONFIG.LOW;
-    console.log('[sendGeneralChat] model=%s max_tokens=%s temperature=%s', config.model, config.max_tokens, config.temperature);
+    const messageMaxTokens = CLOUDPILOT_AI_CONFIG.messageTokenLimit;
+    console.log('[sendGeneralChat] model=%s max_tokens=%s temperature=%s', config.model, messageMaxTokens, config.temperature);
 
     const defaultSystemContent =
         'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
@@ -253,7 +255,7 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
     const result = await createOpenAiChatCompletion(client, {
         model: config.model,
         messages: messages,
-        max_tokens: config.max_tokens,
+        max_tokens: messageMaxTokens,
         temperature: config.temperature
     });
 

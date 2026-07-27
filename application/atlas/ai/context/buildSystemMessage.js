@@ -4,13 +4,20 @@ Turn CloudPilot context into the English system message for the AI.
 Keep this file dumb: no AWS logic, no business rules.
 Intelligence lives in contextTypes/ builders and services/knowledge/.
 
+Conceptual sections:
+  IDENTITY         — Who is CloudPilot?              (cloudPilotContext)
+  SITUATION        — What should AI look for / do?   (cloudPilotSituationContext)
+  CURRENT QUESTION — What did the user say?          (currentQuestionContext)
+  Knowledge        — Optional organization/product   (organizationKnowledgeContext)
+
 FUNCTIONS A: Build AI system message
     1) Function A1: buildAISystemMessage
 
 FUNCTIONS B: Write each part of the message
     1) Function B1: writeIdentity
     2) Function B2: writeSituation
-    3) Function B3: writeKnowledge
+    3) Function B3: writeCurrentQuestion
+    4) Function B4: writeKnowledge
 
 FUNCTIONS C: Small helpers
     1) Function C1: writeBulletList
@@ -40,7 +47,7 @@ function hasContent(data) {
 }
 
 //FUNCTIONS B: Write each part of the message
-//Function B1: Write Identity (CloudPilot personality)
+//Function B1: Write Identity (Who is CloudPilot?)
 function writeIdentity(cloudPilotContext) {
     const identity = cloudPilotContext && cloudPilotContext.data;
 
@@ -76,8 +83,48 @@ function writeIdentity(cloudPilotContext) {
     return sections.join('\n\n');
 }
 
-//Function B2: Write Situation (what CloudPilot knows about this turn)
-function writeSituation(currentQuestionContext) {
+//Function B2: Write Situation (What should AI look for / do?)
+function writeSituation(situationContext) {
+    const data = situationContext && situationContext.data;
+
+    if (!hasContent(data)) {
+        return '';
+    }
+
+    const sections = [];
+    const keys = Object.keys(data);
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const piece = data[key];
+
+        if (!piece || typeof piece !== 'object') {
+            continue;
+        }
+
+        const pieceSections = [String(key).toUpperCase()];
+
+        if (piece.purpose) {
+            pieceSections.push(piece.purpose);
+        }
+
+        const rules = writeBulletList(piece.rules);
+        if (rules) {
+            pieceSections.push('Rules:\n' + rules);
+        }
+
+        sections.push(pieceSections.join('\n\n'));
+    }
+
+    if (sections.length === 0) {
+        return '';
+    }
+
+    return 'SITUATION\n\n' + sections.join('\n\n');
+}
+
+//Function B3: Write Current Question (What did the user say?)
+function writeCurrentQuestion(currentQuestionContext) {
     const data = currentQuestionContext && currentQuestionContext.data;
 
     if (!hasContent(data)) {
@@ -139,10 +186,10 @@ function writeSituation(currentQuestionContext) {
         return '';
     }
 
-    return 'Current Situation\n\n' + sections.join('\n\n');
+    return 'CURRENT QUESTION\n\n' + sections.join('\n\n');
 }
 
-//Function B3: Write Knowledge (organization + product background)
+//Function B4: Write Knowledge (organization + product background)
 function writeKnowledge(knowledgeContext) {
     const data = knowledgeContext && knowledgeContext.data;
 
@@ -177,9 +224,14 @@ function buildAISystemMessage(aiContext) {
         sections.push(identityText);
     }
 
-    const situationText = writeSituation(aiContext && aiContext.currentQuestion);
+    const situationText = writeSituation(aiContext && aiContext.situation);
     if (situationText) {
         sections.push(situationText);
+    }
+
+    const currentQuestionText = writeCurrentQuestion(aiContext && aiContext.currentQuestion);
+    if (currentQuestionText) {
+        sections.push(currentQuestionText);
     }
 
     const knowledgeText = writeKnowledge(aiContext && aiContext.knowledge);

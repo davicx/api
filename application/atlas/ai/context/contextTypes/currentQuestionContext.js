@@ -1,8 +1,8 @@
 const CurrentQuestionContext = require('../classes/CurrentQuestionContext');
 
 /*
-TYPE 2 — SITUATION
-Role: What is happening right now?
+TYPE — CURRENT QUESTION
+Role: What did the user say?
 
 Application owns this. Temporary for this turn.
 Build from processMessageContext — do not invent AWS facts.
@@ -11,23 +11,24 @@ MVP: userMessage + selectedFinding (from request body).
 Later: open request, execution mode, conversation excerpts.
 
 Used by: buildAIContext → buildAISystemMessage → AI
+(Situation / what to look for is cloudPilotSituationContext — not this file.)
 */
 
-//Function A1: Return structured Situation context (data only)
+//Function A1: Return structured Current Question context (data only)
 function buildCurrentQuestionContext(processMessageContext) {
-    const situationBuilder = new CurrentQuestionContext(processMessageContext);
-    const data = situationBuilder.toData();
+    const questionBuilder = new CurrentQuestionContext(processMessageContext);
+    const data = questionBuilder.toData();
 
-    const situation = {
+    const currentQuestion = {
         loaded: true,
-        type: 'situation',
+        type: 'current_question',
         data: data
     };
 
-    console.log('Building Situation Context');
-    console.log(JSON.stringify(situation, null, 2));
+    console.log('Building Current Question Context');
+    console.log(JSON.stringify(currentQuestion, null, 2));
 
-    return situation;
+    return currentQuestion;
 }
 
 module.exports = {

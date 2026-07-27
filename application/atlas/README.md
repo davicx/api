@@ -77,6 +77,8 @@ Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `d
 
 **Message architecture:** [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md)
 
+**Sample `.env` (no secrets):** [doc/sample_env.md](./doc/sample_env.md) — copy to `api/.env` on another machine.
+
 ## Design principle
 
 > **Every user message is exactly one conversation.**
@@ -336,7 +338,7 @@ application/atlas/
 │   ├── github/
 │   │   └── githubClient.js
 │   ├── chatGPTconfig.js
-│   └── openAIChatConfig.js
+│   └── cloudPilotAIConfig.js
 ├── doc/
 │   ├── code/
 │   │   ├── allCode.js
@@ -363,7 +365,8 @@ application/atlas/
 │   │   │   ├── scans.md
 │   │   │   └── to_do.md
 │   │   ├── ai_usage.md
-│   │   ├── cloud_pilot_chat.md
+│   │   ├── current_development.md
+│   │   ├── cloud_pilot_chat.md          # stub → current_development.md
 │   │   ├── mvp.md
 │   │   └── pr_strategy.md
 │   ├── instructions/
@@ -587,7 +590,7 @@ application/atlas/
 | `engines/llm/openai/openAIFunctions.js` | OpenAI client + chat completion (+ usage save hook). |
 | `engines/llm/openai/calculateOpenAICost.js` | Estimated USD from model + tokens. |
 | `config/chatGPTconfig.js` | Model IDs, temperatures, token ceilings. |
-| `config/openAIChatConfig.js` | Live send, history, AI enhancement feature flags. |
+| `config/cloudPilotAIConfig.js` | Master AI switch, feature implementations, history, logging. |
 | `config/github/githubClient.js` | GitHub API for PR strategy. |
 
 ### Decision (`cloudPilot/decision/`)
@@ -701,7 +704,7 @@ routes/messageRoutes.js
 | [doc/development/architecture/architecture.md](./doc/development/architecture/architecture.md) | Full system reference |
 | [doc/development/architecture/action_map.md](./doc/development/architecture/action_map.md) | WHAT / WHEN / RUN / HOW / WHERE |
 | [doc/development/architecture/capability_migration.md](./doc/development/architecture/capability_migration.md) | Capability layer plan |
-| [doc/development/cloud_pilot_chat.md](./doc/development/cloud_pilot_chat.md) | AI enhancements |
+| [doc/development/current_development.md](./doc/development/current_development.md) | AI — live control plane + region + planned chat features |
 | [doc/development/ai_usage.md](./doc/development/ai_usage.md) | OpenAI usage tracking |
 | [doc/development/long_term/to_do.md](./doc/development/long_term/to_do.md) | Backlog |
 | [doc/development/long_term/finished.md](./doc/development/long_term/finished.md) | Shipped work |

@@ -1,16 +1,17 @@
 /*
-CurrentQuestionContext — Situation for this turn.
+CurrentQuestionContext — What did the user say this turn?
 
 Application owns this. Temporary: user message, selected finding, later
 open request / conversation / execution mode.
 
-Assembles Situation from processMessageContext. Does not persist sources.
+Assembles Current Question data from processMessageContext. Does not persist sources.
+(Situation / what AI should look for lives in cloudPilotSituationContext.)
 
 METHODS A: Read pieces from this turn
     1) Method A1: getUserMessage
     2) Method A2: getSelectedFinding
 
-METHODS B: Build Situation data
+METHODS B: Build Current Question data
     1) Method B1: toData
 */
 
@@ -36,8 +37,8 @@ class CurrentQuestionContext {
         return slimSelectedFinding(this.processMessageContext.selectedFinding);
     }
 
-    //METHODS B: Build Situation data
-    //Method B1: Situation object for AI context (JSON for CloudPilot)
+    //METHODS B: Build Current Question data
+    //Method B1: Current Question object for AI context (JSON for CloudPilot)
     toData() {
         const data = {};
         const userMessage = this.getUserMessage();

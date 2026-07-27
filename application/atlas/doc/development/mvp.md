@@ -4,7 +4,7 @@
 
 **Status:** Active — all other product work lives in [long_term/](./long_term/).
 
-> **Chat & context (part of this work):** [cloud_pilot_chat.md](./cloud_pilot_chat.md)  
+> **Chat & AI (part of this work):** [current_development.md](./current_development.md)  
 > **Architecture & how-to:** [architecture/architecture.md](./architecture/architecture.md)  
 > **Deferred:** [long_term/to_do.md](./long_term/to_do.md) · [long_term/scans.md](./long_term/scans.md) · [long_term/remediations.md](./long_term/remediations.md)
 
@@ -678,7 +678,7 @@ Aligns with the **super simple To Do list** at the top (**Option A**).
 
 ---
 
-### M7 — CloudPilot Chat / AI enhancements ([cloud_pilot_chat.md](./cloud_pilot_chat.md))
+### M7 — CloudPilot Chat / AI ([current_development.md](./current_development.md))
 
 Deterministic by default; optional AI behind **three independent flags**. **Part of MVP — not a separate project.**
 
@@ -781,7 +781,7 @@ Only after M0–M8 green:
 
 | Doc | Role |
 |-----|------|
-| [cloud_pilot_chat.md](./cloud_pilot_chat.md) | AI enhancements (scan / requests / intent) — **M7** |
+| [current_development.md](./current_development.md) | AI — live + planned (region, Features 1–3) — **M7** |
 | [../sql/cloudpilot_instructions.sql](../sql/cloudpilot_instructions.sql) | Instructions step table — **M10** |
 | [long_term/make_scans_useful.md](./long_term/make_scans_useful.md) | Conversation-first philosophy (reference) |
 | [long_term/history.md](./long_term/history.md) | Undo — shipped baseline for **M5** |

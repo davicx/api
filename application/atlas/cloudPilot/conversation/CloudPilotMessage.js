@@ -1,7 +1,7 @@
 const { CHAT_TYPE } = require('../decision/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
 const openAIFunctions = require('../../ai/client/openAIClient');
-const { OPENAI_CHAT_CONFIG } = require('../../config/openAIChatConfig');
+const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 const { buildAIContext } = require('../../ai/context/buildContext');
 const { buildAISystemMessage } = require('../../ai/context/buildSystemMessage');
 const ConversationHistoryContext = require('../../ai/context/classes/ConversationHistoryContext');
@@ -23,18 +23,21 @@ async function speakGeneral(processMessageContext) {
     const conversationID = context.conversationID;
     const aiContext = buildAIContext(context);
     const systemMessage = buildAISystemMessage(aiContext);
+    const useOpenAIMessageResponse =
+        CLOUDPILOT_AI_CONFIG.aiEnabled &&
+        CLOUDPILOT_AI_CONFIG.messageResponse === 'openai';
 
     //STEP 7a: AI Context
     console.log('______________________________________________________________');
     console.log('STEP 7a: AI Context');
     console.log(JSON.stringify(aiContext, null, 2));
     console.log('organization knowledge: not used (empty)');
-    console.log('openAIChatConfig:', OPENAI_CHAT_CONFIG);
+    console.log('cloudPilotAIConfig:', CLOUDPILOT_AI_CONFIG);
     console.log('______________________________________________________________');
     console.log(' ');
 
     //STEP 7b: OpenAI System Message (optional)
-    if (OPENAI_CHAT_CONFIG.logPrompt) {
+    if (CLOUDPILOT_AI_CONFIG.messageLogs) {
         console.log('______________________________________________________________');
         console.log('STEP 7b: OpenAI System Message');
         console.log(systemMessage || '(empty system message)');
@@ -43,10 +46,10 @@ async function speakGeneral(processMessageContext) {
     }
 
     //STEP 7c: Conversation History — human-readable names (not sent as this text)
-    const historyLimit = OPENAI_CHAT_CONFIG.conversationHistoryLimit;
+    const historyLimit = CLOUDPILOT_AI_CONFIG.conversationHistoryLimit;
     let conversationHistory = [];
 
-    if (OPENAI_CHAT_CONFIG.sendConversationHistory && conversationID) {
+    if (CLOUDPILOT_AI_CONFIG.sendConversationHistory && conversationID) {
         const historyContext = new ConversationHistoryContext(conversationID, {
             currentUserMessage: currentUserMessage
         });
@@ -65,11 +68,11 @@ async function speakGeneral(processMessageContext) {
 
     let openAIResult;
 
-    if (OPENAI_CHAT_CONFIG.liveSendAllMessagesWillCauseBilling) {
+    if (useOpenAIMessageResponse) {
         //STEP 7d: Send OpenAI Request
         console.log('STEP 7d: Send OpenAI Request');
 
-        if (OPENAI_CHAT_CONFIG.logRequest) {
+        if (CLOUDPILOT_AI_CONFIG.messageLogs) {
             console.log(JSON.stringify({ messages: openAiMessages }, null, 2));
         }
 

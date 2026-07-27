@@ -2,7 +2,7 @@
  * Model presets — confirm ids + pricing at https://openai.com/api/pricing/
  * Org-level: set usage limits / budgets in the OpenAI dashboard (not in this repo).
  *
- * Chat request policy (enhanced replies, history, logging): openAIChatConfig.js
+ * CloudPilot AI config (master, features, history, logging): cloudPilotAIConfig.js
  */
 const CHAT_CONFIG = {
     LOW: {

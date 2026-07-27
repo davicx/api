@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-05
 
-> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[cloud_pilot_chat.md](../cloud_pilot_chat.md)**  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current_development.md](../current_development.md)** (AI)  
 > **History (MVP done):** [history.md](./history.md) · **Deferred:** [future_work.md](./future_work.md)  
 > **Done:** [finished.md](./finished.md) · **Architecture & reference:** [architecture/](./architecture/)
 
@@ -14,7 +14,7 @@
 
 **History MVP is complete** — see [history.md](./history.md) and [finished.md](./finished.md). Deferred history items: [future_work.md](./future_work.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../pr_strategy.md). **AI enhancements (3 features):** [cloud_pilot_chat.md](../cloud_pilot_chat.md). **AI usage / OpenAI spend:** [ai_usage.md](../ai_usage.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../pr_strategy.md). **AI (live + planned):** [current_development.md](../current_development.md). **AI usage / OpenAI spend:** [ai_usage.md](../ai_usage.md).
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
@@ -27,22 +27,25 @@
 - [ ] Phase 5 — history after PR apply
 - [ ] Phase 6 — undo revert PR
 
-#### CloudPilot AI enhancements ([cloud_pilot_chat.md](../cloud_pilot_chat.md)) — locked
+#### CloudPilot AI ([current_development.md](../current_development.md))
 
 Shared
-- [x] Context + conversation history foundation (C1 / C1b)
-- [x] Three feature flags in ENV (`openAIChatConfig.js`) — all default off
-- [ ] `AIService` scaffold + master billing gate + per-feature fallback
+- [x] Context + conversation history foundation
+- [x] Master + per-feature ENV (`cloudPilotAIConfig.js`)
+- [x] Region OpenAI + situation context + region logs
+- [ ] When to run Region Search (Section C)
+- [ ] Ambiguous region clarify (Section D) — after demo MVP
 
-Feature 3 — Intent understanding (`OPENAI_INTENT_UNDERSTANDING`) — **build next**
+Feature 3 — broader intent — see current_development Section E
 - [ ] Router + rules parser untouched; validate vs `actionMap`
 - [ ] Fall back to rules on AI failure; STEP 3 engine logs
+- [ ] Region FOUND / AMBIGUOUS / NOT PROVIDED — see [future_work.md](./future_work.md#ai-region-understanding--ambiguous-vs-not-provided)
 
-Feature 1 — Explain findings (`OPENAI_EXPLAIN_FINDINGS`)
+Feature 1 — Explain findings
 - [ ] Curated findings → prioritized friendly chat; Navigator unchanged
 - [ ] Knowledge snippets per `rule_id` (quality)
 
-Feature 2 — Friendly request conversations (`OPENAI_FRIENDLY_REQUESTS`)
+Feature 2 — Friendly request conversations
 - [ ] Natural **one-field-at-a-time** asks; hide checklist / field ids
 - [ ] Suggest defaults from history; structured fallback forever
 
@@ -66,7 +69,7 @@ Feature 2 — Friendly request conversations (`OPENAI_FRIENDLY_REQUESTS`)
 - [ ] React Query cache for Navigator — `["navigator-data", groupID, conversationID]`
 - [ ] Better column formatting (`currency`, `status` alignment)
 - [ ] Opt-in developer `raw` mode (default off)
-- [ ] Multi-open requests UI — table with **Run** per row; `run 1` disambiguation
+- [ ] Multi-open requests UI — table with **Run** per row; `run 1` disambiguation — see [future_work.md § Open requests dashboard](./future_work.md#open-requests-dashboard--run-when-ready)
 - [ ] Learn / Test / Live mode indicator in UI (when product mode ships)
 
 #### API — hardening & smoke
