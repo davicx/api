@@ -2,23 +2,22 @@
 
 ## Project restructure
 
-Planned layout — full plan (no code yet):  
+**Final plan (no code yet):**  
 [doc/development/architecture/responsibility_refactor.md](./doc/development/architecture/responsibility_refactor.md)
 
 ```text
+routes/  logic/  functions/  config/
+
+cloudPilot/
+  decision/  conversation/  requests/  execution/  history/
+  changes/  scans/  billing/  inventory/  aiUsage/  navigator/
+  actionMap.js  cloudPilotMessageFunctions.js
+
 cloudPilotIntelligence/
+  understand/  respond/  explain/  improve/  generate/
 
-understand/
-respond/
-explain/
-improve/
-generate/
-context/
-
-understand/region/searchForRegion.js
-    searchForRegion()            ← public gateway
-    searchForRegionInternal()
-    searchForRegionAI()
+providers/
+  atlas/  openAI/{client,context,usage}/  aws/  github/  gmail/
 ```
 
 ---
