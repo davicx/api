@@ -110,8 +110,8 @@ services/                             →  deleted after absorb
 
 | Phase | Do | Status |
 |-------|-----|--------|
-| **1** | Empty scaffolds only | **Done — stop for approval** |
-| **2** | Move providers + context (atlas, openAI client/usage, intelligence context, github) | Waiting |
+| **1** | Empty scaffolds only | **Done** |
+| **2** | Move providers + context (atlas, openAI client/usage, intelligence context, github) | **Approved — code not started.** See `responsibility_refactor.md` → “Pick up next session — Phase 2” |
 | **3** | Absorb `services/` → `cloudPilot/` | Waiting |
 | **4** | Move understand → `cloudPilotIntelligence/understand/` | Waiting |
 | **5** | Delete empty `ai/`, `aws/`, `services/`; refresh README | Waiting |

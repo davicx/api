@@ -1,6 +1,6 @@
 # CloudPilot Architecture Refactor — Final Plan
 
-**Status:** Final plan — **do not code until you start Phase 1**  
+**Status:** Phase 1 done · Phase 2 approved (docs) · **code moves start next session**  
 **Nature of work:** Move / rename folders & files + fix `require()` paths. **Do not rewrite logic.**  
 **Last reviewed:** 2026-07-31
 
@@ -336,7 +336,7 @@ api/application/atlas/
 │   │   └── billing/
 │   │
 │   ├── github/
-│   │   └── githubClient.js                       # from config/github/
+│   │   └── githubClient.js                       # from config/github/ (required move — not optional)
 │   │
 │   └── gmail/                                    # EMPTY scaffold
 
@@ -397,15 +397,15 @@ HTTP
 - [x] Create empty: `cloudPilotIntelligence/{context,understand,respond,explain,improve,generate}`
 - [x] Create empty: `providers/{atlas,openAI/client,openAI/usage,aws,github,gmail}` (+ atlas/aws subfolders)
 - [x] No behavior change
-- [ ] **STOP — await Phase 2 approval**
+- [x] Phase 2 approved (docs); code not started yet
 
-### Phase 2 — Providers + Context
+### Phase 2 — Providers + Context  ← **START HERE next session**
 - [ ] Move `aws/*` → `providers/atlas/`
 - [ ] Move `ai/client/*` → `providers/openAI/client/`
 - [ ] Move `ai/usage/*` → `providers/openAI/usage/`
 - [ ] Move `ai/context/*` → `cloudPilotIntelligence/context/`
-- [ ] Move `config/github/githubClient.js` → `providers/github/`
-- [ ] Fix imports; smoke scan + one OpenAI path
+- [ ] Move `config/github/githubClient.js` → `providers/github/` (**required** — not optional)
+- [ ] Fix imports; smoke Atlas scan + one OpenAI path
 - [ ] **STOP — await Phase 3 approval**
 
 ### Phase 3 — Absorb `services/` into `cloudPilot/`
@@ -423,9 +423,51 @@ HTTP
 
 ### Phase 5 — Cleanup
 - [ ] Confirm `ai/`, `aws/`, `services/` gone
-- [ ] Optional: `config/github` → `providers/github`
+- [ ] Confirm `config/github/` gone (moved in Phase 2)
 - [ ] Refresh README tree (no `doc/` listing)
 - [ ] Resume product AI in [current_development.md](../current_development.md)
+
+---
+
+## Pick up next session — Phase 2
+
+**Do not start Phase 3.** Phase 2 only: move files, fix `require()`, smoke, stop.
+
+### Still at old paths (until Phase 2 code)
+
+| Current | Target |
+|---------|--------|
+| `aws/**` | `providers/atlas/**` |
+| `ai/client/**` | `providers/openAI/client/**` |
+| `ai/usage/**` | `providers/openAI/usage/**` |
+| `ai/context/**` | `cloudPilotIntelligence/context/**` |
+| `config/github/githubClient.js` | `providers/github/githubClient.js` |
+
+Scaffolds already exist under `cloudPilotIntelligence/` and `providers/` (`.gitkeep` only).
+
+### Prompt to paste on the new computer
+
+```text
+Continue CloudPilot Architecture Refactor — Phase 2 ONLY.
+
+Read: application/atlas/doc/development/architecture/responsibility_refactor.md
+Especially: "Pick up next session — Phase 2" and the Final Target Tree.
+
+Rules: MOVE + fix require() only. No logic rewrite. No Phase 3+.
+
+Moves:
+- aws/** → providers/atlas/**
+- ai/client/** → providers/openAI/client/**
+- ai/usage/** → providers/openAI/usage/**
+- ai/context/** → cloudPilotIntelligence/context/**  (NOT providers/openAI)
+- config/github/githubClient.js → providers/github/githubClient.js  (required)
+
+Then: smoke Atlas scan + one OpenAI path. Report what changed. STOP.
+```
+
+### After Phase 2
+
+Update checkboxes in this doc, then wait for approval before Phase 3 (`services/` → `cloudPilot/`).
 
 ---
 
