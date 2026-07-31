@@ -14,6 +14,10 @@
 
 **Paste-friendly short version (give this to ChatGPT):** [project_structure_plan.md](./project_structure_plan.md) — tree + Intelligence facade + coding style. **This file** has the full file-by-file tree and migration phases.
 
+**Context correction (locked):** `ai/context/**` → **`cloudPilotIntelligence/context/**`** — NOT `providers/openAI/context/`. OpenAI provider is `client/` + `usage/` only.
+
+**Phase status:** Phase 1 done. Phase 2 **approved** (docs locked) — **code moves not started**. See [Pick up next session — Phase 2](#pick-up-next-session--phase-2).
+
 **What this doc is not:** Product AI features, OpenAI prompts, or rewriting handlers. That stays in [current_development.md](../current_development.md) *after* the moves.
 
 ### Top-level folders (the whole point)
@@ -25,8 +29,8 @@
 | `functions/` | Shared helpers / DB classes |
 | `config/` | Env / switches |
 | `cloudPilot/` | CloudPilot **features + pipeline** (STEPS 1–7, scans, changes, speak, requests, history) |
-| `cloudPilotIntelligence/` | How CloudPilot **thinks** (understand / later respond, explain, …) |
-| `providers/` | **External systems** (Atlas API, OpenAI, GitHub; empty aws/gmail scaffolds) |
+| `cloudPilotIntelligence/` | How CloudPilot **thinks** (context + understand / later respond, explain, …) |
+| `providers/` | **External systems** (Atlas API, OpenAI client+usage, GitHub; empty aws/gmail) |
 | `doc/` | Planning only |
 
 ### Biggest moves
@@ -35,13 +39,18 @@
 TODAY                              →  AFTER
 ─────────────────────────────────────────────────────────────
 cloudPilot/conversation/understand →  cloudPilotIntelligence/understand/
-ai/*                               →  providers/openAI/{client,context,usage}/
-aws/*                              →  providers/atlas/
+ai/context/**                      →  cloudPilotIntelligence/context/
+ai/client/**                       →  providers/openAI/client/
+ai/usage/**                        →  providers/openAI/usage/
+aws/**                             →  providers/atlas/
+config/github/githubClient.js      →  providers/github/githubClient.js
 services/actions/...               →  cloudPilot/{scans,changes,billing,inventory,aiUsage}/
 services/actions/actionMap.js      →  cloudPilot/actionMap.js
 services/navigator/                →  cloudPilot/navigator/
 services/                          →  deleted (empty after absorb)
 ```
+
+**Locked:** Context is **CloudPilot Intelligence**, not the OpenAI provider.
 
 ### What stays under `cloudPilot/`
 
@@ -51,9 +60,9 @@ Pipeline entry, decision, conversation **speak** (not understand), requests, exe
 
 | Phase | Do |
 |-------|-----|
-| **0** | Approve this map ← you are here until you say go |
-| **1** | Create empty folders / scaffolds |
-| **2** | Move `providers/atlas` + `providers/openAI` |
+| **0** | Approve this map |
+| **1** | Create empty folders / scaffolds ← **DONE — waiting for Phase 2 approval** |
+| **2** | Move `providers/atlas` + `providers/openAI` (client/usage) + **`cloudPilotIntelligence/context`** + github |
 | **3** | Absorb `services/` into `cloudPilot/` |
 | **4** | Move understand → `cloudPilotIntelligence/` |
 | **5** | Delete empty old folders; refresh README |
@@ -103,7 +112,9 @@ Your goal sketch omitted folders that **already exist and must stay**. Final pla
 | `decision/` | **`cloudPilot/decision/`** | STEP 4 — CloudPilot pipeline, not intelligence |
 | `conversation/` (speak / templates / general / request workflows) | **`cloudPilot/conversation/`** | Outgoing words + request/general conversation flow — still CloudPilot. Understand moves **out** to intelligence |
 | `understand/` (search extractors) | **`cloudPilotIntelligence/understand/`** | Thinking |
-| `ai/context/` | **`providers/openAI/context/`** | Per your goal — OpenAI-specific packaging (client / context / usage together). Intelligence **calls** it when using AI; does not own the OpenAI wire format |
+| `ai/context/` | **`cloudPilotIntelligence/context/`** | CloudPilot-owned knowledge for intelligence — NOT under OpenAI provider |
+| `ai/client/` | **`providers/openAI/client/`** | OpenAI transport only |
+| `ai/usage/` | **`providers/openAI/usage/`** | OpenAI metering |
 | `inventory/` | **`cloudPilot/inventory/`** | Feature like billing/scans |
 | `navigator/` | **`cloudPilot/navigator/`** | Kite UI shaping for CloudPilot results |
 | `actionMap.js` | **`cloudPilot/actionMap.js`** | Registry of what CloudPilot can do |
@@ -113,7 +124,7 @@ Your goal sketch omitted folders that **already exist and must stay**. Final pla
 | Direct AWS later | **`providers/aws/`** empty scaffold | Honest future; today unused |
 | Gmail later | **`providers/gmail/`** empty | Scaffold only |
 
-**Earlier doc said context → intelligence.** Your goal puts context under `providers/openAI/`. **Final lock: follow your goal** (`providers/openAI/context/`). Reason: client + context + usage are one OpenAI provider package. Intelligence stays vendor-agnostic and imports from the provider when the AI path runs.
+**Final lock:** Context → **`cloudPilotIntelligence/context/`**. OpenAI provider is transport + usage only (`client/`, `usage/`). Intelligence owns context so future providers (Claude, local) can consume the same CloudPilot knowledge.
 
 ---
 
@@ -149,9 +160,8 @@ api/application/atlas/
 
 ├── config/
 │   ├── chatGPTconfig.js
-│   ├── cloudPilotAIConfig.js
-│   └── github/
-│       └── githubClient.js                       # or move → providers/github/ (optional)
+│   └── cloudPilotAIConfig.js
+│   # githubClient.js lives under providers/github/ (locked — not optional)
 
 ├── cloudPilot/
 │   ├── cloudPilotMessageFunctions.js             # STEPS 1–7 entry
@@ -260,10 +270,21 @@ api/application/atlas/
 │           └── navigatorFunctions.js
 
 ├── cloudPilotIntelligence/
+│   ├── context/                                  # from ai/context/** — CloudPilot-owned
+│   │   ├── buildContext.js
+│   │   ├── buildSystemMessage.js
+│   │   ├── classes/
+│   │   │   ├── ConversationHistoryContext.js
+│   │   │   └── CurrentQuestionContext.js
+│   │   └── contextTypes/
+│   │       ├── cloudPilotContext.js
+│   │       ├── cloudPilotSituationContext.js
+│   │       ├── currentQuestionContext.js
+│   │       └── organizationKnowledgeContext.js
 │   ├── understand/
 │   │   ├── understandMessage.js                  # from conversation/understand/
 │   │   ├── region/
-│   │   │   └── searchMessageForRegion.js         # move first; later rename → searchForRegion.js
+│   │   │   └── searchMessageForRegion.js
 │   │   ├── action/
 │   │   │   └── searchMessageForAction.js
 │   │   ├── conversation/
@@ -274,49 +295,35 @@ api/application/atlas/
 │   │   │   └── searchMessageForValues.js
 │   │   ├── structuredFields/
 │   │   │   └── searchMessageForStructuredFields.js
-│   │   ├── resource/                             # group instance/name/type/tag
+│   │   ├── resource/
 │   │   │   ├── searchMessageForInstanceId.js
 │   │   │   ├── searchMessageForInstanceType.js
 │   │   │   ├── searchMessageForName.js
 │   │   │   └── searchMessageForTagUpdate.js
-│   │   └── (later) intent/                       # empty until product needs it
+│   │   └── (later) intent/
 │   │
-│   ├── respond/                                  # empty scaffold — optional later move of speak
+│   ├── respond/                                  # empty scaffold
 │   ├── explain/                                  # empty scaffold
 │   ├── improve/                                  # empty scaffold
 │   └── generate/                                 # empty scaffold
-│       # (PR/CLI copy today stays under cloudPilot/changes; generate/ is future home)
 
 ├── providers/
 │   ├── atlas/                                    # Node → Atlas API (not AWS SDK)
 │   │   ├── client/
-│   │   │   └── atlasPost.js                      # from aws/atlasClient/
+│   │   │   └── atlasPost.js
 │   │   ├── ec2/
-│   │   │   ├── scanEC2.js                        # from aws/capabilities/scans/
-│   │   │   └── changeEC2.js                      # from aws/capabilities/changes/
-│   │   │   # optional later: atlasEC2Functions.js from services
+│   │   │   ├── scanEC2.js
+│   │   │   └── changeEC2.js
 │   │   ├── s3/
 │   │   │   └── scanS3.js
-│   │   │   # optional later: atlasS3Functions.js
 │   │   ├── billing/
 │   │   │   └── getBillingSummary.js
 │   │   └── inventory/
 │   │       └── getAllResources.js
 │   │
-│   ├── openAI/                                   # per your goal (not generic "ai/")
+│   ├── openAI/                                   # NO context/ here
 │   │   ├── client/
 │   │   │   └── openAIClient.js
-│   │   ├── context/                              # from ai/context/**
-│   │   │   ├── buildContext.js
-│   │   │   ├── buildSystemMessage.js
-│   │   │   ├── classes/
-│   │   │   │   ├── ConversationHistoryContext.js
-│   │   │   │   └── CurrentQuestionContext.js
-│   │   │   └── contextTypes/
-│   │   │       ├── cloudPilotContext.js
-│   │   │       ├── cloudPilotSituationContext.js
-│   │   │       ├── currentQuestionContext.js
-│   │   │       └── organizationKnowledgeContext.js
 │   │   └── usage/
 │   │       ├── AiUsage.js
 │   │       ├── calculateOpenAICost.js
@@ -329,7 +336,7 @@ api/application/atlas/
 │   │   └── billing/
 │   │
 │   ├── github/
-│   │   └── githubClient.js                       # from config/github/ (optional move)
+│   │   └── githubClient.js                       # from config/github/
 │   │
 │   └── gmail/                                    # EMPTY scaffold
 
@@ -357,8 +364,9 @@ api/application/atlas/
 | `services/actions/actionMap.js` | → `cloudPilot/actionMap.js` |
 | `services/navigator/**` | → `cloudPilot/navigator/` |
 | `aws/**` | → `providers/atlas/` |
-| `ai/client`, `ai/context`, `ai/usage` | → `providers/openAI/{client,context,usage}/` |
-| `config/github/githubClient.js` | Stay in config **or** → `providers/github/` (prefer providers for consistency) |
+| `ai/context/**` | → `cloudPilotIntelligence/context/` |
+| `ai/client`, `ai/usage` | → `providers/openAI/{client,usage}/` |
+| `config/github/githubClient.js` | → `providers/github/` |
 
 ---
 
@@ -380,19 +388,25 @@ HTTP
 ## Migration phases (move only)
 
 ### Phase 0 — Approve this final map
-- [x] Goal tree + missing folders placed (`decision`, `conversation`, `inventory`, `navigator`, …)
-- [x] Context → `providers/openAI/context/` (locked to your goal)
+- [x] Goal tree + missing folders placed
+- [x] Context → `cloudPilotIntelligence/context/` (corrected — not under OpenAI)
 - [x] `services/` absorbed into `cloudPilot/` feature folders — no logic loss
-- [ ] You approve Phase 1 start
+- [x] You approved Phase 1 start
 
 ### Phase 1 — Scaffolds
-- [ ] Create empty: `cloudPilotIntelligence/{understand,respond,explain,improve,generate}`, `providers/{atlas,openAI,aws,github,gmail}`, `cloudPilot/{scans,billing,inventory,aiUsage,navigator}` as needed
-- [ ] No behavior change
+- [x] Create empty: `cloudPilotIntelligence/{context,understand,respond,explain,improve,generate}`
+- [x] Create empty: `providers/{atlas,openAI/client,openAI/usage,aws,github,gmail}` (+ atlas/aws subfolders)
+- [x] No behavior change
+- [ ] **STOP — await Phase 2 approval**
 
-### Phase 2 — `providers/atlas` + `providers/openAI`
+### Phase 2 — Providers + Context
 - [ ] Move `aws/*` → `providers/atlas/`
-- [ ] Move `ai/*` → `providers/openAI/{client,context,usage}/`
+- [ ] Move `ai/client/*` → `providers/openAI/client/`
+- [ ] Move `ai/usage/*` → `providers/openAI/usage/`
+- [ ] Move `ai/context/*` → `cloudPilotIntelligence/context/`
+- [ ] Move `config/github/githubClient.js` → `providers/github/`
 - [ ] Fix imports; smoke scan + one OpenAI path
+- [ ] **STOP — await Phase 3 approval**
 
 ### Phase 3 — Absorb `services/` into `cloudPilot/`
 - [ ] `actionMap` → `cloudPilot/actionMap.js`
@@ -420,9 +434,10 @@ HTTP
 | Topic | Decision |
 |-------|----------|
 | Providers for cloud | **`providers/atlas/`** today; **`providers/aws/`** empty future |
-| OpenAI package | **`providers/openAI/{client,context,usage}`** |
-| Context | Under **openAI**, not intelligence (your goal) |
-| Intelligence | understand / respond / explain / improve / generate — **no context folder** |
+| OpenAI package | **`providers/openAI/{client,usage}`** — **no context/** |
+| Context | **`cloudPilotIntelligence/context/`** — CloudPilot-owned |
+| Intelligence | context / understand / respond / explain / improve / generate |
+| GitHub client | **`providers/github/`** (not config) |
 | decision / conversation speak | Stay **`cloudPilot/`** |
 | understand search | **`cloudPilotIntelligence/understand/`** |
 | services | Move into **`cloudPilot/{scans,changes,billing,inventory,aiUsage,navigator}`** + `actionMap.js` |
