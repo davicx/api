@@ -121,3 +121,5 @@ Replace every `YOUR_*` value:
 | `GITHUB_TOKEN` | PR / GitHub strategy demos |
 
 Config is read by `application/atlas/config/cloudPilotAIConfig.js`.
+
+**How-to (chat OpenAI = same pattern as region):** [instructions/chat_use_open_ai.md](./instructions/chat_use_open_ai.md)

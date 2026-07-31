@@ -1,4 +1,27 @@
-# CloudPilot — `application/atlas/`
+# CloudPilot — `api/application/atlas/`
+
+## Project restructure
+
+Planned layout — full plan (no code yet):  
+[doc/development/architecture/responsibility_refactor.md](./doc/development/architecture/responsibility_refactor.md)
+
+```text
+cloudPilotIntelligence/
+
+understand/
+respond/
+explain/
+improve/
+generate/
+context/
+
+understand/region/searchForRegion.js
+    searchForRegion()            ← public gateway
+    searchForRegionInternal()
+    searchForRegionAI()
+```
+
+---
 
 ```text
                     USER
@@ -38,7 +61,7 @@
 ```
 
 ```text
-application/atlas/
+api/application/atlas/
 
 ├── README.md
 │
@@ -58,26 +81,29 @@ application/atlas/
 ├── ai/                    // Shared AI / OpenAI machinery
 │   ├── client/            // openAIClient.js
 │   ├── context/           // buildContext, buildSystemMessage, types, classes
-│   ├── usage/             // AiUsage, saveAiUsage, calculateOpenAICost
-│   └── shared/            // (empty — reserved)
+│   └── usage/             // AiUsage, saveAiUsage, calculateOpenAICost
 │
-├── config/                // chatGPT / OpenAI chat / github
-├── logic/                 // HTTP logic (leave as-is)
-├── routes/                // Express routes (leave as-is)
-├── functions/             // Atlas-local helpers/classes (leave as-is)
+├── config/                // cloudPilotAIConfig, chatGPT, github
+├── logic/                 // HTTP logic (messages, aiUsage, todo, instructions)
+├── routes/                // Express routes
+├── functions/             // Atlas-local helpers/classes (ToDo, Instruction)
 │
-└── services/              // Intentionally kept for now
-    ├── actions/           // actionMap + handlers
-    └── navigator/         // navigatorFunctions
+├── services/              // Intentionally kept for now
+│   ├── actions/           // actionMap + handlers
+│   └── navigator/         // navigatorFunctions
+│
+└── doc/                   // planning + sample_env + SQL (not runtime)
 ```
 
 Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `doc/` — this file is **code layout only**.
 
-**One README for this tree.** Do not add per-folder READMEs under `logic/`, `routes/`, `services/`, `aws/`, `cloudPilot/`, or `functions/`.
+**One README for this tree.** Do not add per-folder READMEs under `logic/`, `routes/`, `services/`, `aws/`, `cloudPilot/`, `ai/`, or `functions/`.
 
 **Message architecture:** [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md)
 
 **Sample `.env` (no secrets):** [doc/sample_env.md](./doc/sample_env.md) — copy to `api/.env` on another machine.
+
+**Active AI work:** [doc/development/current_development.md](./doc/development/current_development.md) · [doc/instructions/chat_use_open_ai.md](./doc/instructions/chat_use_open_ai.md)
 
 ## Design principle
 
@@ -229,10 +255,10 @@ aws/
 
 ## Folder tree — all files and folders
 
-Complete listing of everything under `application/atlas/` (excludes hidden files / `node_modules`).
+Live code under `api/application/atlas/` (excludes `doc/`, hidden files, `node_modules`).
 
 ```text
-application/atlas/
+api/application/atlas/
 ├── ai/
 │   ├── client/
 │   │   └── openAIClient.js
@@ -242,11 +268,11 @@ application/atlas/
 │   │   │   └── CurrentQuestionContext.js
 │   │   ├── contextTypes/
 │   │   │   ├── cloudPilotContext.js
+│   │   │   ├── cloudPilotSituationContext.js
 │   │   │   ├── currentQuestionContext.js
 │   │   │   └── organizationKnowledgeContext.js
 │   │   ├── buildContext.js
 │   │   └── buildSystemMessage.js
-│   ├── shared/
 │   └── usage/
 │       ├── AiUsage.js
 │       ├── calculateOpenAICost.js
@@ -339,69 +365,6 @@ application/atlas/
 │   │   └── githubClient.js
 │   ├── chatGPTconfig.js
 │   └── cloudPilotAIConfig.js
-├── doc/
-│   ├── code/
-│   │   ├── allCode.js
-│   │   └── commentedCode.js
-│   ├── database/
-│   │   └── database.md
-│   ├── development/
-│   │   ├── architecture/
-│   │   │   ├── action_map.md
-│   │   │   ├── appendix.md
-│   │   │   ├── architecture.md
-│   │   │   ├── capability_migration.md
-│   │   │   ├── code_cleanup.md
-│   │   │   ├── development_undo_feature.md
-│   │   │   ├── single_capabiity_change.md
-│   │   │   └── step_one_cleanup.md
-│   │   ├── long_term/
-│   │   │   ├── billing.md
-│   │   │   ├── finished.md
-│   │   │   ├── future_work.md
-│   │   │   ├── history.md
-│   │   │   ├── make_scans_useful.md
-│   │   │   ├── remediations.md
-│   │   │   ├── scans.md
-│   │   │   └── to_do.md
-│   │   ├── ai_usage.md
-│   │   ├── current_development.md
-│   │   ├── cloud_pilot_chat.md          # stub → current_development.md
-│   │   ├── mvp.md
-│   │   └── pr_strategy.md
-│   ├── instructions/
-│   │   ├── adding_new_action.md
-│   │   ├── codeStyle.md
-│   │   └── converting_atlas_data.md
-│   ├── json/
-│   │   └── atlas/
-│   │       ├── ec2/
-│   │       │   └── atlasEC2.json
-│   │       ├── master/
-│   │       │   ├── actionDefinition.js
-│   │       │   ├── cloudPilotResponse.js
-│   │       │   └── operationState.js
-│   │       ├── messages/
-│   │       │   ├── messageResponseAllowed.json
-│   │       │   └── messageResponseBlocked.json
-│   │       ├── sort/
-│   │       │   └── cloudPilot.js
-│   │       └── master.js
-│   ├── sql/
-│   │   ├── ai_usage.sql
-│   │   ├── alter_cloudpilot_history_action_names.sql
-│   │   ├── alter_cloudpilot_requests_display_name_internal.sql
-│   │   ├── cloudpilot_instructions.sql
-│   │   ├── cloudpilot_instructions_update_image_paths.sql
-│   │   ├── cloudpilot_workflows_phase1.sql
-│   │   ├── master_sql.sql
-│   │   ├── seed_show_ai_usage.sql
-│   │   ├── todo.sql
-│   │   └── todo_seed_chat_context.sql
-│   ├── testing/
-│   │   ├── e2e-create-ec2.js
-│   │   └── e2e-delete-ec2.js
-│   └── understanding_actions.md
 ├── functions/
 │   ├── classes/
 │   │   ├── Instruction.js
@@ -459,6 +422,7 @@ application/atlas/
 │   │   │   │   └── scanS3Handler.js
 │   │   │   └── atlasS3Functions.js
 │   │   └── actionMap.js
+│   ├── conversation/              # empty leftover dirs (moved to cloudPilot/)
 │   └── navigator/
 │       └── functions/
 │           └── navigatorFunctions.js
@@ -543,8 +507,9 @@ application/atlas/
 
 | File | What it does |
 |------|----------------|
-| `classes/AiUsage.js` | Insert + summary aggregates for `ai_usage`. |
-| `functions/saveAiUsage.js` | Map OpenAI `usage` → cost → insert (never fails chat). |
+| `AiUsage.js` | Insert + summary aggregates for `ai_usage`. |
+| `saveAiUsage.js` | Map OpenAI `usage` → cost → insert (never fails chat). |
+| `calculateOpenAICost.js` | Estimated USD from model + tokens. |
 
 ### Conversation (`cloudPilot/conversation/`)
 
@@ -574,21 +539,20 @@ application/atlas/
 
 | File | What it does |
 |------|----------------|
-| `buildAIContext.js` | Assembles Identity + Situation + Knowledge. |
-| `buildAISystemMessage.js` | Renders context into English system message. |
+| `buildContext.js` | Assembles Identity + Situation + Knowledge. |
+| `buildSystemMessage.js` | Renders context into English system message. |
 | `contextTypes/cloudPilotContext.js` | Type 1 — Identity data. |
+| `contextTypes/cloudPilotSituationContext.js` | Situation slice for CloudPilot turns. |
 | `contextTypes/currentQuestionContext.js` | Type 2 — Situation data. |
 | `contextTypes/organizationKnowledgeContext.js` | Type 3 — Org knowledge (often empty). |
 | `classes/ConversationHistoryContext.js` | Loads recent messages for OpenAI history. |
 | `classes/CurrentQuestionContext.js` | Situation builder for this turn. |
-| `temp.js` | Scratch paste of context stack — **not wired**. |
 
-### Engines & config
+### AI client & config
 
 | File | What it does |
 |------|----------------|
-| `engines/llm/openai/openAIFunctions.js` | OpenAI client + chat completion (+ usage save hook). |
-| `engines/llm/openai/calculateOpenAICost.js` | Estimated USD from model + tokens. |
+| `ai/client/openAIClient.js` | OpenAI client + chat completion (+ usage save hook). |
 | `config/chatGPTconfig.js` | Model IDs, temperatures, token ceilings. |
 | `config/cloudPilotAIConfig.js` | Master AI switch, feature implementations, history, logging. |
 | `config/github/githubClient.js` | GitHub API for PR strategy. |
@@ -691,7 +655,7 @@ routes/messageRoutes.js
 | `inventory_aws` | `inventoryAWSHandler` | ⚠️ `atlasAWSFunctions` |
 | `show_billing` | `billingAWSHandler` | ✅ `billing/getBillingSummary.js` |
 | `show_ai_usage` | `showAiUsageHandler` | local `ai_usage` (not Atlas) |
-| `general_chat` | — (not STEP 6) | ⚠️ stub; engine in `engines/llm/openai/` |
+| `general_chat` | — (not STEP 6) | ⚠️ stub; engine in `ai/client/openAIClient.js` |
 
 ---
 
@@ -705,6 +669,8 @@ routes/messageRoutes.js
 | [doc/development/architecture/action_map.md](./doc/development/architecture/action_map.md) | WHAT / WHEN / RUN / HOW / WHERE |
 | [doc/development/architecture/capability_migration.md](./doc/development/architecture/capability_migration.md) | Capability layer plan |
 | [doc/development/current_development.md](./doc/development/current_development.md) | AI — live control plane + region + planned chat features |
+| [doc/instructions/chat_use_open_ai.md](./doc/instructions/chat_use_open_ai.md) | How to wire OpenAI into chat features |
+| [doc/sample_env.md](./doc/sample_env.md) | Sample env vars (no secrets) |
 | [doc/development/ai_usage.md](./doc/development/ai_usage.md) | OpenAI usage tracking |
 | [doc/development/long_term/to_do.md](./doc/development/long_term/to_do.md) | Backlog |
 | [doc/development/long_term/finished.md](./doc/development/long_term/finished.md) | Shipped work |

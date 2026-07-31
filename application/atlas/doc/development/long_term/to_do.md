@@ -1,8 +1,9 @@
 # To Do
 
-**Last reviewed:** 2026-07-05
+**Last reviewed:** 2026-07-27
 
-> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current_development.md](../current_development.md)** (AI)  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current_development.md](../current_development.md)** (AI — **next: when to run Region Search**)  
+> **Architecture refactor (planned — no code):** **[responsibility_refactor.md](../architecture/responsibility_refactor.md)** — folders by responsibility; `providers/atlas` not aws  
 > **History (MVP done):** [history.md](./history.md) · **Deferred:** [future_work.md](./future_work.md)  
 > **Done:** [finished.md](./finished.md) · **Architecture & reference:** [architecture/](./architecture/)
 
@@ -14,7 +15,7 @@
 
 **History MVP is complete** — see [history.md](./history.md) and [finished.md](./finished.md). Deferred history items: [future_work.md](./future_work.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../pr_strategy.md). **AI (live + planned):** [current_development.md](../current_development.md). **AI usage / OpenAI spend:** [ai_usage.md](../ai_usage.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../pr_strategy.md). **AI (live + planned):** [current_development.md](../current_development.md). **AI usage / OpenAI spend:** [ai_usage.md](../ai_usage.md). **Folder refactor (plan only):** [responsibility_refactor.md](../architecture/responsibility_refactor.md).
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
@@ -27,13 +28,24 @@
 - [ ] Phase 5 — history after PR apply
 - [ ] Phase 6 — undo revert PR
 
-#### CloudPilot AI ([current_development.md](../current_development.md))
+#### CloudPilot AI ([current_development.md](../current_development.md)) — **next**
 
-Shared
+Shared (shipped)
 - [x] Context + conversation history foundation
 - [x] Master + per-feature ENV (`cloudPilotAIConfig.js`)
 - [x] Region OpenAI + situation context + region logs
-- [ ] When to run Region Search (Section C)
+- [x] Message response OpenAI path (see [chat_use_open_ai.md](../instructions/chat_use_open_ai.md))
+- [x] Demo chat list documented (Section B5)
+
+**Next — When to run Region Search** ([Section C](../current_development.md#section-c--when-to-run-region-search-next))
+- [ ] Do **not** run Region Search on every message
+- [ ] MVP gate: open request + `region` still missing → then Internal | OpenAI
+- [ ] Skip when region not needed (no open request / region already collected)
+- [ ] Keep master + `CLOUDPILOT_REGION_SEARCH` switch unchanged — only change **when** it runs
+- [ ] Optional log when skipped (`REGION_LOGS`)
+- [ ] Later (not this slice): same-turn “Scan EC2 in Oregon” without open request yet (Section C3)
+
+After that
 - [ ] Ambiguous region clarify (Section D) — after demo MVP
 
 Feature 3 — broader intent — see current_development Section E

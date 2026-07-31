@@ -1,9 +1,10 @@
 # CloudPilot — Current Development (AI)
 
-**Last updated:** 2026-07-26  
-**Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.
+**Last updated:** 2026-07-27  
+**Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.  
+**Next up:** Section C — only run Region Search when the current request needs region.
 
-**Related:** [sample_env.md](./sample_env.md) · [ai_usage.md](./ai_usage.md) · [long_term/future_work.md](./long_term/future_work.md) · [mvp.md](./mvp.md)
+**Related:** [sample_env.md](./sample_env.md) · [ai_usage.md](./ai_usage.md) · [long_term/future_work.md](./long_term/future_work.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../instructions/chat_use_open_ai.md)
 
 This file **combines** the live AI config/region work with the older chat-enhancement plan (`cloud_pilot_chat.md`). Sections are marked so similar work stays together.
 
@@ -95,13 +96,67 @@ Situation pieces describe **what to identify**. The **AI operation** owns output
 - Feature 3 Full `understandIntent` / `AIService`  
 - Old flags: `OPENAI_EXPLAIN_FINDINGS`, `OPENAI_FRIENDLY_REQUESTS`, `OPENAI_INTENT_UNDERSTANDING`, `OPEN_AI_LIVE_SEND_ALL_MESSAGES_WILL_CAUSE_BILLING` (replaced by master + `MESSAGE_RESPONSE`)
 
+## B5 — OpenAI demo chat list (besides region)
+
+What you can flip on for a room / rehearsal **today**. Atlas can stay in **Test** mode (no AWS creates).
+
+### Live OpenAI (env)
+
+| What | Env | Example |
+|------|-----|---------|
+| **Region search** | `CLOUDPILOT_REGION_SEARCH=openai` | `scan ec2 in oregon` / `us-west-2` |
+| **General chat replies** | `CLOUDPILOT_MESSAGE_RESPONSE=openai` | `hello`, `what can you do?` |
+| **AI usage** | (no OpenAI to *answer*) | `ai usage` / `openai spend` |
+
+Suggested OpenAI demo env:
+
+```env
+CLOUDPILOT_AI_ENABLED=true
+CLOUDPILOT_REGION_SEARCH=openai
+CLOUDPILOT_MESSAGE_RESPONSE=openai
+CLOUDPILOT_REGION_LOGS=true
+CLOUDPILOT_MESSAGE_LOGS=true
+```
+
+How-to for chat path: [chat_use_open_ai.md](../instructions/chat_use_open_ai.md).
+
+### Deterministic (not OpenAI — still part of full demo)
+
+| Beat | Example |
+|------|---------|
+| Scan | `scan ec2` |
+| Field fill (structured) | `region: "us-west-2"` |
+| Modes | Instructions / CLI / **PR** / Automatic |
+| Toggle | confirm → Automatic |
+| History / Undo | `undo` / status |
+| AWS billing | `show my aws bill` (Atlas) |
+
+### Planned OpenAI (not for this demo yet)
+
+| Feature | Would cover |
+|---------|-------------|
+| Explain findings | Scan → “Why?” in plain English |
+| Friendly request asks | “Keep us-west-2?” instead of checklist |
+| Action / intent | “don’t scan” / natural corrections |
+| Recommendations | “Do this first…” |
+
+### Minimal OpenAI + no-AWS rehearsal
+
+1. General chat on → short question  
+2. Start scan → region via OpenAI  
+3. Finish scan (Atlas **Test** mocks OK)  
+4. PR mode → GitHub (no AWS)  
+5. `ai usage` → see OpenAI spend  
+
 ---
 
-# SECTION C — When to run Region Search (NEXT)
+# SECTION C — When to run Region Search (**NEXT**)
 
-**Status:** Design locked for soon. **Not how code works today.**
+**Status:** Design locked. **Build this next.** Not how code works today.
 
-Today every message runs `searchMessageForValues` → `searchMessageForRegion` (OpenAI can bill on unrelated chat).
+**Problem today:** every message runs `searchMessageForValues` → `searchMessageForRegion` (OpenAI can bill on unrelated chat).
+
+**Doc already locked here** — implement the MVP gate below before ambiguous clarify (Section D).
 
 ## C1 — Goal
 
@@ -122,6 +177,7 @@ Is there an OPEN REQUEST?
  │          │
  │          ▼
  │     Does the request need REGION?
+ │     (e.g. region in missingFields)
  │          │
  │     ┌────┴────┐
  │     NO       YES
@@ -158,7 +214,7 @@ User Message
 
 **Rule:** Only run Region Search when the **current request/action needs region**.
 
-MVP primary trigger: open request missing `region`.
+**MVP primary trigger:** open request with `region` still missing.
 
 ## C4 — Purposeful understanding principle
 
@@ -174,11 +230,18 @@ Deterministic request pipeline continues
 
 Do not auto-run Region + Action + Name + Resource search on every message.
 
+## C5 — Build notes (when coding)
+
+- Gate before calling `searchMessageForRegion` (or no-op at top of gateway when not needed).
+- Need request state available at STEP 3 (open request + missing fields) — today understand is message-only; wiring may pass loaded state from STEP 2.
+- Keep Internal vs OpenAI switch unchanged; only change **when** search runs.
+- Logs: when skipped, optional one-liner if `REGION_LOGS` (e.g. `Region Search: SKIPPED — region not needed`).
+
 ---
 
 # SECTION D — Ambiguous region / clarify (AFTER DEMO MVP)
 
-**Status:** Future. Detail also in [future_work.md § AI region understanding](./long_term/future_work.md#ai-region-understanding--ambiguous-vs-not-provided).
+**Status:** Future — after Section C. Detail also in [future_work.md § AI region understanding](./long_term/future_work.md#ai-region-understanding--ambiguous-vs-not-provided).
 
 Today only two outcomes: FOUND / empty. Need three:
 
@@ -241,6 +304,7 @@ AI never owns control flow.
 | OpenAI client | `ai/client/openAIClient.js` |
 | Speak | `cloudPilot/conversation/CloudPilotMessage.js` |
 | Sample `.env` | [sample_env.md](./sample_env.md) |
+| Chat OpenAI how-to | [chat_use_open_ai.md](../instructions/chat_use_open_ai.md) |
 
 ---
 
@@ -248,7 +312,7 @@ AI never owns control flow.
 
 1. [x] Master + feature ENV + `cloudPilotAIConfig`  
 2. [x] Region OpenAI + situation context + region logs  
-3. [ ] **When to run Region Search** (Section C)  
+3. [ ] **When to run Region Search** (Section C) ← **next**  
 4. [ ] Ambiguous region clarify (Section D) — after demo MVP  
 5. [ ] Feature 2 / 1 / broader Feature 3 as needed  
 6. [ ] Action search OpenAI (same purposeful pattern as region)  
@@ -262,3 +326,4 @@ AI never owns control flow.
 | 2026-07-22 | Original `cloud_pilot_chat.md` — Features 1–3 plan |
 | 2026-07-26 | Region OpenAI + AI control plane shipped |
 | 2026-07-26 | Merged into this file; added when-to-search + ambiguous region |
+| 2026-07-27 | B5 OpenAI demo chat list; Section C marked NEXT + build notes |
