@@ -1,248 +1,300 @@
-# CloudPilot Responsibility Refactor
+# CloudPilot Folder Refactor
 
-**Status:** Planning only — no files moved yet  
-**Scope:** `application/atlas/cloudPilot/` and `application/atlas/cloudPilotIntelligence/`  
-**Work type:** Move files, rename files/folders, fix `require()` paths, verify unchanged behavior  
-**Not in scope:** New features, logic rewrites, OpenAI behavior changes, prompt changes, response redesign
+**Status:** Planning only — no runtime files moved yet
+**Scope:** `application/atlas/cloudPilot/` only
+**Work type:** Move files, rename files/folders, fix `require()` paths, verify unchanged behavior
+**Last updated:** 2026-08-01
+
+---
+
+## Critical scope lock
+
+### Project A — this document
+
+Reorganize `cloudPilot/` around clear product responsibilities.
+
+```text
+MOVE
+RENAME
+FIX IMPORTS
+VERIFY
+STOP
+```
+
+### Project B — later
+
+Design and implement the `CloudPilotIntelligence` facade and finish the Internal/OpenAI toggle.
+
+### Absolute rule for Project A
+
+> **Do not touch `cloudPilotIntelligence/`.**
+
+Project A must not:
+
+- move files into or out of `cloudPilotIntelligence/`;
+- edit any Intelligence JavaScript file;
+- add the facade;
+- remove or add Intelligence `.gitkeep` files;
+- change Intelligence exports;
+- change Internal/OpenAI selection;
+- change prompts or provider behavior.
+
+All current files under `cloudPilotIntelligence/` remain exactly where they are.
 
 ---
 
 ## Plan authority
 
-This document supersedes the remaining CloudPilot phases in:
+This document supersedes the remaining CloudPilot folder phases in:
 
 - `responsibility_refactor.md`
 - `project_structure_plan.md`
 
-Those documents describe the intermediate structure that currently exists (`conversation/`, `decision/`, `changes/`, top-level service folders, and `navigator/`). Do not execute their old Phase 4 or Phase 5 independently.
+Their completed provider/context moves remain valid. Do not independently execute their old Phase 4 instruction to move understanding into Intelligence.
 
-The earlier provider and context moves remain valid. This document is the source of truth for the remaining CloudPilot and CloudPilotIntelligence folder migration.
-
-### Inventory baseline
+### File inventory
 
 ```text
-cloudPilot/              75 JavaScript files
-cloudPilotIntelligence/   8 JavaScript files
-                         ──
-Total                    83 JavaScript files
+cloudPilot/              75 JavaScript files before
+cloudPilot/              75 JavaScript files after
+
+cloudPilotIntelligence/   8 JavaScript files before
+cloudPilotIntelligence/   8 JavaScript files after — untouched
 ```
 
-The final structure must still contain all 83 JavaScript files:
-
-```text
-cloudPilot/              60 JavaScript files
-cloudPilotIntelligence/  23 JavaScript files
-                         ──
-Total                    83 JavaScript files
-```
-
-The count changes between the two systems only because 15 existing CloudPilot files move into Intelligence:
-
-- 11 understanding files;
-- 4 response-production files.
+Every current CloudPilot JavaScript file has one destination in this plan.
 
 ---
 
 ## 1. Goal
 
-Reorganize CloudPilot around responsibilities that a new engineer can understand in one sentence.
+CloudPilot manages work.
 
 ```text
 cloudPilot/
-├── chat/             # Talk with the user and route the chat experience
-├── requests/         # Manage the lifecycle and state of work
-├── remediations/     # Define and deliver infrastructure changes
+├── chat/             # Talk with the user
+├── requests/         # Manage work and request state
+├── remediations/     # Change infrastructure
 ├── services/         # Provide information and analysis
 ├── execution/        # Run approved work
-├── history/          # Record and undo completed work
-└── config/           # Register actions and static CloudPilot behavior
-
-cloudPilotIntelligence/
-├── context/          # Assemble the knowledge used while thinking
-├── understand/       # Interpret the user's message
-├── respond/          # Produce user-facing language
-├── explain/          # Explain results and decisions
-├── generate/         # Generate artifacts
-└── improve/          # Improve future intelligence behavior
+├── history/          # Remember and undo work
+└── actionMap.js      # Register what CloudPilot can do
 ```
 
-The boundary is:
+The facade project later establishes:
 
 ```text
-CloudPilot              = manages work
-CloudPilotIntelligence  = helps CloudPilot think and communicate
-providers/              = communicates with external systems
+CloudPilot
+    ↓
+CloudPilotIntelligence facade
+    ↓
+Internal rules | OpenAI | Claude | Gemini | Hybrid
 ```
 
-### Why `context/` remains
-
-The proposed Intelligence sketch omitted the existing `context/` folder. It should remain.
-
-Its responsibility is clear and shared by both understanding and responding:
-
-> Assemble CloudPilot-owned knowledge for an intelligence operation.
-
-Forcing context under either `understand/` or `respond/` would incorrectly make shared knowledge belong to one consumer. This plan does not move context into an OpenAI provider.
+That facade boundary is protected, but it is not implemented by this move-only refactor.
 
 ---
 
-## 2. Hard constraints
+## 2. Protected facade design rule
 
-1. Every current JavaScript file must still exist after the migration.
-2. Business behavior, exports, function signatures, database behavior, prompts, and environment switches stay unchanged.
-3. This is a physical structure change only:
-   - move files;
-   - rename files and folders;
-   - fix imports and documentation paths;
-   - remove empty obsolete folders;
-   - verify existing behavior.
-4. Do not split mixed files during this refactor.
-5. Do not consolidate helpers during this refactor.
-6. Do not replace deterministic responses with AI responses.
-7. Do not finish or alter the OpenAI toggle in this project.
+The long-term rule is:
 
-### Separate follow-up project
+> **CloudPilot must never directly invoke OpenAI, Claude, provider-specific intelligence, regex engines, or internal intelligence implementations.**
+>
+> All understanding, response generation, explanation, artifact generation, and future intelligence capabilities must be accessed through the `CloudPilotIntelligence` facade.
 
-After this refactor is complete and smoke-tested, a separate plan can finish the existing Internal/OpenAI response toggle.
+The intended public interface is:
 
-```text
-Project A — this document
-Move / rename / imports / verification only
-
-Project B — later
-Finish OpenAI response toggle and related product behavior
+```javascript
+CloudPilotIntelligence.understand(...)
+CloudPilotIntelligence.respond(...)
+CloudPilotIntelligence.explain(...)
+CloudPilotIntelligence.generate(...)
 ```
 
-Project B must not begin while Project A is in progress.
+CloudPilot must not need to know whether Intelligence chooses:
+
+```text
+Internal
+OpenAI
+Claude
+Gemini
+Hybrid
+Future model
+```
+
+### Current reality
+
+CloudPilot still contains direct intelligence implementation details:
+
+- `CloudPilotMessage.js` directly uses the OpenAI provider;
+- `searchMessageForRegion.js` directly chooses Internal/OpenAI behavior;
+- understanding contains rules and regex implementation details;
+- `cloudPilotMessageFunctions.js` currently imports an OpenAI provider.
+
+Project A preserves these behaviors and only relocates their current files inside `cloudPilot/`.
+
+Project B will place those implementations behind the facade. Do not mix that work into this plan.
 
 ---
 
-## 3. Responsibility test for the target folders
+## 3. Hard constraints
 
-| Folder | One-sentence responsibility | Clear? |
+1. Every existing CloudPilot JavaScript file must still exist.
+2. All exports and function signatures remain unchanged.
+3. Database behavior and queries remain unchanged.
+4. User-facing copy remains unchanged.
+5. Internal/OpenAI switches remain unchanged.
+6. No new feature or abstraction is introduced.
+7. No helper is split or consolidated.
+8. No provider file is moved.
+9. No `cloudPilotIntelligence/` file is touched.
+10. Empty old CloudPilot folders are deleted only after all files are moved and imports pass.
+
+---
+
+## 4. First-class responsibility test
+
+| Folder | One-sentence responsibility | First-class? |
 |---|---|---|
-| `cloudPilot/chat/` | Routes the user-facing chat experience after a message enters CloudPilot. | Yes |
-| `cloudPilot/requests/` | Owns request state, lifecycle, and the determination of what request work happens next. | Yes |
-| `cloudPilot/remediations/` | Owns infrastructure-changing capabilities and their delivery strategies. | Yes |
-| `cloudPilot/services/` | Owns read-oriented information and analysis capabilities. | Yes |
-| `cloudPilot/execution/` | Runs work that CloudPilot has approved for execution. | Yes |
-| `cloudPilot/history/` | Records what CloudPilot changed and performs supported undo operations. | Yes |
-| `cloudPilot/config/` | Registers static action definitions and capability wiring. | Yes |
-| `cloudPilotIntelligence/context/` | Assembles the knowledge supplied to intelligence operations. | Yes |
-| `cloudPilotIntelligence/understand/` | Converts a user message into structured understanding. | Yes |
-| `cloudPilotIntelligence/respond/` | Produces user-facing language from CloudPilot outcomes and context. | Yes |
-| `cloudPilotIntelligence/explain/` | Explains outcomes and decisions. | Yes; future scaffold |
-| `cloudPilotIntelligence/generate/` | Generates artifacts requested by CloudPilot. | Yes; future scaffold |
-| `cloudPilotIntelligence/improve/` | Improves future intelligence behavior. | Yes; future scaffold |
+| `chat/` | Owns the current user-facing chat pipeline and conversation flow. | Yes |
+| `requests/` | Owns the lifecycle, state, and next step of in-flight work. | Yes |
+| `remediations/` | Owns infrastructure-changing actions and their delivery strategies. | Yes |
+| `services/` | Owns read-oriented information and analysis capabilities. | Yes |
+| `execution/` | Runs work CloudPilot has approved. | Yes |
+| `history/` | Records what CloudPilot changed and performs supported undo operations. | Yes |
+
+### Why there is no `config/` folder yet
+
+`actionMap.js` is currently the only proposed CloudPilot configuration file.
+
+Creating `config/` for one file adds a folder without establishing a meaningful responsibility. Keep `actionMap.js` at the CloudPilot root. A future registry/config project can create `config/` when multiple real configuration files exist.
+
+### Why there is no top-level `navigator/`
+
+Navigator is not a CloudPilot capability. It is client presentation shaping.
+
+The shared Navigator response helper moves beneath `chat/presentation/`. Feature-specific adapters remain beside their service or history capability and receive clearer `ResponseAdapter` names.
 
 ---
 
-## 4. Current top-level folder analysis
+## 5. Current folder decisions
 
-| Current location | Current responsibility | Keep as top-level? | Recommended home |
-|---|---|---:|---|
-| `actionMap.js` | Static action registration, matching metadata, requirements, messages, and execution handler references | No | `cloudPilot/config/actionMap.js` |
-| `cloudPilotMessageFunctions.js` | Main message-processing pipeline | No root file | `cloudPilot/chat/processMessage.js` |
-| `aiUsage/` | Read-oriented AI usage service | No | `cloudPilot/services/aiUsage/` |
-| `billing/` | Read-oriented AWS billing service | No | `cloudPilot/services/billing/` |
-| `changes/` | Infrastructure changes and delivery strategies | No | `cloudPilot/remediations/` |
-| `conversation/` | Mixes chat routing, request workflow, response production, and understanding | No | Split by responsibility |
-| `decision/` | Determines the next state and action for the current request | No | `cloudPilot/requests/` |
-| `execution/` | Executes approved actions | Yes | `cloudPilot/execution/` |
-| `history/` | Records and undoes changes | Yes | `cloudPilot/history/` |
-| `inventory/` | Read-oriented inventory service | No | `cloudPilot/services/inventory/` |
-| `navigator/` | Shared construction helpers for frontend response data | No | `cloudPilot/chat/presentation/` |
-| `requests/` | Request state and persistence | Yes | `cloudPilot/requests/` |
-| `scans/` | Read-oriented scan services | No | `cloudPilot/services/scans/` |
-| `conversation/understand/` | Message interpretation and value extraction | No; not CloudPilot workflow | `cloudPilotIntelligence/understand/` |
+| Current | Decision | Reason |
+|---|---|---|
+| `conversation/` | Rename/split into `chat/` and `requests/` | It currently mixes chat, understanding, and request workflow |
+| `decision/` | Absorb into `requests/` | It answers what the current request should do next |
+| `changes/` | Rename to `remediations/` | It owns infrastructure remediation actions and strategies |
+| `scans/` | Move under `services/` | Scans provide read-oriented information and analysis |
+| `billing/` | Move under `services/` | Billing is a read-oriented service |
+| `inventory/` | Move under `services/` | Inventory is a read-oriented service |
+| `aiUsage/` | Move under `services/` | AI usage is a read-oriented service |
+| `navigator/` | Remove as a top-level concept | Shared response shaping belongs to chat presentation |
+| `execution/` | Keep as a top-level capability | Clear responsibility |
+| `history/` | Keep as a top-level capability | Clear responsibility |
+| `requests/` | Keep as a top-level capability | Clear responsibility |
+| `actionMap.js` | Keep at CloudPilot root | One canonical capability registry |
 
-### Folders that disappear
+---
+
+## 6. Important ownership decisions
+
+### Chat remains responsible for current response orchestration
+
+The following files stay in CloudPilot and move under `chat/`:
+
+- `CloudPilotMessage.js`
+- `generalChat.js`
+- `requestTemplates.js`
+- `fieldPromptExamples.js`
+
+They must not move into Intelligence during Project A.
+
+`CloudPilotMessage.js` currently owns provider gating, history loading, logging, response formatting, and deterministic request responses. Project B may later extract pure intelligence operations behind the facade.
+
+### Understanding temporarily remains in CloudPilot
+
+Because `cloudPilotIntelligence/` is frozen, the existing understanding implementation moves only from:
 
 ```text
-cloudPilot/conversation/  → split into chat, requests, and Intelligence
-cloudPilot/decision/      → absorbed by requests
-cloudPilot/changes/       → renamed remediations
-cloudPilot/navigator/     → absorbed by chat/presentation
-cloudPilot/scans/         → absorbed by services
-cloudPilot/billing/       → absorbed by services
-cloudPilot/inventory/     → absorbed by services
-cloudPilot/aiUsage/       → absorbed by services
+cloudPilot/conversation/understand/
 ```
 
----
+to:
 
-## 5. Important boundary decisions
+```text
+cloudPilot/chat/understand/
+```
 
-### 5.1 Chat is not Intelligence
+This is an intentional temporary location. Project B will make CloudPilot call:
 
-`chat/` owns routing the user experience:
+```javascript
+CloudPilotIntelligence.understand(...)
+```
 
-- process an incoming message;
-- choose the general or request chat path;
-- route an outcome to the response producer;
-- preserve the API-facing chat contract.
+without knowing where regex, rules, Internal, or provider-specific implementation lives.
 
-It does not own message understanding or the production of response language.
+### Decision belongs to requests
 
-### 5.2 Responding is Intelligence
+`decideNextStep.js` consumes understanding plus loaded request state and determines the next request transition. It is request workflow, not Intelligence.
 
-The current `CloudPilotMessage.js`, general-chat response entry, and request templates primarily produce user-facing language. They belong under `cloudPilotIntelligence/respond/`.
+### Service-specific output remains with its service
 
-Moving them does not enable OpenAI or change their behavior. Deterministic templates remain deterministic.
+Formatters, deterministic message builders, and service response adapters remain beside scans, billing, inventory, and AI usage.
 
-### 5.3 Decision is request workflow
+They are part of each service's current output contract. Moving them to Intelligence would scatter one service across multiple systems without changing behavior.
 
-`decideNextStep.js` answers:
+### Mixed legacy helpers remain intact
 
-> Given the current understanding and request state, what should this request do next?
+These files have imperfect ownership but must not be split during a move-only refactor:
 
-That is request lifecycle logic, so `decision/` disappears into `requests/`.
+- `atlasEC2Functions.js`
+- `atlasAWSFunctions.js`
+- `AtlasExecution.js`
 
-### 5.4 Navigator is presentation, not a product capability
-
-`navigatorFunctions.js` constructs frontend response shapes. It does not reason and it is not a first-class CloudPilot capability.
-
-The shared helper moves to `chat/presentation/`. Feature-specific adapters stay beside their feature and are renamed from `NavigatorAdapter` to `ResponseAdapter`.
-
-### 5.5 Remediations replace changes
-
-`changes/` mixes remediation handlers and delivery strategies. `remediations/` states the product responsibility directly:
-
-> These are the infrastructure changes CloudPilot can make and the ways it can deliver them.
-
-### 5.6 Services are read-oriented capabilities
-
-Scans, billing, inventory, and AI usage answer questions or provide analysis. They do not manage request state and they are not remediation workflows.
-
-### 5.7 Configuration is static registration
-
-`actionMap.js` is the central registry describing what CloudPilot knows how to do. Its primary responsibility is configuration, even though its definitions reference executable handlers.
-
-This plan moves the file only. It does not split matching rules, messages, or execution references out of the registry.
+Their cleanup is separate work.
 
 ---
 
-## 6. Final target tree
-
-Every current JavaScript file is represented below.
+## 7. Final target tree
 
 ```text
 cloudPilot/
+├── actionMap.js
+│
 ├── chat/
 │   ├── processMessage.js
+│   ├── CloudPilotMessage.js
 │   ├── general/
-│   │   ├── GeneralChat.js
-│   │   └── generalChatWorkflow.js
+│   │   ├── GeneralConversation.js
+│   │   ├── generalChat.js
+│   │   └── workflow.js
 │   ├── request/
-│   │   └── RequestChat.js
+│   │   └── RequestConversation.js
+│   ├── templates/
+│   │   ├── fieldPromptExamples.js
+│   │   └── requestTemplates.js
+│   ├── understand/
+│   │   ├── understandMessage.js
+│   │   └── search/
+│   │       ├── searchMessageForAction.js
+│   │       ├── searchMessageForConversation.js
+│   │       ├── searchMessageForInstanceId.js
+│   │       ├── searchMessageForInstanceType.js
+│   │       ├── searchMessageForName.js
+│   │       ├── searchMessageForRegion.js
+│   │       ├── searchMessageForReply.js
+│   │       ├── searchMessageForStructuredFields.js
+│   │       ├── searchMessageForTagUpdate.js
+│   │       └── searchMessageForValues.js
 │   └── presentation/
 │       └── navigatorResponseFunctions.js
 │
 ├── requests/
 │   ├── ActionState.js
 │   ├── Request.js
-│   ├── decideNextRequestStep.js
-│   ├── requestDecisionTypes.js
+│   ├── decideNextStep.js
+│   ├── decisionTypes.js
 │   ├── requestWorkflow.js
 │   ├── requestFunctions.js
 │   ├── requestLoadFunctions.js
@@ -258,45 +310,45 @@ cloudPilot/
 │   │   └── deleteEC2Handler.js
 │   ├── updateEC2Tag/
 │   │   └── updateEC2TagHandler.js
-│   └── strategies/
-│       ├── automatic.js
-│       ├── instructions.js
-│       ├── cli/
-│       │   ├── cli.js
-│       │   └── cliTemplates.js
-│       └── pr/
-│           ├── pr.js
-│           ├── createToggleEc2PullRequest.js
-│           └── prTemplates.js
+│   ├── strategies/
+│   │   ├── automatic.js
+│   │   ├── cli.js
+│   │   ├── instructions.js
+│   │   └── pr.js
+│   ├── cli/
+│   │   └── cliTemplates.js
+│   └── pr/
+│       ├── createToggleEc2PullRequest.js
+│       └── prTemplates.js
 │
 ├── services/
 │   ├── scans/
 │   │   ├── ec2/
-│   │   │   ├── scanEC2Handler.js
-│   │   │   ├── atlasEC2Functions.js
 │   │   │   ├── atlasEC2Formatter.js
+│   │   │   ├── atlasEC2Functions.js
 │   │   │   ├── atlasEC2MessageBuilder.js
-│   │   │   └── ec2ScanResponseAdapter.js
+│   │   │   ├── ec2ScanResponseAdapter.js
+│   │   │   └── scanEC2Handler.js
 │   │   └── s3/
-│   │       ├── scanS3Handler.js
-│   │       ├── atlasS3Functions.js
 │   │       ├── atlasS3Formatter.js
+│   │       ├── atlasS3Functions.js
 │   │       ├── atlasS3MessageBuilder.js
-│   │       └── s3ScanResponseAdapter.js
+│   │       ├── s3ScanResponseAdapter.js
+│   │       └── scanS3Handler.js
 │   ├── billing/
-│   │   ├── billingAWSHandler.js
-│   │   ├── atlasBillingFunctions.js
 │   │   ├── atlasAWSBillingMessage.js
+│   │   ├── atlasBillingFunctions.js
+│   │   ├── billingAWSHandler.js
 │   │   └── billingResponseAdapter.js
 │   ├── inventory/
-│   │   ├── inventoryAWSHandler.js
 │   │   ├── atlasAWSFunctions.js
 │   │   ├── atlasAWSInventoryFormatter.js
 │   │   ├── atlasAWSInventoryMessageBuilder.js
+│   │   ├── inventoryAWSHandler.js
 │   │   └── inventoryResponseAdapter.js
 │   └── aiUsage/
-│       ├── showAiUsageHandler.js
-│       └── aiUsageMessageBuilder.js
+│       ├── aiUsageMessageBuilder.js
+│       └── showAiUsageHandler.js
 │
 ├── execution/
 │   ├── AtlasExecution.js
@@ -305,123 +357,56 @@ cloudPilot/
 │   └── outcomes/
 │       └── outcomeRegistry.js
 │
-├── history/
-│   ├── History.js
-│   ├── historyFunctions.js
-│   ├── historyActionNameFunctions.js
-│   ├── historyResponseAdapter.js
-│   ├── builders/
-│   │   ├── createEc2History.js
-│   │   ├── ec2History.js
-│   │   └── toggleEc2History.js
-│   └── undo/
-│       ├── undoFunctions.js
-│       └── undoRegistry.js
-│
-└── config/
-    └── actionMap.js
-
-cloudPilotIntelligence/
-├── context/
-│   ├── buildContext.js
-│   ├── buildSystemMessage.js
-│   ├── classes/
-│   │   ├── ConversationHistoryContext.js
-│   │   └── CurrentQuestionContext.js
-│   └── contextTypes/
-│       ├── cloudPilotContext.js
-│       ├── cloudPilotSituationContext.js
-│       ├── currentQuestionContext.js
-│       └── organizationKnowledgeContext.js
-│
-├── understand/
-│   ├── understandMessage.js
-│   └── search/
-│       ├── searchMessageForAction.js
-│       ├── searchMessageForConversation.js
-│       ├── searchMessageForInstanceId.js
-│       ├── searchMessageForInstanceType.js
-│       ├── searchMessageForName.js
-│       ├── searchMessageForRegion.js
-│       ├── searchMessageForReply.js
-│       ├── searchMessageForStructuredFields.js
-│       ├── searchMessageForTagUpdate.js
-│       └── searchMessageForValues.js
-│
-├── respond/
-│   ├── cloudPilotResponse.js
-│   ├── general/
-│   │   └── generalChat.js
-│   └── templates/
-│       ├── fieldPromptExamples.js
-│       └── requestTemplates.js
-│
-├── explain/
-├── generate/
-└── improve/
+└── history/
+    ├── History.js
+    ├── historyFunctions.js
+    ├── historyActionNameFunctions.js
+    ├── historyResponseAdapter.js
+    ├── builders/
+    │   ├── createEc2History.js
+    │   ├── ec2History.js
+    │   └── toggleEc2History.js
+    └── undo/
+        ├── undoFunctions.js
+        └── undoRegistry.js
 ```
 
-### Why service message builders stay with services
+### Intelligence remains unchanged
 
-The scan, billing, inventory, and AI usage message builders are deterministic output owned by those service contracts. They do not independently reason, call an AI model, or choose a conversational response path.
+The target tree deliberately does not reproduce or modify `cloudPilotIntelligence/`.
 
-Moving those builders into Intelligence would scatter each service across two systems without changing its responsibility. They remain beside their service in this physical refactor.
-
-The cross-service response composer and reusable request templates do move to `cloudPilotIntelligence/respond/` because producing conversational language is their primary responsibility.
+Project A treats the entire folder as read-only.
 
 ---
 
-## 7. Complete file migration map
+## 8. Complete file migration map
 
-### 7.1 Root files
-
-| Current | Target | Reason |
-|---|---|---|
-| `cloudPilot/cloudPilotMessageFunctions.js` | `cloudPilot/chat/processMessage.js` | Main chat processing entry; rename after its exported `processMessage` responsibility |
-| `cloudPilot/actionMap.js` | `cloudPilot/config/actionMap.js` | Static action and handler registry |
-
-### 7.2 Conversation split
-
-| Current | Target | Reason |
-|---|---|---|
-| `cloudPilot/conversation/general/GeneralConversation.js` | `cloudPilot/chat/general/GeneralChat.js` | Routes the general chat experience |
-| `cloudPilot/conversation/general/workflow.js` | `cloudPilot/chat/general/generalChatWorkflow.js` | General chat workflow placeholder |
-| `cloudPilot/conversation/request/RequestConversation.js` | `cloudPilot/chat/request/RequestChat.js` | Routes request-related chat output |
-| `cloudPilot/conversation/request/workflow.js` | `cloudPilot/requests/requestWorkflow.js` | Applies request state and executes request work |
-| `cloudPilot/conversation/CloudPilotMessage.js` | `cloudPilotIntelligence/respond/cloudPilotResponse.js` | Produces general and request-facing response language |
-| `cloudPilot/conversation/general/generalChat.js` | `cloudPilotIntelligence/respond/general/generalChat.js` | General AI response entry placeholder |
-| `cloudPilot/conversation/templates/fieldPromptExamples.js` | `cloudPilotIntelligence/respond/templates/fieldPromptExamples.js` | User-facing field prompt content |
-| `cloudPilot/conversation/templates/requestTemplates.js` | `cloudPilotIntelligence/respond/templates/requestTemplates.js` | Deterministic request response generation |
-
-### 7.3 Understanding
+### Root
 
 | Current | Target |
 |---|---|
-| `cloudPilot/conversation/understand/understandMessage.js` | `cloudPilotIntelligence/understand/understandMessage.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForAction.js` | `cloudPilotIntelligence/understand/search/searchMessageForAction.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForConversation.js` | `cloudPilotIntelligence/understand/search/searchMessageForConversation.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForInstanceId.js` | `cloudPilotIntelligence/understand/search/searchMessageForInstanceId.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForInstanceType.js` | `cloudPilotIntelligence/understand/search/searchMessageForInstanceType.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForName.js` | `cloudPilotIntelligence/understand/search/searchMessageForName.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForRegion.js` | `cloudPilotIntelligence/understand/search/searchMessageForRegion.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForReply.js` | `cloudPilotIntelligence/understand/search/searchMessageForReply.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForStructuredFields.js` | `cloudPilotIntelligence/understand/search/searchMessageForStructuredFields.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForTagUpdate.js` | `cloudPilotIntelligence/understand/search/searchMessageForTagUpdate.js` |
-| `cloudPilot/conversation/understand/search/searchMessageForValues.js` | `cloudPilotIntelligence/understand/search/searchMessageForValues.js` |
+| `cloudPilot/actionMap.js` | `cloudPilot/actionMap.js` |
+| `cloudPilot/cloudPilotMessageFunctions.js` | `cloudPilot/chat/processMessage.js` |
 
-The `search/` structure stays intact. Creating region/action/resource subfolders would add churn without changing responsibility and is not required for this target architecture.
-
-### 7.4 Decision into requests
-
-| Current | Target | Reason |
-|---|---|---|
-| `cloudPilot/decision/decideNextStep.js` | `cloudPilot/requests/decideNextRequestStep.js` | Determines the next request state and workflow action |
-| `cloudPilot/decision/decisionTypes.js` | `cloudPilot/requests/requestDecisionTypes.js` | Constants consumed by request lifecycle and chat routing |
-
-### 7.5 Existing requests
+### Conversation to chat
 
 | Current | Target |
 |---|---|
+| `cloudPilot/conversation/CloudPilotMessage.js` | `cloudPilot/chat/CloudPilotMessage.js` |
+| `cloudPilot/conversation/general/GeneralConversation.js` | `cloudPilot/chat/general/GeneralConversation.js` |
+| `cloudPilot/conversation/general/generalChat.js` | `cloudPilot/chat/general/generalChat.js` |
+| `cloudPilot/conversation/general/workflow.js` | `cloudPilot/chat/general/workflow.js` |
+| `cloudPilot/conversation/request/RequestConversation.js` | `cloudPilot/chat/request/RequestConversation.js` |
+| `cloudPilot/conversation/templates/fieldPromptExamples.js` | `cloudPilot/chat/templates/fieldPromptExamples.js` |
+| `cloudPilot/conversation/templates/requestTemplates.js` | `cloudPilot/chat/templates/requestTemplates.js` |
+
+### Request workflow
+
+| Current | Target |
+|---|---|
+| `cloudPilot/conversation/request/workflow.js` | `cloudPilot/requests/requestWorkflow.js` |
+| `cloudPilot/decision/decideNextStep.js` | `cloudPilot/requests/decideNextStep.js` |
+| `cloudPilot/decision/decisionTypes.js` | `cloudPilot/requests/decisionTypes.js` |
 | `cloudPilot/requests/classes/ActionState.js` | `cloudPilot/requests/ActionState.js` |
 | `cloudPilot/requests/classes/Request.js` | `cloudPilot/requests/Request.js` |
 | `cloudPilot/requests/functions/requestFunctions.js` | `cloudPilot/requests/requestFunctions.js` |
@@ -429,9 +414,23 @@ The `search/` structure stays intact. Creating region/action/resource subfolders
 | `cloudPilot/requests/functions/requestNameFunctions.js` | `cloudPilot/requests/requestNameFunctions.js` |
 | `cloudPilot/requests/functions/requestStatusFunctions.js` | `cloudPilot/requests/requestStatusFunctions.js` |
 
-The `classes/` and `functions/` wrappers disappear because this folder has only two classes and four focused helper modules. Flattening makes the request capability visible without introducing new abstractions.
+### Understanding stays inside CloudPilot
 
-### 7.6 Changes into remediations
+| Current | Target |
+|---|---|
+| `cloudPilot/conversation/understand/understandMessage.js` | `cloudPilot/chat/understand/understandMessage.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForAction.js` | `cloudPilot/chat/understand/search/searchMessageForAction.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForConversation.js` | `cloudPilot/chat/understand/search/searchMessageForConversation.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForInstanceId.js` | `cloudPilot/chat/understand/search/searchMessageForInstanceId.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForInstanceType.js` | `cloudPilot/chat/understand/search/searchMessageForInstanceType.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForName.js` | `cloudPilot/chat/understand/search/searchMessageForName.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForRegion.js` | `cloudPilot/chat/understand/search/searchMessageForRegion.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForReply.js` | `cloudPilot/chat/understand/search/searchMessageForReply.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForStructuredFields.js` | `cloudPilot/chat/understand/search/searchMessageForStructuredFields.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForTagUpdate.js` | `cloudPilot/chat/understand/search/searchMessageForTagUpdate.js` |
+| `cloudPilot/conversation/understand/search/searchMessageForValues.js` | `cloudPilot/chat/understand/search/searchMessageForValues.js` |
+
+### Changes to remediations
 
 | Current | Target |
 |---|---|
@@ -440,82 +439,50 @@ The `classes/` and `functions/` wrappers disappear because this folder has only 
 | `cloudPilot/changes/deleteEC2/deleteEC2Handler.js` | `cloudPilot/remediations/deleteEC2/deleteEC2Handler.js` |
 | `cloudPilot/changes/updateEC2Tag/updateEC2TagHandler.js` | `cloudPilot/remediations/updateEC2Tag/updateEC2TagHandler.js` |
 | `cloudPilot/changes/strategies/automatic.js` | `cloudPilot/remediations/strategies/automatic.js` |
+| `cloudPilot/changes/strategies/cli.js` | `cloudPilot/remediations/strategies/cli.js` |
 | `cloudPilot/changes/strategies/instructions.js` | `cloudPilot/remediations/strategies/instructions.js` |
-| `cloudPilot/changes/strategies/cli.js` | `cloudPilot/remediations/strategies/cli/cli.js` |
-| `cloudPilot/changes/cli/cliTemplates.js` | `cloudPilot/remediations/strategies/cli/cliTemplates.js` |
-| `cloudPilot/changes/strategies/pr.js` | `cloudPilot/remediations/strategies/pr/pr.js` |
-| `cloudPilot/changes/pr/createToggleEc2PullRequest.js` | `cloudPilot/remediations/strategies/pr/createToggleEc2PullRequest.js` |
-| `cloudPilot/changes/pr/prTemplates.js` | `cloudPilot/remediations/strategies/pr/prTemplates.js` |
+| `cloudPilot/changes/strategies/pr.js` | `cloudPilot/remediations/strategies/pr.js` |
+| `cloudPilot/changes/cli/cliTemplates.js` | `cloudPilot/remediations/cli/cliTemplates.js` |
+| `cloudPilot/changes/pr/createToggleEc2PullRequest.js` | `cloudPilot/remediations/pr/createToggleEc2PullRequest.js` |
+| `cloudPilot/changes/pr/prTemplates.js` | `cloudPilot/remediations/pr/prTemplates.js` |
 
-CLI and PR helpers move beneath their strategies because they implement those delivery strategies rather than separate remediation capabilities.
-
-### 7.7 Services
-
-#### Scans
+### Services
 
 | Current | Target |
 |---|---|
-| `cloudPilot/scans/ec2/scanEC2Handler.js` | `cloudPilot/services/scans/ec2/scanEC2Handler.js` |
-| `cloudPilot/scans/ec2/atlasEC2Functions.js` | `cloudPilot/services/scans/ec2/atlasEC2Functions.js` |
 | `cloudPilot/scans/ec2/atlasEC2Formatter.js` | `cloudPilot/services/scans/ec2/atlasEC2Formatter.js` |
+| `cloudPilot/scans/ec2/atlasEC2Functions.js` | `cloudPilot/services/scans/ec2/atlasEC2Functions.js` |
 | `cloudPilot/scans/ec2/atlasEC2MessageBuilder.js` | `cloudPilot/services/scans/ec2/atlasEC2MessageBuilder.js` |
 | `cloudPilot/scans/ec2/atlasEC2ScanNavigatorAdapter.js` | `cloudPilot/services/scans/ec2/ec2ScanResponseAdapter.js` |
-| `cloudPilot/scans/s3/scanS3Handler.js` | `cloudPilot/services/scans/s3/scanS3Handler.js` |
-| `cloudPilot/scans/s3/atlasS3Functions.js` | `cloudPilot/services/scans/s3/atlasS3Functions.js` |
+| `cloudPilot/scans/ec2/scanEC2Handler.js` | `cloudPilot/services/scans/ec2/scanEC2Handler.js` |
 | `cloudPilot/scans/s3/atlasS3Formatter.js` | `cloudPilot/services/scans/s3/atlasS3Formatter.js` |
+| `cloudPilot/scans/s3/atlasS3Functions.js` | `cloudPilot/services/scans/s3/atlasS3Functions.js` |
 | `cloudPilot/scans/s3/atlasS3MessageBuilder.js` | `cloudPilot/services/scans/s3/atlasS3MessageBuilder.js` |
 | `cloudPilot/scans/s3/atlasS3ScanNavigatorAdapter.js` | `cloudPilot/services/scans/s3/s3ScanResponseAdapter.js` |
-
-`atlasEC2Functions.js` is a known mixed legacy shim: it exposes scan and remediation calls. Splitting it would be a logic refactor, so it stays intact under the EC2 scan service for this migration. Its consumers only receive corrected import paths.
-
-#### Billing
-
-| Current | Target |
-|---|---|
-| `cloudPilot/billing/billingAWSHandler.js` | `cloudPilot/services/billing/billingAWSHandler.js` |
-| `cloudPilot/billing/atlasBillingFunctions.js` | `cloudPilot/services/billing/atlasBillingFunctions.js` |
+| `cloudPilot/scans/s3/scanS3Handler.js` | `cloudPilot/services/scans/s3/scanS3Handler.js` |
 | `cloudPilot/billing/atlasAWSBillingMessage.js` | `cloudPilot/services/billing/atlasAWSBillingMessage.js` |
 | `cloudPilot/billing/atlasAWSBillingNavigator.js` | `cloudPilot/services/billing/billingResponseAdapter.js` |
-
-#### Inventory
-
-| Current | Target |
-|---|---|
-| `cloudPilot/inventory/inventoryAWSHandler.js` | `cloudPilot/services/inventory/inventoryAWSHandler.js` |
+| `cloudPilot/billing/atlasBillingFunctions.js` | `cloudPilot/services/billing/atlasBillingFunctions.js` |
+| `cloudPilot/billing/billingAWSHandler.js` | `cloudPilot/services/billing/billingAWSHandler.js` |
 | `cloudPilot/inventory/atlasAWSFunctions.js` | `cloudPilot/services/inventory/atlasAWSFunctions.js` |
 | `cloudPilot/inventory/atlasAWSInventoryFormatter.js` | `cloudPilot/services/inventory/atlasAWSInventoryFormatter.js` |
 | `cloudPilot/inventory/atlasAWSInventoryMessageBuilder.js` | `cloudPilot/services/inventory/atlasAWSInventoryMessageBuilder.js` |
 | `cloudPilot/inventory/atlasAWSInventoryNavigatorAdapter.js` | `cloudPilot/services/inventory/inventoryResponseAdapter.js` |
-
-Inventory remains a sibling of scans for this refactor. Moving it under scans is a possible later product decision, not required to establish the service boundary.
-
-#### AI usage
-
-| Current | Target |
-|---|---|
-| `cloudPilot/aiUsage/showAiUsageHandler.js` | `cloudPilot/services/aiUsage/showAiUsageHandler.js` |
+| `cloudPilot/inventory/inventoryAWSHandler.js` | `cloudPilot/services/inventory/inventoryAWSHandler.js` |
 | `cloudPilot/aiUsage/aiUsageMessageBuilder.js` | `cloudPilot/services/aiUsage/aiUsageMessageBuilder.js` |
+| `cloudPilot/aiUsage/showAiUsageHandler.js` | `cloudPilot/services/aiUsage/showAiUsageHandler.js` |
+| `cloudPilot/navigator/functions/navigatorFunctions.js` | `cloudPilot/chat/presentation/navigatorResponseFunctions.js` |
 
-### 7.8 Navigator removal
-
-| Current | Target | Reason |
-|---|---|---|
-| `cloudPilot/navigator/functions/navigatorFunctions.js` | `cloudPilot/chat/presentation/navigatorResponseFunctions.js` | Shared frontend response-shape construction |
-
-Feature-specific navigator files are renamed to response adapters in their owning service or history folder, as listed above and below.
-
-### 7.9 Execution
+### Execution
 
 | Current | Target |
 |---|---|
 | `cloudPilot/execution/AtlasExecution.js` | `cloudPilot/execution/AtlasExecution.js` |
-| `cloudPilot/execution/functions/runAction.js` | `cloudPilot/execution/runAction.js` |
 | `cloudPilot/execution/functions/executionFunctions.js` | `cloudPilot/execution/executionWorkflow.js` |
+| `cloudPilot/execution/functions/runAction.js` | `cloudPilot/execution/runAction.js` |
 | `cloudPilot/execution/outcomes/outcomeRegistry.js` | `cloudPilot/execution/outcomes/outcomeRegistry.js` |
 
-`executionFunctions.js` orchestrates STEP 6 rather than providing generic helpers, so `executionWorkflow.js` is the clearer name.
-
-### 7.10 History
+### History
 
 | Current | Target |
 |---|---|
@@ -529,33 +496,13 @@ Feature-specific navigator files are renamed to response adapters in their ownin
 | `cloudPilot/history/historyBuilders/toggleEc2History.js` | `cloudPilot/history/builders/toggleEc2History.js` |
 | `cloudPilot/history/historyNavigatorAdapter.js` | `cloudPilot/history/historyResponseAdapter.js` |
 
-History remains a first-class CloudPilot capability. Only generic wrapper folder names and the obsolete Navigator term disappear.
-
-### 7.11 Intelligence context
-
-These files stay where they are:
-
-```text
-cloudPilotIntelligence/context/buildContext.js
-cloudPilotIntelligence/context/buildSystemMessage.js
-cloudPilotIntelligence/context/classes/ConversationHistoryContext.js
-cloudPilotIntelligence/context/classes/CurrentQuestionContext.js
-cloudPilotIntelligence/context/contextTypes/cloudPilotContext.js
-cloudPilotIntelligence/context/contextTypes/cloudPilotSituationContext.js
-cloudPilotIntelligence/context/contextTypes/currentQuestionContext.js
-cloudPilotIntelligence/context/contextTypes/organizationKnowledgeContext.js
-```
-
-No context file moves to `providers/openAI/`.
-
 ---
 
-## 8. Import impact
+## 9. Import impact
 
-The migration must update every import that references these old concepts:
+All imports referencing these old locations must be updated:
 
 ```text
-cloudPilot/actionMap
 cloudPilot/cloudPilotMessageFunctions
 cloudPilot/conversation/**
 cloudPilot/decision/**
@@ -573,162 +520,146 @@ cloudPilot/history/functions/**
 cloudPilot/history/historyBuilders/**
 ```
 
-Known imports outside `cloudPilot/` that require updates include:
+Known callers outside `cloudPilot/`:
 
 - `application/atlas/logic/messages.js`
-- `application/atlas/functions/instructionFunctions.js`
+- `application/atlas/functions/instructionFunctions.js` only if action-map-relative imports change
 - `application/atlas/doc/testing/e2e-create-ec2.js`
 - `application/atlas/doc/testing/e2e-delete-ec2.js`
 
-Provider imports remain provider imports. This project does not move OpenAI, Atlas, or GitHub provider files.
+### Existing Intelligence imports
 
-### Circular-dependency caution
+CloudPilot files may continue importing the existing Intelligence context files exactly as needed after their own relative paths change.
 
-`config/actionMap.js` imports service and remediation handlers, while request, execution, history, and understanding modules import the action map.
+No import inside `cloudPilotIntelligence/` may be edited.
 
-The same dependency already exists today. Moving the file must preserve load order and exports exactly; this project must not attempt to redesign the registry.
+If moving a CloudPilot consumer would require editing an Intelligence source file, fix the CloudPilot-side location/import instead. Intelligence remains read-only.
 
 ---
 
-## 9. Migration phases
-
-Each phase is move/rename/import repair only. Stop after each phase and smoke-require the affected entry points.
+## 10. Migration phases
 
 ### Phase 0 — Baseline
 
-- [ ] Record the current JavaScript file inventory.
-- [ ] Confirm all current files are represented in this plan.
-- [ ] Smoke-require the current message pipeline and all action handlers.
-- [ ] Record existing internal and OpenAI configuration values without changing them.
+- [ ] Record all 75 current CloudPilot JavaScript paths.
+- [ ] Smoke-require the current message pipeline and every action handler.
+- [ ] Record existing Internal/OpenAI switch behavior without changing it.
 
-### Phase 1 — Create target folders
+### Phase 1 — Create CloudPilot target folders
 
-- [ ] Create the target `chat`, `requests`, `remediations`, `services`, and `config` structure.
-- [ ] Create `cloudPilotIntelligence/understand` and `respond` subfolders required by the map.
-- [ ] Do not add implementation files or new behavior.
+- [ ] Create `chat/`, `remediations/`, `services/`, and their mapped subfolders.
+- [ ] Create new request, execution, and history subfolders required by the map.
+- [ ] Do not create or edit anything under `cloudPilotIntelligence/`.
 
-### Phase 2 — Intelligence boundaries
+### Phase 2 — Chat and requests
 
-- [ ] Move `conversation/understand/**` to `cloudPilotIntelligence/understand/**`.
-- [ ] Move response production files to `cloudPilotIntelligence/respond/**`.
-- [ ] Fix context, provider, action-map, and chat imports.
-- [ ] Smoke internal region understanding.
-- [ ] Smoke the existing OpenAI region path without changing its switch.
-- [ ] Smoke deterministic request responses and the existing general-chat stub/OpenAI behavior.
+- [ ] Move `cloudPilotMessageFunctions.js` to `chat/processMessage.js`.
+- [ ] Move current conversation files to `chat/`.
+- [ ] Move current understanding files to `chat/understand/`.
+- [ ] Move request workflow and decision files into `requests/`.
+- [ ] Move request classes/functions as mapped.
+- [ ] Fix CloudPilot and external entry imports.
+- [ ] Smoke general chat and request lifecycle behavior.
+- [ ] Confirm Intelligence files are unchanged.
 
-### Phase 3 — Chat and requests
+### Phase 3 — Remediations
 
-- [ ] Move the message pipeline into `chat/processMessage.js`.
-- [ ] Move general/request chat routers into `chat/`.
-- [ ] Move request workflow out of `conversation/`.
-- [ ] Move `decision/**` into `requests/` with request-specific names.
-- [ ] Flatten request classes/functions as mapped.
-- [ ] Fix imports.
-- [ ] Smoke general chat, new request, continuation, missing fields, confirmation, cancel, status, and list-open behavior.
+- [ ] Rename/move `changes/` to `remediations/`.
+- [ ] Preserve handler, strategy, CLI, and PR behavior.
+- [ ] Fix action-map, chat, execution, provider, and helper imports.
+- [ ] Smoke toggle, create, delete, update tag, instructions, CLI, PR, and automatic paths.
 
-### Phase 4 — Remediations
-
-- [ ] Rename `changes/` to `remediations/`.
-- [ ] Group CLI and PR helpers beneath their strategies.
-- [ ] Fix action-map, request-chat, execution, provider, and helper imports.
-- [ ] Smoke toggle, create, delete, and update-tag handler loading.
-- [ ] Smoke instructions, CLI, PR, and automatic delivery strategies.
-
-### Phase 5 — Services and presentation
+### Phase 4 — Services and presentation
 
 - [ ] Move scans, billing, inventory, and AI usage beneath `services/`.
 - [ ] Move shared Navigator response helpers beneath `chat/presentation/`.
-- [ ] Rename feature Navigator adapters to Response adapters.
-- [ ] Fix handler, provider, presentation, and action-map imports.
-- [ ] Smoke EC2 scan, S3 scan, billing, inventory, and AI usage.
+- [ ] Rename Navigator adapters to Response adapters.
+- [ ] Fix service, history, execution, provider, and action-map imports.
+- [ ] Smoke EC2 scan, S3 scan, billing, inventory, AI usage, and history presentation.
 
-### Phase 6 — Execution, history, and config
+### Phase 5 — Execution and history
 
-- [ ] Flatten execution files and rename `executionFunctions.js` to `executionWorkflow.js`.
-- [ ] Flatten history files and group builders/undo files.
-- [ ] Rename the history Navigator adapter.
-- [ ] Move `actionMap.js` to `config/actionMap.js`.
+- [ ] Move/rename execution files as mapped.
+- [ ] Move/rename history files as mapped.
 - [ ] Fix all imports.
-- [ ] Smoke runAction, AtlasExecution, history listing, and undo.
+- [ ] Smoke runAction, AtlasExecution, outcome handling, history recording/listing, and undo.
 
-### Phase 7 — Remove obsolete folders and refresh docs
+### Phase 6 — Cleanup
 
 - [ ] Confirm `conversation/` is empty, then delete it.
 - [ ] Confirm `decision/` is empty, then delete it.
 - [ ] Confirm `changes/` is empty, then delete it.
 - [ ] Confirm top-level `scans/`, `billing/`, `inventory/`, `aiUsage/`, and `navigator/` are empty, then delete them.
-- [ ] Remove `cloudPilotIntelligence/.gitkeep`; the root is already populated.
-- [ ] Remove `.gitkeep` from `understand/` and `respond/` after they receive files.
-- [ ] Keep `.gitkeep` in the still-empty `explain/`, `generate/`, and `improve/` scaffolds.
-- [ ] Update Atlas README and architecture path references.
-- [ ] Search for stale old-path imports and documentation links.
-- [ ] Confirm every original JavaScript file exists at its mapped destination.
+- [ ] Search JavaScript and docs for stale old paths.
+- [ ] Refresh Atlas README and architecture path references.
+- [ ] Confirm all 75 CloudPilot JavaScript files exist at mapped destinations.
+- [ ] Confirm `cloudPilotIntelligence/` has no diff.
 
-### Phase 8 — Final verification and stop
+### Phase 7 — Final verification and stop
 
-- [ ] Smoke-require the message entry point.
+- [ ] Smoke-require the new chat entry.
 - [ ] Smoke-require every configured action handler.
 - [ ] Run available tests.
-- [ ] Verify internal and OpenAI switches behave exactly as before.
-- [ ] Verify no function signatures or exports changed.
-- [ ] Verify no database schema or query changed.
-- [ ] Verify no prompt or user-facing copy changed.
-- [ ] Mark this physical refactor complete.
-- [ ] **Stop before OpenAI toggle work.**
+- [ ] Verify exports and function signatures are unchanged.
+- [ ] Verify database behavior is unchanged.
+- [ ] Verify user-facing copy is unchanged.
+- [ ] Verify Internal/OpenAI behavior is unchanged.
+- [ ] Verify `cloudPilotIntelligence/` is untouched.
+- [ ] Mark Project A complete.
+- [ ] **Stop before Project B.**
 
 ---
 
-## 10. Verification matrix
+## 11. Verification matrix
 
 | Area | Minimum verification |
 |---|---|
-| Chat | General and request routing still return the same response shape |
-| Understanding | Action, conversation, reply, region, instance, name, and tag extraction still load and run |
-| Requests | New, continue, missing fields, execution-mode selection, confirmation, cancellation, status |
+| Chat | General and request routing return the same shape |
+| Understanding | Existing action, conversation, reply, region, instance, name, and tag extraction behave the same |
+| Requests | New, continue, missing fields, mode selection, confirmation, cancellation, status |
 | Remediations | Toggle, create, delete, update tag; instructions, CLI, PR, automatic |
 | Services | EC2 scan, S3 scan, billing, inventory, AI usage |
+| Presentation | Scan, billing, inventory, and history Navigator payloads remain unchanged |
 | Execution | Handler lookup, runAction, AtlasExecution, outcome registry |
-| History | Record, list, response adapter, undo registry |
-| Intelligence context | Context assembly, system message, current question, conversation history |
-| Configuration | Every action still resolves the same definition and handler |
-| OpenAI | Existing switches and behavior remain unchanged; no new calls added |
+| History | Record, list, response adapter, undo |
+| OpenAI | Existing switches and direct behavior remain unchanged |
+| Intelligence | No file changes and no new facade yet |
 
 ---
 
-## 11. Success criteria
+## 12. Success criteria
 
-The refactor is complete only when:
+Project A is complete only when:
 
-1. The target folder tree exists.
-2. Every original JavaScript file has one mapped destination.
-3. No obsolete top-level concept remains under `cloudPilot/`.
-4. `cloudPilot/` reads as work management.
-5. `cloudPilotIntelligence/` reads as thinking and communication.
-6. All old `require()` paths are gone.
-7. Existing smoke tests pass.
-8. Runtime behavior is unchanged.
-9. OpenAI behavior and switches are unchanged.
-10. The next project can address the OpenAI toggle without also moving folders.
+1. `cloudPilot/` has the target responsibility structure.
+2. Every original CloudPilot JavaScript file has one mapped destination.
+3. All 75 CloudPilot JavaScript files still exist.
+4. Obsolete CloudPilot top-level folders are gone.
+5. All stale old-path imports are gone.
+6. Existing runtime behavior passes smoke checks.
+7. No prompt, switch, query, export, or response contract changed.
+8. `cloudPilotIntelligence/` has no diff.
+9. CloudPilot is ready for the facade project without mixing that project into this refactor.
 
 ---
 
-## 12. Explicitly deferred work
+## 13. Explicitly deferred to Project B
 
-Do not include any of the following in this refactor:
+Do not perform any of this work during Project A:
 
-- finishing the OpenAI response toggle;
-- changing Internal versus OpenAI routing;
-- new AI prompts;
-- response-quality redesign;
-- moving inventory under scans;
-- splitting `atlasEC2Functions.js`;
-- replacing legacy Atlas helper shims;
-- splitting `actionMap.js` into multiple registries;
-- consolidating request helpers;
-- consolidating history builders;
-- creating new capability abstractions;
-- renaming public API response fields;
-- changing execution modes;
-- changing database tables or queries.
+- create the `CloudPilotIntelligence` facade;
+- move understanding into Intelligence;
+- move response code into Intelligence;
+- replace direct OpenAI calls;
+- finish Internal/OpenAI toggles;
+- add Claude, Gemini, hybrid, or other provider selection;
+- redesign prompts or responses;
+- split `CloudPilotMessage.js`;
+- split `searchMessageForRegion.js`;
+- split `actionMap.js`;
+- move inventory under scans;
+- split legacy Atlas helper files;
+- consolidate request or history helpers;
+- introduce new capability abstractions.
 
-These can be evaluated after the folder migration is complete and stable.
+Project B begins only after this folder migration is complete and verified.
