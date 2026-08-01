@@ -598,11 +598,11 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 
 ### Phase 4 — Cleanup empty CloudPilot folders
 
-- [ ] Confirm and delete empty: `conversation/`, `decision/`, `changes/`, top-level `scans/`, `billing/`, `inventory/`, `aiUsage/`, `navigator/`.
-- [ ] Search JavaScript for stale old-path imports.
-- [ ] Confirm all 75 CloudPilot JavaScript files exist at mapped destinations.
-- [ ] Confirm `cloudPilotIntelligence/` has no diff.
-- [ ] Commit. Stop.
+- [x] Confirm and delete empty: `conversation/`, `decision/`, `changes/`, top-level `scans/`, `billing/`, `inventory/`, `aiUsage/`, `navigator/`.
+- [x] Search JavaScript for stale old-path imports.
+- [x] Confirm all 75 CloudPilot JavaScript files exist at mapped destinations.
+- [x] Confirm `cloudPilotIntelligence/` has no diff.
+- [x] Commit. Stop.
 
 ### Phase 5 — Documentation (after code is stable)
 
