@@ -1,5 +1,5 @@
-const RequestFunctions = require('../../requests/functions/requestFunctions');
-const ExecutionFunctions = require('../../execution/functions/executionFunctions');
+const RequestFunctions = require('./functions/requestFunctions');
+const ExecutionFunctions = require('../execution/functions/executionFunctions');
 
 /*
 Request Conversation — workflow (STEP 5–6)

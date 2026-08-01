@@ -1,5 +1,5 @@
 const CloudPilotMessage = require('../CloudPilotMessage');
-const { CHAT_TYPE } = require('../../decision/decisionTypes');
+const { CHAT_TYPE } = require('../../requests/decisionTypes');
 
 /*
 General Conversation — speak (entire non-request turn after STEP 4)

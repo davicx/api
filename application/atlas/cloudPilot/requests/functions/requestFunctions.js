@@ -1,7 +1,7 @@
 const actionMap = require('../../actionMap');
 const Request = require('../classes/Request');
 const RequestStateFunctions = require('./requestLoadFunctions');
-const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
+const { RESPONSE_TYPE } = require('../decisionTypes');
 
 /*
 FUNCTIONS A: Apply STEP 4 decision to the database (STEP 5)

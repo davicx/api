@@ -1,4 +1,4 @@
-const { CHAT_TYPE } = require('../decision/decisionTypes');
+const { CHAT_TYPE } = require('../requests/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
 const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');

@@ -1,11 +1,11 @@
-const openAIFunctions = require('../providers/openAI/client/openAIClient');
-const RequestStateFunctions = require('./requests/functions/requestLoadFunctions');
-const UnderstandingFunctions = require('./conversation/understand/understandMessage');
-const DecisionFunctions = require('./decision/decideNextStep');
-const RequestWorkflow = require('./conversation/request/workflow');
-const GeneralConversation = require('./conversation/general/GeneralConversation');
-const RequestConversation = require('./conversation/request/RequestConversation');
-const HistoryFunctions = require('./history/functions/historyFunctions');
+const openAIFunctions = require('../../providers/openAI/client/openAIClient');
+const RequestStateFunctions = require('../requests/functions/requestLoadFunctions');
+const UnderstandingFunctions = require('./understand/understandMessage');
+const DecisionFunctions = require('../requests/decideNextStep');
+const RequestWorkflow = require('../requests/workflow');
+const GeneralConversation = require('./general/GeneralConversation');
+const RequestConversation = require('./request/RequestConversation');
+const HistoryFunctions = require('../history/functions/historyFunctions');
 
 /*
 CloudPilot Message Pipeline (processMessage)

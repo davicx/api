@@ -3,7 +3,7 @@ const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const UndoFunctions = require('../../history/functions/undoFunctions');
 const AutomaticStrategy = require('../../changes/strategies/automatic');
-const { RESPONSE_TYPE } = require('../../decision/decisionTypes');
+const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 
 /*
 What this file answers:

@@ -1,5 +1,5 @@
 const actionMap = require('../actionMap');
-const ActionStatusFunctions = require('../requests/functions/requestStatusFunctions');
+const ActionStatusFunctions = require('./functions/requestStatusFunctions');
 const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
 
 /*
