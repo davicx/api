@@ -1,4 +1,4 @@
-const AiUsage = require('../../providers/openAI/usage/AiUsage');
+const AiUsage = require('../../../providers/openAI/usage/AiUsage');
 const AiUsageMessageBuilder = require('./aiUsageMessageBuilder');
 
 /*

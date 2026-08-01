@@ -1,4 +1,4 @@
-const GetBillingSummaryFunctions = require('../../providers/atlas/billing/getBillingSummary');
+const GetBillingSummaryFunctions = require('../../../providers/atlas/billing/getBillingSummary');
 
 /*
 FUNCTIONS A: Atlas billing HTTP

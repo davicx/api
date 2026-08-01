@@ -1,12 +1,12 @@
-const scanEC2Handler = require('./scans/ec2/scanEC2Handler');
-const scanS3Handler = require('./scans/s3/scanS3Handler');
+const scanEC2Handler = require('./services/scans/ec2/scanEC2Handler');
+const scanS3Handler = require('./services/scans/s3/scanS3Handler');
 const toggleEC2Handler = require('./remediations/toggleEC2/toggleEC2Handler');
 const createEC2Handler = require('./remediations/createEC2/createEC2Handler');
 const deleteEC2Handler = require('./remediations/deleteEC2/deleteEC2Handler');
 const updateEC2TagHandler = require('./remediations/updateEC2Tag/updateEC2TagHandler');
-const inventoryAWSHandler = require('./inventory/inventoryAWSHandler');
-const billingAWSHandler = require('./billing/billingAWSHandler');
-const showAiUsageHandler = require('./aiUsage/showAiUsageHandler');
+const inventoryAWSHandler = require('./services/inventory/inventoryAWSHandler');
+const billingAWSHandler = require('./services/billing/billingAWSHandler');
+const showAiUsageHandler = require('./services/aiUsage/showAiUsageHandler');
 
 /*
 What this file answers:

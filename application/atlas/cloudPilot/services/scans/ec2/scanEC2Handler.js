@@ -1,8 +1,8 @@
-const ScanEC2Functions = require('../../../providers/atlas/ec2/scanEC2');
+const ScanEC2Functions = require('../../../../providers/atlas/ec2/scanEC2');
 const atlasEC2Formatter = require('./atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./atlasEC2MessageBuilder');
 const atlasEC2ScanNavigatorAdapter = require('./atlasEC2ScanNavigatorAdapter');
-const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../execution/outcomes/outcomeRegistry');
+const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../../execution/outcomes/outcomeRegistry');
 
 async function scanEC2Handler(context) {
 

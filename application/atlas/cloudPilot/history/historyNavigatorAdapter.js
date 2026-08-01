@@ -1,5 +1,4 @@
-const navigatorResponseFunctions = require('../navigator/functions/navigatorFunctions');
-const AtlasTimeFunctions = require('../../functions/atlasTimeFunctions');
+const navigatorResponseFunctions = require('../chat/presentation/navigatorFunctions');const AtlasTimeFunctions = require('../../functions/atlasTimeFunctions');
 
 /*
 FUNCTIONS A: Change history Navigator data

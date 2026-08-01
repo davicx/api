@@ -588,13 +588,13 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 
 ### Phase 3 — Services + presentation helper
 
-- [ ] Move scans, billing, inventory, and AI usage beneath `services/`.
-- [ ] Move `navigator/functions/navigatorFunctions.js` to `chat/presentation/navigatorFunctions.js`.
-- [ ] Keep all `*NavigatorAdapter.js` filenames.
-- [ ] Fix imports.
-- [ ] Smoke EC2 scan, S3 scan, billing, inventory, AI usage, history presentation.
-- [ ] Confirm Intelligence untouched.
-- [ ] Commit. Stop.
+- [x] Move scans, billing, inventory, and AI usage beneath `services/`.
+- [x] Move `navigator/functions/navigatorFunctions.js` to `chat/presentation/navigatorFunctions.js`.
+- [x] Keep all `*NavigatorAdapter.js` filenames.
+- [x] Fix imports.
+- [x] Smoke EC2 scan, S3 scan, billing, inventory, AI usage, history presentation.
+- [x] Confirm Intelligence untouched.
+- [x] Commit. Stop.
 
 ### Phase 4 — Cleanup empty CloudPilot folders
 
