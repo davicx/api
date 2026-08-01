@@ -2,9 +2,9 @@ const actionMap = require('../../actionMap');
 const CloudPilotMessage = require('../CloudPilotMessage');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
-const InstructionsStrategy = require('../../changes/strategies/instructions');
-const CliStrategy = require('../../changes/strategies/cli');
-const PrStrategy = require('../../changes/strategies/pr');
+const InstructionsStrategy = require('../../remediations/strategies/instructions');
+const CliStrategy = require('../../remediations/strategies/cli');
+const PrStrategy = require('../../remediations/strategies/pr');
 
 /*
 Request Conversation — speak (STEP 7 only)

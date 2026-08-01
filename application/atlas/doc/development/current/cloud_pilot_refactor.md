@@ -580,11 +580,11 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 
 ### Phase 2 — Remediations
 
-- [ ] Move/rename folder `changes/` → `remediations/` (same internal filenames).
-- [ ] Fix action-map, chat, execution, provider, and helper imports.
-- [ ] Smoke toggle, create, delete, update tag, instructions, CLI, PR, automatic.
-- [ ] Confirm Intelligence untouched.
-- [ ] Commit. Stop.
+- [x] Move/rename folder `changes/` → `remediations/` (same internal filenames).
+- [x] Fix action-map, chat, execution, provider, and helper imports.
+- [x] Smoke toggle, create, delete, update tag, instructions, CLI, PR, automatic.
+- [x] Confirm Intelligence untouched.
+- [x] Commit. Stop.
 
 ### Phase 3 — Services + presentation helper
 
