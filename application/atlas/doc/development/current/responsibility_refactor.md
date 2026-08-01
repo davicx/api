@@ -1,10 +1,11 @@
 # CloudPilot Architecture Refactor — Final Plan
 
-**Status:** Phase 1 done · Phase 2 **code complete** · **STOP — await Phase 3 approval**  
+**Status:** Superseded for remaining CloudPilot folder work  
+**Source of truth:** [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) (Project A complete)  
 **Nature of work:** Move / rename folders & files + fix `require()` paths. **Do not rewrite logic.**  
-**Last reviewed:** 2026-07-31
+**Last reviewed:** 2026-08-01
 
-**Related:** [code_cleanup.md](../architecture/code_cleanup.md) (STEPS 1–7 still valid) · [current.md](./current.md) (product AI — after moves) · [README.md](../../../README.md)
+**Related:** [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) · [code_cleanup.md](../architecture/code_cleanup.md) · [current.md](./current.md) · [README.md](../../../README.md)
 
 ---
 

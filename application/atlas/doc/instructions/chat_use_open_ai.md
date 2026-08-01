@@ -1,8 +1,8 @@
 # How to: Chat use OpenAI (`MESSAGE_RESPONSE`)
 
 **Mimic Region Search exactly.**  
-Reference implementation: `cloudPilot/conversation/understand/search/searchMessageForRegion.js`  
-Chat target: `cloudPilot/conversation/CloudPilotMessage.js` → `speakGeneral`
+Reference implementation: `cloudPilot/chat/understand/search/searchMessageForRegion.js`  
+Chat target: `cloudPilot/chat/CloudPilotMessage.js` → `speakGeneral`
 
 **Related:** [sample_env.md](../sample_env.md) · [current_development.md](../development/current/current.md) · `config/cloudPilotAIConfig.js`
 
@@ -143,7 +143,7 @@ if (useOpenAIMessageResponse) {
 
 | Piece | Path |
 |-------|------|
-| Gateway + Internal + OpenAI | `cloudPilot/conversation/understand/search/searchMessageForRegion.js` |
+| Gateway + Internal + OpenAI | `cloudPilot/chat/understand/search/searchMessageForRegion.js` |
 | Called from | `searchMessageForValues.js` → `understandMessage.js` → STEP 3 |
 | Situation piece | `ai/context/contextTypes/cloudPilotSituationContext.js` → `region` |
 | Context assemble | `ai/context/buildContext.js` with `situationTypes: ['region']`, `includeKnowledge: false` |
@@ -155,7 +155,7 @@ if (useOpenAIMessageResponse) {
 
 | Piece | Path |
 |-------|------|
-| Gateway | `cloudPilot/conversation/CloudPilotMessage.js` → `speakGeneral` |
+| Gateway | `cloudPilot/chat/CloudPilotMessage.js` → `speakGeneral` |
 | Called from | General Conversation after STEP 4 |
 | Context | `buildAIContext(context)` (default; no region situationTypes) |
 | System message | `buildAISystemMessage(aiContext)` |

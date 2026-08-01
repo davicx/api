@@ -1,6 +1,6 @@
 # CloudPilot Folder Refactor
 
-**Status:** Planning only — no runtime files moved yet
+**Status:** Project A code complete — documentation updated
 **Scope:** `application/atlas/cloudPilot/` only
 **Work type:** Move folders/files, fix `require()` paths, verify unchanged behavior
 **Last updated:** 2026-08-01
@@ -152,10 +152,9 @@ cloudPilot/
 │   ├── cli/
 │   └── pr/
 │
-├── services/                 # Read-only capabilities
-│   ├── scans/
-│   │   ├── ec2/
-│   │   └── s3/
+├── scans/                    # Read-only capabilities
+│   ├── ec2/
+│   ├── s3/
 │   ├── billing/
 │   ├── inventory/
 │   └── aiUsage/
@@ -245,7 +244,7 @@ Project B will place those implementations behind the facade. Do not mix that wo
 | `chat/` | Owns the current user-facing chat pipeline and conversation flow. | Yes |
 | `requests/` | Owns the lifecycle, state, and next step of in-flight work. | Yes |
 | `remediations/` | Owns infrastructure-changing actions and their delivery strategies. | Yes |
-| `services/` | Owns read-oriented information and analysis capabilities. | Yes |
+| `scans/` | Owns read-oriented information and analysis capabilities (scans, billing, inventory, AI usage). | Yes |
 | `execution/` | Runs work CloudPilot has approved. | Yes |
 | `history/` | Records what CloudPilot changed and performs supported undo operations. | Yes |
 
@@ -268,10 +267,10 @@ The shared helper moves beneath `chat/presentation/` and **keeps its filename** 
 | `conversation/` | Split into `chat/` (+ temporary `chat/understand/`) and `requests/workflow.js` | Mixes chat, understanding, and request workflow |
 | `decision/` | Absorb into `requests/` | Answers what the current request should do next |
 | `changes/` | Rename folder to `remediations/` | Owns infrastructure remediations |
-| `scans/` | Move under `services/` | Read-oriented |
-| `billing/` | Move under `services/` | Read-oriented |
-| `inventory/` | Move under `services/` | Read-oriented |
-| `aiUsage/` | Move under `services/` | Read-oriented |
+| `scans/` | Keep as top-level (holds ec2/s3/billing/inventory/aiUsage) | Read-oriented |
+| `billing/` | Move under `scans/` | Read-oriented |
+| `inventory/` | Move under `scans/` | Read-oriented |
+| `aiUsage/` | Move under `scans/` | Read-oriented |
 | `navigator/` | Move shared helper under `chat/presentation/` | Not a first-class capability |
 | `execution/` | Keep | Clear responsibility |
 | `history/` | Keep internal layout | Clear responsibility |
@@ -394,20 +393,19 @@ cloudPilot/
 │       ├── createToggleEc2PullRequest.js
 │       └── prTemplates.js
 │
-├── services/
-│   ├── scans/
-│   │   ├── ec2/
-│   │   │   ├── atlasEC2Formatter.js
-│   │   │   ├── atlasEC2Functions.js
-│   │   │   ├── atlasEC2MessageBuilder.js
-│   │   │   ├── atlasEC2ScanNavigatorAdapter.js
-│   │   │   └── scanEC2Handler.js
-│   │   └── s3/
-│   │       ├── atlasS3Formatter.js
-│   │       ├── atlasS3Functions.js
-│   │       ├── atlasS3MessageBuilder.js
-│   │       ├── atlasS3ScanNavigatorAdapter.js
-│   │       └── scanS3Handler.js
+├── scans/
+│   ├── ec2/
+│   │   ├── atlasEC2Formatter.js
+│   │   ├── atlasEC2Functions.js
+│   │   ├── atlasEC2MessageBuilder.js
+│   │   ├── atlasEC2ScanNavigatorAdapter.js
+│   │   └── scanEC2Handler.js
+│   ├── s3/
+│   │   ├── atlasS3Formatter.js
+│   │   ├── atlasS3Functions.js
+│   │   ├── atlasS3MessageBuilder.js
+│   │   ├── atlasS3ScanNavigatorAdapter.js
+│   │   └── scanS3Handler.js
 │   ├── billing/
 │   │   ├── atlasAWSBillingMessage.js
 │   │   ├── atlasAWSBillingNavigator.js
@@ -499,15 +497,17 @@ Filenames are preserved. Only folder locations change.
 |---|---|
 | `cloudPilot/changes/**` | `cloudPilot/remediations/**` (same internal filenames and layout) |
 
-### Services
+### Scans (read-oriented capabilities)
 
 | Current | Target |
 |---|---|
-| `cloudPilot/scans/**` | `cloudPilot/services/scans/**` |
-| `cloudPilot/billing/**` | `cloudPilot/services/billing/**` |
-| `cloudPilot/inventory/**` | `cloudPilot/services/inventory/**` |
-| `cloudPilot/aiUsage/**` | `cloudPilot/services/aiUsage/**` |
+| `cloudPilot/scans/**` | `cloudPilot/scans/{ec2,s3}/` (same package names) |
+| `cloudPilot/billing/**` | `cloudPilot/scans/billing/**` |
+| `cloudPilot/inventory/**` | `cloudPilot/scans/inventory/**` |
+| `cloudPilot/aiUsage/**` | `cloudPilot/scans/aiUsage/**` |
 | `cloudPilot/navigator/functions/navigatorFunctions.js` | `cloudPilot/chat/presentation/navigatorFunctions.js` |
+
+Note: An intermediate `services/` folder was used briefly, then renamed to `scans/` and nested `scans/scans/` was flattened.
 
 ### Execution and history
 
@@ -586,9 +586,11 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 - [x] Confirm Intelligence untouched.
 - [x] Commit. Stop.
 
-### Phase 3 — Services + presentation helper
+### Phase 3 — Read-only capabilities + presentation helper
 
-- [x] Move scans, billing, inventory, and AI usage beneath `services/`.
+Originally staged under an intermediate `services/` folder; later renamed to top-level `scans/` (see post-Phase-4 adjustment).
+
+- [x] Move billing, inventory, and AI usage under `scans/` (with ec2/s3).
 - [x] Move `navigator/functions/navigatorFunctions.js` to `chat/presentation/navigatorFunctions.js`.
 - [x] Keep all `*NavigatorAdapter.js` filenames.
 - [x] Fix imports.
@@ -606,11 +608,15 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 
 ### Phase 5 — Documentation (after code is stable)
 
-- [ ] Update Atlas README.
-- [ ] Update architecture / current development path references.
-- [ ] Remove obsolete folder references.
-- [ ] Mark Project A complete.
-- [ ] **Stop before Project B.**
+- [x] Update Atlas README.
+- [x] Update architecture / current development path references.
+- [x] Remove obsolete folder references.
+- [x] Mark Project A complete.
+- [x] **Stop before Project B.**
+
+### Post-Phase-4 adjustment
+
+- [x] Rename intermediate `services/` folder to `scans/` and flatten nested scan packages.
 
 ---
 
@@ -622,7 +628,7 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 | Understanding | Existing extractors behave the same from `chat/understand/` |
 | Requests | New, continue, missing fields, mode selection, confirmation, cancellation, status |
 | Remediations | Toggle, create, delete, update tag; instructions, CLI, PR, automatic |
-| Services | EC2 scan, S3 scan, billing, inventory, AI usage |
+| Scans | EC2 scan, S3 scan, billing, inventory, AI usage |
 | Presentation | Navigator payloads remain unchanged |
 | Execution | Handler lookup, runAction, AtlasExecution, outcome registry |
 | History | Record, list, navigator adapter, undo |
@@ -635,7 +641,7 @@ Stop after every phase: move → fix imports → smoke → commit → continue.
 
 Project A is complete only when:
 
-1. `cloudPilot/` has the target responsibility structure.
+1. `cloudPilot/` has the target responsibility structure (`chat`, `requests`, `remediations`, `scans`, `execution`, `history`).
 2. Every original CloudPilot JavaScript file has one mapped destination.
 3. All 75 CloudPilot JavaScript files still exist with their original filenames.
 4. Obsolete CloudPilot top-level folders are gone.
@@ -665,7 +671,6 @@ Do not perform any of this work during Project A:
 - rename `cloudPilotMessageFunctions.js` or `executionFunctions.js`;
 - split `CloudPilotMessage.js` or `searchMessageForRegion.js`;
 - split `actionMap.js`;
-- move inventory under scans;
 - split legacy Atlas helper files;
 - consolidate request or history helpers;
 - introduce new capability abstractions.

@@ -2,22 +2,27 @@
 
 ## Project restructure
 
-**Final plan (no code yet):**  
-[doc/development/current/responsibility_refactor.md](./doc/development/current/responsibility_refactor.md)
+**Folder refactor plan (Project A complete):**
+[doc/development/current/cloud_pilot_refactor.md](./doc/development/current/cloud_pilot_refactor.md)
 
 ```text
 routes/  logic/  functions/  config/
 
 cloudPilot/
-  decision/  conversation/  requests/  execution/  history/
-  changes/  scans/  billing/  inventory/  aiUsage/  navigator/
-  actionMap.js  cloudPilotMessageFunctions.js
+  actionMap.js
+  chat/            # user interaction (+ temporary understand/)
+  requests/        # request lifecycle + decideNextStep
+  remediations/    # infrastructure changes + strategies
+  scans/           # ec2, s3, billing, inventory, aiUsage
+  execution/
+  history/
 
-cloudPilotIntelligence/
+cloudPilotIntelligence/   # untouched in Project A; facade later
+  context/
   understand/  respond/  explain/  improve/  generate/
 
 providers/
-  atlas/  openAI/{client,context,usage}/  aws/  github/  gmail/
+  atlas/  openAI/{client,usage}/  aws/  github/  gmail/
 ```
 
 ---
@@ -64,34 +69,30 @@ api/application/atlas/
 
 ├── README.md
 │
-├── cloudPilot/            // Workflow brain (STEPS 1–7)
-│   ├── cloudPilotMessageFunctions.js   // pipeline entry
-│   ├── conversation/      // understand, general, request, speak
-│   ├── decision/          // decideNextStep
-│   ├── requests/          // open request state
-│   ├── execution/         // run approved actions
-│   ├── history/           // what happened + undo
-│   └── changes/           // delivery strategies (instructions / CLI / PR / automatic)
+├── cloudPilot/                 // What CloudPilot does (STEPS 1–7)
+│   ├── actionMap.js
+│   ├── chat/                   // pipeline entry, speak, templates, temporary understand/
+│   ├── requests/               // request state + decideNextStep + workflow
+│   ├── remediations/           // mutating handlers + strategies
+│   ├── scans/                  // ec2, s3, billing, inventory, aiUsage
+│   ├── execution/
+│   └── history/
 │
-├── aws/                   // What CloudPilot CAN DO on AWS
-│   ├── capabilities/      // billing, changes, inventory, scans
-│   └── atlasClient/       // HTTP boundary to Python Atlas API
+├── cloudPilotIntelligence/     // How CloudPilot thinks (context live; facade later)
+│   └── context/
 │
-├── ai/                    // Shared AI / OpenAI machinery
-│   ├── client/            // openAIClient.js
-│   ├── context/           // buildContext, buildSystemMessage, types, classes
-│   └── usage/             // AiUsage, saveAiUsage, calculateOpenAICost
+├── providers/                  // External systems
+│   ├── atlas/
+│   ├── openAI/{client,usage}/
+│   ├── github/
+│   ├── aws/                    // empty scaffold
+│   └── gmail/                  // empty scaffold
 │
-├── config/                // cloudPilotAIConfig, chatGPT, github
-├── logic/                 // HTTP logic (messages, aiUsage, todo, instructions)
-├── routes/                // Express routes
-├── functions/             // Atlas-local helpers/classes (ToDo, Instruction)
-│
-├── services/              // Intentionally kept for now
-│   ├── actions/           // actionMap + handlers
-│   └── navigator/         // navigatorFunctions
-│
-└── doc/                   // planning + sample_env + SQL (not runtime)
+├── config/
+├── logic/
+├── routes/
+├── functions/
+└── doc/
 ```
 
 Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `doc/` — this file is **code layout only**.
@@ -146,12 +147,12 @@ Full model: [code_cleanup.md § Request types and change strategies](./doc/devel
 
 | Layer | Question | Location |
 |-------|----------|----------|
-| **Conversation** | What are we trying to accomplish? | `cloudPilot/conversation/` |
-| **Workflow** | What needs to happen? | `cloudPilot/conversation/request/workflow.js` |
+| **Chat** | What are we trying to accomplish? | `cloudPilot/chat/` |
+| **Workflow** | What needs to happen? | `cloudPilot/requests/workflow.js` |
 | **Capabilities** | How? | `aws/capabilities/` |
 | **Atlas** | Where? | `aws/atlasClient/atlasPost.js` |
 
-**Entry:** `logic/messages.js` → `cloudPilot/cloudPilotMessageFunctions.js` (`processMessage`)
+**Entry:** `logic/messages.js` → `cloudPilot/chat/cloudPilotMessageFunctions.js` (`processMessage`)
 
 ---
 
@@ -159,13 +160,12 @@ Full model: [code_cleanup.md § Request types and change strategies](./doc/devel
 
 | Folder | Role |
 |--------|------|
-| `cloudPilot/` | Workflow brain — STEPS 1–7, conversation, decision, requests, execution, history, changes |
+| `cloudPilot/` | Workflow brain — STEPS 1–7 (`chat`, `requests`, `remediations`, `scans`, `execution`, `history`) |
 | `aws/` | Thin HOW / WHERE — capabilities + Atlas HTTP client |
 | `ai/` | Shared OpenAI client, context builders, usage |
 | `config/` | Chat / OpenAI flags + GitHub client |
 | `logic/` | HTTP handlers (`messages`, `aiUsage`, `todo`, `instructions`) |
 | `routes/` | Express route definitions |
-| `services/` | Leftovers — `actions/` (actionMap + handlers), `navigator/` |
 | `functions/` | Shared helpers + ToDo / Instruction DB classes (non-pipeline) |
 | `doc/` | Planning and reference docs (not runtime) |
 
@@ -173,23 +173,17 @@ Full model: [code_cleanup.md § Request types and change strategies](./doc/devel
 
 ## `cloudPilot/` — orchestration (by pipeline step)
 
-Orchestrator: `cloudPilot/cloudPilotMessageFunctions.js` — STEPS 1–7 (`processMessage`).
+Orchestrator: `cloudPilot/chat/cloudPilotMessageFunctions.js` — STEPS 1–7 (`processMessage`).
 
 | Folder | Role | Pipeline step |
 |--------|------|----------------|
-| `conversation/` | Understand + General / Request + CloudPilotMessage | STEP 3 / STEP 4 exit / STEP 7 |
-| `decision/` | Decide which conversation | **STEP 4** |
-| `requests/` | Request state persistence | **STEP 2**, **STEP 5** |
+| `chat/` | Pipeline entry, speak, templates, temporary `understand/` | STEP 1–3 / STEP 4 exit / STEP 7 |
+| `requests/` | Request state + `decideNextStep` + workflow | **STEP 2**, **STEP 4**, **STEP 5** |
 | `execution/` | Perform work (Request Conversation) | **STEP 6** |
 | `history/` | Change history + undo | **STEP 6B** |
-| `changes/` | Strategies 1–4 + CLI/PR helpers | STEP 6 (automatic) / STEP 7 (1–3) |
-
-**Still under `services/`**
-
-| Folder | Role | Pipeline step |
-|--------|------|----------------|
-| `actions/` | Action registry + handlers | Handlers at STEP 6 |
-| `navigator/` | Navigator / dashboard shaping | Response shaping |
+| `remediations/` | Mutating handlers + strategies 1–4 + CLI/PR | STEP 6 / STEP 7 |
+| `scans/` | Read-only handlers (ec2, s3, billing, inventory, aiUsage) | STEP 6 |
+| `chat/presentation/` | Navigator / dashboard shaping | Response shaping |
 
 **Also:** `ai/` (context / usage / OpenAI), `config/` (chat + GitHub).
 
@@ -197,8 +191,8 @@ Orchestrator: `cloudPilot/cloudPilotMessageFunctions.js` — STEPS 1–7 (`proce
 
 | Area | Role |
 |------|------|
-| `cloudPilot/conversation/` | Conversation systems + CloudPilotMessage (speak) + templates |
-| `cloudPilot/changes/strategies/` | How mutating actions apply (modes 1–4) |
+| `cloudPilot/chat/` | Conversation systems + CloudPilotMessage (speak) + templates |
+| `cloudPilot/remediations/strategies/` | How mutating actions apply (modes 1–4) |
 | `ai/*` | LLM vendor SDKs + context — implementation only |
 | `cloudPilot/execution/outcomes/` | Handler execution outcome copy |
 
@@ -207,7 +201,7 @@ Orchestrator: `cloudPilot/cloudPilotMessageFunctions.js` — STEPS 1–7 (`proce
 ### Pipeline flow
 
 ```text
-cloudPilot/cloudPilotMessageFunctions.js
+cloudPilot/chat/cloudPilotMessageFunctions.js
   STEP 1–4  normalize → load → understand → decide
 
   General Conversation? → GeneralConversation → CloudPilotMessage → return
@@ -223,7 +217,7 @@ Change strategies apply only to **change** actions (`actionTier: destructive` wi
 
 ## `aws/capabilities/` — HOW / WHERE
 
-Thin functions that call Atlas — one entry point per product action. Handlers in `services/actions/` import from here for HOW.
+Thin functions that call Atlas — one entry point per product action. Handlers under `cloudPilot/scans/` and `cloudPilot/remediations/` import from here for HOW.
 
 ```text
 aws/
@@ -248,7 +242,7 @@ aws/
 
 - Capabilities return structured results — no request rows, no chat copy, no history inserts.
 - `saveHistory()` stays in `cloudPilot/execution/functions/executionFunctions.js` (STEP 6B).
-- Handlers stay in `services/actions/`; they delegate here for HOW.
+- Handlers stay in `cloudPilot/scans/` and `cloudPilot/remediations/`; they delegate here for HOW.
 
 ---
 
@@ -459,7 +453,7 @@ api/application/atlas/
 |------|----------------|
 | `aws/atlasClient/atlasPost.js` | Posts JSON to Atlas HTTP routes. |
 | `aws/capabilities/changes/changeEC2.js` | Thin entry for EC2 create, delete, and toggle. |
-| `cloudPilot/conversation/general/generalChat.js` | Capability wrapper for general chat (stub). |
+| `cloudPilot/chat/general/generalChat.js` | Capability wrapper for general chat (stub). |
 | `aws/capabilities/inventory/getAllResources.js` | Thin entry for full AWS inventory. |
 | `aws/capabilities/billing/getBillingSummary.js` | Thin entry for AWS billing summary. |
 | `aws/capabilities/scans/scanEC2.js` | Thin entry for EC2 scan. |
@@ -469,7 +463,7 @@ api/application/atlas/
 
 | File | What it does |
 |------|----------------|
-| `cloudPilot/cloudPilotMessageFunctions.js` | Runs STEPS 1–7 for every user message (`processMessage`). |
+| `cloudPilot/chat/cloudPilotMessageFunctions.js` | Runs STEPS 1–7 for every user message (`processMessage`). |
 
 ### Actions (`services/actions/`)
 
@@ -510,7 +504,7 @@ api/application/atlas/
 | `saveAiUsage.js` | Map OpenAI `usage` → cost → insert (never fails chat). |
 | `calculateOpenAICost.js` | Estimated USD from model + tokens. |
 
-### Conversation (`cloudPilot/conversation/`)
+### Chat (`cloudPilot/chat/`)
 
 | File | What it does |
 |------|----------------|
@@ -522,7 +516,7 @@ api/application/atlas/
 | `request/RequestConversation.js` | Request speak routing. |
 | `request/workflow.js` | Thin STEP 5 (`store`) and STEP 6 (`execute`) passthrough. |
 
-### Change (`cloudPilot/changes/`)
+### Remediations (`cloudPilot/remediations/`)
 
 | File | What it does |
 |------|----------------|
@@ -556,7 +550,7 @@ api/application/atlas/
 | `config/cloudPilotAIConfig.js` | Master AI switch, feature implementations, history, logging. |
 | `config/github/githubClient.js` | GitHub API for PR strategy. |
 
-### Decision (`cloudPilot/decision/`)
+### Requests / decision (`cloudPilot/requests/`)
 
 | File | What it does |
 |------|----------------|
@@ -603,7 +597,7 @@ api/application/atlas/
 | `functions/requestNameFunctions.js` | Request display / internal naming. |
 | `functions/requestStatusFunctions.js` | Rules for `waiting_on_fields`, confirmation, etc. |
 
-### Understanding (`cloudPilot/conversation/understand/`)
+### Understanding (`cloudPilot/chat/understand/`)  # temporary; facade later
 
 | File | What it does |
 |------|----------------|
@@ -626,18 +620,18 @@ api/application/atlas/
 ```text
 routes/messageRoutes.js
   → logic/messages.js
-  → cloudPilot/cloudPilotMessageFunctions.processMessage()
+  → cloudPilot/chat/cloudPilotMessageFunctions.processMessage()
        STEP 1  normalize
        STEP 2  load request
-       STEP 3  understand
-       STEP 4  decide
+       STEP 3  understand                         (chat/understand/ — temporary)
+       STEP 4  decide                             (requests/)
 
        General Conversation?
            → GeneralConversation → CloudPilotMessage  → return
 
        STEP 5  Request Conversation — maintain state   (requests/)
-       STEP 6  Request Conversation — perform work    (executions/)
-       STEP 7  Request Conversation — speak           (RequestConversation → CloudPilotMessage)
+       STEP 6  Request Conversation — perform work    (execution/)
+       STEP 7  Request Conversation — speak           (chat/request/ → CloudPilotMessage)
 ```
 
 ---

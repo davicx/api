@@ -66,7 +66,7 @@ History transport settings (not feature switches):
 
 | Piece | Location |
 |-------|----------|
-| Gateway + Internal + OpenAI | `cloudPilot/conversation/understand/search/searchMessageForRegion.js` |
+| Gateway + Internal + OpenAI | `cloudPilot/chat/understand/search/searchMessageForRegion.js` |
 | Situation building block | `ai/context/contextTypes/cloudPilotSituationContext.js` (`region` only) |
 | Context assembly | `ai/context/buildContext.js` + `buildSystemMessage.js` |
 | OpenAI transport | `ai/client/openAIClient.js` |
@@ -298,11 +298,11 @@ AI never owns control flow.
 | Topic | Location |
 |-------|----------|
 | AI config | `config/cloudPilotAIConfig.js` |
-| Region search | `cloudPilot/conversation/understand/search/searchMessageForRegion.js` |
-| Values / STEP 3 | `cloudPilot/conversation/understand/` |
+| Region search | `cloudPilot/chat/understand/search/searchMessageForRegion.js` |
+| Values / STEP 3 | `cloudPilot/chat/understand/` |
 | Context | `ai/context/` |
 | OpenAI client | `ai/client/openAIClient.js` |
-| Speak | `cloudPilot/conversation/CloudPilotMessage.js` |
+| Speak | `cloudPilot/chat/CloudPilotMessage.js` |
 | Sample `.env` | [sample_env.md](../../sample_env.md) |
 | Chat OpenAI how-to | [chat_use_open_ai.md](../../instructions/chat_use_open_ai.md) |
 
