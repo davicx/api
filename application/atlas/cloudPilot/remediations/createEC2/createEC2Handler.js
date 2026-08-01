@@ -1,4 +1,4 @@
-const atlasEC2Functions = require('../../services/scans/ec2/atlasEC2Functions');
+const atlasEC2Functions = require('../../scans/ec2/atlasEC2Functions');
 const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../execution/outcomes/outcomeRegistry');
 
 function buildTagsFromDefaults(defaults) {

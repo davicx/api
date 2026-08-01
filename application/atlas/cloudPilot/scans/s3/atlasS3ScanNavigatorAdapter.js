@@ -1,4 +1,4 @@
-const navigatorResponseFunctions = require('../../../chat/presentation/navigatorFunctions');
+const navigatorResponseFunctions = require('../../chat/presentation/navigatorFunctions');
 
 function buildS3ScanNavigatorData(formattedAtlas, options = {}) {
     const summary = formattedAtlas && formattedAtlas.summary ? formattedAtlas.summary : {};

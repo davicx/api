@@ -1,4 +1,4 @@
-const navigatorResponseFunctions = require('../../../chat/presentation/navigatorFunctions');
+const navigatorResponseFunctions = require('../../chat/presentation/navigatorFunctions');
 
 /*
  

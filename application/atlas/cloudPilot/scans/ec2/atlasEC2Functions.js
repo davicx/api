@@ -9,9 +9,9 @@ FUNCTIONS B: Atlas POST (legacy — prefer capabilities/atlas/atlasPost)
     1) Function B1: atlasPost via AtlasPostFunctions
 */
 
-const AtlasPostFunctions = require('../../../../providers/atlas/client/atlasPost');
-const ScanEC2Functions = require('../../../../providers/atlas/ec2/scanEC2');
-const ChangeEC2Functions = require('../../../../providers/atlas/ec2/changeEC2');
+const AtlasPostFunctions = require('../../../providers/atlas/client/atlasPost');
+const ScanEC2Functions = require('../../../providers/atlas/ec2/scanEC2');
+const ChangeEC2Functions = require('../../../providers/atlas/ec2/changeEC2');
 
 //FUNCTIONS A: Atlas Scanner
 //Function A1: Scan EC2 — legacy shim; prefer capabilities/scans/scanEC2 (C7 removes)
