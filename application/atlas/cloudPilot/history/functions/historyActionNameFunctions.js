@@ -1,4 +1,4 @@
-const actionMap = require('../../../services/actions/actionMap');
+const actionMap = require('../../actionMap');
 const AtlasTimeFunctions = require('../../../functions/atlasTimeFunctions');
 
 /*

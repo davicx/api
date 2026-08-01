@@ -1,10 +1,10 @@
 const { CHAT_TYPE } = require('../decision/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
-const openAIFunctions = require('../../ai/client/openAIClient');
+const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
-const { buildAIContext } = require('../../ai/context/buildContext');
-const { buildAISystemMessage } = require('../../ai/context/buildSystemMessage');
-const ConversationHistoryContext = require('../../ai/context/classes/ConversationHistoryContext');
+const { buildAIContext } = require('../../cloudPilotIntelligence/context/buildContext');
+const { buildAISystemMessage } = require('../../cloudPilotIntelligence/context/buildSystemMessage');
+const ConversationHistoryContext = require('../../cloudPilotIntelligence/context/classes/ConversationHistoryContext');
 
 /*
 CloudPilotMessage — how CloudPilot communicates with the user.

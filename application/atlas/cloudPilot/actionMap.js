@@ -1,0 +1,558 @@
+const scanEC2Handler = require('./scans/ec2/scanEC2Handler');
+const scanS3Handler = require('./scans/s3/scanS3Handler');
+const toggleEC2Handler = require('./changes/toggleEC2/toggleEC2Handler');
+const createEC2Handler = require('./changes/createEC2/createEC2Handler');
+const deleteEC2Handler = require('./changes/deleteEC2/deleteEC2Handler');
+const updateEC2TagHandler = require('./changes/updateEC2Tag/updateEC2TagHandler');
+const inventoryAWSHandler = require('./inventory/inventoryAWSHandler');
+const billingAWSHandler = require('./billing/billingAWSHandler');
+const showAiUsageHandler = require('./aiUsage/showAiUsageHandler');
+
+/*
+What this file answers:
+
+* What actions exist?
+* How are actions detected? (match rules — used by understanding/search/searchMessageForAction.js)
+* What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
+
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, general_chat
+
+See doc/development/architecture/action_map.md.
+*/
+
+/*
+===============================================================================
+CANONICAL STATIC ACTION DEFINITIONS
+===============================================================================
+
+This file is the central action map for CloudPilot action definitions.
+
+Each action definition describes static orchestration metadata:
+- identity
+- policy
+- actionTier (general_chat | informational | destructive)
+- intent detection
+- workflow requirements
+- executionModes (destructive actions only)
+- execution handler
+- defaults
+- user-facing system messages
+
+This is NOT runtime workflow state.
+This is NOT Atlas execution output.
+
+All actions should follow the same stable structure so orchestration, prompts,
+and frontend-safe action payloads can rely on consistent naming.
+*/
+
+const actionMap = {
+
+    //SERVICE: General Chat
+    general_chat: {
+        //Identity
+        type: 'general_chat',
+        actionLabel: 'General Chat',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'general_chat',
+        requiresWorkflow: false,
+        requiresExecution: false,
+
+        //Intent Detection
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: null,
+
+        //User-Facing System Messages
+        messages: {
+            started: '',
+            missingFields: {},
+            ready: '',
+            executing: '',
+            success: '',
+            failed: ''
+        }
+    },
+
+    //SERVICE: AWS
+    //Action: Inventory AWS Resources
+    //TO DO: Maybe later add regions, resource types
+    inventory_aws: {
+        //Identity
+        type: 'inventory_aws',
+        actionLabel: 'Inventory AWS Resources',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('show me all my aws resources') ||
+            text.includes('show my aws resources'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: inventoryAWSHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing AWS inventory.',
+            missingFields: {},
+            ready: 'Everything is ready for AWS inventory.',
+            executing: 'Gathering AWS resources.',
+            success: 'Great, I found your AWS resources and added them to your dashboard.',
+            failed: 'AWS inventory failed.'
+        }
+    },
+
+    //SERVICE: AWS
+    //Action: AWS Billing summary
+    show_billing: {
+        //Identity
+        type: 'show_billing',
+        actionLabel: 'AWS Billing',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('show my billing') ||
+            text.includes('show my aws bill') ||
+            text.includes('show aws billing') ||
+            text.includes('why is my aws bill') ||
+            text.includes('why is my bill so high') ||
+            text.includes('where is my money going') ||
+            text.includes('what am i being charged'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {
+            period_days: 30
+        },
+
+        //Execution
+        executionFunction: billingAWSHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing AWS billing summary.',
+            missingFields: {},
+            ready: 'Everything is ready for AWS billing.',
+            executing: 'Loading AWS billing.',
+            success: 'Here is your AWS billing summary.',
+            failed: 'AWS billing summary failed.'
+        }
+    },
+
+    //SERVICE: CloudPilot
+    //Action: OpenAI / AI usage summary (local ai_usage table — not AWS)
+    show_ai_usage: {
+        //Identity
+        type: 'show_ai_usage',
+        actionLabel: 'AI Usage',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection — keep distinct from show_billing (AWS)
+        match: (text) =>
+            text.includes('openai spend') ||
+            text.includes('openai cost') ||
+            text.includes('openai usage') ||
+            text.includes('open ai spend') ||
+            text.includes('open ai cost') ||
+            text.includes('ai spend') ||
+            text.includes('ai usage') ||
+            text.includes('ai cost') ||
+            text.includes('how much have i spent on openai') ||
+            text.includes('how much have i spent on ai') ||
+            text.includes('how much did i spend on openai') ||
+            text.includes('how much did i spend on ai') ||
+            text.includes('show my openai') ||
+            text.includes('show openai') ||
+            text.includes('what is my openai') ||
+            text.includes("what's my openai") ||
+            text.includes('whats my openai'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: showAiUsageHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Checking OpenAI usage.',
+            missingFields: {},
+            ready: 'Everything is ready for AI usage.',
+            executing: 'Loading AI usage.',
+            success: 'Here is your estimated OpenAI spend.',
+            failed: 'AI usage summary failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Scan EC2
+    scan_ec2: {
+        //Identity
+        type: 'scan_ec2',
+        actionLabel: 'Scan EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('scan') &&
+            text.includes('ec2'),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: scanEC2Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 scan.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 scan.',
+            executing: 'Running EC2 scan.',
+            success: 'EC2 scan completed.',
+            failed: 'EC2 scan failed.'
+        }
+    },
+
+    //SERVICE: S3
+    //Action: Scan S3
+    scan_s3: {
+        //Identity
+        type: 'scan_s3',
+        actionLabel: 'Scan S3',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('scan') &&
+            text.includes('s3'),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: scanS3Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing S3 scan.',
+            missingFields: {},
+            ready: 'Everything is ready for the S3 scan.',
+            executing: 'Running S3 scan.',
+            success: 'S3 scan completed.',
+            failed: 'S3 scan failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Toggle EC2
+    toggle_ec2: {
+        //Identity
+        type: 'toggle_ec2',
+        actionLabel: 'Toggle EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies (destructive actions only; scan/inventory skip this)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('toggle') ||
+            text.includes('switch'),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'primary_instance_id',
+            'secondary_instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: toggleEC2Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 toggle.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 toggle.',
+            executing: 'Toggling EC2 instances. This may take a few minutes.',
+            success: 'EC2 toggle completed.',
+            failed: 'EC2 toggle failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Create EC2
+    create_ec2: {
+        //Identity
+        type: 'create_ec2',
+        actionLabel: 'Create EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies (destructive actions only; scan/inventory skip this)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('create') &&
+            (text.includes('ec2') || text.includes('instance')),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'name',
+            'region',
+            'instance_type'
+        ],
+
+        //Optional Defaults
+        defaults: {
+            tags: {
+                'managed-by': 'cloudpilot',
+                'cloudpilot-managed': 'true',
+                'environment': 'demo',
+                'cloudpilot-role': 'secondary'
+            }
+        },
+
+        //Execution
+        executionFunction: createEC2Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 create.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 create.',
+            executing: 'Creating EC2 instance.',
+            success: 'EC2 instance created.',
+            failed: 'EC2 create failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Delete EC2
+    delete_ec2: {
+        //Identity
+        type: 'delete_ec2',
+        actionLabel: 'Delete EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies (destructive actions only; scan/inventory skip this)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('delete') &&
+            (text.includes('ec2') || text.includes('instance')),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: deleteEC2Handler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 delete.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 delete.',
+            executing: 'Terminating EC2 instance.',
+            success: 'EC2 instance termination requested.',
+            failed: 'EC2 delete failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Update EC2 tag (Phase G golden path)
+    update_ec2_tag: {
+        //Identity
+        type: 'update_ec2_tag',
+        actionLabel: 'Update EC2 Tag',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies (destructive actions only)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+            if (normalized.includes('update') && normalized.includes('tag') && normalized.includes('ec2')) {
+                return true;
+            }
+            if (normalized.includes('update') && normalized.includes('tag') && normalized.includes('instance')) {
+                return true;
+            }
+            if (normalized.includes('update') && normalized.includes('cloudpilot-test')) {
+                return true;
+            }
+            if (normalized.includes('update ec2 tag')) {
+                return true;
+            }
+            return false;
+        },
+
+        //Fields Required Before Ready (tag_key defaults to CloudPilot-Test)
+        requiredFields: [
+            'region',
+            'instance_id',
+            'tag_key',
+            'tag_value'
+        ],
+
+        //Optional Defaults
+        defaults: {
+            tag_key: 'CloudPilot-Test'
+        },
+
+        //Execution
+        executionFunction: updateEC2TagHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 tag update.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 tag update.',
+            executing: 'Updating EC2 tag.',
+            success: 'EC2 tag updated.',
+            failed: 'EC2 tag update failed.'
+        }
+    }
+};
+
+function actionRequiresExecutionModeSelection(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        Array.isArray(actionDefinition.executionModes) &&
+        actionDefinition.executionModes.length > 0
+    );
+}
+
+module.exports = actionMap;
+
+Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
+    value: actionRequiresExecutionModeSelection,
+    enumerable: false
+});

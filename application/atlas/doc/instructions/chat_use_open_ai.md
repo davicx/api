@@ -4,7 +4,7 @@
 Reference implementation: `cloudPilot/conversation/understand/search/searchMessageForRegion.js`  
 Chat target: `cloudPilot/conversation/CloudPilotMessage.js` → `speakGeneral`
 
-**Related:** [sample_env.md](../sample_env.md) · [current_development.md](../development/current_development.md) · `config/cloudPilotAIConfig.js`
+**Related:** [sample_env.md](../sample_env.md) · [current_development.md](../development/current/current.md) · `config/cloudPilotAIConfig.js`
 
 ---
 

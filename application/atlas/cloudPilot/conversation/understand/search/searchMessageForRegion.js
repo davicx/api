@@ -1,6 +1,6 @@
-const OpenAIClient = require('../../../../ai/client/openAIClient');
-const { buildAIContext } = require('../../../../ai/context/buildContext');
-const { buildAISystemMessage } = require('../../../../ai/context/buildSystemMessage');
+const OpenAIClient = require('../../../../providers/openAI/client/openAIClient');
+const { buildAIContext } = require('../../../../cloudPilotIntelligence/context/buildContext');
+const { buildAISystemMessage } = require('../../../../cloudPilotIntelligence/context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 

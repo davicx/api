@@ -22,7 +22,7 @@ const {
     createBranch,
     createFile,
     openPullRequest
-} = require('../../application/atlas/config/github/githubClient');
+} = require('../../application/atlas/providers/github/githubClient');
 
 const CHANGE_FILE_PATH = 'changes/create_demo_server.json';
 

@@ -84,7 +84,7 @@ skip             → inline in applyDecision + reason
 | D4 | Response layer | ✅ |
 | D5 | `immediate_execution` (inventory_aws) | ✅ |
 | D6 | Conversation + ambiguous | ✅ |
-| D7 | Delete commented pipeline | → [../To_do.md](../To_do.md) Future — code cleanup |
+| D7 | Delete commented pipeline | → [../To_do.md](../future/to_do.md) Future — code cleanup |
 
 ### Old → new file map (rename pass — planned)
 

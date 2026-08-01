@@ -1,4 +1,4 @@
-const githubClient = require('../../../config/github/githubClient');
+const githubClient = require('../../../providers/github/githubClient');
 const prTemplates = require('./prTemplates');
 
 /*

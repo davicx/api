@@ -1,4 +1,4 @@
-const navigatorResponseFunctions = require('../../services/navigator/functions/navigatorFunctions');
+const navigatorResponseFunctions = require('../navigator/functions/navigatorFunctions');
 const AtlasTimeFunctions = require('../../functions/atlasTimeFunctions');
 
 /*

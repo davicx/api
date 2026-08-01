@@ -198,5 +198,5 @@ Do not search for `generalChatHandler` in STEP 6 — it does not exist.
 | Doc | Role |
 |-----|------|
 | [architecture.md](./architecture.md) | Full system reference |
-| [capability_migration.md](./capability_migration.md) | Capability layer C0–C9 |
-| [../../README.md](../../README.md) | Atlas code layout (services + capabilities) |
+| [capability_migration.md](../future/capability_migration.md) | Capability layer C0–C9 |
+| [../../README.md](../../../README.md) | Atlas code layout (services + capabilities) |

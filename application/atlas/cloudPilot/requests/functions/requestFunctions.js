@@ -1,4 +1,4 @@
-const actionMap = require('../../../services/actions/actionMap');
+const actionMap = require('../../actionMap');
 const Request = require('../classes/Request');
 const RequestStateFunctions = require('./requestLoadFunctions');
 const { RESPONSE_TYPE } = require('../../decision/decisionTypes');

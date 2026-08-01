@@ -1,4 +1,4 @@
-const actionMap = require('../../../services/actions/actionMap');
+const actionMap = require('../../actionMap');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const UndoFunctions = require('../../history/functions/undoFunctions');

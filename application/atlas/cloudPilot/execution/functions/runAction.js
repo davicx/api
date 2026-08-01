@@ -1,4 +1,4 @@
-const actionMap = require('../../../services/actions/actionMap');
+const actionMap = require('../../actionMap');
 
 /*
 What this file answers:

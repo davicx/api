@@ -4,7 +4,7 @@ STEP 6 entry: run action handler → capability → Atlas.
 STEP 7 confirmation ("Would you like me to execute?") stays in CloudPilotMessage request templates.
 */
 
-const actionMap = require('../../../services/actions/actionMap');
+const actionMap = require('../../actionMap');
 const RunActionFunctions = require('../../execution/functions/runAction');
 
 const NON_AUTOMATIC_STRATEGIES = ['instructions', 'cli', 'pr'];

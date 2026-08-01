@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-06-06
 
-> Read [architecture.md](./architecture.md) first. **Active checklist:** [../history.md](../history.md). Schema: [sql/master_sql.sql](../../sql/master_sql.sql).
+> Read [architecture.md](./architecture.md) first. **Active checklist:** [../history.md](../finished/history.md). Schema: [sql/master_sql.sql](../../sql/master_sql.sql).
 
 **Prerequisite:** Automatic `toggle_ec2` works E2E (Atlas Test or Live).
 
@@ -380,23 +380,23 @@ update original row (reverted, undo_available = false)
 
 ### LATER — change history table
 
-Moved to **[../history.md](../history.md)** Phase 2 (H9–H14): `list_history`, `list_recent_requests`, Method A4, chat + optional Navigator table.
+Moved to **[../history.md](../finished/history.md)** Phase 2 (H9–H14): `list_history`, `list_recent_requests`, Method A4, chat + optional Navigator table.
 
 ---
 
 ## API checklist (full feature)
 
-**Active checklist:** [../history.md](../history.md). Shipped items below; open items moved to `history.md`.
+**Active checklist:** [../history.md](../finished/history.md). Shipped items below; open items moved to `history.md`.
 
 - [x] **H0** — `cloudpilot_history` in `master_sql.sql`
 - [x] **H1** — `saveHistory()` wired to toggle automatic success → row in DB
 - [x] **H2** — `getLatestUndoable()` log only (`STEP 6C` after save)
 - [x] **H3** — Undo intent → log `undo_payload` only _(superseded by H4 — dry run removed)_
 - [x] **H4** — Execute undo + link rows (`undoRegistry`, `undoFunctions`, STEP 6)
-- [ ] **H5** — Failed toggle → history row with `history_status = failed` → see [history.md](../history.md)
-- [ ] **H6** — API / Kite `undoAvailable` hint → see [history.md](../history.md)
-- [ ] **H7** — `create_ec2` history + undo → see [history.md](../history.md)
-- [ ] **H8** — `delete_ec2` history + recreate undo → see [history.md](../history.md)
+- [ ] **H5** — Failed toggle → history row with `history_status = failed` → see [history.md](../finished/history.md)
+- [ ] **H6** — API / Kite `undoAvailable` hint → see [history.md](../finished/history.md)
+- [ ] **H7** — `create_ec2` history + undo → see [history.md](../finished/history.md)
+- [ ] **H8** — `delete_ec2` history + recreate undo → see [history.md](../finished/history.md)
 
 ---
 
@@ -649,6 +649,6 @@ Diff between versions
 | Topic | Path |
 |-------|------|
 | Architecture & pipeline | [architecture.md](./architecture.md) |
-| Active checklist | [../history.md](../history.md) |
+| Active checklist | [../history.md](../finished/history.md) |
 | Master SQL | [master_sql.sql](../../sql/master_sql.sql) |
-| Field reference | [database/database.md](../database/database.md) |
+| Field reference | [database/database.md](../../database/database.md) |

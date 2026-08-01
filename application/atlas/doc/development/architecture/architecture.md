@@ -12,7 +12,7 @@
 | Database schema (actions, requests, executions) | `doc/database/database.md` |
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
-| Scan expansion (deferred) | [../long_term/scans.md](../long_term/scans.md) · [../long_term/future_work.md](../long_term/future_work.md) |
+| Scan expansion (deferred) | [../future/scans.md](../future/scans.md) · [../future/future.md](../future/future.md) |
 | Legacy request SQL (historical) | `doc/sql/cloudpilot_workflows_phase1.sql` |
 | **Master SQL (source of truth)** | `doc/sql/master_sql.sql` |
 | EC2 chat samples | `api/README.md` |
@@ -23,16 +23,16 @@
 
 | Doc | Purpose |
 |-----|---------|
-| [../mvp.md](../mvp.md) | **Active work** — EC2 vertical slice |
-| [../long_term/to_do.md](../long_term/to_do.md) | Deferred backlog |
-| [../long_term/finished.md](../long_term/finished.md) | Shipped |
-| [../current_development.md](../current_development.md) | AI — live control plane + planned chat features — MVP M7 |
+| [../current/mvp.md](../current/mvp.md) | **Active work** — EC2 vertical slice |
+| [../future/to_do.md](../future/to_do.md) | Deferred backlog |
+| [../finished/finished.md](../finished/finished.md) | Shipped |
+| [../current/current.md](../current/current.md) | AI — live control plane + planned chat features — MVP M7 |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |
 | [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |
-| [capability_migration.md](./capability_migration.md) | Capability layer — step plan (C0–C9) |
-| [single_capabiity_change.md](./single_capabiity_change.md) | Capability layer — new & changed files map |
-| [step_one_cleanup.md](./step_one_cleanup.md) | Pre-capability cleanup — U1–U5 |
+| [capability_migration.md](../future/capability_migration.md) | Capability layer — step plan (C0–C9) |
+| [single_capabiity_change.md](../future/single_capabiity_change.md) | Capability layer — new & changed files map |
+| [step_one_cleanup.md](../future/step_one_cleanup.md) | Pre-capability cleanup — U1–U5 |
 | [appendix.md](./appendix.md) | Historical pipeline notes, changelog |
 
 ---
@@ -87,7 +87,7 @@ Kite          = generic renderer
 
 ### CloudPilot Capability Layer (target)
 
-**Status:** Planned — see [capability_migration.md](./capability_migration.md) (Steps C0–C9). Incremental: start with `changes/toggleEC2`, then scans/inventory.
+**Status:** Planned — see [capability_migration.md](../future/capability_migration.md) (Steps C0–C9). Incremental: start with `changes/toggleEC2`, then scans/inventory.
 
 Today the execution path is:
 
@@ -440,7 +440,7 @@ Test:  atlas/app/api/routes/test/ec2_operation_routes_test.py  → MOCK_* JSON
 
 Toggle in `atlas/app/main.py` — comment Live imports, uncomment Test imports, restart uvicorn.
 
-**From the product perspective (future):** `Mode = TEST` vs `Mode = LIVE`. User never sees Python import toggles. See [../To_do.md](../To_do.md) — Learn / Test / Live.
+**From the product perspective (future):** `Mode = TEST` vs `Mode = LIVE`. User never sees Python import toggles. See [../To_do.md](../future/to_do.md) — Learn / Test / Live.
 
 ### Routes (operations)
 

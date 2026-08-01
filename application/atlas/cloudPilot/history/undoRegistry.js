@@ -1,4 +1,4 @@
-const ChangeEC2Functions = require('../../aws/capabilities/changes/changeEC2');
+const ChangeEC2Functions = require('../../providers/atlas/ec2/changeEC2');
 const { buildOutcomeMessage, getFirstOutcomeCode } = require('../execution/outcomes/outcomeRegistry');
 
 /*

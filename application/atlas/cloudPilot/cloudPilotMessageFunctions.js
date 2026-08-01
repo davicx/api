@@ -1,4 +1,4 @@
-const openAIFunctions = require('../ai/client/openAIClient');
+const openAIFunctions = require('../providers/openAI/client/openAIClient');
 const RequestStateFunctions = require('./requests/functions/requestLoadFunctions');
 const UnderstandingFunctions = require('./conversation/understand/understandMessage');
 const DecisionFunctions = require('./decision/decideNextStep');

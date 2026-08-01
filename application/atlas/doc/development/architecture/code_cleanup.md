@@ -9,8 +9,8 @@
 | Doc | Role |
 |-----|------|
 | [architecture.md](./architecture.md) | Full system reference |
-| [step_one_cleanup.md](./step_one_cleanup.md) | Dead code cleanup |
-| [capability_migration.md](./capability_migration.md) | Capability HOW layer |
+| [step_one_cleanup.md](../future/step_one_cleanup.md) | Dead code cleanup |
+| [capability_migration.md](../future/capability_migration.md) | Capability HOW layer |
 
 **Last reviewed:** 2026-06-23
 

@@ -33,7 +33,7 @@ const items = require('./application/routes/itemRoutes.js');
 // Messages: toggle between Kite copy (application/routes) and Atlas duplicate (application/atlas/routes) — keep in sync.
 //const messages = require('./application/routes/messageRoutes.js');
 const messages = require('./application/atlas/routes/messageRoutes.js');
-const todos = require('./application/atlas/routes/todoRoutes.js');
+const todos = require('./application/routes/todoRoutes.js');
 const instructions = require('./application/atlas/routes/instructionRoutes.js');
 const aiUsage = require('./application/atlas/routes/aiUsageRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');

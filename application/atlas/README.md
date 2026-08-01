@@ -3,7 +3,7 @@
 ## Project restructure
 
 **Final plan (no code yet):**  
-[doc/development/architecture/responsibility_refactor.md](./doc/development/architecture/responsibility_refactor.md)
+[doc/development/current/responsibility_refactor.md](./doc/development/current/responsibility_refactor.md)
 
 ```text
 routes/  logic/  functions/  config/
@@ -102,7 +102,7 @@ Live code for the CloudPilot message pipeline (`POST /message`). Docs live in `d
 
 **Sample `.env` (no secrets):** [doc/sample_env.md](./doc/sample_env.md) — copy to `api/.env` on another machine.
 
-**Active AI work:** [doc/development/current_development.md](./doc/development/current_development.md) · [doc/instructions/chat_use_open_ai.md](./doc/instructions/chat_use_open_ai.md)
+**Active AI work:** [doc/development/current/current.md](./doc/development/current/current.md) · [doc/instructions/chat_use_open_ai.md](./doc/instructions/chat_use_open_ai.md)
 
 ## Design principle
 
@@ -666,10 +666,10 @@ routes/messageRoutes.js
 | [doc/development/architecture/code_cleanup.md](./doc/development/architecture/code_cleanup.md) | Message architecture |
 | [doc/development/architecture/architecture.md](./doc/development/architecture/architecture.md) | Full system reference |
 | [doc/development/architecture/action_map.md](./doc/development/architecture/action_map.md) | WHAT / WHEN / RUN / HOW / WHERE |
-| [doc/development/architecture/capability_migration.md](./doc/development/architecture/capability_migration.md) | Capability layer plan |
-| [doc/development/current_development.md](./doc/development/current_development.md) | AI — live control plane + region + planned chat features |
+| [doc/development/future/capability_migration.md](./doc/development/future/capability_migration.md) | Capability layer plan |
+| [doc/development/current/current.md](./doc/development/current/current.md) | AI — live control plane + region + planned chat features |
 | [doc/instructions/chat_use_open_ai.md](./doc/instructions/chat_use_open_ai.md) | How to wire OpenAI into chat features |
 | [doc/sample_env.md](./doc/sample_env.md) | Sample env vars (no secrets) |
-| [doc/development/ai_usage.md](./doc/development/ai_usage.md) | OpenAI usage tracking |
-| [doc/development/long_term/to_do.md](./doc/development/long_term/to_do.md) | Backlog |
-| [doc/development/long_term/finished.md](./doc/development/long_term/finished.md) | Shipped work |
+| [doc/development/current/ai_usage.md](./doc/development/current/ai_usage.md) | OpenAI usage tracking |
+| [doc/development/future/to_do.md](./doc/development/future/to_do.md) | Backlog |
+| [doc/development/finished/finished.md](./doc/development/finished/finished.md) | Shipped work |
