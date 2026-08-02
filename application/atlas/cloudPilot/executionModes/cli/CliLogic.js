@@ -1,4 +1,4 @@
-const cliTemplates = require('../cli/cliTemplates');
+const cliTemplates = require('./cliTemplates');
 
 /*
 CLI change strategy — user picked option 2.

@@ -5,6 +5,9 @@
 **Folder refactor plan (Project A complete):**
 [doc/development/current/cloud_pilot_refactor.md](./doc/development/current/cloud_pilot_refactor.md)
 
+**Project C (actions + executionModes):**
+[doc/development/current/cloud_pilot_project_c.md](./doc/development/current/cloud_pilot_project_c.md)
+
 ```text
 routes/  logic/  functions/  config/
 
@@ -12,9 +15,10 @@ cloudPilot/
   actionMap.js
   chat/            # user interaction (+ temporary understand/)
   requests/        # request lifecycle + decideNextStep
-  remediations/    # infrastructure changes + strategies
+  actions/         # reusable mutation operations
+  executionModes/  # automatic / cli / instructions / pr
   scans/           # ec2, s3, billing, inventory, aiUsage
-  execution/
+  execution/       # pipeline STEP 6
   history/
 
 cloudPilotIntelligence/   # untouched in Project A; facade later
@@ -73,9 +77,10 @@ api/application/atlas/
 │   ├── actionMap.js
 │   ├── chat/                   // pipeline entry, speak, templates, temporary understand/
 │   ├── requests/               // request state + decideNextStep + workflow
-│   ├── remediations/           // mutating handlers + strategies
+│   ├── actions/                // reusable mutation operations
+│   ├── executionModes/         // automatic / cli / instructions / pr
 │   ├── scans/                  // ec2, s3, billing, inventory, aiUsage
-│   ├── execution/
+│   ├── execution/              // pipeline STEP 6
 │   └── history/
 │
 ├── cloudPilotIntelligence/     // How CloudPilot thinks (context live; facade later)
@@ -160,7 +165,7 @@ Full model: [code_cleanup.md § Request types and change strategies](./doc/devel
 
 | Folder | Role |
 |--------|------|
-| `cloudPilot/` | Workflow brain — STEPS 1–7 (`chat`, `requests`, `remediations`, `scans`, `execution`, `history`) |
+| `cloudPilot/` | Workflow brain — STEPS 1–7 (`chat`, `requests`, `actions`, `executionModes`, `scans`, `execution`, `history`) |
 | `aws/` | Thin HOW / WHERE — capabilities + Atlas HTTP client |
 | `ai/` | Shared OpenAI client, context builders, usage |
 | `config/` | Chat / OpenAI flags + GitHub client |
@@ -179,9 +184,10 @@ Orchestrator: `cloudPilot/chat/cloudPilotMessageFunctions.js` — STEPS 1–7 (`
 |--------|------|----------------|
 | `chat/` | Pipeline entry, speak, templates, temporary `understand/` | STEP 1–3 / STEP 4 exit / STEP 7 |
 | `requests/` | Request state + `decideNextStep` + workflow | **STEP 2**, **STEP 4**, **STEP 5** |
-| `execution/` | Perform work (Request Conversation) | **STEP 6** |
+| `execution/` | Pipeline STEP 6 — load action, run selected execution mode | **STEP 6** |
 | `history/` | Change history + undo | **STEP 6B** |
-| `remediations/` | Mutating handlers + strategies 1–4 + CLI/PR | STEP 6 / STEP 7 |
+| `actions/` | Reusable mutation operations (create/delete/toggle/update tag) | STEP 6 |
+| `executionModes/` | Automatic / CLI / Instructions / PR workflows | STEP 6 / STEP 7 |
 | `scans/` | Read-only handlers (ec2, s3, billing, inventory, aiUsage) | STEP 6 |
 | `chat/presentation/` | Navigator / dashboard shaping | Response shaping |
 
@@ -192,7 +198,8 @@ Orchestrator: `cloudPilot/chat/cloudPilotMessageFunctions.js` — STEPS 1–7 (`
 | Area | Role |
 |------|------|
 | `cloudPilot/chat/` | Conversation systems + CloudPilotMessage (speak) + templates |
-| `cloudPilot/remediations/strategies/` | How mutating actions apply (modes 1–4) |
+| `cloudPilot/actions/` | What CloudPilot knows how to mutate |
+| `cloudPilot/executionModes/` | How an action is applied or presented |
 | `ai/*` | LLM vendor SDKs + context — implementation only |
 | `cloudPilot/execution/outcomes/` | Handler execution outcome copy |
 
@@ -217,7 +224,7 @@ Change strategies apply only to **change** actions (`actionTier: destructive` wi
 
 ## `aws/capabilities/` — HOW / WHERE
 
-Thin functions that call Atlas — one entry point per product action. Handlers under `cloudPilot/scans/` and `cloudPilot/remediations/` import from here for HOW.
+Thin functions that call Atlas — one entry point per product action. Handlers under `cloudPilot/scans/` and `cloudPilot/actions/` import from here for HOW.
 
 ```text
 aws/
@@ -242,7 +249,7 @@ aws/
 
 - Capabilities return structured results — no request rows, no chat copy, no history inserts.
 - `saveHistory()` stays in `cloudPilot/execution/functions/executionFunctions.js` (STEP 6B).
-- Handlers stay in `cloudPilot/scans/` and `cloudPilot/remediations/`; they delegate here for HOW.
+- Handlers stay in `cloudPilot/scans/` and `cloudPilot/actions/`; they delegate here for HOW.
 
 ---
 
@@ -516,17 +523,26 @@ api/application/atlas/
 | `request/RequestConversation.js` | Request speak routing. |
 | `request/workflow.js` | Thin STEP 5 (`store`) and STEP 6 (`execute`) passthrough. |
 
-### Remediations (`cloudPilot/remediations/`)
+### Actions (`cloudPilot/actions/`)
 
 | File | What it does |
 |------|----------------|
-| `strategies/automatic.js` | Strategy 4 — run handler via `runAction`. |
-| `strategies/instructions.js` | Strategy 1 — instructions delivery. |
-| `strategies/cli.js` | Strategy 2 — CLI delivery. |
-| `strategies/pr.js` | Strategy 3 — PR delivery (toggle EC2 live). |
-| `cli/cliTemplates.js` | CLI strategy copy. |
+| `toggleEC2/toggleEC2Handler.js` | Mutation handler for toggle_ec2. |
+| `createEC2/createEC2Handler.js` | Mutation handler for create_ec2. |
+| `deleteEC2/deleteEC2Handler.js` | Mutation handler for delete_ec2. |
+| `updateEC2Tag/updateEC2TagHandler.js` | Mutation handler for update_ec2_tag. |
+
+### Execution Modes (`cloudPilot/executionModes/`)
+
+| File | What it does |
+|------|----------------|
+| `automatic/AutomaticLogic.js` | Automatic mode — run handler via `runAction`. |
+| `instructions/InstructionsLogic.js` | Instructions mode delivery. |
+| `cli/CliLogic.js` | CLI mode delivery. |
+| `cli/cliTemplates.js` | CLI mode copy. |
+| `pr/PrLogic.js` | PR mode delivery (toggle EC2 live). |
 | `pr/createToggleEc2PullRequest.js` | Opens GitHub PR for toggle_ec2. |
-| `pr/prTemplates.js` | PR strategy chat copy. |
+| `pr/prTemplates.js` | PR mode chat copy. |
 
 ### Context (`ai/context/`)
 

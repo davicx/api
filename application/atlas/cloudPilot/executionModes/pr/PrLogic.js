@@ -1,4 +1,4 @@
-const createToggleEc2PullRequest = require('../pr/createToggleEc2PullRequest');
+const createToggleEc2PullRequest = require('./createToggleEc2PullRequest');
 
 /*
 PR change strategy — user picked option 3.

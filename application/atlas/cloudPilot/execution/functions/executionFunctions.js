@@ -2,7 +2,7 @@ const actionMap = require('../../actionMap');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const UndoFunctions = require('../../history/functions/undoFunctions');
-const AutomaticStrategy = require('../../remediations/strategies/automatic');
+const AutomaticStrategy = require('../../executionModes/automatic/AutomaticLogic');
 const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 
 /*
