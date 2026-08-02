@@ -1,6 +1,6 @@
 # Project B — CloudPilot Intelligence Facade
 
-**Status:** Plan locked — ready to execute  
+**Status:** Phase 1 complete — stop before Phase 2  
 **Scope:** `cloudPilotIntelligence/` facade + migrate existing understanding behind it  
 **Work type:** Facade + move existing understand code; preserve behavior  
 **Last updated:** 2026-08-02
@@ -77,25 +77,25 @@ Additional capabilities remain empty scaffolds / placeholders until later projec
 
 ### Phase 1 — Facade skeleton
 
-- Add Intelligence facade entry that can host `understand*` methods.
-- Keep `respond` / `explain` / `improve` / `generate` as placeholders.
-- Smoke: module loads; no pipeline behavior change yet.
-- Commit. Stop.
+- [x] Add Intelligence facade entry that can host `understand*` methods.
+- [x] Keep `respond` / `explain` / `improve` / `generate` as placeholders.
+- [x] Smoke: module loads; no pipeline behavior change yet.
+- [x] Commit. Stop.
 
 ### Phase 2 — Migrate understand behind facade
 
-- Move existing `cloudPilot/chat/understand/**` behind Intelligence.
-- Wire CloudPilot STEP 3 to call Intelligence understand APIs.
-- Preserve Internal / OpenAI region behavior.
-- Smoke: general chat + request understanding still work.
-- Commit. Stop.
+- [ ] Move existing `cloudPilot/chat/understand/**` behind Intelligence.
+- [ ] Wire CloudPilot STEP 3 to call Intelligence understand APIs.
+- [ ] Preserve Internal / OpenAI region behavior.
+- [ ] Smoke: general chat + request understanding still work.
+- [ ] Commit. Stop.
 
 ### Phase 3 — Cleanup + docs
 
-- Remove empty leftover understand folders under `chat/` if empty.
-- Update README / current docs paths.
-- Confirm no direct OpenAI / regex calls from CloudPilot understand path.
-- Commit. Stop.
+- [ ] Remove empty leftover understand folders under `chat/` if empty.
+- [ ] Update README / current docs paths.
+- [ ] Confirm no direct OpenAI / regex calls from CloudPilot understand path.
+- [ ] Commit. Stop.
 
 ---
 
@@ -137,4 +137,4 @@ Project B  →  Organize intelligence (facade + understand migration)
 
 ## Next
 
-Say **go** to start Phase 1.
+Say **go** to start Phase 2 (migrate `chat/understand/` behind the facade).
