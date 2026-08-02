@@ -107,7 +107,10 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 
     //STEP 3: Understand — what is the user trying to do?
-    const messageUnderstanding = await CloudPilotIntelligence.understandMessage(currentUserMessage);
+    const messageUnderstanding = await CloudPilotIntelligence.understandMessage(
+        currentUserMessage,
+        currentRequestState
+    );
 
     console.log("STEP 3: Message Understanding");
     console.log(JSON.stringify(messageUnderstanding, null, 2));

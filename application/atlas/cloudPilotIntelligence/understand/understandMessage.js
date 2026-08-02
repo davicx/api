@@ -24,8 +24,11 @@ FUNCTIONS F: Message understanding — extract signals from a message (no DB, no
 */
 
 //Function F1: Orchestrator entry — run all searches, merge into messageUnderstanding
-async function understandMessage(message) {
-    const values = await SearchMessageForValuesFunctions.searchMessageForValues(message);
+async function understandMessage(message, requestState) {
+    const values = await SearchMessageForValuesFunctions.searchMessageForValues(
+        message,
+        requestState
+    );
     const reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
     const conversation = SearchMessageForConversationFunctions.searchMessageForConversation(message);
     const actionResult = SearchMessageForActionFunctions.searchMessageForAction(message);

@@ -1,8 +1,8 @@
 # CloudPilot — Current Development (AI)
 
-**Last updated:** 2026-07-27  
+**Last updated:** 2026-08-02  
 **Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.  
-**Next up:** Section C — only run Region Search when the current request needs region.
+**Next up:** Section C — Phase 1 done (`shouldRunRegionSearch()`); next verify then Phase 2.
 
 **Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
 
@@ -150,21 +150,23 @@ How-to for chat path: [chat_use_open_ai.md](../../instructions/chat_use_open_ai.
 
 ---
 
-# SECTION C — Purposeful AI Feature Gates (**NEXT**)
+# SECTION C — CloudPilot AI Invocation Rules (**NEXT**)
 
 **Single active plan:** [cloud_pilot_openai_rollout.md](./cloud_pilot_openai_rollout.md)
 
-Start by fixing Region Search:
+Philosophy: only perform expensive AI work when that function is actually needed.
+
+Every AI function answers two questions: **Should I run?** then **How should I run?**
+
+Start with Region Search:
 
 ```text
-No open request OR region already known
-  → skip Region Search
-
-Open request + region missing
-  → Region Search may run (Internal or OpenAI)
+shouldRunRegionSearch()
+  true  → request is actively collecting a region → Internal or OpenAI
+  false → skip
 ```
 
-This conservative Stage 1 rule prefers a missed optional extraction over an unnecessary live token call. The rollout plan then applies the same pattern to other AI features when they are actually implemented.
+Stage 1 body today: open request + region still missing. Prefer a missed optional extraction over an unnecessary live call. Same `shouldRun…()` pattern later for other Intelligence functions.
 
 ---
 

@@ -11,11 +11,14 @@ FUNCTIONS A: Structured field extraction from user message
 */
 
 //Function A1: Find all structured field values in the message
-async function searchMessageForValues(message) {
+async function searchMessageForValues(message, requestState) {
     const structured = SearchMessageForStructuredFieldsFunctions.searchMessageForStructuredFields(message);
     const values = { ...structured };
 
-    const regionResult = await SearchMessageForRegionFunctions.searchMessageForRegion(message);
+    const regionResult = await SearchMessageForRegionFunctions.searchMessageForRegion(
+        message,
+        requestState
+    );
     if (regionResult.region && values.region === undefined) {
         values.region = regionResult.region;
     }

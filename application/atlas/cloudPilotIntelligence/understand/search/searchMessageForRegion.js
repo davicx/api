@@ -6,9 +6,10 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 
 /*
 FUNCTIONS A: Region search
-    1) Function A1: searchMessageForRegion
-    2) Function A2: searchMessageForRegionInternal
-    3) Function A3: searchMessageForRegionOpenAI
+    1) Function A1: shouldRunRegionSearch
+    2) Function A2: searchMessageForRegion
+    3) Function A3: searchMessageForRegionInternal
+    4) Function A4: searchMessageForRegionOpenAI
 
 HELPERS
     1) Helper H1: parseOpenAIRegionResponse
@@ -36,6 +37,10 @@ function logRegionSearch(details) {
     console.log('REGION SEARCH');
     console.log('==================================================');
     console.log('Region Search: ' + details.mode);
+
+    if (details.mode === 'SKIPPED') {
+        console.log('Reason: request is not actively collecting a region');
+    }
 
     if (details.openaiRequested && details.masterDisabled) {
         console.log('OpenAI Requested: YES');
@@ -95,9 +100,42 @@ function parseOpenAIRegionResponse(raw) {
 }
 
 //FUNCTIONS A: Region search
-//Function A1: Select how CloudPilot searches the message for a region
-async function searchMessageForRegion(message) {
+//Function A1: Should Region Search run? (Stage 1: open request + region missing)
+function shouldRunRegionSearch(requestState) {
+    //STEP 1: No open request → skip
+    if (!requestState || !requestState.pendingAction) {
+        return false;
+    }
+
+    //STEP 2: Region already known / not being collected → skip
+    if (!Array.isArray(requestState.missing) || requestState.missing.indexOf('region') === -1) {
+        return false;
+    }
+
+    //STEP 3: Request is actively collecting a region → run
+    return true;
+}
+
+//Function A2: Select how CloudPilot searches the message for a region
+async function searchMessageForRegion(message, requestState) {
     const userMessage = String(message || '');
+
+    //STEP 1: Should I run?
+    if (!shouldRunRegionSearch(requestState)) {
+        logRegionSearch({
+            mode: 'SKIPPED',
+            openaiRequested: CLOUDPILOT_AI_CONFIG.regionSearch === 'openai',
+            masterDisabled: !CLOUDPILOT_AI_CONFIG.aiEnabled,
+            billing: false,
+            fallback: null,
+            userMessage: userMessage,
+            openAIResponse: null,
+            result: {}
+        });
+        return {};
+    }
+
+    //STEP 2: How should I run? (Internal or OpenAI via config)
     const openaiRequested = CLOUDPILOT_AI_CONFIG.regionSearch === 'openai';
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
@@ -133,7 +171,7 @@ async function searchMessageForRegion(message) {
     return result;
 }
 
-//Function A2: Find an AWS region using internal regex logic
+//Function A3: Find an AWS region using internal regex logic
 function searchMessageForRegionInternal(message) {
     const text = String(message || '');
     const match = text.match(/\b((?:us|eu|ap|sa|ca|me|af)-(?:gov-)?[a-z]+-\d)\b/i);
@@ -145,7 +183,7 @@ function searchMessageForRegionInternal(message) {
     return { region: String(match[1]).toLowerCase() };
 }
 
-//Function A3: Find an AWS region using OpenAI (+ shared context system)
+//Function A4: Find an AWS region using OpenAI (+ shared context system)
 // Returns { result, billing, openAIResponse, fallback } for the gateway log.
 async function searchMessageForRegionOpenAI(message) {
     try {
@@ -236,4 +274,7 @@ async function searchMessageForRegionOpenAI(message) {
     }
 }
 
-module.exports = { searchMessageForRegion };
+module.exports = {
+    shouldRunRegionSearch,
+    searchMessageForRegion
+};

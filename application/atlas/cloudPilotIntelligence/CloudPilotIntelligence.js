@@ -32,15 +32,15 @@ const SearchMessageForActionFunctions = require('./understand/search/searchMessa
 const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
 
 //Function A1: Understand full user message
-async function understandMessage(message) {
+async function understandMessage(message, requestState) {
     //STEP 1: Delegate to understand orchestrator (Internal/OpenAI decided inside extractors)
-    return UnderstandMessageFunctions.understandMessage(message);
+    return UnderstandMessageFunctions.understandMessage(message, requestState);
 }
 
 //Function A2: Understand region from message
-async function understandRegion(message) {
-    //STEP 1: Delegate to region search (Internal vs OpenAI via CLOUDPILOT_AI_CONFIG)
-    return SearchMessageForRegionFunctions.searchMessageForRegion(message);
+async function understandRegion(message, requestState) {
+    //STEP 1: Delegate to region search (shouldRun + Internal vs OpenAI)
+    return SearchMessageForRegionFunctions.searchMessageForRegion(message, requestState);
 }
 
 //Function A3: Understand action from message
@@ -50,9 +50,9 @@ async function understandAction(message) {
 }
 
 //Function A4: Understand resource / field signals from message
-async function understandResource(message) {
+async function understandResource(message, requestState) {
     //STEP 1: Delegate to values extractors (region, ids, name, tags, structured fields)
-    return SearchMessageForValuesFunctions.searchMessageForValues(message);
+    return SearchMessageForValuesFunctions.searchMessageForValues(message, requestState);
 }
 
 //Function B1: Respond — placeholder until a later project
