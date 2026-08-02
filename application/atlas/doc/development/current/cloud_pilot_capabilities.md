@@ -2,7 +2,7 @@
 
 **Status:** Plan — not started  
 **Scope:** Let users ask what CloudPilot can do, using the current action catalog as the source of truth  
-**Work type:** One informational action + curated internal response + optional OpenAI presentation  
+**Work type:** One informational action + dynamic catalog response + optional OpenAI presentation
 **Last updated:** 2026-08-02
 
 ---
@@ -23,45 +23,37 @@ CloudPilot should return a useful, accurate description of its current supported
 
 The response must work in both modes:
 
-- **Internal:** deterministic curated response; no OpenAI request.
-- **OpenAI:** same verified capability facts, presented naturally through the existing general-message OpenAI switch.
+- **Internal:** deterministic response generated from the live action catalog; no OpenAI request.
+- **OpenAI:** same catalog facts, presented naturally through the existing general-message OpenAI switch.
 
 ---
 
-## Important accuracy rule
+## Source of truth
 
-Only describe capabilities that exist in the live `actionMap`.
+The response must be generated from the live `actionMap`.
 
-Current action catalog supports:
+```text
+New action registered in actionMap
+  ↓
+show_capabilities response includes it automatically
+```
 
-### Explore AWS
+Do not scan arbitrary project files to decide what CloudPilot can do. A file can be experimental, unused, or a lower-level provider helper. `actionMap` is the existing registry that says what CloudPilot can detect and run.
 
-- Inventory AWS resources
-- Scan EC2
-- Scan S3
-- View AWS billing
+For this first version, show every action that is:
 
-### Manage EC2
+- `allowed: true`
+- user-facing
+- not `general_chat`
+- not the `show_capabilities` action itself
 
-- Create EC2 instances
-- Delete EC2 instances
-- Toggle between primary and secondary EC2 instances
-- Update EC2 tags
+Use the existing action data:
 
-### Work your way
-
-For supported EC2 changes:
-
-- Guided instructions
-- AWS CLI commands (where currently available)
-- Pull request delivery (where currently available)
-- Automatic execution after the existing request / confirmation flow
-
-### CloudPilot
-
-- View recorded OpenAI usage / spend
-
-Do **not** promise RDS management, RDS read access, or generic AWS troubleshooting until an actual action supports it.
+```text
+actionLabel
+actionTier
+executionModes (when present)
+```
 
 ---
 
@@ -75,8 +67,8 @@ actionMap detects show_capabilities
 Immediate informational execution
   ↓
 Capabilities handler
-  ├── Internal → curated deterministic response
-  └── OpenAI → existing message-response setting, with curated facts supplied
+  ├── Internal → deterministic response generated from actionMap
+  └── OpenAI → existing message-response setting, with actionMap facts supplied
   ↓
 CloudPilot response
 ```
@@ -101,15 +93,52 @@ executionFunction: showCapabilitiesHandler
 
 This matters because the current immediate-execution path only calls an action handler when both `requiresWorkflow: false` and `requiresExecution: true`.
 
-### 2. Curated content first
+### 2. Dynamic action catalog first
 
-Do not derive the user-facing response automatically from every `actionMap` field in this first pass.
+Do derive the response automatically from `actionMap` in this first pass.
 
-Use a small curated capability response so the product language is clear and unsupported work is not accidentally advertised.
+The handler should:
 
-The action map remains the verification checklist whenever the response is updated.
+1. Load eligible actions from `actionMap`.
+2. Build a stable capabilities payload.
+3. Format it into user-facing sections.
 
-### 3. Preserve the existing AI toggle
+Suggested sections can use existing action metadata:
+
+```text
+Read / Explore       → informational actions
+Change Infrastructure → destructive actions
+How Changes Apply    → union of executionModes from destructive actions
+```
+
+If future product wording needs a better description than `actionLabel`, add optional standard metadata to that action:
+
+```text
+capability: {
+  category: 'Read / Explore',
+  description: 'Scan DynamoDB tables'
+}
+```
+
+The handler must fall back to the action label when this metadata is absent, so a newly registered action is still visible.
+
+### 3. All current users first; per-user filtering later
+
+Today, return every eligible action to every user.
+
+Later, use the same catalog builder with user permissions to filter the actions before formatting:
+
+```text
+actionMap
+  ↓
+user permission filter (later)
+  ↓
+capabilities response
+```
+
+Do not build users, roles, or authorization rules in this project.
+
+### 4. Preserve the existing AI toggle
 
 Use the existing settings:
 
@@ -128,16 +157,16 @@ CLOUDPILOT_MESSAGE_RESPONSE=openai
 
 Do not add a separate capabilities-specific OpenAI toggle in the first pass.
 
-### 4. OpenAI may improve wording, not facts
+### 5. OpenAI may improve wording, not facts
 
-When OpenAI is enabled, pass the curated capabilities as grounded context and instruct it:
+When OpenAI is enabled, pass the generated action catalog as grounded context and instruct it:
 
 ```text
 Only describe the listed capabilities.
 Do not claim support for services or actions not listed.
 ```
 
-The internal response remains the fallback if OpenAI fails.
+The internal dynamic response remains the fallback if OpenAI fails.
 
 ---
 
@@ -149,7 +178,7 @@ cloudPilot/
 └── chat/
     └── capabilities/
         ├── showCapabilitiesHandler.js
-        └── capabilitiesFunctions.js       # only if response / OpenAI helpers need extraction
+        └── capabilitiesFunctions.js       # loads catalog + builds response
 ```
 
 The handler belongs with chat because its product is a response, not an AWS scan or mutation.
@@ -163,14 +192,14 @@ The handler belongs with chat because its product is a response, not an AWS scan
 1. Add `show_capabilities` to `actionMap`.
 2. Add `showCapabilitiesHandler`.
 3. Add exact match phrases.
-4. Return the curated deterministic response.
+4. Build the deterministic response from all eligible `actionMap` actions.
 5. Verify it follows immediate execution with no request row / AWS call / history record.
 6. Commit and stop.
 
 ### Phase 2 — Optional OpenAI presentation
 
 1. Reuse the existing `MESSAGE_RESPONSE` Internal / OpenAI switch.
-2. Pass curated capabilities as grounded context when OpenAI is enabled.
+2. Pass the generated action catalog as grounded context when OpenAI is enabled.
 3. Keep the deterministic response as failure fallback.
 4. Verify OpenAI cannot advertise unsupported work.
 5. Commit and stop.
@@ -185,12 +214,11 @@ The handler belongs with chat because its product is a response, not an AWS scan
 
 ## Out of scope
 
-- RDS support
 - New AWS actions
 - Generic AWS troubleshooting promises
-- Dynamic actionMap-to-marketing copy generation
 - New OpenAI configuration switches
 - Changes to request, execution, history, or Intelligence architecture
+- User-specific capability filtering (later)
 
 ---
 
@@ -201,7 +229,7 @@ The handler belongs with chat because its product is a response, not an AWS scan
 ```text
 CLOUDPILOT_AI_ENABLED=false
 User: "What can you do?"
-Expected: curated capabilities response; no OpenAI call.
+Expected: deterministic response generated from the eligible action catalog; no OpenAI call.
 ```
 
 ### OpenAI mode
@@ -210,7 +238,7 @@ Expected: curated capabilities response; no OpenAI call.
 CLOUDPILOT_AI_ENABLED=true
 CLOUDPILOT_MESSAGE_RESPONSE=openai
 User: "What can you do?"
-Expected: natural response limited to curated supported capabilities.
+Expected: natural response limited to the generated action catalog.
 ```
 
 ### Safety
@@ -218,7 +246,8 @@ Expected: natural response limited to curated supported capabilities.
 - No request row created
 - No AWS mutation
 - No history entry
-- No RDS promise
+- Newly registered allowed user-facing action appears without changing the handler
+- All current users see the same eligible action catalog
 - Existing general-chat behavior unchanged for unrelated messages
 
 ---
