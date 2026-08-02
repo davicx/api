@@ -2,11 +2,11 @@
 
 ## Project restructure
 
-**Folder refactor plan (Project A complete):**
-[doc/development/current/cloud_pilot_refactor.md](./doc/development/current/cloud_pilot_refactor.md)
+**Folder refactor (Projects A + C complete):**
+[doc/development/finished/finished.md](./doc/development/finished/finished.md)
 
-**Project C (actions + executionModes):**
-[doc/development/current/cloud_pilot_project_c.md](./doc/development/current/cloud_pilot_project_c.md)
+**Current plan (Project B — Intelligence facade):**
+[doc/development/current/cloud_pilot_project_b.md](./doc/development/current/cloud_pilot_project_b.md)
 
 ```text
 routes/  logic/  functions/  config/

@@ -1,8 +1,31 @@
 # Finished
 
-**Last reviewed:** 2026-07-05
+**Last reviewed:** 2026-08-02
 
-> **To do:** [To_do.md](../future/to_do.md) · **Scans:** [scans.md](../future/scans.md) · **History status:** [history.md](./history.md) · **Deferred:** [future_work.md](../future/future.md) · **Architecture:** [architecture/](../architecture/)
+> **Current plan:** [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md) · **To do:** [To_do.md](../future/to_do.md) · **Scans:** [scans.md](../future/scans.md) · **History status:** [history.md](./history.md) · **Deferred:** [future_work.md](../future/future.md) · **Architecture:** [architecture/](../architecture/)
+
+---
+
+## CloudPilot folder organization (2026-08)
+
+### Project A — responsibility folders
+
+- [x] `conversation/` → `chat/`
+- [x] `decision/` → `requests/`
+- [x] `changes/` → `remediations/` (temporary name)
+- [x] scans / billing / inventory / aiUsage under read-only tree
+- [x] navigator helper → `chat/presentation/`
+- [x] Docs + empty-folder cleanup
+- Detail: [cloud_pilot_refactor.md](./cloud_pilot_refactor.md)
+- Related superseded drafts: [responsibility_refactor.md](./responsibility_refactor.md) · [project_structure_plan.md](./project_structure_plan.md)
+
+### Project C — actions + execution modes
+
+- [x] Mutation handlers → `actions/`
+- [x] Automatic / CLI / Instructions / PR → `executionModes/`
+- [x] Delete empty `remediations/`
+- [x] Style pass: `FUNCTIONS` TOC + `//STEP` inside mode logic files
+- Detail: [cloud_pilot_project_c.md](./cloud_pilot_project_c.md)
 
 ---
 

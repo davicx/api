@@ -1,9 +1,10 @@
 # Project C — Actions + Execution Modes
 
-**Status:** Complete — code moved, imports updated, smoke-required  
+**Status:** Complete — archived  
 **Scope:** `application/atlas/cloudPilot/` only  
 **Work type:** Mostly folder moves / file renames, import updates, smoke verify, commit  
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-02  
+**Archive note:** Finished history. Active plan: [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md)
 
 This project is still primarily an organizational cleanup, but the layout should now better match the existing Atlas / application coding style:
 
@@ -434,3 +435,4 @@ This was the natural follow-up to Project C:
 
 - Project A (complete): [cloud_pilot_refactor.md](./cloud_pilot_refactor.md)
 - Atlas README: [../../../README.md](../../../README.md)
+- Next plan: [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md)

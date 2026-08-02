@@ -5,7 +5,7 @@
 **Nature of work:** Move / rename folders & files + fix `require()` paths. **Do not rewrite logic.**  
 **Last reviewed:** 2026-08-01
 
-**Related:** [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) · [code_cleanup.md](../architecture/code_cleanup.md) · [current.md](./current.md) · [README.md](../../../README.md)
+**Related:** [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) · [code_cleanup.md](../architecture/code_cleanup.md) · [current.md](../current/current.md) · [README.md](../../../README.md) · [Project B](../current/cloud_pilot_project_b.md)
 
 ---
 
