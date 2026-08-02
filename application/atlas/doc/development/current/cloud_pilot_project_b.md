@@ -1,6 +1,6 @@
 # Project B — CloudPilot Intelligence Facade
 
-**Status:** Phase 1 complete — stop before Phase 2  
+**Status:** Phase 2 complete — stop before Phase 3  
 **Scope:** `cloudPilotIntelligence/` facade + migrate existing understanding behind it  
 **Work type:** Facade + move existing understand code; preserve behavior  
 **Last updated:** 2026-08-02
@@ -84,11 +84,11 @@ Additional capabilities remain empty scaffolds / placeholders until later projec
 
 ### Phase 2 — Migrate understand behind facade
 
-- [ ] Move existing `cloudPilot/chat/understand/**` behind Intelligence.
-- [ ] Wire CloudPilot STEP 3 to call Intelligence understand APIs.
-- [ ] Preserve Internal / OpenAI region behavior.
-- [ ] Smoke: general chat + request understanding still work.
-- [ ] Commit. Stop.
+- [x] Move existing `cloudPilot/chat/understand/**` behind Intelligence.
+- [x] Wire CloudPilot STEP 3 to call Intelligence understand APIs.
+- [x] Preserve Internal / OpenAI region behavior.
+- [x] Smoke: general chat + request understanding still work.
+- [x] Commit. Stop.
 
 ### Phase 3 — Cleanup + docs
 
@@ -137,4 +137,4 @@ Project B  →  Organize intelligence (facade + understand migration)
 
 ## Next
 
-Say **go** to start Phase 2 (migrate `chat/understand/` behind the facade).
+Say **go** to start Phase 3 (docs + leftover cleanup). Review the Phase 2 diff before approving if you prefer manual review.

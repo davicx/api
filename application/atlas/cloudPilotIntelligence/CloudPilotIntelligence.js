@@ -4,8 +4,7 @@ CloudPilot Intelligence Facade
 CloudPilot depends on this module for AI-assisted thinking work.
 CloudPilotIntelligence decides Internal vs OpenAI based on configuration.
 
-Project B Phase 1: facade skeleton only.
-Understand methods are wired in Phase 2 (migrate chat/understand/).
+Project B Phase 2: understand methods wired to migrated chat/understand code.
 Respond / explain / improve / generate stay placeholders until later projects.
 
 FUNCTIONS A: Understand
@@ -27,36 +26,33 @@ FUNCTIONS E: Generate (placeholder)
     1) Function E1: generate
 */
 
-//Function A1: Understand full user message (wired in Phase 2)
+const UnderstandMessageFunctions = require('./understand/understandMessage');
+const SearchMessageForRegionFunctions = require('./understand/search/searchMessageForRegion');
+const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
+const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
+
+//Function A1: Understand full user message
 async function understandMessage(message) {
-    //STEP 1: Not wired yet — migrate cloudPilot/chat/understand in Phase 2
-    throw new Error(
-        'CloudPilotIntelligence.understandMessage is not wired yet (Project B Phase 2).'
-    );
+    //STEP 1: Delegate to understand orchestrator (Internal/OpenAI decided inside extractors)
+    return UnderstandMessageFunctions.understandMessage(message);
 }
 
-//Function A2: Understand region from message (wired in Phase 2)
+//Function A2: Understand region from message
 async function understandRegion(message) {
-    //STEP 1: Not wired yet — migrate region search in Phase 2
-    throw new Error(
-        'CloudPilotIntelligence.understandRegion is not wired yet (Project B Phase 2).'
-    );
+    //STEP 1: Delegate to region search (Internal vs OpenAI via CLOUDPILOT_AI_CONFIG)
+    return SearchMessageForRegionFunctions.searchMessageForRegion(message);
 }
 
-//Function A3: Understand action from message (wired in Phase 2)
+//Function A3: Understand action from message
 async function understandAction(message) {
-    //STEP 1: Not wired yet — migrate action search in Phase 2
-    throw new Error(
-        'CloudPilotIntelligence.understandAction is not wired yet (Project B Phase 2).'
-    );
+    //STEP 1: Delegate to action search (rules / actionMap)
+    return SearchMessageForActionFunctions.searchMessageForAction(message);
 }
 
-//Function A4: Understand resource signals from message (wired in Phase 2)
+//Function A4: Understand resource / field signals from message
 async function understandResource(message) {
-    //STEP 1: Not wired yet — migrate resource extractors in Phase 2
-    throw new Error(
-        'CloudPilotIntelligence.understandResource is not wired yet (Project B Phase 2).'
-    );
+    //STEP 1: Delegate to values extractors (region, ids, name, tags, structured fields)
+    return SearchMessageForValuesFunctions.searchMessageForValues(message);
 }
 
 //Function B1: Respond — placeholder until a later project

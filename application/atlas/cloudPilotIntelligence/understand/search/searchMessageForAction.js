@@ -1,4 +1,4 @@
-const actionMap = require('../../../actionMap');
+const actionMap = require('../../../cloudPilot/actionMap');
 
 /*
 FUNCTIONS A: Action detection from user message (rules / registry)

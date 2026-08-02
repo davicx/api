@@ -1,6 +1,6 @@
 const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const RequestStateFunctions = require('../requests/functions/requestLoadFunctions');
-const UnderstandingFunctions = require('./understand/understandMessage');
+const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 const DecisionFunctions = require('../requests/decideNextStep');
 const RequestWorkflow = require('../requests/workflow');
 const GeneralConversation = require('./general/GeneralConversation');
@@ -107,7 +107,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 
     //STEP 3: Understand — what is the user trying to do?
-    const messageUnderstanding = await UnderstandingFunctions.understandMessage(currentUserMessage);
+    const messageUnderstanding = await CloudPilotIntelligence.understandMessage(currentUserMessage);
 
     console.log("STEP 3: Message Understanding");
     console.log(JSON.stringify(messageUnderstanding, null, 2));
