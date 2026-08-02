@@ -114,7 +114,8 @@ function buildCapabilitiesCatalog() {
     }
 
     return {
-        sections: orderedSections
+        sections: orderedSections,
+        executionModes: collectUniqueExecutionModes(eligibleActions)
     };
 }
 
@@ -123,6 +124,11 @@ function buildCapabilitiesMessage(catalog) {
     const lines = [];
     const sections =
         catalog && Array.isArray(catalog.sections) ? catalog.sections : [];
+    const modeLabels = formatExecutionModeLabels(
+        catalog && Array.isArray(catalog.executionModes)
+            ? catalog.executionModes
+            : []
+    );
 
     lines.push('Here is how CloudPilot can help you today:');
     lines.push('');
@@ -140,12 +146,17 @@ function buildCapabilitiesMessage(catalog) {
         for (let j = 0; j < section.actions.length; j++) {
             const action = section.actions[j];
             lines.push('• ' + action.description);
+        }
 
-            const modeLabels = formatExecutionModeLabels(action.executionModes);
+        lines.push('');
+    }
 
-            for (let k = 0; k < modeLabels.length; k++) {
-                lines.push('  - ' + modeLabels[k]);
-            }
+    if (modeLabels.length > 0) {
+        lines.push('Here is how we can do this:');
+        lines.push('');
+
+        for (let i = 0; i < modeLabels.length; i++) {
+            lines.push('• ' + modeLabels[i]);
         }
 
         lines.push('');
@@ -156,6 +167,32 @@ function buildCapabilitiesMessage(catalog) {
     );
 
     return lines.join('\n').trim();
+}
+
+function collectUniqueExecutionModes(eligibleActions) {
+    const seen = {};
+    const modes = [];
+
+    for (let i = 0; i < eligibleActions.length; i++) {
+        const executionModes = eligibleActions[i].executionModes;
+
+        if (!Array.isArray(executionModes)) {
+            continue;
+        }
+
+        for (let j = 0; j < executionModes.length; j++) {
+            const mode = String(executionModes[j] || '').trim().toLowerCase();
+
+            if (!mode || seen[mode]) {
+                continue;
+            }
+
+            seen[mode] = true;
+            modes.push(mode);
+        }
+    }
+
+    return modes;
 }
 
 function formatExecutionModeLabels(executionModes) {
