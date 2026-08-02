@@ -37,13 +37,13 @@ Shared (shipped)
 - [x] Message response OpenAI path (see [chat_use_open_ai.md](../../instructions/chat_use_open_ai.md))
 - [x] Demo chat list documented (Section B5)
 
-**Next — When to run Region Search** ([Section C](../current/current.md#section-c--when-to-run-region-search-next))
+**Next — Fix Region Search, then reuse the AI feature-gate pattern** ([cloud_pilot_openai_rollout.md](../current/cloud_pilot_openai_rollout.md))
 - [ ] Do **not** run Region Search on every message
 - [ ] MVP gate: open request + `region` still missing → then Internal | OpenAI
 - [ ] Skip when region not needed (no open request / region already collected)
 - [ ] Keep master + `CLOUDPILOT_REGION_SEARCH` switch unchanged — only change **when** it runs
 - [ ] Optional log when skipped (`REGION_LOGS`)
-- [ ] Later (not this slice): same-turn “Scan EC2 in Oregon” without open request yet (Section C3)
+- [ ] Later (not this slice): same-turn “Scan EC2 in Oregon” without open request yet
 
 After that
 - [ ] Ambiguous region clarify (Section D) — after demo MVP

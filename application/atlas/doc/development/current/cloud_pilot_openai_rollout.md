@@ -1,12 +1,12 @@
-# CloudPilot OpenAI Rollout
+# CloudPilot AI Feature Gates
 
 **Status:** Plan — not started  
-**Goal:** Enable OpenAI only for implemented, purposefully gated features while keeping Internal behavior available for development and fallback  
+**Goal:** Fix Region Search first, then use the same conservative gate pattern for every implemented AI feature
 **Last updated:** 2026-08-02
 
 ---
 
-## Principle
+## One plan, one pattern
 
 ```text
 Internal is always available.
@@ -15,7 +15,22 @@ Master OFF always wins.
 Avoid unnecessary live calls over extracting optional information.
 ```
 
-CloudPilot must never use OpenAI just because a feature is available. It should call OpenAI only when the current request needs that feature.
+First implement the Region Search gate. Then follow this same pattern for future AI work instead of adding one-off OpenAI calls.
+
+```text
+1. Does the current request need this feature?
+   NO  → do not call Internal or OpenAI feature work.
+   YES → continue.
+
+2. Is OpenAI enabled for this feature?
+   NO  → use Internal implementation.
+   YES → use OpenAI with deterministic facts / context.
+
+3. If OpenAI fails
+   → use Internal fallback when available.
+```
+
+CloudPilot must never use OpenAI just because a feature is available. It should call AI only when the current request needs that feature.
 
 ---
 
@@ -79,9 +94,9 @@ CLOUDPILOT_ACTION_SEARCH=internal
 
 ---
 
-## Phase 1 — Conservative Region Search gate (first)
+## Phase 1 — Fix Region Search first
 
-Before enabling OpenAI Region Search live, implement the Stage 1 gate in [current.md § Section C](./current.md#section-c--when-to-run-region-search-next).
+Before enabling OpenAI Region Search live, implement this conservative gate:
 
 ```text
 Open request + region missing
@@ -105,7 +120,7 @@ Commit and stop.
 
 ---
 
-## Phase 2 — Enable and test existing OpenAI paths
+## Phase 2 — Apply the pattern to implemented AI features
 
 After Phase 1 is verified:
 
@@ -125,7 +140,7 @@ Commit configuration / docs only if source-controlled configuration changes are 
 
 ---
 
-## Phase 3 — Capabilities OpenAI presentation (after capabilities Phase 1)
+## Phase 3 — Follow the pattern for capabilities (later)
 
 The `show_capabilities` internal response is actionMap-driven now.
 
@@ -158,4 +173,4 @@ Do not add a new capabilities-specific environment variable in this phase; reuse
 
 ## Next
 
-Implement Phase 1 only: conservative Region Search gate.
+Implement Phase 1 only: conservative Region Search gate. Do not enable or add another OpenAI feature until its call gate is clear.

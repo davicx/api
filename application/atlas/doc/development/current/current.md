@@ -150,118 +150,21 @@ How-to for chat path: [chat_use_open_ai.md](../../instructions/chat_use_open_ai.
 
 ---
 
-# SECTION C — When to run Region Search (**NEXT**)
+# SECTION C — Purposeful AI Feature Gates (**NEXT**)
 
-**Status:** Design locked. **Build this next.** Not how code works today.
+**Single active plan:** [cloud_pilot_openai_rollout.md](./cloud_pilot_openai_rollout.md)
 
-**Problem today:** every message runs `searchMessageForValues` → `searchMessageForRegion` (OpenAI can bill on unrelated chat).
-
-**Doc already locked here** — implement the MVP gate below before ambiguous clarify (Section D).
-
-## C1 — Goal
-
-Do **not** send every user message through Region Search.
-
-Run Region Search only when CloudPilot has a reason to believe the current request/action **needs** region information.
-
-## C2 — MVP gate (proposed)
+Start by fixing Region Search:
 
 ```text
-User Message
-      │
-      ▼
-Is there an OPEN REQUEST?
-      │
- ┌────┴────┐
- NO       YES
- │          │
- │          ▼
- │     Does the request need REGION?
- │     (e.g. region in missingFields)
- │          │
- │     ┌────┴────┐
- │     NO       YES
- │     │          │
- │     │          ▼
- │     │     REGION SEARCH  (internal | openai)
- │     │
- ▼     ▼
-Do not run Region Search
+No open request OR region already known
+  → skip Region Search
+
+Open request + region missing
+  → Region Search may run (Internal or OpenAI)
 ```
 
-**Example:** Open request `scan_ec2`, missing `region`, user says `west` → run `searchMessageForRegion("west")`.
-
-**Counter-example:** No open request, user says “I went sailing out west” → **do not** run Region Search.
-
-## C3 — Architectural rule (not a permanent shortcut)
-
-Do **not** permanently encode: “no open request = never search region.”
-
-Same message can start an action **and** supply region:
-
-```text
-Scan EC2 in Oregon.
-```
-
-Eventual flow:
-
-```text
-User Message
-  → Open request? → process existing
-  → else detect new action → create request → missing fields
-  → needs region? → REGION SEARCH
-```
-
-**Rule:** Only run Region Search when the **current request/action needs region**.
-
-**MVP primary trigger:** open request with `region` still missing.
-
-### C3a — Conservative token rule (locked for Stage 1)
-
-When live OpenAI use is enabled, prefer a missed region extraction over an unnecessary OpenAI call.
-
-```text
-No open request
-  → do not run Region Search
-
-Open request, region not missing
-  → do not run Region Search
-
-Open request, region missing
-  → run Region Search (Internal or OpenAI, based on config)
-```
-
-This deliberately does **not** handle the brand-new combined message yet:
-
-```text
-Scan EC2 in Oregon
-```
-
-At STEP 2 there is no open request, so Stage 1 skips region search even though the message includes a region. The user can provide the region after CloudPilot opens the request.
-
-Stage 2 may improve this by detecting the action first and running Region Search only when that action requires `region`. Do not add that broader ordering change in Stage 1.
-
-## C4 — Purposeful understanding principle
-
-```text
-CloudPilot determines WHAT it needs
-              ↓
-AI helps UNDERSTAND the user's language
-              ↓
-CloudPilot validates/stores the structured result
-              ↓
-Deterministic request pipeline continues
-```
-
-Do not auto-run Region + Action + Name + Resource search on every message.
-
-## C5 — Build notes (when coding)
-
-- Gate before calling `searchMessageForRegion` (or no-op at top of gateway when not needed).
-- Need request state available at STEP 3 (open request + missing fields) — today understand is message-only; wiring may pass loaded state from STEP 2.
-- Keep Internal vs OpenAI switch unchanged; only change **when** search runs.
-- Logs: when skipped, optional one-liner if `REGION_LOGS` (e.g. `Region Search: SKIPPED — region not needed`).
-- Stage 1 must not add action-first / new-request region extraction.
+This conservative Stage 1 rule prefers a missed optional extraction over an unnecessary live token call. The rollout plan then applies the same pattern to other AI features when they are actually implemented.
 
 ---
 
