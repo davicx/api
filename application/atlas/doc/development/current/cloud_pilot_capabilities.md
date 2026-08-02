@@ -19,7 +19,7 @@ What services do you support?
 Help
 ```
 
-CloudPilot should return a useful, accurate description of its current supported work.
+CloudPilot should explain **how it can help you today** using a useful, accurate description of its live action catalog.
 
 The response must work in both modes:
 
@@ -51,7 +51,6 @@ Use the existing action data:
 
 ```text
 actionLabel
-actionTier
 executionModes (when present)
 ```
 
@@ -103,24 +102,45 @@ The handler should:
 2. Build a stable capabilities payload.
 3. Format it into user-facing sections.
 
-Suggested sections can use existing action metadata:
+Do not use `actionTier` for user-facing sections. It is an internal orchestration property, not product presentation metadata.
 
-```text
-Read / Explore       → informational actions
-Change Infrastructure → destructive actions
-How Changes Apply    → union of executionModes from destructive actions
-```
-
-If future product wording needs a better description than `actionLabel`, add optional standard metadata to that action:
+Instead, each user-facing action may add optional capability metadata:
 
 ```text
 capability: {
-  category: 'Read / Explore',
-  description: 'Scan DynamoDB tables'
+  section: 'Explore AWS',
+  description: 'Scan EC2 instances for issues and recommendations.'
 }
 ```
 
-The handler must fall back to the action label when this metadata is absent, so a newly registered action is still visible.
+Examples:
+
+```text
+scan_ec2      → section: Explore AWS
+create_ec2    → section: Manage EC2
+show_ai_usage → section: CloudPilot
+```
+
+When metadata is absent:
+
+```text
+section     → Other
+description → actionLabel
+```
+
+That fallback means a newly registered action remains visible automatically. Adding `capability.section` and `capability.description` makes its presentation better, but is not required for it to appear.
+
+For actions with `executionModes`, show those modes below the action:
+
+```text
+Switch between primary and secondary instances
+• Instructions
+• AWS CLI
+• Pull Request
+• Automatic
+```
+
+This describes an existing action’s supported delivery choices; it does not claim every action supports every mode.
 
 ### 3. All current users first; per-user filtering later
 
@@ -138,7 +158,21 @@ capabilities response
 
 Do not build users, roles, or authorization rules in this project.
 
-### 4. Preserve the existing AI toggle
+### 4. Future visibility flag (not built now)
+
+Later, an action may add:
+
+```text
+capability: {
+  visible: false
+}
+```
+
+The catalog builder can then omit registered actions that are not ready for user discovery.
+
+For this first pass, show every eligible action. Do not add an `experimental` or `visible` filter yet.
+
+### 5. Preserve the existing AI toggle
 
 Use the existing settings:
 
@@ -157,7 +191,7 @@ CLOUDPILOT_MESSAGE_RESPONSE=openai
 
 Do not add a separate capabilities-specific OpenAI toggle in the first pass.
 
-### 5. OpenAI may improve wording, not facts
+### 6. OpenAI may improve wording, not facts
 
 When OpenAI is enabled, pass the generated action catalog as grounded context and instruct it:
 
@@ -193,6 +227,9 @@ The handler belongs with chat because its product is a response, not an AWS scan
 2. Add `showCapabilitiesHandler`.
 3. Add exact match phrases.
 4. Build the deterministic response from all eligible `actionMap` actions.
+   - Read optional `capability.section` / `capability.description`.
+   - Default missing metadata to `Other` / `actionLabel`.
+   - Show `executionModes` beside the matching action.
 5. Verify it follows immediate execution with no request row / AWS call / history record.
 6. Commit and stop.
 
@@ -219,6 +256,7 @@ The handler belongs with chat because its product is a response, not an AWS scan
 - New OpenAI configuration switches
 - Changes to request, execution, history, or Intelligence architecture
 - User-specific capability filtering (later)
+- Visibility / experimental filtering (later)
 
 ---
 
@@ -248,6 +286,8 @@ Expected: natural response limited to the generated action catalog.
 - No history entry
 - Newly registered allowed user-facing action appears without changing the handler
 - All current users see the same eligible action catalog
+- Action sections come from `capability.section`, never from `actionTier`
+- Actions with execution modes show only their own supported modes
 - Existing general-chat behavior unchanged for unrelated messages
 
 ---
