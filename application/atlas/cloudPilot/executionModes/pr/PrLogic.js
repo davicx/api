@@ -1,13 +1,23 @@
 const createToggleEc2PullRequest = require('./createToggleEc2PullRequest');
 
 /*
-PR change strategy — user picked option 3.
-STEP 7 response only.
+PULL REQUEST EXECUTION — user picked option 3
 
+STEP 7 response only.
 MVP: toggle_ec2 opens a real GitHub PR (Terraform primary → secondary).
+
+FUNCTIONS A: Prepare Pull Request
+    1) Function A1: buildPrStrategy — validate action key
+
+FUNCTIONS B: Create Pull Request
+    1) Function B1: buildPrStrategy — create or reuse toggle EC2 pull request
+
+FUNCTIONS C: Build Response
+    1) Function C1: buildPrStrategy — return PR response
 */
 
 async function buildPrStrategy(chatType, actionKey, collected) {
+    //STEP 1: Load and Validate Action
     const key = actionKey ? String(actionKey).trim() : '';
 
     if (!key) {
@@ -21,6 +31,7 @@ async function buildPrStrategy(chatType, actionKey, collected) {
         };
     }
 
+    //STEP 2: Create Pull Request
     if (key === 'toggle_ec2') {
         const result = await createToggleEc2PullRequest.createToggleEc2PullRequest(
             collected || {}
@@ -45,6 +56,7 @@ async function buildPrStrategy(chatType, actionKey, collected) {
         const change = result.change;
         const pullRequest = result.pullRequest;
 
+        //STEP 3: Build Pull Request Response
         return {
             success: true,
             cloudPilotMessage: result.message,
@@ -69,6 +81,7 @@ async function buildPrStrategy(chatType, actionKey, collected) {
         };
     }
 
+    //STEP 3: Build Missing Pull Request Response
     return {
         success: false,
         cloudPilotMessage:

@@ -1,7 +1,14 @@
 /*
-Automatic change strategy — user picked option 4.
+AUTOMATIC EXECUTION — user picked option 4
+
 STEP 6 entry: run action handler → capability → Atlas.
 STEP 7 confirmation ("Would you like me to execute?") stays in CloudPilotMessage request templates.
+
+FUNCTIONS A: Prepare Automatic Execution
+    1) Function A1: runAutomaticStrategy — load action and validate automatic mode
+
+FUNCTIONS B: Execute Action
+    1) Function B1: runAutomaticStrategy — delegate to runAction
 */
 
 const actionMap = require('../../actionMap');
@@ -10,6 +17,7 @@ const RunActionFunctions = require('../../execution/functions/runAction');
 const NON_AUTOMATIC_STRATEGIES = ['instructions', 'cli', 'pr'];
 
 async function runAutomaticStrategy(actionType, executionContext) {
+    //STEP 1: Load Action and Execution Mode
     const actionDefinition = actionMap[actionType];
     const needsExecutionMode = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
     const executionMode =
@@ -17,6 +25,7 @@ async function runAutomaticStrategy(actionType, executionContext) {
             ? executionContext.state.executionMode
             : null;
 
+    //STEP 2: Validate Automatic Execution Mode
     if (needsExecutionMode) {
         if (NON_AUTOMATIC_STRATEGIES.includes(executionMode)) {
             return {
@@ -39,6 +48,7 @@ async function runAutomaticStrategy(actionType, executionContext) {
         }
     }
 
+    //STEP 3: Execute Action
     return RunActionFunctions.runAction(actionType, executionContext);
 }
 

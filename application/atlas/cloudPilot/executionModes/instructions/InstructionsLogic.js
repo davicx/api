@@ -1,13 +1,23 @@
 const instructionFunctions = require('../../../functions/instructionFunctions');
 
 /*
-Instructions change strategy — user picked option 1.
-STEP 7 response only.
+INSTRUCTIONS EXECUTION — user picked option 1
 
+STEP 7 response only.
 Loads curated steps via the same shared loader as GET /instructions/:instruction_for.
+
+FUNCTIONS A: Prepare Instructions
+    1) Function A1: buildInstructionsStrategy — validate action key
+
+FUNCTIONS B: Generate Instructions
+    1) Function B1: buildInstructionsStrategy — load instruction payload
+
+FUNCTIONS C: Build Response
+    1) Function C1: buildInstructionsStrategy — return instructions response
 */
 
 async function buildInstructionsStrategy(chatType, instructionFor) {
+    //STEP 1: Load and Validate Action
     const actionKey = instructionFor ? String(instructionFor).trim() : '';
 
     if (!actionKey) {
@@ -21,6 +31,7 @@ async function buildInstructionsStrategy(chatType, instructionFor) {
         };
     }
 
+    //STEP 2: Load Instructions
     const payloadOutcome = await instructionFunctions.loadInstructionsPayload(actionKey);
 
     if (!payloadOutcome.success || !payloadOutcome.data || payloadOutcome.data.stepCount < 1) {
@@ -38,6 +49,7 @@ async function buildInstructionsStrategy(chatType, instructionFor) {
 
     const title = payloadOutcome.data.title || actionKey;
 
+    //STEP 3: Build Instructions Response
     return {
         success: true,
         cloudPilotMessage: 'Here is a guided walkthrough for ' + title + '.',

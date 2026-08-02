@@ -307,6 +307,129 @@ Future work may let actions expose methods like `execute()`, `getCLI()`, `getIns
 
 ---
 
+## Style pass — match your coding style (complete)
+
+**Complete:** Added top-of-file `FUNCTIONS` outlines and `//STEP` workflow comments to all four execution mode logic files. No exports or runtime behavior changed.
+
+### What you want to see when you open a file
+
+Same style as your application logic:
+
+1. Top-of-file TOC:
+
+```javascript
+/*
+AUTOMATIC EXECUTION
+
+FUNCTIONS A: Prepare
+    1) Function A1: ...
+FUNCTIONS B: Execute
+    1) Function B1: ...
+*/
+```
+
+2. Main function that reads as numbered steps:
+
+```javascript
+//STEP 1: ...
+//STEP 2: ...
+//STEP 3: ...
+```
+
+3. Each step calls a small function when the step is more than a few lines.
+
+### Honest map of what exists today
+
+Do **not** invent steps that are not really in these files yet.
+
+| Mode file | What it actually does today |
+|---|---|
+| `AutomaticLogic.js` | Check mode is automatic → call `runAction` |
+| `CliLogic.js` | Validate action key → build CLI template response |
+| `InstructionsLogic.js` | Validate action key → load instructions payload → respond |
+| `PrLogic.js` | Validate action key → call toggle PR helper → respond |
+
+Important: for automatic, **save history / finish request** already live in `execution/functions/executionFunctions.js`, not inside `AutomaticLogic.js`. The style pass should label the real steps in each file — not fake a bigger workflow than that file owns.
+
+### Target style for each mode (label real work)
+
+**AutomaticLogic.js** (current real steps):
+
+```text
+FUNCTIONS A: Prepare Automatic Execution
+    A1 Validate execution mode is automatic
+FUNCTIONS B: Execute Action
+    B1 Run action via runAction
+
+STEP 1: Validate automatic mode
+STEP 2: Execute action
+```
+
+**CliLogic.js**:
+
+```text
+FUNCTIONS A: Prepare CLI
+    A1 Validate action key
+FUNCTIONS B: Generate CLI
+    B1 Build CLI from template
+FUNCTIONS C: Build Response
+    C1 Return CLI response
+
+STEP 1: Validate action
+STEP 2: Generate CLI
+STEP 3: Build response
+```
+
+**InstructionsLogic.js**:
+
+```text
+FUNCTIONS A: Prepare Instructions
+    A1 Validate action key
+FUNCTIONS B: Generate Instructions
+    B1 Load instruction payload
+FUNCTIONS C: Build Response
+    C1 Return instructions response
+
+STEP 1: Validate action
+STEP 2: Load instructions
+STEP 3: Build response
+```
+
+**PrLogic.js**:
+
+```text
+FUNCTIONS A: Prepare PR
+    A1 Validate action key
+FUNCTIONS B: Create PR
+    B1 Create / reuse toggle EC2 pull request
+FUNCTIONS C: Build Response
+    C1 Return PR response
+
+STEP 1: Validate action
+STEP 2: Create pull request
+STEP 3: Build response
+```
+
+Branch/commit/open-PR details stay inside `createToggleEc2PullRequest.js` until that helper itself needs the same STEP style.
+
+### Rules for the style pass
+
+- Keep existing exports (`runAutomaticStrategy`, `buildCliStrategy`, `buildInstructionsStrategy`, `buildPrStrategy`).
+- No behavior changes.
+- Add TOC + `//STEP` comments first.
+- Extract tiny helper functions only when a step is hard to read inline.
+- Do **not** move history/request-finish into `AutomaticLogic.js` just to match an aspirational diagram.
+- Do **not** redesign action APIs.
+
+### Completed scope
+
+This was the natural follow-up to Project C:
+
+1. Project C (done) = put code in the right folders.
+2. Style pass (done) = make `*Logic.js` files readable in your FUNCTIONS / STEP style.
+
+---
+
 ## Related
 
 - Project A (complete): [cloud_pilot_refactor.md](./cloud_pilot_refactor.md)

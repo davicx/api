@@ -1,13 +1,23 @@
 const cliTemplates = require('./cliTemplates');
 
 /*
-CLI change strategy — user picked option 2.
-STEP 7 response only.
+CLI EXECUTION — user picked option 2
 
+STEP 7 response only.
 MVP: create_ec2 template only. Same pattern as Instructions (action + collected).
+
+FUNCTIONS A: Prepare CLI Generation
+    1) Function A1: buildCliStrategy — validate action key
+
+FUNCTIONS B: Generate CLI
+    1) Function B1: buildCliStrategy — build CLI template
+
+FUNCTIONS C: Build Response
+    1) Function C1: buildCliStrategy — return CLI response
 */
 
 function buildCliStrategy(chatType, actionKey, collected) {
+    //STEP 1: Load and Validate Action
     const key = actionKey ? String(actionKey).trim() : '';
 
     if (!key) {
@@ -21,9 +31,11 @@ function buildCliStrategy(chatType, actionKey, collected) {
         };
     }
 
+    //STEP 2: Generate CLI Commands
     if (key === 'create_ec2') {
         const cli = cliTemplates.buildCreateEc2Cli(collected || {});
 
+        //STEP 3: Build CLI Response
         return {
             success: true,
             cloudPilotMessage: cli.cloudPilotMessage,
@@ -38,6 +50,7 @@ function buildCliStrategy(chatType, actionKey, collected) {
         };
     }
 
+    //STEP 3: Build Missing CLI Response
     return {
         success: false,
         cloudPilotMessage:
