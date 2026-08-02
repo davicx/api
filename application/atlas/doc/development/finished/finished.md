@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-08-02
 
-> **Current plan:** [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md) · **To do:** [To_do.md](../future/to_do.md) · **Scans:** [scans.md](../future/scans.md) · **History status:** [history.md](./history.md) · **Deferred:** [future_work.md](../future/future.md) · **Architecture:** [architecture/](../architecture/)
+> **Finished CloudPilot org work:** [finished.md](./finished.md) · **To do:** [To_do.md](../future/to_do.md) · **Scans:** [scans.md](../future/scans.md) · **History status:** [history.md](./history.md) · **Deferred:** [future_work.md](../future/future.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
 
@@ -26,6 +26,15 @@
 - [x] Delete empty `remediations/`
 - [x] Style pass: `FUNCTIONS` TOC + `//STEP` inside mode logic files
 - Detail: [cloud_pilot_project_c.md](./cloud_pilot_project_c.md)
+
+### Project B — Intelligence facade
+
+- [x] `CloudPilotIntelligence.js` facade entry
+- [x] Move `chat/understand/**` → `cloudPilotIntelligence/understand/**`
+- [x] STEP 3 calls `CloudPilotIntelligence.understandMessage`
+- [x] Internal / OpenAI region selection preserved inside Intelligence
+- [x] `respond` / `explain` / `improve` / `generate` remain placeholders
+- Detail: [cloud_pilot_project_b.md](./cloud_pilot_project_b.md)
 
 ---
 

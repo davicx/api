@@ -1,9 +1,11 @@
 # Project B — CloudPilot Intelligence Facade
 
-**Status:** Phase 2 complete — stop before Phase 3  
+**Status:** Complete — archived  
 **Scope:** `cloudPilotIntelligence/` facade + migrate existing understanding behind it  
 **Work type:** Facade + move existing understand code; preserve behavior  
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-02  
+**Archive note:** Finished history. Index: [finished.md](./finished.md)
+
 
 ---
 
@@ -92,10 +94,10 @@ Additional capabilities remain empty scaffolds / placeholders until later projec
 
 ### Phase 3 — Cleanup + docs
 
-- [ ] Remove empty leftover understand folders under `chat/` if empty.
-- [ ] Update README / current docs paths.
-- [ ] Confirm no direct OpenAI / regex calls from CloudPilot understand path.
-- [ ] Commit. Stop.
+- [x] Remove empty leftover understand folders under `chat/` if empty.
+- [x] Update README / current docs paths.
+- [x] Confirm no direct OpenAI / regex calls from CloudPilot understand path.
+- [x] Commit. Stop.
 
 ---
 
@@ -119,9 +121,9 @@ Project B  →  Organize intelligence (facade + understand migration)
 
 | Project | What | Doc |
 |---|---|---|
-| A | Responsibility folders | [finished/cloud_pilot_refactor.md](../finished/cloud_pilot_refactor.md) |
-| C | `actions/` + `executionModes/` | [finished/cloud_pilot_project_c.md](../finished/cloud_pilot_project_c.md) |
-| B | Intelligence facade (this doc) | current |
+| A | Responsibility folders | [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) |
+| C | `actions/` + `executionModes/` | [cloud_pilot_project_c.md](./cloud_pilot_project_c.md) |
+| B | Intelligence facade (this doc) | complete |
 
 ---
 
@@ -137,4 +139,4 @@ Project B  →  Organize intelligence (facade + understand migration)
 
 ## Next
 
-Say **go** to start Phase 3 (docs + leftover cleanup). Review the Phase 2 diff before approving if you prefer manual review.
+Project B is complete. `respond` / `explain` / `improve` / `generate` remain placeholders for a later project.

@@ -4,7 +4,7 @@ CloudPilot Intelligence Facade
 CloudPilot depends on this module for AI-assisted thinking work.
 CloudPilotIntelligence decides Internal vs OpenAI based on configuration.
 
-Project B Phase 2: understand methods wired to migrated chat/understand code.
+Project B Phase 2+: understand methods wired to migrated understand code.
 Respond / explain / improve / generate stay placeholders until later projects.
 
 FUNCTIONS A: Understand

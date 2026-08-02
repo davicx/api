@@ -2,18 +2,15 @@
 
 ## Project restructure
 
-**Folder refactor (Projects A + C complete):**
+**Folder / intelligence work (Projects A + B + C complete):**
 [doc/development/finished/finished.md](./doc/development/finished/finished.md)
-
-**Current plan (Project B — Intelligence facade):**
-[doc/development/current/cloud_pilot_project_b.md](./doc/development/current/cloud_pilot_project_b.md)
 
 ```text
 routes/  logic/  functions/  config/
 
 cloudPilot/
   actionMap.js
-  chat/            # user interaction (+ temporary understand/)
+  chat/            # user interaction (speak, templates, pipeline entry)
   requests/        # request lifecycle + decideNextStep
   actions/         # reusable mutation operations
   executionModes/  # automatic / cli / instructions / pr
@@ -21,9 +18,11 @@ cloudPilot/
   execution/       # pipeline STEP 6
   history/
 
-cloudPilotIntelligence/   # untouched in Project A; facade later
+cloudPilotIntelligence/
+  CloudPilotIntelligence.js   # facade (understand live; others placeholders)
   context/
-  understand/  respond/  explain/  improve/  generate/
+  understand/                 # message understanding (Internal / OpenAI)
+  respond/  explain/  improve/  generate/   # placeholders
 
 providers/
   atlas/  openAI/{client,usage}/  aws/  github/  gmail/
@@ -75,7 +74,7 @@ api/application/atlas/
 │
 ├── cloudPilot/                 // What CloudPilot does (STEPS 1–7)
 │   ├── actionMap.js
-│   ├── chat/                   // pipeline entry, speak, templates, temporary understand/
+│   ├── chat/                   // pipeline entry, speak, templates
 │   ├── requests/               // request state + decideNextStep + workflow
 │   ├── actions/                // reusable mutation operations
 │   ├── executionModes/         // automatic / cli / instructions / pr
@@ -83,8 +82,14 @@ api/application/atlas/
 │   ├── execution/              // pipeline STEP 6
 │   └── history/
 │
-├── cloudPilotIntelligence/     // How CloudPilot thinks (context live; facade later)
-│   └── context/
+├── cloudPilotIntelligence/     // How CloudPilot thinks
+│   ├── CloudPilotIntelligence.js
+│   ├── context/
+│   ├── understand/             // STEP 3 understanding (Internal / OpenAI)
+│   ├── respond/                // placeholder
+│   ├── explain/                // placeholder
+│   ├── improve/                // placeholder
+│   └── generate/               // placeholder
 │
 ├── providers/                  // External systems
 │   ├── atlas/
@@ -182,7 +187,7 @@ Orchestrator: `cloudPilot/chat/cloudPilotMessageFunctions.js` — STEPS 1–7 (`
 
 | Folder | Role | Pipeline step |
 |--------|------|----------------|
-| `chat/` | Pipeline entry, speak, templates, temporary `understand/` | STEP 1–3 / STEP 4 exit / STEP 7 |
+| `chat/` | Pipeline entry, speak, templates | STEP 1–2 / STEP 4 exit / STEP 7 |
 | `requests/` | Request state + `decideNextStep` + workflow | **STEP 2**, **STEP 4**, **STEP 5** |
 | `execution/` | Pipeline STEP 6 — load action, run selected execution mode | **STEP 6** |
 | `history/` | Change history + undo | **STEP 6B** |
@@ -613,7 +618,9 @@ api/application/atlas/
 | `functions/requestNameFunctions.js` | Request display / internal naming. |
 | `functions/requestStatusFunctions.js` | Rules for `waiting_on_fields`, confirmation, etc. |
 
-### Understanding (`cloudPilot/chat/understand/`)  # temporary; facade later
+### Understanding (`cloudPilotIntelligence/understand/`)
+
+Reached via `CloudPilotIntelligence.understandMessage` (STEP 3). Internal vs OpenAI for region is decided inside Intelligence.
 
 | File | What it does |
 |------|----------------|
@@ -623,7 +630,7 @@ api/application/atlas/
 | `search/searchMessageForReply.js` | Detects yes, cancel, and execution mode 1–4. |
 | `search/searchMessageForValues.js` | Merges bare values into collected fields. |
 | `search/searchMessageForStructuredFields.js` | Parses `field: "value"` structured input. |
-| `search/searchMessageForRegion.js` | Extracts AWS region. |
+| `search/searchMessageForRegion.js` | Extracts AWS region (Internal / OpenAI). |
 | `search/searchMessageForInstanceId.js` | Extracts EC2 instance ID(s). |
 | `search/searchMessageForInstanceType.js` | Extracts instance type (e.g. t3.micro). |
 | `search/searchMessageForName.js` | Extracts resource / request name. |
@@ -639,7 +646,7 @@ routes/messageRoutes.js
   → cloudPilot/chat/cloudPilotMessageFunctions.processMessage()
        STEP 1  normalize
        STEP 2  load request
-       STEP 3  understand                         (chat/understand/ — temporary)
+       STEP 3  understand                         (CloudPilotIntelligence → understand/)
        STEP 4  decide                             (requests/)
 
        General Conversation?

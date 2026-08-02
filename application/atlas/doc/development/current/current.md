@@ -66,10 +66,10 @@ History transport settings (not feature switches):
 
 | Piece | Location |
 |-------|----------|
-| Gateway + Internal + OpenAI | `cloudPilot/chat/understand/search/searchMessageForRegion.js` |
-| Situation building block | `ai/context/contextTypes/cloudPilotSituationContext.js` (`region` only) |
-| Context assembly | `ai/context/buildContext.js` + `buildSystemMessage.js` |
-| OpenAI transport | `ai/client/openAIClient.js` |
+| Gateway + Internal + OpenAI | `cloudPilotIntelligence/understand/search/searchMessageForRegion.js` |
+| Situation building block | `cloudPilotIntelligence/context/contextTypes/cloudPilotSituationContext.js` (`region` only) |
+| Context assembly | `cloudPilotIntelligence/context/buildContext.js` + `buildSystemMessage.js` |
+| OpenAI transport | `providers/openAI/client/openAIClient.js` |
 
 **Public contract today:** `{ region: "us-west-2" }` or `{}`.
 
@@ -298,10 +298,10 @@ AI never owns control flow.
 | Topic | Location |
 |-------|----------|
 | AI config | `config/cloudPilotAIConfig.js` |
-| Region search | `cloudPilot/chat/understand/search/searchMessageForRegion.js` |
-| Values / STEP 3 | `cloudPilot/chat/understand/` |
-| Context | `ai/context/` |
-| OpenAI client | `ai/client/openAIClient.js` |
+| Region search | `cloudPilotIntelligence/understand/search/searchMessageForRegion.js` |
+| Values / STEP 3 | `cloudPilotIntelligence/understand/` + `CloudPilotIntelligence.js` |
+| Context | `cloudPilotIntelligence/context/` |
+| OpenAI client | `providers/openAI/client/openAIClient.js` |
 | Speak | `cloudPilot/chat/CloudPilotMessage.js` |
 | Sample `.env` | [sample_env.md](../../sample_env.md) |
 | Chat OpenAI how-to | [chat_use_open_ai.md](../../instructions/chat_use_open_ai.md) |

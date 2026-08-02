@@ -7,7 +7,7 @@
 **Full migration phases + every file path:** [responsibility_refactor.md](./responsibility_refactor.md)
 
 **Last reviewed:** 2026-08-01  
-**Phase status:** Superseded by [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) — Project A complete. Active plan: [Project B](../current/cloud_pilot_project_b.md).
+**Phase status:** Superseded by [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) — Project A complete. See also [Project B](./cloud_pilot_project_b.md) (complete).
 
 ---
 

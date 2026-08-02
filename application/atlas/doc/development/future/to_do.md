@@ -3,7 +3,7 @@
 **Last reviewed:** 2026-07-27
 
 > **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current.md](../current/current.md)** (AI — **next: when to run Region Search**)  
-> **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Current plan:** [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md)  
+> **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Finished index:** [finished.md](../finished/finished.md)  
 > **History (MVP done):** [history.md](../finished/history.md) · **Deferred:** [future_work.md](./future.md)  
 > **Done:** [finished.md](../finished/finished.md) · **Architecture & reference:** [architecture/](../architecture/)
 
@@ -15,7 +15,7 @@
 
 **History MVP is complete** — see [history.md](../finished/history.md) and [finished.md](../finished/finished.md). Deferred history items: [future_work.md](./future.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../current/pr_strategy.md). **AI (live + planned):** [current.md](../current/current.md). **AI usage / OpenAI spend:** [ai_usage.md](../current/ai_usage.md). **Folder refactor (finished):** [finished.md](../finished/finished.md). **Current CloudPilot plan:** [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../current/pr_strategy.md). **AI (live + planned):** [current.md](../current/current.md). **AI usage / OpenAI spend:** [ai_usage.md](../current/ai_usage.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 

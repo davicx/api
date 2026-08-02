@@ -12,7 +12,7 @@ const showAiUsageHandler = require('./scans/aiUsage/showAiUsageHandler');
 What this file answers:
 
 * What actions exist?
-* How are actions detected? (match rules — used by understanding/search/searchMessageForAction.js)
+* How are actions detected? (match rules — used by cloudPilotIntelligence/understand/search/searchMessageForAction.js)
 * What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
 
 Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, general_chat

@@ -1,8 +1,7 @@
 # CloudPilot Folder Refactor
 
 **Status:** Project A complete (archived)
-**Next:** [cloud_pilot_project_b.md](../current/cloud_pilot_project_b.md)
-**Completed follow-on:** [cloud_pilot_project_c.md](./cloud_pilot_project_c.md)
+**Next completed:** [cloud_pilot_project_c.md](./cloud_pilot_project_c.md) · [cloud_pilot_project_b.md](./cloud_pilot_project_b.md)
 **Scope:** `application/atlas/cloudPilot/` only
 **Work type:** Move folders/files, fix `require()` paths, verify unchanged behavior
 **Last updated:** 2026-08-02
