@@ -7,6 +7,7 @@ const updateEC2TagHandler = require('./actions/updateEC2Tag/updateEC2TagHandler'
 const inventoryAWSHandler = require('./scans/inventory/inventoryAWSHandler');
 const billingAWSHandler = require('./scans/billing/billingAWSHandler');
 const showAiUsageHandler = require('./scans/aiUsage/showAiUsageHandler');
+const showCapabilitiesHandler = require('./chat/capabilities/showCapabilitiesHandler');
 
 /*
 What this file answers:
@@ -15,7 +16,7 @@ What this file answers:
 * How are actions detected? (match rules — used by cloudPilotIntelligence/understand/search/searchMessageForAction.js)
 * What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
 
-Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, general_chat
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, show_capabilities, general_chat
 
 See doc/development/architecture/action_map.md.
 */
@@ -114,6 +115,12 @@ const actionMap = {
         //Execution
         executionFunction: inventoryAWSHandler,
 
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'Inventory your AWS resources'
+        },
+
         //User-Facing System Messages
         messages: {
             started: 'Preparing AWS inventory.',
@@ -160,6 +167,12 @@ const actionMap = {
 
         //Execution
         executionFunction: billingAWSHandler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'Review AWS billing'
+        },
 
         //User-Facing System Messages
         messages: {
@@ -216,6 +229,12 @@ const actionMap = {
         //Execution
         executionFunction: showAiUsageHandler,
 
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'CloudPilot',
+            description: 'View OpenAI usage'
+        },
+
         //User-Facing System Messages
         messages: {
             started: 'Checking OpenAI usage.',
@@ -224,6 +243,65 @@ const actionMap = {
             executing: 'Loading AI usage.',
             success: 'Here is your estimated OpenAI spend.',
             failed: 'AI usage summary failed.'
+        }
+    },
+
+    //SERVICE: CloudPilot
+    //Action: Show what CloudPilot can do (live actionMap catalog)
+    show_capabilities: {
+        //Identity
+        type: 'show_capabilities',
+        actionLabel: 'Show Capabilities',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+
+        //Intent Detection — avoid bare "help" so "help me create ec2" stays create_ec2
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase().trim();
+
+            if (
+                normalized === 'help' ||
+                normalized === 'help?' ||
+                normalized === 'help!'
+            ) {
+                return true;
+            }
+
+            return (
+                normalized.includes('what can you do') ||
+                normalized.includes('what do you do') ||
+                normalized.includes('what are your capabilities') ||
+                normalized.includes('what can cloudpilot do') ||
+                normalized.includes('what services do you support') ||
+                normalized.includes('what do you support') ||
+                normalized.includes('show capabilities') ||
+                normalized.includes('list capabilities')
+            );
+        },
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: showCapabilitiesHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing CloudPilot capabilities.',
+            missingFields: {},
+            ready: 'Everything is ready for capabilities.',
+            executing: 'Loading capabilities.',
+            success: 'Here is how CloudPilot can help you today.',
+            failed: 'Capabilities summary failed.'
         }
     },
 
@@ -257,6 +335,12 @@ const actionMap = {
 
         //Execution
         executionFunction: scanEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'Scan EC2 instances for issues'
+        },
 
         //User-Facing System Messages
         messages: {
@@ -299,6 +383,12 @@ const actionMap = {
 
         //Execution
         executionFunction: scanS3Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'Scan S3 buckets'
+        },
 
         //User-Facing System Messages
         messages: {
@@ -351,6 +441,12 @@ const actionMap = {
 
         //Execution
         executionFunction: toggleEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Switch between primary and secondary instances'
+        },
 
         //User-Facing System Messages
         messages: {
@@ -411,6 +507,12 @@ const actionMap = {
         //Execution
         executionFunction: createEC2Handler,
 
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Create EC2 instances'
+        },
+
         //User-Facing System Messages
         messages: {
             started: 'Preparing EC2 create.',
@@ -461,6 +563,12 @@ const actionMap = {
 
         //Execution
         executionFunction: deleteEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Delete EC2 instances'
+        },
 
         //User-Facing System Messages
         messages: {
@@ -529,6 +637,12 @@ const actionMap = {
 
         //Execution
         executionFunction: updateEC2TagHandler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Update EC2 tags'
+        },
 
         //User-Facing System Messages
         messages: {

@@ -1,6 +1,6 @@
 # CloudPilot Capabilities Response
 
-**Status:** Plan — not started  
+**Status:** Phase 1 complete — stop before Phase 2  
 **Scope:** Let users ask what CloudPilot can do, using the current action catalog as the source of truth  
 **Work type:** One informational action + dynamic catalog response + optional OpenAI presentation
 **Last updated:** 2026-08-02
@@ -223,15 +223,15 @@ The handler belongs with chat because its product is a response, not an AWS scan
 
 ### Phase 1 — Internal capability response
 
-1. Add `show_capabilities` to `actionMap`.
-2. Add `showCapabilitiesHandler`.
-3. Add exact match phrases.
-4. Build the deterministic response from all eligible `actionMap` actions.
-   - Read optional `capability.section` / `capability.description`.
-   - Default missing metadata to `Other` / `actionLabel`.
-   - Show `executionModes` beside the matching action.
-5. Verify it follows immediate execution with no request row / AWS call / history record.
-6. Commit and stop.
+- [x] Add `show_capabilities` to `actionMap`.
+- [x] Add `showCapabilitiesHandler`.
+- [x] Add exact match phrases.
+- [x] Build the deterministic response from all eligible `actionMap` actions.
+  - Read optional `capability.section` / `capability.description`.
+  - Default missing metadata to `Other` / `actionLabel`.
+  - Show `executionModes` beside the matching action.
+- [x] Verify it follows immediate execution with no request row / AWS call / history record.
+- [x] Commit and stop.
 
 ### Phase 2 — Optional OpenAI presentation
 
@@ -294,4 +294,4 @@ Expected: natural response limited to the generated action catalog.
 
 ## Next
 
-Review this plan, then say **go** to start Phase 1 (internal response only).
+Say **go** to start Phase 2 (optional OpenAI presentation).
