@@ -4,11 +4,8 @@ AUTOMATIC EXECUTION — user picked option 4
 STEP 6 entry: run action handler → capability → Atlas.
 STEP 7 confirmation ("Would you like me to execute?") stays in CloudPilotMessage request templates.
 
-FUNCTIONS A: Prepare Automatic Execution
-    1) Function A1: runAutomaticStrategy — load action and validate automatic mode
-
-FUNCTIONS B: Execute Action
-    1) Function B1: runAutomaticStrategy — delegate to runAction
+FUNCTIONS A: Automatic Execution
+    1) Function A1: runAutomaticStrategy
 */
 
 const actionMap = require('../../actionMap');

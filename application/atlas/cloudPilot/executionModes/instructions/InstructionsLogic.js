@@ -6,14 +6,8 @@ INSTRUCTIONS EXECUTION — user picked option 1
 STEP 7 response only.
 Loads curated steps via the same shared loader as GET /instructions/:instruction_for.
 
-FUNCTIONS A: Prepare Instructions
-    1) Function A1: buildInstructionsStrategy — validate action key
-
-FUNCTIONS B: Generate Instructions
-    1) Function B1: buildInstructionsStrategy — load instruction payload
-
-FUNCTIONS C: Build Response
-    1) Function C1: buildInstructionsStrategy — return instructions response
+FUNCTIONS A: Instructions Execution
+    1) Function A1: buildInstructionsStrategy
 */
 
 async function buildInstructionsStrategy(chatType, instructionFor) {

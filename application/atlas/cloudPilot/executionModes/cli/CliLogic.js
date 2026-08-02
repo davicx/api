@@ -6,14 +6,8 @@ CLI EXECUTION — user picked option 2
 STEP 7 response only.
 MVP: create_ec2 template only. Same pattern as Instructions (action + collected).
 
-FUNCTIONS A: Prepare CLI Generation
-    1) Function A1: buildCliStrategy — validate action key
-
-FUNCTIONS B: Generate CLI
-    1) Function B1: buildCliStrategy — build CLI template
-
-FUNCTIONS C: Build Response
-    1) Function C1: buildCliStrategy — return CLI response
+FUNCTIONS A: CLI Execution
+    1) Function A1: buildCliStrategy
 */
 
 function buildCliStrategy(chatType, actionKey, collected) {

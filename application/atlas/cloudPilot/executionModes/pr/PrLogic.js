@@ -6,14 +6,8 @@ PULL REQUEST EXECUTION — user picked option 3
 STEP 7 response only.
 MVP: toggle_ec2 opens a real GitHub PR (Terraform primary → secondary).
 
-FUNCTIONS A: Prepare Pull Request
-    1) Function A1: buildPrStrategy — validate action key
-
-FUNCTIONS B: Create Pull Request
-    1) Function B1: buildPrStrategy — create or reuse toggle EC2 pull request
-
-FUNCTIONS C: Build Response
-    1) Function C1: buildPrStrategy — return PR response
+FUNCTIONS A: Pull Request Execution
+    1) Function A1: buildPrStrategy
 */
 
 async function buildPrStrategy(chatType, actionKey, collected) {
