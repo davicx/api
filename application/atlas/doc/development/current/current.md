@@ -216,6 +216,31 @@ User Message
 
 **MVP primary trigger:** open request with `region` still missing.
 
+### C3a — Conservative token rule (locked for Stage 1)
+
+When live OpenAI use is enabled, prefer a missed region extraction over an unnecessary OpenAI call.
+
+```text
+No open request
+  → do not run Region Search
+
+Open request, region not missing
+  → do not run Region Search
+
+Open request, region missing
+  → run Region Search (Internal or OpenAI, based on config)
+```
+
+This deliberately does **not** handle the brand-new combined message yet:
+
+```text
+Scan EC2 in Oregon
+```
+
+At STEP 2 there is no open request, so Stage 1 skips region search even though the message includes a region. The user can provide the region after CloudPilot opens the request.
+
+Stage 2 may improve this by detecting the action first and running Region Search only when that action requires `region`. Do not add that broader ordering change in Stage 1.
+
 ## C4 — Purposeful understanding principle
 
 ```text
@@ -236,6 +261,7 @@ Do not auto-run Region + Action + Name + Resource search on every message.
 - Need request state available at STEP 3 (open request + missing fields) — today understand is message-only; wiring may pass loaded state from STEP 2.
 - Keep Internal vs OpenAI switch unchanged; only change **when** search runs.
 - Logs: when skipped, optional one-liner if `REGION_LOGS` (e.g. `Region Search: SKIPPED — region not needed`).
+- Stage 1 must not add action-first / new-request region extraction.
 
 ---
 
