@@ -209,13 +209,12 @@ The internal dynamic response remains the fallback if OpenAI fails.
 ```text
 cloudPilot/
 ├── actionMap.js
-└── chat/
-    └── capabilities/
-        ├── showCapabilitiesHandler.js
-        └── capabilitiesFunctions.js       # loads catalog + builds response
+└── capabilities/
+    ├── showCapabilitiesHandler.js
+    └── capabilitiesFunctions.js       # loads catalog + builds response
 ```
 
-The handler belongs with chat because its product is a response, not an AWS scan or mutation.
+The handler lives under `capabilities/` because it answers what CloudPilot can do, not how conversation speaks.
 
 ---
 

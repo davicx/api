@@ -7,7 +7,7 @@ const updateEC2TagHandler = require('./actions/updateEC2Tag/updateEC2TagHandler'
 const inventoryAWSHandler = require('./scans/inventory/inventoryAWSHandler');
 const billingAWSHandler = require('./scans/billing/billingAWSHandler');
 const showAiUsageHandler = require('./scans/aiUsage/showAiUsageHandler');
-const showCapabilitiesHandler = require('./chat/capabilities/showCapabilitiesHandler');
+const showCapabilitiesHandler = require('./capabilities/showCapabilitiesHandler');
 
 /*
 What this file answers:
