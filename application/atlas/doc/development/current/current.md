@@ -4,7 +4,7 @@
 **Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.  
 **Next up:** Section C — only run Region Search when the current request needs region.
 
-**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
+**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
 
 This file **combines** the live AI config/region work with the older chat-enhancement plan (`cloud_pilot_chat.md`). Sections are marked so similar work stays together.
 
