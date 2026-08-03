@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-27
 
-> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current.md](../current/current.md)** · **[open requests](../current/cloud_pilot_open_requests.md)**  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current.md](../current/current.md)** · **[open requests](../current/cloud_pilot_open_requests.md)** · **[openai logs](../current/openai_logs.md)**  
 > **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Finished index:** [finished.md](../finished/finished.md)  
 > **History (MVP done):** [history.md](../finished/history.md) · **Deferred:** [future_work.md](./future.md)  
 > **Done:** [finished.md](../finished/finished.md) · **Architecture & reference:** [architecture/](../architecture/)
@@ -16,6 +16,11 @@
 **History MVP is complete** — see [history.md](../finished/history.md) and [finished.md](../finished/finished.md). Deferred history items: [future_work.md](./future.md).
 
 **Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../current/pr_strategy.md). **AI (live + planned):** [current.md](../current/current.md). **Open requests:** [cloud_pilot_open_requests.md](../current/cloud_pilot_open_requests.md). **AI usage / OpenAI spend:** [ai_usage.md](../current/ai_usage.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
+
+#### OpenAI Logging — [openai_logs.md](../current/openai_logs.md)
+- [ ] Phase 1 — header `OPENAI: <Capability> (Request N)` + per-message counter
+- [ ] Phase 2 — all current AI paths use the same logger
+- [ ] Phase 3 — docs; optional `CLOUDPILOT_OPENAI_LOG_LEVEL=summary|verbose`
 
 #### Open Requests — [cloud_pilot_open_requests.md](../current/cloud_pilot_open_requests.md)
 - [ ] Phase 1 — chat answer for “What open requests do I have?” (Internal; no table yet)
@@ -49,19 +54,13 @@ Shared (shipped)
 - [x] Capabilities `shouldRespondCapabilities` + Internal / OpenAI path (ENV off)
 
 **Next / deferred**
-- [ ] OpenAI logging audit before any live OpenAI flip:
-  - one `OPENAI` block for Future Dave:
-    - Context Loaded
-    - ACTUAL REQUEST SENT TO OPENAI (or WOULD BE SENT in Preview)
-    - ACTUAL RESPONSE FROM OPENAI
-    - Usage / cost
-  - Status: `Executed` or `Preview (AI Disabled)`
-  - `CLOUDPILOT_CONTEXT_LOGS` — Building Identity/Situation/…
-  - `CLOUDPILOT_ACTION_STATE_LOGS` — INITIAL/FINAL ACTION STATE
-  - `CLOUDPILOT_MESSAGE_LOGS` — verbose STEP 7a–7c
-  - `CLOUDPILOT_REGION_LOGS` — compact `STEP 3: Region Search` / Region Found
-  - `CLOUDPILOT_ACTION_LOGS` as needed
-  - each switch independent (not one LOGS_ON)
+- [ ] OpenAI logging — [openai_logs.md](../current/openai_logs.md):
+  - `OPENAI: <Capability> (Request N)` per invocation
+  - reset N each user message
+  - Messages / Response / Usage kept
+  - `CLOUDPILOT_OPENAI_LOGS` on/off
+  - compact `STEP 3: Region Search` stays separate (`CLOUDPILOT_REGION_LOGS`)
+  - `CLOUDPILOT_CONTEXT_LOGS` / `CLOUDPILOT_ACTION_STATE_LOGS` / `CLOUDPILOT_MESSAGE_LOGS` stay independent
 - [ ] Stage 2 region: same-turn “Scan EC2 in Oregon” without open request yet
 - [ ] Optional local: flip Region or Message OpenAI for live test (do not commit `.env`)
 - [ ] Capabilities docs polish (README / examples) — [cloud_pilot_capabilities.md](../current/cloud_pilot_capabilities.md)

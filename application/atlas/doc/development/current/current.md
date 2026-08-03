@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-02  
 **Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.  
-**Next up:** Open Requests plan — [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md). Section D — ambiguous region / clarify (after demo MVP). AI Invocation Rules archived: [finished/cloud_pilot_openai_rollout.md](../finished/cloud_pilot_openai_rollout.md).
+**Next up:** OpenAI logging plan — [openai_logs.md](./openai_logs.md). Open Requests — [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md). Section D — ambiguous region (after demo MVP).
 
-**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
+**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [openai_logs.md](./openai_logs.md) · [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
 
 This file **combines** the live AI config/region work with the older chat-enhancement plan (`cloud_pilot_chat.md`). Sections are marked so similar work stays together.
 
@@ -183,91 +183,21 @@ CLOUDPILOT_ACTION_SEARCH=internal
 
 ### OpenAI logging audit (next before live OpenAI)
 
-Before turning on any live OpenAI path, audit logging for every current AI function:
+**Plan:** [openai_logs.md](./openai_logs.md)
 
-- General Chat
-- Region Search
-- Capabilities
-
-The log should answer only two questions:
-
-1. Exactly what did we send to OpenAI?
-2. What did it cost?
-
-Preferred timeline — one OPENAI block answering four questions for Future Dave:
-
-1. What did CloudPilot know? → Context Loaded
-2. Exactly what did it send? → ACTUAL REQUEST SENT TO OPENAI
-3. What came back? → ACTUAL RESPONSE FROM OPENAI
-4. How much did it cost? → Usage
+Long-term direction: one block **per capability invocation**, numbered per user message:
 
 ```text
-==========================================================
-OPENAI
-==========================================================
-
-Capability:
-Region Search
-
-Model:
-gpt-4o-mini
-
-Status:
-Preview (AI Disabled)   |   Executed
-
-Conversation History
-----------------------------------
-Disabled
-
-Context Loaded
-----------------------------------
-✓ Identity
-✓ Situation
-✓ Current Question
-Knowledge: Not Used
-
-ACTUAL REQUEST SENT TO OPENAI
-  (Preview: ACTUAL REQUEST THAT WOULD BE SENT TO OPENAI)
-----------------------------------
-[ ... ]
-
-ACTUAL RESPONSE FROM OPENAI
-----------------------------------
-...
-  (Preview: none — AI disabled, request not sent)
-
-Usage
-----------------------------------
-Prompt Tokens: ...
-Completion Tokens: ...
-Total Tokens: ...
-Estimated Cost: $0.000030
-==========================================================
+OPENAI: Region Search (Request 1)
+OPENAI: General Chat (Request 2)
 ```
 
-Region pipeline line stays small (`CLOUDPILOT_REGION_LOGS`) — CloudPilot result, not the OpenAI dump:
+Each block still answers: context loaded, exact Messages sent, response, cost.  
+`CLOUDPILOT_OPENAI_LOGS` turns the blocks on/off. Compact region pipeline line stays separate.
 
-```text
-STEP 3: Region Search
-Region Found: none
-```
+Before turning on any live OpenAI path, finish Phase 1 of that plan (header + request counter).
 
-Verbose dumps stay behind independent ENV switches (not one LOGS_ON):
-
-```dotenv
-CLOUDPILOT_MESSAGE_LOGS=false
-CLOUDPILOT_REGION_LOGS=true
-CLOUDPILOT_ACTION_LOGS=false
-CLOUDPILOT_ACTION_STATE_LOGS=false   # INITIAL/FINAL ACTION STATE
-CLOUDPILOT_CONTEXT_LOGS=false        # Building Identity / Situation / …
-CLOUDPILOT_OPENAI_LOGS=true          # unified OPENAI block
-```
-
-Later (optional): `CLOUDPILOT_OPENAI_LOG_LEVEL=summary|verbose` for day-to-day vs full request body.
-
-Pipeline STEPs = CloudPilot workflow. OPENAI block = AI transaction.
-
-Deferred from this plan (logging audit, Stage 2 region, action-search OpenAI, Intelligence respond/explain/…): see [to_do.md](../future/to_do.md).
+Deferred from this plan (Stage 2 region, action-search OpenAI, Intelligence respond/explain/…): see [to_do.md](../future/to_do.md).
 
 ---
 
