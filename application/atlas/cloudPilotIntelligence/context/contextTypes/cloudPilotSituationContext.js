@@ -1,3 +1,5 @@
+const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
+
 /*
 TYPE — SITUATION (what CloudPilot wants AI to look for / do right now)
 
@@ -51,8 +53,10 @@ function getCloudPilotSituationContext(types) {
         data: selected
     };
 
-    console.log('Building Situation Context');
-    console.log(JSON.stringify(situation, null, 2));
+    if (CLOUDPILOT_AI_CONFIG.contextLogs) {
+        console.log('Building Situation Context');
+        console.log(JSON.stringify(situation, null, 2));
+    }
 
     return situation;
 }

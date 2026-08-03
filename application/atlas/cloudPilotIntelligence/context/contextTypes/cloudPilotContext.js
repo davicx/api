@@ -1,3 +1,5 @@
+const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
+
 /*
 TYPE 1 — IDENTITY
 
@@ -46,8 +48,10 @@ function getCloudPilotContext() {
         data: cloudPilotIdentity
     };
 
-    console.log('Building Identity Context');
-    console.log(JSON.stringify(identity, null, 2));
+    if (CLOUDPILOT_AI_CONFIG.contextLogs) {
+        console.log('Building Identity Context');
+        console.log(JSON.stringify(identity, null, 2));
+    }
 
     return identity;
 }

@@ -2,6 +2,7 @@ const OpenAI = require('openai');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 const SaveAiUsageFunctions = require('../usage/saveAiUsage');
+const { calculateOpenAICost } = require('../usage/calculateOpenAICost');
 
 /*
 FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPilotMessageFunctions for that)
@@ -12,6 +13,12 @@ FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPi
     4) Function A4: Send Chat With Action
     5) Function A5: Send General Chat
     6) Function A6: Send general chat during active workflow
+
+FUNCTIONS B: OpenAI logging
+    1) Function B1: logOpenAI
+    2) Function B2: logOpenAIMessageContext (legacy wrapper — keep)
+    3) Function B3: logOpenAIResponse (legacy wrapper — keep)
+    4) Function B4: logOpenAICost (legacy wrapper — keep)
 */
 
 let openaiClient = null;
@@ -42,6 +49,166 @@ function normalizeUserMessageForModel(raw) {
         return { ok: false, text: '', message: 'message is required' };
     }
     return { ok: true, text, message: '' };
+}
+
+//FUNCTIONS B: OpenAI logging
+//Function B1: Single OpenAI transaction log (Executed or Preview)
+function logOpenAI(options) {
+    if (!CLOUDPILOT_AI_CONFIG.openAILogs) {
+        return;
+    }
+
+    const details = options || {};
+    const model = details.model || CHAT_CONFIG.LOW.model;
+    const capability = details.capability || 'Unknown';
+    const status = details.previewOnly
+        ? 'Preview (AI Disabled)'
+        : (details.status || 'Executed');
+    const historyEnabled = Boolean(details.conversationHistoryEnabled);
+    const historyCount = Number(details.conversationHistoryCount) || 0;
+    const messages = Array.isArray(details.messages) ? details.messages : [];
+    const context = details.context || {};
+
+    console.log('==========================================================');
+    console.log('OPENAI');
+    console.log('==========================================================');
+    console.log(' ');
+    console.log('Capability:');
+    console.log(capability);
+    console.log(' ');
+    console.log('Model:');
+    console.log(model);
+    console.log(' ');
+    console.log('Status:');
+    console.log(status);
+    console.log(' ');
+    console.log('Conversation History');
+    console.log('----------------------------------');
+
+    if (historyEnabled) {
+        console.log('Enabled');
+        console.log('Messages Included: ' + historyCount);
+    } else {
+        console.log('Disabled');
+    }
+
+    console.log(' ');
+    console.log('Context Loaded');
+    console.log('----------------------------------');
+    console.log(formatContextLine('Identity', context.identity));
+    console.log(formatContextLine('Situation', context.situation));
+    console.log(formatContextLine('Current Question', context.currentQuestion));
+    console.log(formatContextLine('Knowledge', context.knowledge));
+    console.log(' ');
+    console.log(
+        details.previewOnly
+            ? 'ACTUAL REQUEST THAT WOULD BE SENT TO OPENAI'
+            : 'ACTUAL REQUEST SENT TO OPENAI'
+    );
+    console.log('----------------------------------');
+    console.log(JSON.stringify(messages, null, 2));
+    console.log(' ');
+    console.log('ACTUAL RESPONSE FROM OPENAI');
+    console.log('----------------------------------');
+
+    if (details.previewOnly) {
+        console.log('(none — AI disabled, request not sent)');
+    } else if (details.responseText !== undefined && details.responseText !== null) {
+        const responseText = String(details.responseText).trim();
+        console.log(responseText || '(empty response)');
+    } else {
+        console.log('(none)');
+    }
+
+    console.log(' ');
+    console.log('Usage');
+    console.log('----------------------------------');
+
+    if (details.previewOnly) {
+        console.log('(none — AI disabled)');
+    } else if (details.usage) {
+        const usage = details.usage || {};
+        const promptTokens = Number(usage.prompt_tokens) || 0;
+        const completionTokens = Number(usage.completion_tokens) || 0;
+        const totalTokens = Number(usage.total_tokens) || (promptTokens + completionTokens);
+        const rawCost = calculateOpenAICost(model, promptTokens, completionTokens);
+
+        console.log('Prompt Tokens:      ' + promptTokens.toLocaleString());
+        console.log('Completion Tokens:  ' + completionTokens.toLocaleString());
+        console.log('Total Tokens:       ' + totalTokens.toLocaleString());
+        console.log('Estimated Cost:     $' + rawCost.toFixed(6));
+    } else {
+        console.log('(none)');
+    }
+
+    console.log('==========================================================');
+    console.log(' ');
+}
+
+function formatContextLine(label, value) {
+    if (value === true || value === 'loaded' || value === 'Loaded') {
+        return '✓ ' + label;
+    }
+
+    if (value === false || value === null || value === undefined || value === 'not_used') {
+        return label + ': Not Used';
+    }
+
+    return label + ': ' + String(value);
+}
+
+function summarizeAIContext(aiContext) {
+    const context = aiContext || {};
+
+    return {
+        identity: Boolean(context.cloudPilot && context.cloudPilot.loaded),
+        situation: Boolean(context.situation && context.situation.loaded),
+        currentQuestion: Boolean(context.currentQuestion && context.currentQuestion.loaded),
+        knowledge: Boolean(context.knowledge && context.knowledge.loaded)
+    };
+}
+
+//Function B2: Legacy wrapper — keep for older call sites
+function logOpenAIMessageContext(options) {
+    logOpenAI(options);
+}
+
+//Function B3: Legacy wrapper — keep for older call sites
+function logOpenAIResponse(options) {
+    if (!CLOUDPILOT_AI_CONFIG.messageLogs) {
+        return;
+    }
+
+    logOpenAI({
+        capability: (options && options.capability) || 'Unknown',
+        model: (options && options.model) || CHAT_CONFIG.LOW.model,
+        previewOnly: false,
+        conversationHistoryEnabled: false,
+        conversationHistoryCount: 0,
+        context: {},
+        messages: [],
+        responseText: options && options.responseText,
+        usage: null
+    });
+}
+
+//Function B4: Legacy wrapper — keep for older call sites
+function logOpenAICost(options) {
+    if (!CLOUDPILOT_AI_CONFIG.messageLogs) {
+        return;
+    }
+
+    logOpenAI({
+        capability: (options && options.capability) || 'Unknown',
+        model: (options && options.model) || CHAT_CONFIG.LOW.model,
+        previewOnly: false,
+        conversationHistoryEnabled: false,
+        conversationHistoryCount: 0,
+        context: {},
+        messages: [],
+        responseText: null,
+        usage: options && options.usage
+    });
 }
 
 /**
@@ -184,6 +351,9 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
     let userMessage;
     let systemPrompt;
     let conversationHistory = [];
+    let capability = 'General Chat';
+    let conversationHistoryEnabled = false;
+    let contextSummary = null;
 
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
         userMessage = payload.userMessage;
@@ -191,6 +361,9 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
         conversationHistory = Array.isArray(payload.conversationHistory)
             ? payload.conversationHistory
             : [];
+        capability = payload.capability ? String(payload.capability) : capability;
+        conversationHistoryEnabled = Boolean(payload.conversationHistoryEnabled);
+        contextSummary = payload.context || null;
     } else {
         userMessage = payload;
         systemPrompt = legacySystemPrompt;
@@ -219,7 +392,15 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
 
     const config = CHAT_CONFIG.LOW;
     const messageMaxTokens = CLOUDPILOT_AI_CONFIG.messageTokenLimit;
-    console.log('[sendGeneralChat] model=%s max_tokens=%s temperature=%s', config.model, messageMaxTokens, config.temperature);
+
+    if (CLOUDPILOT_AI_CONFIG.messageLogs) {
+        console.log(
+            '[sendGeneralChat] model=%s max_tokens=%s temperature=%s',
+            config.model,
+            messageMaxTokens,
+            config.temperature
+        );
+    }
 
     const defaultSystemContent =
         'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
@@ -259,7 +440,21 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
         temperature: config.temperature
     });
 
-    if (result.success && result.usage) {
+    logOpenAI({
+        capability: capability,
+        model: config.model,
+        previewOnly: false,
+        conversationHistoryEnabled: conversationHistoryEnabled,
+        conversationHistoryCount: conversationHistory.length,
+        context: contextSummary || {},
+        messages: messages,
+        responseText: result.success
+            ? result.data
+            : result.message || result.error || 'OpenAI request failed',
+        usage: result.success ? result.usage : null
+    });
+
+    if (CLOUDPILOT_AI_CONFIG.messageLogs && result.success && result.usage) {
         console.log(
             '[sendGeneralChat] usage prompt=%s completion=%s total=%s',
             result.usage.prompt_tokens,
@@ -345,6 +540,11 @@ async function sendGeneralChatDuringWorkflow(userMessage, workflowContext) {
 module.exports = {
     getOpenAIClient,
     normalizeUserMessageForModel,
+    logOpenAI,
+    summarizeAIContext,
+    logOpenAIMessageContext,
+    logOpenAIResponse,
+    logOpenAICost,
     createOpenAiChatCompletion,
     sendChatWithAction,
     sendGeneralChat,

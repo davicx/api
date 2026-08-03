@@ -84,12 +84,26 @@ CLOUDPILOT_ACTION_TOKEN_LIMIT=40
 
 
 # ==================================================
-# AI LOGGING
+# LOGGING (each switch is independent — not one LOGS_ON)
 # ==================================================
 
+# Verbose message / STEP 7a–7c dumps
 CLOUDPILOT_MESSAGE_LOGS=false
-CLOUDPILOT_REGION_LOGS=false
+
+# Compact pipeline line: STEP 3 Region Search / Region Found
+CLOUDPILOT_REGION_LOGS=true
+
+# Action-search debug
 CLOUDPILOT_ACTION_LOGS=false
+
+# INITIAL STATE / FINAL STATE action dumps
+CLOUDPILOT_ACTION_STATE_LOGS=false
+
+# Building Identity / Situation / Current Question / Knowledge
+CLOUDPILOT_CONTEXT_LOGS=false
+
+# Unified OPENAI block — exactly what was sent / returned / cost
+CLOUDPILOT_OPENAI_LOGS=true
 
 GITHUB_TOKEN=YOUR_GITHUB_TOKEN
 GITHUB_OWNER=davicx
@@ -105,6 +119,25 @@ CLOUDPILOT_MESSAGE_RESPONSE=internal
 CLOUDPILOT_REGION_SEARCH=openai
 CLOUDPILOT_ACTION_SEARCH=internal
 CLOUDPILOT_REGION_LOGS=true
+CLOUDPILOT_OPENAI_LOGS=true
+CLOUDPILOT_CONTEXT_LOGS=false
+CLOUDPILOT_ACTION_STATE_LOGS=false
+CLOUDPILOT_MESSAGE_LOGS=false
+```
+
+## Quiet local development (OpenAI off)
+
+```env
+CLOUDPILOT_AI_ENABLED=false
+CLOUDPILOT_MESSAGE_RESPONSE=internal
+CLOUDPILOT_REGION_SEARCH=internal
+CLOUDPILOT_ACTION_SEARCH=internal
+CLOUDPILOT_OPENAI_LOGS=true
+CLOUDPILOT_REGION_LOGS=true
+CLOUDPILOT_CONTEXT_LOGS=false
+CLOUDPILOT_ACTION_STATE_LOGS=false
+CLOUDPILOT_MESSAGE_LOGS=false
+CLOUDPILOT_ACTION_LOGS=false
 ```
 
 Restart the API after changing `.env`.

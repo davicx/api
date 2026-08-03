@@ -14,6 +14,9 @@
  *   CLOUDPILOT_MESSAGE_LOGS=true|false
  *   CLOUDPILOT_REGION_LOGS=true|false
  *   CLOUDPILOT_ACTION_LOGS=true|false
+ *   CLOUDPILOT_ACTION_STATE_LOGS=true|false  (INITIAL/FINAL ACTION STATE)
+ *   CLOUDPILOT_CONTEXT_LOGS=true|false       (Building Identity/Situation/…)
+ *   CLOUDPILOT_OPENAI_LOGS=true|false        (unified OPENAI transaction block)
  *   CLOUDPILOT_MESSAGE_TOKEN_LIMIT=500
  *   CLOUDPILOT_REGION_TOKEN_LIMIT=40
  *   CLOUDPILOT_ACTION_TOKEN_LIMIT=40
@@ -90,11 +93,14 @@ const CLOUDPILOT_AI_CONFIG = {
     actionSearch: readImplementation('CLOUDPILOT_ACTION_SEARCH', 'internal'),
 
     /**
-     * Individual AI logging.
+     * Individual logging switches (not one master LOGS_ON).
      */
     messageLogs: readEnvBoolean('CLOUDPILOT_MESSAGE_LOGS', false),
     regionLogs: readEnvBoolean('CLOUDPILOT_REGION_LOGS', false),
     actionLogs: readEnvBoolean('CLOUDPILOT_ACTION_LOGS', false),
+    actionStateLogs: readEnvBoolean('CLOUDPILOT_ACTION_STATE_LOGS', false),
+    contextLogs: readEnvBoolean('CLOUDPILOT_CONTEXT_LOGS', false),
+    openAILogs: readEnvBoolean('CLOUDPILOT_OPENAI_LOGS', true),
 
     /**
      * Max completion tokens per feature (OpenAI max_tokens).

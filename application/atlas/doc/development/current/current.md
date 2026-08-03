@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-02  
 **Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.  
-**Next up:** Section C — Phase 1 done (`shouldRunRegionSearch()`); next verify then Phase 2.
+**Next up:** Open Requests plan — [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md). Section D — ambiguous region / clarify (after demo MVP). AI Invocation Rules archived: [finished/cloud_pilot_openai_rollout.md](../finished/cloud_pilot_openai_rollout.md).
 
-**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
+**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
 
 This file **combines** the live AI config/region work with the older chat-enhancement plan (`cloud_pilot_chat.md`). Sections are marked so similar work stays together.
 
@@ -73,7 +73,7 @@ History transport settings (not feature switches):
 
 **Public contract today:** `{ region: "us-west-2" }` or `{}`.
 
-**Demo:** master on + `CLOUDPILOT_REGION_SEARCH=openai` + `CLOUDPILOT_REGION_LOGS=true` → compact `REGION SEARCH` terminal log (Billing / Response / Region Found). Chat UI does **not** show that log.
+**Demo:** master on + `CLOUDPILOT_REGION_SEARCH=openai` + `CLOUDPILOT_OPENAI_LOGS=true` → `OPENAI` block + compact `STEP 3: Region Search` / Region Found when `CLOUDPILOT_REGION_LOGS=true`. Chat UI does **not** show those logs.
 
 **Known MVP gap:** bare `west` often returns `{}` (don’t invent). Fallthrough can hit general-chat stub. See Section D (clarify) and Section C (when to search).
 
@@ -150,23 +150,141 @@ How-to for chat path: [chat_use_open_ai.md](../../instructions/chat_use_open_ai.
 
 ---
 
-# SECTION C — CloudPilot AI Invocation Rules (**NEXT**)
+# SECTION C — CloudPilot AI Invocation Rules (**DONE**)
 
-**Single active plan:** [cloud_pilot_openai_rollout.md](./cloud_pilot_openai_rollout.md)
+**Archived plan:** [cloud_pilot_openai_rollout.md](../finished/cloud_pilot_openai_rollout.md) · Index: [finished.md](../finished/finished.md)
 
 Philosophy: only perform expensive AI work when that function is actually needed.
 
 Every AI function answers two questions: **Should I run?** then **How should I run?**
 
-Start with Region Search:
+Shipped (OpenAI ENV stays off by default):
 
 ```text
 shouldRunRegionSearch()
-  true  → request is actively collecting a region → Internal or OpenAI
+  true  → actively collecting region → Internal
   false → skip
+
+General chat → Internal response path
+
+shouldRespondCapabilities()
+  → respondCapabilitiesInternal() or respondCapabilitiesOpenAI()
+  → Internal default / fallback
 ```
 
-Stage 1 body today: open request + region still missing. Prefer a missed optional extraction over an unnecessary live call. Same `shouldRun…()` pattern later for other Intelligence functions.
+Recommended ENV:
+
+```dotenv
+CLOUDPILOT_AI_ENABLED=false
+CLOUDPILOT_MESSAGE_RESPONSE=internal
+CLOUDPILOT_REGION_SEARCH=internal
+CLOUDPILOT_ACTION_SEARCH=internal
+```
+
+### OpenAI logging audit (next before live OpenAI)
+
+Before turning on any live OpenAI path, audit logging for every current AI function:
+
+- General Chat
+- Region Search
+- Capabilities
+
+The log should answer only two questions:
+
+1. Exactly what did we send to OpenAI?
+2. What did it cost?
+
+Preferred timeline — one OPENAI block answering four questions for Future Dave:
+
+1. What did CloudPilot know? → Context Loaded
+2. Exactly what did it send? → ACTUAL REQUEST SENT TO OPENAI
+3. What came back? → ACTUAL RESPONSE FROM OPENAI
+4. How much did it cost? → Usage
+
+```text
+==========================================================
+OPENAI
+==========================================================
+
+Capability:
+Region Search
+
+Model:
+gpt-4o-mini
+
+Status:
+Preview (AI Disabled)   |   Executed
+
+Conversation History
+----------------------------------
+Disabled
+
+Context Loaded
+----------------------------------
+✓ Identity
+✓ Situation
+✓ Current Question
+Knowledge: Not Used
+
+ACTUAL REQUEST SENT TO OPENAI
+  (Preview: ACTUAL REQUEST THAT WOULD BE SENT TO OPENAI)
+----------------------------------
+[ ... ]
+
+ACTUAL RESPONSE FROM OPENAI
+----------------------------------
+...
+  (Preview: none — AI disabled, request not sent)
+
+Usage
+----------------------------------
+Prompt Tokens: ...
+Completion Tokens: ...
+Total Tokens: ...
+Estimated Cost: $0.000030
+==========================================================
+```
+
+Region pipeline line stays small (`CLOUDPILOT_REGION_LOGS`) — CloudPilot result, not the OpenAI dump:
+
+```text
+STEP 3: Region Search
+Region Found: none
+```
+
+Verbose dumps stay behind independent ENV switches (not one LOGS_ON):
+
+```dotenv
+CLOUDPILOT_MESSAGE_LOGS=false
+CLOUDPILOT_REGION_LOGS=true
+CLOUDPILOT_ACTION_LOGS=false
+CLOUDPILOT_ACTION_STATE_LOGS=false   # INITIAL/FINAL ACTION STATE
+CLOUDPILOT_CONTEXT_LOGS=false        # Building Identity / Situation / …
+CLOUDPILOT_OPENAI_LOGS=true          # unified OPENAI block
+```
+
+Later (optional): `CLOUDPILOT_OPENAI_LOG_LEVEL=summary|verbose` for day-to-day vs full request body.
+
+Pipeline STEPs = CloudPilot workflow. OPENAI block = AI transaction.
+
+Deferred from this plan (logging audit, Stage 2 region, action-search OpenAI, Intelligence respond/explain/…): see [to_do.md](../future/to_do.md).
+
+---
+
+# SECTION C2 — Open Requests (**PLAN**)
+
+**Plan:** [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md)
+
+User asks: **What open requests do I have?**
+
+```text
+Phase 1  Chat answer from grounded open request(s) — Internal
+Phase 2  Navigator table in chat
+Phase 3  Dashboard
+Phase 4  Multi-open (only when product ready; today = one open per conversation)
+```
+
+Intent `list_open` already exists; speak path still needs a real open-requests response (like history).
 
 ---
 

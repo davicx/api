@@ -1,3 +1,5 @@
+const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
+
 /*
 TYPE 3 — KNOWLEDGE (organization slice + product slice)
 Role: What background should CloudPilot know before answering?
@@ -31,8 +33,10 @@ function getKnowledgeContext() {
         }
     };
 
-    console.log('Building Knowledge Context');
-    console.log(JSON.stringify(knowledge, null, 2));
+    if (CLOUDPILOT_AI_CONFIG.contextLogs) {
+        console.log('Building Knowledge Context');
+        console.log(JSON.stringify(knowledge, null, 2));
+    }
 
     return knowledge;
 }

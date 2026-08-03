@@ -1,8 +1,17 @@
+const openAIFunctions = require('../../providers/openAI/client/openAIClient');
+const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
+
 /*
 FUNCTIONS A: Capability catalog from actionMap
     1) Function A1: getEligibleCapabilityActions
     2) Function A2: buildCapabilitiesCatalog
     3) Function A3: buildCapabilitiesMessage
+
+FUNCTIONS B: Capabilities response — Should I run? / How should I run?
+    1) Function B1: shouldRespondCapabilities
+    2) Function B2: respondCapabilitiesInternal
+    3) Function B3: respondCapabilitiesOpenAI
+    4) Function B4: respondCapabilities
 */
 
 const EXECUTION_MODE_LABELS = {
@@ -119,6 +128,150 @@ function buildCapabilitiesCatalog() {
     };
 }
 
+//FUNCTIONS B: Capabilities response
+//Function B1: Should capabilities response run? (handler only called for show_capabilities)
+function shouldRespondCapabilities() {
+    //STEP 1: show_capabilities was selected — response is needed
+    return true;
+}
+
+//Function B2: Deterministic Internal wording from grounded catalog
+function respondCapabilitiesInternal(catalog) {
+    //STEP 1: Format catalog into fixed chat text
+    return buildCapabilitiesMessage(catalog);
+}
+
+//Function B3: OpenAI wording of the same grounded catalog (facts only)
+async function respondCapabilitiesOpenAI(catalog) {
+    const catalogJson = JSON.stringify(catalog || {}, null, 2);
+    const systemMessage =
+        'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
+        'Present the current capabilities to the user in clear, natural language.\n\n' +
+        'Rules:\n' +
+        '- Only describe capabilities listed in the CAPABILITIES CATALOG\n' +
+        '- Do not invent AWS services, actions, or execution modes\n' +
+        '- Do not claim work was executed\n' +
+        '- You may improve wording, not facts\n' +
+        '- Keep the response concise and useful\n\n' +
+        'CAPABILITIES CATALOG (JSON):\n' +
+        catalogJson;
+
+    const openAIResult = await openAIFunctions.sendGeneralChat({
+        systemMessage: systemMessage,
+        conversationHistory: [],
+        userMessage: 'What can you do?',
+        capability: 'Capabilities',
+        conversationHistoryEnabled: false,
+        context: {
+            identity: true,
+            situation: false,
+            currentQuestion: true,
+            knowledge: false
+        }
+    });
+
+    if (!openAIResult || !openAIResult.success) {
+        return {
+            success: false,
+            message: null,
+            error:
+                (openAIResult && (openAIResult.message || openAIResult.error)) ||
+                'capabilities_openai_failed'
+        };
+    }
+
+    const message =
+        openAIResult.data !== undefined && openAIResult.data !== null
+            ? String(openAIResult.data).trim()
+            : '';
+
+    if (!message) {
+        return {
+            success: false,
+            message: null,
+            error: 'capabilities_openai_empty'
+        };
+    }
+
+    return {
+        success: true,
+        message: message,
+        error: null
+    };
+}
+
+//Function B4: Choose Internal or OpenAI (master OFF / internal → Internal; OpenAI failure → Internal)
+async function respondCapabilities(catalog) {
+    //STEP 1: Should I run?
+    if (!shouldRespondCapabilities()) {
+        return {
+            success: false,
+            cloudPilotMessage: '',
+            source: 'skipped',
+            error: 'capabilities_not_needed'
+        };
+    }
+
+    //STEP 2: How should I run?
+    const useOpenAI =
+        CLOUDPILOT_AI_CONFIG.aiEnabled &&
+        CLOUDPILOT_AI_CONFIG.messageResponse === 'openai';
+
+    if (useOpenAI) {
+        const openAIOutcome = await respondCapabilitiesOpenAI(catalog);
+
+        if (openAIOutcome.success && openAIOutcome.message) {
+            return {
+                success: true,
+                cloudPilotMessage: openAIOutcome.message,
+                source: 'openai',
+                error: null
+            };
+        }
+    }
+
+    openAIFunctions.logOpenAI({
+        capability: 'Capabilities',
+        conversationHistoryEnabled: false,
+        conversationHistoryCount: 0,
+        context: {
+            identity: true,
+            situation: false,
+            currentQuestion: true,
+            knowledge: false
+        },
+        messages: [
+            {
+                role: 'system',
+                content:
+                    'You are CloudPilot, an AWS infrastructure assistant.\n\n' +
+                    'Present the current capabilities to the user in clear, natural language.\n\n' +
+                    'Rules:\n' +
+                    '- Only describe capabilities listed in the CAPABILITIES CATALOG\n' +
+                    '- Do not invent AWS services, actions, or execution modes\n' +
+                    '- Do not claim work was executed\n' +
+                    '- You may improve wording, not facts\n' +
+                    '- Keep the response concise and useful\n\n' +
+                    'CAPABILITIES CATALOG (JSON):\n' +
+                    JSON.stringify(catalog || {}, null, 2)
+            },
+            {
+                role: 'user',
+                content: 'What can you do?'
+            }
+        ],
+        previewOnly: true
+    });
+
+    //STEP 3: Internal (default, master OFF, or OpenAI fallback)
+    return {
+        success: true,
+        cloudPilotMessage: respondCapabilitiesInternal(catalog),
+        source: useOpenAI ? 'internal_fallback' : 'internal',
+        error: null
+    };
+}
+
 //Function A3: Format catalog into a deterministic chat response
 function buildCapabilitiesMessage(catalog) {
     const lines = [];
@@ -218,5 +371,9 @@ function formatExecutionModeLabels(executionModes) {
 module.exports = {
     getEligibleCapabilityActions,
     buildCapabilitiesCatalog,
-    buildCapabilitiesMessage
+    buildCapabilitiesMessage,
+    shouldRespondCapabilities,
+    respondCapabilitiesInternal,
+    respondCapabilitiesOpenAI,
+    respondCapabilities
 };

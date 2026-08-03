@@ -1,6 +1,6 @@
 # CloudPilot Capabilities Response
 
-**Status:** Phase 1 complete — stop before Phase 2  
+**Status:** Phase 2 complete — Internal + optional OpenAI presentation (ENV keeps OpenAI off)  
 **Scope:** Let users ask what CloudPilot can do, using the current action catalog as the source of truth  
 **Work type:** One informational action + dynamic catalog response + optional OpenAI presentation
 **Last updated:** 2026-08-02
@@ -234,11 +234,12 @@ The handler lives under `capabilities/` because it answers what CloudPilot can d
 
 ### Phase 2 — Optional OpenAI presentation
 
-1. Reuse the existing `MESSAGE_RESPONSE` Internal / OpenAI switch.
-2. Pass the generated action catalog as grounded context when OpenAI is enabled.
-3. Keep the deterministic response as failure fallback.
-4. Verify OpenAI cannot advertise unsupported work.
-5. Commit and stop.
+1. [x] Reuse the existing `MESSAGE_RESPONSE` Internal / OpenAI switch.
+2. [x] Pass the generated action catalog as grounded context when OpenAI is enabled.
+3. [x] Keep the deterministic response as failure fallback.
+4. [x] Pattern: `shouldRespondCapabilities` → `respondCapabilitiesInternal` / `respondCapabilitiesOpenAI`.
+5. [x] Verify with OpenAI ENV off (Internal path); live OpenAI is optional local flip.
+6. Commit and stop.
 
 ### Phase 3 — Docs
 
@@ -293,4 +294,4 @@ Expected: natural response limited to the generated action catalog.
 
 ## Next
 
-Say **go** to start Phase 2 (optional OpenAI presentation).
+Phase 2 code done (OpenAI ENV stays off). Optional: Phase 3 docs polish, or local OpenAI live test.

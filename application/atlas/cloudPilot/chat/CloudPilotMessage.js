@@ -27,14 +27,16 @@ async function speakGeneral(processMessageContext) {
         CLOUDPILOT_AI_CONFIG.aiEnabled &&
         CLOUDPILOT_AI_CONFIG.messageResponse === 'openai';
 
-    //STEP 7a: AI Context
-    console.log('______________________________________________________________');
-    console.log('STEP 7a: AI Context');
-    console.log(JSON.stringify(aiContext, null, 2));
-    console.log('organization knowledge: not used (empty)');
-    console.log('cloudPilotAIConfig:', CLOUDPILOT_AI_CONFIG);
-    console.log('______________________________________________________________');
-    console.log(' ');
+    //STEP 7a: AI Context (verbose — CLOUDPILOT_MESSAGE_LOGS)
+    if (CLOUDPILOT_AI_CONFIG.messageLogs) {
+        console.log('______________________________________________________________');
+        console.log('STEP 7a: AI Context');
+        console.log(JSON.stringify(aiContext, null, 2));
+        console.log('organization knowledge: not used (empty)');
+        console.log('cloudPilotAIConfig:', CLOUDPILOT_AI_CONFIG);
+        console.log('______________________________________________________________');
+        console.log(' ');
+    }
 
     //STEP 7b: OpenAI System Message (optional)
     if (CLOUDPILOT_AI_CONFIG.messageLogs) {
@@ -48,13 +50,18 @@ async function speakGeneral(processMessageContext) {
     //STEP 7c: Conversation History — human-readable names (not sent as this text)
     const historyLimit = CLOUDPILOT_AI_CONFIG.conversationHistoryLimit;
     let conversationHistory = [];
+    const historyEnabled =
+        CLOUDPILOT_AI_CONFIG.sendConversationHistory && Boolean(conversationID);
 
-    if (CLOUDPILOT_AI_CONFIG.sendConversationHistory && conversationID) {
+    if (historyEnabled) {
         const historyContext = new ConversationHistoryContext(conversationID, {
             currentUserMessage: currentUserMessage
         });
         conversationHistory = await historyContext.getMessages(historyLimit);
-        logConversationHistory(conversationHistory, historyLimit);
+
+        if (CLOUDPILOT_AI_CONFIG.messageLogs) {
+            logConversationHistory(conversationHistory, historyLimit);
+        }
     }
 
     const openAiMessages = buildOpenAiMessagesPayload(
@@ -62,24 +69,36 @@ async function speakGeneral(processMessageContext) {
         conversationHistory,
         currentUserMessage
     );
+    const contextSummary = openAIFunctions.summarizeAIContext(aiContext);
 
-    // Always show structured payload (roles) — separate from STEP 7c human log
-    logOpenAiMessagePayload(openAiMessages);
+    // Unified OPENAI block: Preview when disabled; Executed path logs inside sendGeneralChat
+    if (!useOpenAIMessageResponse) {
+        openAIFunctions.logOpenAI({
+            capability: 'General Chat',
+            conversationHistoryEnabled: historyEnabled,
+            conversationHistoryCount: conversationHistory.length,
+            context: contextSummary,
+            messages: openAiMessages,
+            previewOnly: true
+        });
+    }
 
     let openAIResult;
 
     if (useOpenAIMessageResponse) {
         //STEP 7d: Send OpenAI Request
-        console.log('STEP 7d: Send OpenAI Request');
-
         if (CLOUDPILOT_AI_CONFIG.messageLogs) {
+            console.log('STEP 7d: Send OpenAI Request');
             console.log(JSON.stringify({ messages: openAiMessages }, null, 2));
         }
 
         openAIResult = await openAIFunctions.sendGeneralChat({
             systemMessage: systemMessage,
             conversationHistory: conversationHistory,
-            userMessage: currentUserMessage
+            userMessage: currentUserMessage,
+            capability: 'General Chat',
+            conversationHistoryEnabled: historyEnabled,
+            context: contextSummary
         });
     } else {
         openAIResult = {

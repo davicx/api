@@ -1,8 +1,9 @@
 # CloudPilot AI Invocation Rules
 
-**Status:** Phase 1 done — `shouldRunRegionSearch()` (next: verify live, then Phase 2)  
+**Status:** Complete — archived  
 **Goal:** Fix Region Search first with `shouldRunRegionSearch()`, then use the same pattern for every AI function  
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-02  
+**Archive note:** Phases 1–4 shipped. OpenAI stays OFF in ENV by default. Index: [finished.md](./finished.md)
 
 ---
 
@@ -78,10 +79,10 @@ shouldExplainFinding()     (later, if needed)
 
 | Function | Config | OpenAI implementation | Live status |
 |---|---|---|---|
-| General chat response | `CLOUDPILOT_MESSAGE_RESPONSE` | Yes | Can enable after its should-run path is clear |
-| Region search | `CLOUDPILOT_REGION_SEARCH` | Yes | Enable only after Phase 1 `shouldRunRegionSearch()` |
+| General chat response | `CLOUDPILOT_MESSAGE_RESPONSE` | Yes | Phase 3 done — use Internal; OpenAI stays OFF until you flip locally |
+| Region search | `CLOUDPILOT_REGION_SEARCH` | Yes | Phases 1–2 done — use Internal; OpenAI stays OFF until you flip locally |
 | Action search | `CLOUDPILOT_ACTION_SEARCH` | No — config stub only | Keep `internal` |
-| Capabilities presentation | Reuses message response later | Not yet | Internal catalog only today |
+| Capabilities presentation | Reuses `CLOUDPILOT_MESSAGE_RESPONSE` | Yes (Phase 4) | Internal default; OpenAI path ready, ENV stays OFF |
 
 `CLOUDPILOT_ACTION_SEARCH=openai` does not currently activate OpenAI action detection. The config value exists, but no action-search code reads it.
 
@@ -180,61 +181,142 @@ Commit and stop.
 
 ---
 
-## Phase 2 — Enable Region Search OpenAI
+## Phase 2 — Verify Region Search works (OpenAI stays OFF)
 
-After Phase 1 is verified:
+Phase 1 already decided **Should I run?**  
+Phase 2 confirms **How should I run?** stays safe and useful with OpenAI disabled.
 
-1. Enable with `CLOUDPILOT_REGION_SEARCH=openai`.
-2. Verify usage only when `shouldRunRegionSearch()` is true.
-3. Keep General Chat Internal if testing one variable at a time.
-4. Keep `CLOUDPILOT_ACTION_SEARCH=internal`.
+### Required ENV (do not flip OpenAI on)
+
+```dotenv
+CLOUDPILOT_AI_ENABLED=false
+CLOUDPILOT_MESSAGE_RESPONSE=internal
+CLOUDPILOT_REGION_SEARCH=internal
+CLOUDPILOT_ACTION_SEARCH=internal
+```
+
+Optional while testing timing:
+
+```dotenv
+CLOUDPILOT_REGION_LOGS=true
+```
+
+### What must work
+
+1. No open request / region not needed → `shouldRunRegionSearch()` false → skip (no Internal, no OpenAI).
+2. Open request actively collecting region → Region Search runs **Internal**.
+3. Region already known → skip.
+4. Master OFF always wins: even if `CLOUDPILOT_REGION_SEARCH=openai` were set locally, no live OpenAI call.
 
 ### Safety checks
 
-- Master OFF → Internal behavior
-- Skipped messages → no OpenAI usage
-- No destructive action from an OpenAI response
+- Skipped messages do not call OpenAI.
+- Collecting-region messages use Internal and can still fill region (e.g. `us-west-2`).
+- No destructive action from AI wording.
 
-Do not commit `.env` secrets.
+### Optional later (local only — not this Phase 2)
 
----
+When you want a live Region OpenAI test:
 
-## Phase 3 — Enable General Chat OpenAI
+```dotenv
+CLOUDPILOT_AI_ENABLED=true
+CLOUDPILOT_MESSAGE_RESPONSE=internal
+CLOUDPILOT_REGION_SEARCH=openai
+CLOUDPILOT_ACTION_SEARCH=internal
+```
 
-After Phase 2 is verified:
-
-1. Enable with `CLOUDPILOT_MESSAGE_RESPONSE=openai`.
-2. Request-flow templates stay deterministic.
-3. Only general conversation uses OpenAI message response.
-4. Keep `CLOUDPILOT_ACTION_SEARCH=internal`.
-
-### Safety checks
-
-- Master OFF → Internal general-chat behavior
-- OpenAI failure → Internal fallback
-- No request mutation or AWS execution from OpenAI wording
+Do not commit `.env` secrets. Do not enable General Chat OpenAI until Phase 3.
 
 Commit and stop.
 
 ---
 
-## Phase 4 — Same pattern for capabilities (later)
+## Phase 3 — Verify General Chat works (OpenAI stays OFF)
+
+Phase 3 confirms general conversation stays deterministic with OpenAI disabled.
+
+### Required ENV (do not flip OpenAI on)
+
+```dotenv
+CLOUDPILOT_AI_ENABLED=false
+CLOUDPILOT_MESSAGE_RESPONSE=internal
+CLOUDPILOT_REGION_SEARCH=internal
+CLOUDPILOT_ACTION_SEARCH=internal
+```
+
+### What must work
+
+1. General chat (`Hello`, `What can you do?`) → Internal response path (no live OpenAI).
+2. Request-flow templates stay deterministic (not OpenAI wording).
+3. Region Search still obeys `shouldRunRegionSearch()` (Phases 1–2).
+4. Master OFF always wins: even if `CLOUDPILOT_MESSAGE_RESPONSE=openai` were set locally, no live OpenAI call.
+
+### Safety checks
+
+- No OpenAI usage for general chat while ENV stays off.
+- OpenAI failure path (when enabled later) keeps Internal fallback — already in place; not exercised while OFF.
+- No request mutation or AWS execution from OpenAI wording.
+
+### Optional later (local only — not this Phase 3)
+
+When you want a live General Chat OpenAI test:
+
+```dotenv
+CLOUDPILOT_AI_ENABLED=true
+CLOUDPILOT_MESSAGE_RESPONSE=openai
+CLOUDPILOT_REGION_SEARCH=internal
+CLOUDPILOT_ACTION_SEARCH=internal
+```
+
+Do not commit `.env` secrets. Keep Action Search Internal.
+
+Commit and stop.
+
+---
+
+## Phase 4 — Capabilities presentation (same pattern; OpenAI stays OFF)
 
 ```text
-shouldRun…()   // capabilities response needed?
+shouldRespondCapabilities()
   ↓ true
 Build grounded actionMap catalog
   ↓
-respond…Internal() or respond…OpenAI()
+respondCapabilitiesInternal()
+  or
+respondCapabilitiesOpenAI()
   ↓
 Internal fallback if OpenAI fails
 ```
 
-OpenAI may improve wording but must not invent actions, services, or modes. Reuse `CLOUDPILOT_MESSAGE_RESPONSE`; no new capabilities env var.
+OpenAI may improve wording but must not invent actions, services, or modes. Reuses `CLOUDPILOT_MESSAGE_RESPONSE`; no new capabilities env var.
+
+### Required ENV (do not flip OpenAI on)
+
+```dotenv
+CLOUDPILOT_AI_ENABLED=false
+CLOUDPILOT_MESSAGE_RESPONSE=internal
+CLOUDPILOT_REGION_SEARCH=internal
+CLOUDPILOT_ACTION_SEARCH=internal
+```
+
+### What must work
+
+1. `What can you do?` → Internal capabilities message from `actionMap`.
+2. Master OFF / message Internal → no live OpenAI call.
+3. When OpenAI is enabled later → same catalog facts; Internal fallback on failure.
+
+### Optional later (local only)
+
+```dotenv
+CLOUDPILOT_AI_ENABLED=true
+CLOUDPILOT_MESSAGE_RESPONSE=openai
+```
+
+Do not commit `.env` secrets.
 
 ---
 
-## Later work (not part of this rollout)
+## Later work (deferred — not part of this archived plan)
 
 - Implement OpenAI action search before setting `CLOUDPILOT_ACTION_SEARCH=openai`
 - Stage 2 region: detect action first, then `shouldRunRegionSearch()` when that action needs region
@@ -243,8 +325,6 @@ OpenAI may improve wording but must not invent actions, services, or modes. Reus
 
 ---
 
-## Next
+## Archive note
 
-Phase 1 implemented: `shouldRunRegionSearch()`.  
-Next: verify acceptance checks live, then Phase 2 (enable Region OpenAI).  
-Do not enable another OpenAI function until its **Should I run?** decision is clear.
+Phases 1–4 complete. Optional local OpenAI flips and deferred items above live under [current.md](../current/current.md) / [to_do.md](../future/to_do.md) / [future.md](../future/future.md).

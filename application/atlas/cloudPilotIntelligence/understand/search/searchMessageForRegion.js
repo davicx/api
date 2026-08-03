@@ -15,6 +15,7 @@ HELPERS
     1) Helper H1: parseOpenAIRegionResponse
     2) Helper H2: formatRegionFound
     3) Helper H3: logRegionSearch
+    4) Helper H4: buildRegionOpenAIMessages
 */
 
 //HELPERS
@@ -27,8 +28,27 @@ function formatRegionFound(result) {
     return 'none';
 }
 
-//Helper H3: Compact REGION SEARCH story (gated by CLOUDPILOT_REGION_LOGS)
+//Helper H3: Compact region result in the pipeline (gated by CLOUDPILOT_REGION_LOGS)
+// Verbose REGION SEARCH block kept below as logRegionSearchVerbose — not used (OPENAI REQUEST owns detail).
 function logRegionSearch(details) {
+    if (!CLOUDPILOT_AI_CONFIG.regionLogs) {
+        return;
+    }
+
+    console.log('STEP 3: Region Search');
+
+    if (details.mode === 'SKIPPED') {
+        console.log('Skipped (not collecting a region)');
+    } else {
+        console.log('Mode: ' + details.mode);
+        console.log('Region Found: ' + formatRegionFound(details.result));
+    }
+
+    console.log(' ');
+}
+
+// Legacy verbose REGION SEARCH story — kept, not called (detail lives in OPENAI block)
+function logRegionSearchVerbose(details) {
     if (!CLOUDPILOT_AI_CONFIG.regionLogs) {
         return;
     }
@@ -63,6 +83,38 @@ function logRegionSearch(details) {
 
     console.log('Region Found: ' + formatRegionFound(details.result));
     console.log('==================================================');
+}
+
+//Helper H4: Build the exact OpenAI messages for region search
+function buildRegionOpenAIMessages(message) {
+    const processMessageContext = {
+        currentUserMessage: String(message || '')
+    };
+
+    const aiContext = buildAIContext(processMessageContext, {
+        situationTypes: ['region'],
+        includeKnowledge: false
+    });
+
+    const systemMessage = buildAISystemMessage(aiContext);
+    const messages = [
+        { role: 'system', content: systemMessage },
+        {
+            role: 'user',
+            content:
+                'Follow the SITUATION instructions.\n\n' +
+                'Return JSON only:\n\n' +
+                '{"region":"us-west-2"}\n\n' +
+                'or:\n\n' +
+                '{}'
+        }
+    ];
+
+    return {
+        systemMessage: systemMessage,
+        messages: messages,
+        aiContext: aiContext
+    };
 }
 
 //Helper H1: Parse OpenAI text into a region string or null
@@ -154,6 +206,15 @@ async function searchMessageForRegion(message, requestState) {
         openAIResponse = openAIOutcome.openAIResponse;
         fallback = openAIOutcome.fallback;
     } else {
+        const openAIRequest = buildRegionOpenAIMessages(message);
+        OpenAIClient.logOpenAI({
+            capability: 'Region Search',
+            conversationHistoryEnabled: false,
+            conversationHistoryCount: 0,
+            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            messages: openAIRequest.messages,
+            previewOnly: true
+        });
         result = searchMessageForRegionInternal(message);
     }
 
@@ -198,33 +259,13 @@ async function searchMessageForRegionOpenAI(message) {
             };
         }
 
-        const processMessageContext = {
-            currentUserMessage: String(message || '')
-        };
-
-        const aiContext = buildAIContext(processMessageContext, {
-            situationTypes: ['region'],
-            includeKnowledge: false
-        });
-
-        const systemMessage = buildAISystemMessage(aiContext);
         const config = CHAT_CONFIG.LOW;
         const regionMaxTokens = CLOUDPILOT_AI_CONFIG.regionTokenLimit;
+        const openAIRequest = buildRegionOpenAIMessages(message);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
-            messages: [
-                { role: 'system', content: systemMessage },
-                {
-                    role: 'user',
-                    content:
-                        'Follow the SITUATION instructions.\n\n' +
-                        'Return JSON only:\n\n' +
-                        '{"region":"us-west-2"}\n\n' +
-                        'or:\n\n' +
-                        '{}'
-                }
-            ],
+            messages: openAIRequest.messages,
             max_tokens: regionMaxTokens,
             temperature: 0,
             feature: 'region_search'
@@ -235,6 +276,20 @@ async function searchMessageForRegionOpenAI(message) {
             apiResult.data !== undefined && apiResult.data !== null
                 ? String(apiResult.data)
                 : '';
+
+        OpenAIClient.logOpenAI({
+            capability: 'Region Search',
+            model: config.model,
+            conversationHistoryEnabled: false,
+            conversationHistoryCount: 0,
+            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            messages: openAIRequest.messages,
+            previewOnly: false,
+            responseText: apiResult.success
+                ? openAIResponse
+                : apiResult.message || apiResult.error || 'OpenAI request failed',
+            usage: apiResult.success ? apiResult.usage : null
+        });
 
         if (!apiResult.success) {
             return {

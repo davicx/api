@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-27
 
-> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current.md](../current/current.md)** (AI — **next: when to run Region Search**)  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current.md](../current/current.md)** · **[open requests](../current/cloud_pilot_open_requests.md)**  
 > **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Finished index:** [finished.md](../finished/finished.md)  
 > **History (MVP done):** [history.md](../finished/history.md) · **Deferred:** [future_work.md](./future.md)  
 > **Done:** [finished.md](../finished/finished.md) · **Architecture & reference:** [architecture/](../architecture/)
@@ -15,7 +15,13 @@
 
 **History MVP is complete** — see [history.md](../finished/history.md) and [finished.md](../finished/finished.md). Deferred history items: [future_work.md](./future.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../current/pr_strategy.md). **AI (live + planned):** [current.md](../current/current.md). **AI usage / OpenAI spend:** [ai_usage.md](../current/ai_usage.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../current/pr_strategy.md). **AI (live + planned):** [current.md](../current/current.md). **Open requests:** [cloud_pilot_open_requests.md](../current/cloud_pilot_open_requests.md). **AI usage / OpenAI spend:** [ai_usage.md](../current/ai_usage.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
+
+#### Open Requests — [cloud_pilot_open_requests.md](../current/cloud_pilot_open_requests.md)
+- [ ] Phase 1 — chat answer for “What open requests do I have?” (Internal; no table yet)
+- [ ] Phase 2 — Navigator table in chat
+- [ ] Phase 3 — Dashboard
+- [ ] Phase 4 — Multi-open (later; today one open per conversation)
 
 #### Remediations — PR delivery (phased — [remediations.md](./remediations.md))
 
@@ -28,7 +34,7 @@
 - [ ] Phase 5 — history after PR apply
 - [ ] Phase 6 — undo revert PR
 
-#### CloudPilot AI ([current.md](../current/current.md)) — **next**
+#### CloudPilot AI ([current.md](../current/current.md))
 
 Shared (shipped)
 - [x] Context + conversation history foundation
@@ -37,16 +43,30 @@ Shared (shipped)
 - [x] Message response OpenAI path (see [chat_use_open_ai.md](../../instructions/chat_use_open_ai.md))
 - [x] Demo chat list documented (Section B5)
 
-**Next — `shouldRunRegionSearch()`, then reuse AI Invocation Rules** ([cloud_pilot_openai_rollout.md](../current/cloud_pilot_openai_rollout.md))
-- [x] Do **not** run Region Search on every message
-- [x] Add `shouldRunRegionSearch()` — true when request is actively collecting a region (Stage 1: open request + region missing)
-- [x] Then choose implementation: Internal | OpenAI (keep switches; only change **when** it runs)
-- [x] Skip when `shouldRunRegionSearch()` is false
-- [x] Optional log when skipped (`REGION_LOGS`)
-- [ ] Later (not this slice): same-turn “Scan EC2 in Oregon” without open request yet
+**AI Invocation Rules — done** ([cloud_pilot_openai_rollout.md](../finished/cloud_pilot_openai_rollout.md))
+- [x] `shouldRunRegionSearch()` + Internal Region Search (OpenAI ENV off)
+- [x] Internal General Chat verified (OpenAI ENV off)
+- [x] Capabilities `shouldRespondCapabilities` + Internal / OpenAI path (ENV off)
 
-After that
+**Next / deferred**
+- [ ] OpenAI logging audit before any live OpenAI flip:
+  - one `OPENAI` block for Future Dave:
+    - Context Loaded
+    - ACTUAL REQUEST SENT TO OPENAI (or WOULD BE SENT in Preview)
+    - ACTUAL RESPONSE FROM OPENAI
+    - Usage / cost
+  - Status: `Executed` or `Preview (AI Disabled)`
+  - `CLOUDPILOT_CONTEXT_LOGS` — Building Identity/Situation/…
+  - `CLOUDPILOT_ACTION_STATE_LOGS` — INITIAL/FINAL ACTION STATE
+  - `CLOUDPILOT_MESSAGE_LOGS` — verbose STEP 7a–7c
+  - `CLOUDPILOT_REGION_LOGS` — compact `STEP 3: Region Search` / Region Found
+  - `CLOUDPILOT_ACTION_LOGS` as needed
+  - each switch independent (not one LOGS_ON)
+- [ ] Stage 2 region: same-turn “Scan EC2 in Oregon” without open request yet
+- [ ] Optional local: flip Region or Message OpenAI for live test (do not commit `.env`)
+- [ ] Capabilities docs polish (README / examples) — [cloud_pilot_capabilities.md](../current/cloud_pilot_capabilities.md)
 - [ ] Ambiguous region clarify (Section D) — after demo MVP
+- [ ] OpenAI action search implementation before `CLOUDPILOT_ACTION_SEARCH=openai`
 
 Feature 3 — broader intent — see current_development Section E
 - [ ] Router + rules parser untouched; validate vs `actionMap`

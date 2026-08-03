@@ -1,5 +1,6 @@
 const actionState = require('../classes/ActionState');
 const Request = require('../classes/Request');
+const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 
 /*
 FUNCTIONS A: Request load — database is source of truth (Phase 1D / STEP 2)
@@ -262,8 +263,12 @@ async function setUsersActionExecutionMode(conversationID, executionMode) {
     return mapActionToState(updateResult.action);
 }
 
-//Function A8: Debug — print current action state
+//Function A8: Debug — print current action state (CLOUDPILOT_ACTION_STATE_LOGS)
 async function printUsersActionState(conversationID, messageVar) {
+    if (!CLOUDPILOT_AI_CONFIG.actionStateLogs) {
+        return;
+    }
+
     console.log(' ');
     console.log('_____________________________________');
     console.log(messageVar);

@@ -36,6 +36,16 @@
 - [x] `respond` / `explain` / `improve` / `generate` remain placeholders
 - Detail: [cloud_pilot_project_b.md](./cloud_pilot_project_b.md)
 
+### AI Invocation Rules (2026-08)
+
+- [x] Philosophy: only expensive AI work when that function is needed
+- [x] Design rule: **Should I run?** then **How should I run?** (Internal | OpenAI)
+- [x] Phase 1 — `shouldRunRegionSearch()` (open request + region missing)
+- [x] Phase 2 — Region Search verified with OpenAI ENV off (Internal)
+- [x] Phase 3 — General Chat verified with OpenAI ENV off (Internal)
+- [x] Phase 4 — Capabilities `shouldRespondCapabilities` + Internal / OpenAI path (ENV off)
+- Detail: [cloud_pilot_openai_rollout.md](./cloud_pilot_openai_rollout.md)
+
 ---
 
 ## Checklist — work done

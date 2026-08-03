@@ -1,4 +1,5 @@
 const CurrentQuestionContext = require('../classes/CurrentQuestionContext');
+const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 
 /*
 TYPE — CURRENT QUESTION
@@ -25,8 +26,10 @@ function buildCurrentQuestionContext(processMessageContext) {
         data: data
     };
 
-    console.log('Building Current Question Context');
-    console.log(JSON.stringify(currentQuestion, null, 2));
+    if (CLOUDPILOT_AI_CONFIG.contextLogs) {
+        console.log('Building Current Question Context');
+        console.log(JSON.stringify(currentQuestion, null, 2));
+    }
 
     return currentQuestion;
 }
