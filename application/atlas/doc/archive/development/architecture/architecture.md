@@ -26,7 +26,7 @@
 | [../current/mvp.md](../current/mvp.md) | **Active work** — EC2 vertical slice |
 | [../future/to_do.md](../future/to_do.md) | Deferred backlog |
 | [../finished/finished.md](../finished/finished.md) | Shipped |
-| [../current/current_development.md](../current/current_development.md) | Active CloudPilot feature work — MVP M7 |
+| [../current/current.md](../current/current.md) | AI — live control plane + planned chat features — MVP M7 |
 | [development_undo_feature.md](./development_undo_feature.md) | Undo / history table plan |
 | [code_cleanup.md](./code_cleanup.md) | **Message architecture** — pipeline, conversations, Phase 1 plan |
 | [action_map.md](./action_map.md) | Developer navigation — WHAT / WHEN / RUN / HOW / WHERE per action |

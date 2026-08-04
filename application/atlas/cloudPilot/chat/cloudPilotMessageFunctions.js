@@ -22,14 +22,16 @@ First gate (after STEP 4)
   General Conversation  → conversation/general/GeneralConversation.js → return (skip 5–6)
   Request Conversation  → STEPS 5–7 (maintain state → perform work → speak)
 
-STEP 1  Normalize message
-STEP 2  Load active request
-STEP 3  Understand            What is the user trying to do?
-STEP 4  Decide                Which conversation is this?
-STEP 5  Request Conversation  Maintain state (conversation/request/workflow.js → store)
-STEP 6  Request Conversation  Perform work (conversation/request/workflow.js → execute)
-STEP 6B History               WHAT CHANGED (inside executionFunctions — changes only)
-STEP 7  Request Conversation  Speak (conversation/request/RequestConversation.js)
+STEP 1  Normalize message (HTTP: Build Message is STEP 1 in messages.js)
+STEP 2  Initial State
+STEP 3  Region Search (compact log inside understand)
+STEP 4  Message Understanding
+STEP 5  Decision
+STEP 6  Execute (or Skipped — General Conversation)
+STEP 7  Save CloudPilot Message (messages.js)
+STEP 8  Final Response (messages.js)
+
+OpenAI capability blocks are buffered and flushed after STEP 8 (Story 2).
 
 HOW  = capabilities/
 WHERE = capabilities/atlas/atlasPost.js
@@ -52,6 +54,8 @@ FUNCTIONS B: Helpers
 //FUNCTIONS A: CloudPilot (Atlas) — STEPS 1–7 pipeline
 //Function A1: Process Message (pipeline)
 async function processMessage(rawUserMessage, conversationID, context) {
+    openAIFunctions.resetOpenAIRequestCounter();
+
     const processMessageContext = normalizeProcessMessageContext(context);
     var currentUserMessage = null;
     var currentRequestState = null;
@@ -92,44 +96,45 @@ async function processMessage(rawUserMessage, conversationID, context) {
     if (!currentUserMessageOutcome.success) {
         processMessageOutcome.success = false;
         processMessageOutcome.error = currentUserMessageOutcome.error;
-
         return processMessageOutcome;         
     }
 
     currentUserMessage = currentUserMessageOutcome.currentUserMessage;
 
-    //STEP 2: Load active request
+    //STEP 2: Load active request / initial state
     currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
     activeRequestAction = currentRequestState.pendingAction;
 
-    console.log("STEP 2: Initial State from User Request");
+    console.log("STEP 2: Initial State");
     await RequestStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
 
 
-    //STEP 3: Understand — what is the user trying to do?
+    // Understand (region search logs as STEP 3 inside searchMessageForRegion)
     const messageUnderstanding = await CloudPilotIntelligence.understandMessage(
         currentUserMessage,
         currentRequestState
     );
 
-    console.log("STEP 3: Message Understanding");
+    console.log("STEP 4: Message Understanding");
     console.log(JSON.stringify(messageUnderstanding, null, 2));
     console.log(" ");
 
 
-    //STEP 4: Decide — which conversation is this?
+    //STEP 5: Decide — which conversation is this?
     const decision = DecisionFunctions.decideNextStep({
         understanding: messageUnderstanding,
         requestState: currentRequestState
     });
 
-    console.log("STEP 4: Decision");
+    console.log("STEP 5: Decision");
     console.log(JSON.stringify(decision, null, 2));
     console.log(" ");
 
-    // General Conversation — skip STEPS 5–6
+    // General Conversation — skip execute
     if (GeneralConversation.isGeneralConversation(decision)) {
-        console.log("STEP 4: General Conversation — skip STEPS 5–6");
+        console.log("STEP 6: Execute");
+        console.log("Skipped (General Conversation)");
+        console.log(" ");
 
         const conversationOutcome = await GeneralConversation.conversation({
             ...processMessageContext,
@@ -138,9 +143,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
         });
 
         const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
-        console.log("STEP 8: Speak General Conversation — outcome");
-        console.log(JSON.stringify(shortResponseOutcome, null, 2));
-        console.log(" ");
+        processMessageOutcome.logFinalResponse = shortResponseOutcome;
 
         return await attachUndoAvailable(
             applyConversationToProcessMessageOutcome(
@@ -153,14 +156,15 @@ async function processMessage(rawUserMessage, conversationID, context) {
         );
     }
 
-    //STEP 5: Request Conversation — maintain state
+    //STEP 6: Request Conversation — maintain state + perform work
+    console.log("STEP 6: Execute");
+
     const requestOutcome = await RequestWorkflow.store(decision, {
         conversationID: conversationID,
         context: processMessageContext,
         requestState: currentRequestState
     });
 
-    console.log("STEP 5: Request Conversation — maintain state");
     console.log(JSON.stringify(requestOutcome, null, 2));
     console.log(" ");
 
@@ -173,7 +177,6 @@ async function processMessage(rawUserMessage, conversationID, context) {
         processMessageOutcome.success = true;
     }
 
-    //STEP 6: Request Conversation — perform work
     //RUN: executeRequest → runAction() → handler → capability → atlasPost → Atlas
     const executionOutcome = await RequestWorkflow.execute(decision, {
         conversationID: conversationID,
@@ -197,7 +200,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     await RequestStateFunctions.printUsersActionState(conversationID, "FINAL STATE:");
 
 
-    //STEP 7: Request Conversation — speak (no DB, no Atlas)
+    // Speak (reply text) — logged as STEP 8 Final Response after save in messages.js
     const conversationOutcome = await RequestConversation.conversation(decision, {
         conversationID: conversationID,
         currentUserMessage: currentUserMessage,
@@ -207,14 +210,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
         context: processMessageContext
     });
 
-    //Short Response Outcome 
     const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
-    console.log("STEP 7: Request Conversation — speak");
-    console.log(JSON.stringify(shortResponseOutcome, null, 2));
-    
-    //Full Response Outcome for Testing
-    //console.log(JSON.stringify(conversationOutcome, null, 2));
-    console.log(" ");
+    processMessageOutcome.logFinalResponse = shortResponseOutcome;
 
     return await attachUndoAvailable(
         applyConversationToProcessMessageOutcome(

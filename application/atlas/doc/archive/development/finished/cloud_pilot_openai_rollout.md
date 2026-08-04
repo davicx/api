@@ -327,4 +327,4 @@ Do not commit `.env` secrets.
 
 ## Archive note
 
-Phases 1–4 complete. Optional local OpenAI flips and deferred items live under [Current Development](../current/current_development.md) / [to_do.md](../future/to_do.md) / [future.md](../future/future.md).
+Phases 1–4 complete. Optional local OpenAI flips and deferred items above live under [current.md](../current/current.md) / [to_do.md](../future/to_do.md) / [future.md](../future/future.md).

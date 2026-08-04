@@ -4,7 +4,7 @@
 
 > Read-only. Answers: **“Where is my money going?”** (AWS)  
 > Internal action: `show_billing` · User-facing: **Billing**  
-> OpenAI spend is separate: [AI Spending](../current/feature_ai_spending.md) — do not mix.
+> OpenAI spend is separate: [ai_usage.md](../current/ai_usage.md) — do not mix.
 
 ---
 

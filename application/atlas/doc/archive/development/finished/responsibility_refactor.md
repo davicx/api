@@ -5,7 +5,7 @@
 **Nature of work:** Move / rename folders & files + fix `require()` paths. **Do not rewrite logic.**  
 **Last reviewed:** 2026-08-01
 
-**Related:** [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) · [code_cleanup.md](../architecture/code_cleanup.md) · [Current Development](../current/current_development.md) · [README.md](../../../README.md) · [Project B](./cloud_pilot_project_b.md)
+**Related:** [cloud_pilot_refactor.md](./cloud_pilot_refactor.md) · [code_cleanup.md](../architecture/code_cleanup.md) · [current.md](../current/current.md) · [README.md](../../../README.md) · [Project B](./cloud_pilot_project_b.md)
 
 ---
 
@@ -19,7 +19,7 @@
 
 **Phase status:** Phase 1 done. Phase 2 **code complete**. See Phase 2 checklist. **Do not start Phase 3 until approved.**
 
-**What this doc is not:** Product AI features, OpenAI prompts, or rewriting handlers. That stays in [Current Development](../current/current_development.md) *after* the moves.
+**What this doc is not:** Product AI features, OpenAI prompts, or rewriting handlers. That stays in [current.md](./current.md) *after* the moves.
 
 ### Top-level folders (the whole point)
 
@@ -428,7 +428,7 @@ HTTP
 - [x] Confirm `services/` gone
 - [x] Confirm `config/github/` gone (moved in Phase 2)
 - [ ] Refresh README tree (no `doc/` listing)
-- [ ] Resume product AI in [Current Development](../current/current_development.md)
+- [ ] Resume product AI in [current.md](./current.md)
 
 ---
 

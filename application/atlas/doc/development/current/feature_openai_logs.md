@@ -1,10 +1,19 @@
-# CloudPilot — OpenAI Logging
+# OpenAI Logs
 
-**Status:** Plan — follow-on to current OPENAI block  
-**Goal:** Log each AI capability invocation separately so Future Dave can see how many requests ran, why, what was sent, what came back, and cost  
-**Work type:** Logging format + per-message request counter  
-**Last updated:** 2026-08-02  
-**Related:** [current.md](./current.md) (OpenAI logging audit) · [sample_env.md](../../sample_env.md) · archived invocation rules [finished/cloud_pilot_openai_rollout.md](../finished/cloud_pilot_openai_rollout.md)
+## What this does
+
+Shows every OpenAI request CloudPilot makes: why it ran, what was sent, what came back, and what it cost.
+
+## Current step
+
+**Step 2 — Verify every current AI path uses the same log format.**
+
+## Next
+
+Step 3 — Update the how-to and add an optional shorter log mode.
+
+**Status:** Active  
+**Related:** [Current Development](./current_development.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [Environment example](../../sample_env.md) · [Archived rollout](../finished/cloud_pilot_openai_rollout.md)
 
 ---
 
@@ -27,6 +36,26 @@ That makes it obvious:
 ## Design question (for Future Dave)
 
 > **Exactly how many OpenAI requests did CloudPilot make for this user message, and why?**
+
+---
+
+## Desired console order (two stories)
+
+```text
+STEP 1–8 … CloudPilot pipeline (no OPENAI blocks interleaved)
+
+--------------------------------------------------
+OPENAI: Region Search (Request 1)
+...
+--------------------------------------------------
+OPENAI: General Chat (Request 2)
+...
+
+Total: less than $.01
+FOOTER: Request made at …
+```
+
+`logOpenAI` **buffers** blocks; `flushOpenAILogs()` prints them after STEP 8.
 
 ---
 
@@ -225,29 +254,26 @@ CLOUDPILOT_OPENAI_LOG_LEVEL=verbose   # full Messages JSON (default for now)
 CLOUDPILOT_OPENAI_LOG_LEVEL=summary   # char counts / short response, no full JSON
 ```
 
-Do not block Phase 1 on summary mode.
+Do not block Step 1 on summary mode.
 
 ---
 
-## Phased implementation
+## Steps
 
-### Phase 1 — Header + request counter
+### Step 1 — Header + request counter
+1. [x] Shared logger header: `OPENAI: ${capability} (Request ${n})`.
+2. [x] Per-`processMessage` counter: increment on each `logOpenAI` call; reset at message start.
+3. [x] Rename section label to **Messages** (and **Response**).
+4. [x] Keep Status Preview / Executed behavior.
+5. [ ] Verify Region Search + General Chat in one turn show Request 1 / Request 2 (live smoke).
+6. [ ] Commit and stop.
 
-1. Shared logger header: `OPENAI: ${capability} (Request ${n})`.
-2. Per-`processMessage` counter: increment on each `logOpenAI` call; reset at message start.
-3. Rename section label to **Messages** if not already.
-4. Keep Status Preview / Executed behavior.
-5. Verify Region Search + General Chat in one turn show Request 1 / Request 2.
-6. Commit and stop.
-
-### Phase 2 — All current AI paths
-
-1. Capabilities presentation uses same header + counter.
+### Step 2 — All current AI paths
+1. Capabilities presentation uses same header + counter (already calls `logOpenAI` — verify label).
 2. Any other live OpenAI call sites use the same logger only.
 3. Smoke: skip region → only General Chat as Request 1.
 
-### Phase 3 — Docs + summary level (optional)
-
+### Step 3 — Docs + shorter log mode (optional)
 1. Update `sample_env.md` / `chat_use_open_ai.md` examples to the new header.
 2. Optional `CLOUDPILOT_OPENAI_LOG_LEVEL`.
 
@@ -262,7 +288,7 @@ Do not block Phase 1 on summary mode.
 
 ---
 
-## Acceptance checks (Phase 1)
+## Acceptance checks (Step 1)
 
 - One user message, region + general chat → two blocks, Request 1 then Request 2
 - Next user message → numbering resets to Request 1
@@ -274,4 +300,4 @@ Do not block Phase 1 on summary mode.
 
 ## Next
 
-Say **go** to start Phase 1 (header + per-message request counter only).
+**Restart the API** (ENV changed), then send one chat message that mentions a region (e.g. “what’s in us-west-2?”). Confirm Request 1 = Region Search, Request 2 = General Chat. Then commit Step 1 when happy.

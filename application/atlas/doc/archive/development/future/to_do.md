@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-07-27
 
-> **Active work:** [Current Development](../current/current_development.md) · **[Questions](../current/feature_questions.md)** · **[OpenAI Logs](../current/feature_openai_logs.md)** · [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
+> **Active work:** [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)** · **[current.md](../current/current.md)** · **[open requests](../current/cloud_pilot_open_requests.md)** · **[openai logs](../current/openai_logs.md)**  
 > **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Finished index:** [finished.md](../finished/finished.md)  
 > **History (MVP done):** [history.md](../finished/history.md) · **Deferred:** [future_work.md](./future.md)  
 > **Done:** [finished.md](../finished/finished.md) · **Architecture & reference:** [architecture/](../architecture/)
@@ -15,14 +15,14 @@
 
 **History MVP is complete** — see [history.md](../finished/history.md) and [finished.md](../finished/finished.md). Deferred history items: [future_work.md](./future.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **GitHub pull requests:** [feature_github_pull_requests.md](../current/feature_github_pull_requests.md). **AI:** [Current Development](../current/current_development.md). **Questions:** [feature_questions.md](../current/feature_questions.md). **AI spending:** [feature_ai_spending.md](../current/feature_ai_spending.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **PR remediations (mode 3):** [remediations.md](./remediations.md) · [pr_strategy.md](../current/pr_strategy.md). **AI (live + planned):** [current.md](../current/current.md). **Open requests:** [cloud_pilot_open_requests.md](../current/cloud_pilot_open_requests.md). **AI usage / OpenAI spend:** [ai_usage.md](../current/ai_usage.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
 
-#### OpenAI Logging — [feature_openai_logs.md](../current/feature_openai_logs.md)
+#### OpenAI Logging — [openai_logs.md](../current/openai_logs.md)
 - [ ] Phase 1 — header `OPENAI: <Capability> (Request N)` + per-message counter
 - [ ] Phase 2 — all current AI paths use the same logger
 - [ ] Phase 3 — docs; optional `CLOUDPILOT_OPENAI_LOG_LEVEL=summary|verbose`
 
-#### Questions / Open Requests — [feature_questions.md](../current/feature_questions.md)
+#### Open Requests — [cloud_pilot_open_requests.md](../current/cloud_pilot_open_requests.md)
 - [ ] Phase 1 — chat answer for “What open requests do I have?” (Internal; no table yet)
 - [ ] Phase 2 — Navigator table in chat
 - [ ] Phase 3 — Dashboard
@@ -39,13 +39,13 @@
 - [ ] Phase 5 — history after PR apply
 - [ ] Phase 6 — undo revert PR
 
-#### CloudPilot AI ([Current Development](../current/current_development.md))
+#### CloudPilot AI ([current.md](../current/current.md))
 
 Shared (shipped)
 - [x] Context + conversation history foundation
 - [x] Master + per-feature ENV (`cloudPilotAIConfig.js`)
 - [x] Region OpenAI + situation context + region logs
-- [x] Message response OpenAI path (see [use_openai_chat.md](../how_to/use_openai_chat.md))
+- [x] Message response OpenAI path (see [chat_use_open_ai.md](../../instructions/chat_use_open_ai.md))
 - [x] Demo chat list documented (Section B5)
 
 **AI Invocation Rules — done** ([cloud_pilot_openai_rollout.md](../finished/cloud_pilot_openai_rollout.md))
@@ -54,7 +54,7 @@ Shared (shipped)
 - [x] Capabilities `shouldRespondCapabilities` + Internal / OpenAI path (ENV off)
 
 **Next / deferred**
-- [ ] OpenAI logging — [feature_openai_logs.md](../current/feature_openai_logs.md):
+- [ ] OpenAI logging — [openai_logs.md](../current/openai_logs.md):
   - `OPENAI: <Capability> (Request N)` per invocation
   - reset N each user message
   - Messages / Response / Usage kept
@@ -63,7 +63,7 @@ Shared (shipped)
   - `CLOUDPILOT_CONTEXT_LOGS` / `CLOUDPILOT_ACTION_STATE_LOGS` / `CLOUDPILOT_MESSAGE_LOGS` stay independent
 - [ ] Stage 2 region: same-turn “Scan EC2 in Oregon” without open request yet
 - [ ] Optional local: flip Region or Message OpenAI for live test (do not commit `.env`)
-- [ ] Capabilities docs polish (README / examples) — [cloud_pilot_capabilities.md](../finished/cloud_pilot_capabilities.md)
+- [ ] Capabilities docs polish (README / examples) — [cloud_pilot_capabilities.md](../current/cloud_pilot_capabilities.md)
 - [ ] Ambiguous region clarify (Section D) — after demo MVP
 - [ ] OpenAI action search implementation before `CLOUDPILOT_ACTION_SEARCH=openai`
 
@@ -82,7 +82,7 @@ Feature 2 — Friendly request conversations
 
 - [ ] Dashboard summary — deferred (see doc)
 
-#### AI Usage — OpenAI spend ([feature_ai_spending.md](../current/feature_ai_spending.md))
+#### AI Usage — OpenAI spend ([ai_usage.md](../current/ai_usage.md))
 
 - [x] Persist `usage` → `ai_usage` + `calculateOpenAICost` (after successful OpenAI calls)
 - [x] `GET /ai/usage/summary`

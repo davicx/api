@@ -23,6 +23,15 @@ FUNCTIONS B: OpenAI logging
 
 let openaiClient = null;
 
+/** Per user-message OpenAI capability invocation counter (reset in processMessage). */
+let openAIRequestCounterForMessage = 0;
+
+/** Per user-message estimated OpenAI spend in dollars (reset in processMessage). */
+let openAICostTotalForMessage = 0;
+
+/** Buffered OPENAI: Capability blocks — flushed after CloudPilot pipeline STEPs. */
+let openAILogBuffer = [];
+
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS) || 10000;
 
 //FUNCTIONS A: ChatGPT / OpenAI
@@ -41,6 +50,18 @@ function getOpenAIClient() {
     return openaiClient;
 }
 
+/** Reset OpenAI request numbering, cost total, and log buffer at processMessage start. */
+function resetOpenAIRequestCounter() {
+    openAIRequestCounterForMessage = 0;
+    openAICostTotalForMessage = 0;
+    openAILogBuffer = [];
+}
+
+function nextOpenAIRequestNumber() {
+    openAIRequestCounterForMessage += 1;
+    return openAIRequestCounterForMessage;
+}
+
 //Function A2: Normalize User Message For Model
 /** @returns {{ ok: true, text: string, message: '' } | { ok: false, text: '', message: string }}} */
 function normalizeUserMessageForModel(raw) {
@@ -52,7 +73,7 @@ function normalizeUserMessageForModel(raw) {
 }
 
 //FUNCTIONS B: OpenAI logging
-//Function B1: Single OpenAI transaction log (Executed or Preview)
+//Function B1: Buffer one OpenAI transaction (Executed or Preview) — flush after pipeline
 function logOpenAI(options) {
     if (!CLOUDPILOT_AI_CONFIG.openAILogs) {
         return;
@@ -61,6 +82,7 @@ function logOpenAI(options) {
     const details = options || {};
     const model = details.model || CHAT_CONFIG.LOW.model;
     const capability = details.capability || 'Unknown';
+    const requestNumber = nextOpenAIRequestNumber();
     const status = details.previewOnly
         ? 'Preview (AI Disabled)'
         : (details.status || 'Executed');
@@ -68,81 +90,119 @@ function logOpenAI(options) {
     const historyCount = Number(details.conversationHistoryCount) || 0;
     const messages = Array.isArray(details.messages) ? details.messages : [];
     const context = details.context || {};
+    const lines = [];
 
-    console.log('==========================================================');
-    console.log('OPENAI');
-    console.log('==========================================================');
-    console.log(' ');
-    console.log('Capability:');
-    console.log(capability);
-    console.log(' ');
-    console.log('Model:');
-    console.log(model);
-    console.log(' ');
-    console.log('Status:');
-    console.log(status);
-    console.log(' ');
-    console.log('Conversation History');
-    console.log('----------------------------------');
+    function push(line) {
+        lines.push(line === undefined || line === null ? '' : String(line));
+    }
+
+    push('--------------------------------------------------');
+    push('OPENAI: ' + capability + ' (Request ' + requestNumber + ')');
+    push('--------------------------------------------------');
+    push(' ');
+    push('Model:');
+    push(model);
+    push(' ');
+    push('Status:');
+    push(status);
+    push(' ');
+    push('Conversation History:');
 
     if (historyEnabled) {
-        console.log('Enabled');
-        console.log('Messages Included: ' + historyCount);
+        push('Enabled');
+        push('Messages Included: ' + historyCount);
     } else {
-        console.log('Disabled');
+        push('Disabled');
     }
 
-    console.log(' ');
-    console.log('Context Loaded');
-    console.log('----------------------------------');
-    console.log(formatContextLine('Identity', context.identity));
-    console.log(formatContextLine('Situation', context.situation));
-    console.log(formatContextLine('Current Question', context.currentQuestion));
-    console.log(formatContextLine('Knowledge', context.knowledge));
-    console.log(' ');
-    console.log(
-        details.previewOnly
-            ? 'ACTUAL REQUEST THAT WOULD BE SENT TO OPENAI'
-            : 'ACTUAL REQUEST SENT TO OPENAI'
-    );
-    console.log('----------------------------------');
-    console.log(JSON.stringify(messages, null, 2));
-    console.log(' ');
-    console.log('ACTUAL RESPONSE FROM OPENAI');
-    console.log('----------------------------------');
+    push(' ');
+    push('Context Loaded');
+    push(formatContextLine('Identity', context.identity));
+    push(formatContextLine('Situation', context.situation));
+    push(formatContextLine('Current Question', context.currentQuestion));
+    push(formatContextLine('Knowledge', context.knowledge));
+    push(' ');
+    push('Messages');
+    push('----------------------------------');
+    push(JSON.stringify(messages, null, 2));
+    push(' ');
+    push('Response');
+    push('----------------------------------');
 
     if (details.previewOnly) {
-        console.log('(none — AI disabled, request not sent)');
+        push('(none — AI disabled)');
     } else if (details.responseText !== undefined && details.responseText !== null) {
         const responseText = String(details.responseText).trim();
-        console.log(responseText || '(empty response)');
+        push(responseText || '(empty response)');
     } else {
-        console.log('(none)');
+        push('(none)');
     }
 
-    console.log(' ');
-    console.log('Usage');
-    console.log('----------------------------------');
+    push(' ');
+    push('Usage');
+    push('----------------------------------');
 
     if (details.previewOnly) {
-        console.log('(none — AI disabled)');
+        push('(none)');
     } else if (details.usage) {
         const usage = details.usage || {};
         const promptTokens = Number(usage.prompt_tokens) || 0;
         const completionTokens = Number(usage.completion_tokens) || 0;
-        const totalTokens = Number(usage.total_tokens) || (promptTokens + completionTokens);
         const rawCost = calculateOpenAICost(model, promptTokens, completionTokens);
 
-        console.log('Prompt Tokens:      ' + promptTokens.toLocaleString());
-        console.log('Completion Tokens:  ' + completionTokens.toLocaleString());
-        console.log('Total Tokens:       ' + totalTokens.toLocaleString());
-        console.log('Estimated Cost:     $' + rawCost.toFixed(6));
+        openAICostTotalForMessage += rawCost;
+
+        push('Prompt Tokens: ' + promptTokens);
+        push('Completion Tokens: ' + completionTokens);
+        push('Estimated Cost: $' + rawCost.toFixed(6));
     } else {
-        console.log('(none)');
+        push('(none)');
     }
 
-    console.log('==========================================================');
+    push(' ');
+    openAILogBuffer.push(lines.join('\n'));
+}
+
+/** Print all buffered OPENAI blocks (Story 2 — after CloudPilot pipeline). */
+function flushOpenAILogs() {
+    if (!CLOUDPILOT_AI_CONFIG.openAILogs) {
+        return;
+    }
+
+    for (let i = 0; i < openAILogBuffer.length; i++) {
+        console.log(openAILogBuffer[i]);
+    }
+
+    openAILogBuffer = [];
+}
+
+/** End-of-message OpenAI cost total (1¢ display increments). After flush, before HTTP FOOTER. */
+function logOpenAIMessageFooter() {
+    if (!CLOUDPILOT_AI_CONFIG.openAILogs) {
+        return;
+    }
+
+    console.log('Total: ' + formatTotalOpenAICost(openAICostTotalForMessage));
     console.log(' ');
+}
+
+function formatTotalOpenAICost(totalDollars) {
+    const total = Number(totalDollars) || 0;
+
+    if (total < 0.01) {
+        return 'less than $.01';
+    }
+
+    const cents = Math.round(total * 100);
+    const dollars = Math.floor(cents / 100);
+    const remainder = cents % 100;
+    const centsText = remainder < 10 ? '0' + remainder : String(remainder);
+
+    if (dollars === 0) {
+        return '$.' + centsText;
+    }
+
+    return '$' + dollars + '.' + centsText;
 }
 
 function formatContextLine(label, value) {
@@ -540,7 +600,10 @@ async function sendGeneralChatDuringWorkflow(userMessage, workflowContext) {
 module.exports = {
     getOpenAIClient,
     normalizeUserMessageForModel,
+    resetOpenAIRequestCounter,
     logOpenAI,
+    flushOpenAILogs,
+    logOpenAIMessageFooter,
     summarizeAIContext,
     logOpenAIMessageContext,
     logOpenAIResponse,

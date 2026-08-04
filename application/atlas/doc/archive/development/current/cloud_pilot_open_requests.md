@@ -1,9 +1,21 @@
 # CloudPilot — Open Requests
 
-**Status:** Plan — not started  
+**Status:** Plan — see parent Question Feature design  
 **Goal:** Let users ask what open requests they have; respond in chat now, table in chat + dashboard later  
-**Work type:** Conversation command + grounded list response (+ Navigator / dashboard later)  
-**Last updated:** 2026-08-02
+**Work type:** Question feature + grounded list response (+ Navigator / dashboard later)  
+**Last updated:** 2026-08-03  
+**Parent plan:** [question_feature.md](./question_feature.md) — open requests are a **Question** under `cloudPilot/questions/`; data stays in `requests/`  
+**Related:** [current.md](./current.md) · [cloud_pilot_capabilities.md](./cloud_pilot_capabilities.md)
+
+---
+
+## Architecture note
+
+Open requests are a **Question** (read `cloudpilot_requests`), same family as history — not a request workflow and not general chat.
+
+Entry: `cloudPilot/questions/openRequests/` · Data owner: `requests/` · History stays in `history/`.
+
+Full design: [question_feature.md](./question_feature.md).
 
 ---
 
@@ -275,4 +287,7 @@ Phase 1–2 stay Internal only. No new env var required.
 
 ## Next
 
+**Parent plan:** [question_feature.md](./question_feature.md).
+
+Say **go Phase 1** there to implement Open Requests Question (phrases + `questions/openRequests` + speak wire).
 Say **go** to start Phase 1 only (chat answer, Internal, no table yet).

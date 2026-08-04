@@ -42,7 +42,7 @@ async function executeRequest(decision, context) {
         return null;
     }
 
-    console.log('STEP 6: EXECUTION — starting');
+    console.log('STEP 6: Execute — starting');
 
     const requestState = context.requestState || {};
     const workflowId = requestState.workflowId;

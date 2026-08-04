@@ -49,7 +49,7 @@ async function postMessage(req, res) {
 
     //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    console.log("STEP 1: Build Message ")
+    console.log("STEP 1: Build Message");
     console.log(currentUserMessage)
 
     //STEP 2: Send user message to be stored in the database
@@ -85,8 +85,8 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
-    //STEP 6: Save CloudPilot message to database
-    console.log("STEP 6: Save CloudPilot message to database");
+    //STEP 7: Save CloudPilot message to database
+    console.log("STEP 7: Save CloudPilot Message");
 
     var cloudPilotMessageOutcome = null;
     const cloudPilotReplyText = cloudPilotResult && cloudPilotResult.cloudPilotMessage ? String(cloudPilotResult.cloudPilotMessage).trim() : '';
@@ -96,11 +96,14 @@ async function postMessage(req, res) {
         cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
         if (cloudPilotMessageOutcome.outcome == 200) {
-            console.log("STEP 6 SUCCESS: CloudPilot message saved");
+            console.log("SUCCESS");
         } else {
-            console.log("STEP 6 FAILED: Could not save CloudPilot message");
+            console.log("FAILED: Could not save CloudPilot message");
         }
+    } else {
+        console.log("Skipped (no CloudPilot reply text)");
     }
+    console.log(" ");
     
     //Step 6A: Add CloudPilot message to JSON output when saved
     if (cloudPilotMessageOutcome && cloudPilotMessageOutcome.newMessage) {
@@ -125,15 +128,22 @@ async function postMessage(req, res) {
     messageOutcome.data.atlasResponse = null;
     if (cloudPilotResult && cloudPilotResult.atlasResponse) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
-        console.log(
-            'STEP 6D: atlasResponse attached to HTTP response:',
-            cloudPilotResult.atlasResponse.type || '(no type)',
-            'steps:',
-            Array.isArray(cloudPilotResult.atlasResponse.steps)
-                ? cloudPilotResult.atlasResponse.steps.length
-                : 0
-        );
     }
+
+    //STEP 8: Final Response (CloudPilot pipeline story ends here)
+    console.log("STEP 8: Final Response");
+    if (cloudPilotResult && cloudPilotResult.logFinalResponse) {
+        console.log(JSON.stringify(cloudPilotResult.logFinalResponse, null, 2));
+    } else if (cloudPilotResult) {
+        console.log(JSON.stringify({
+            success: cloudPilotResult.success,
+            cloudPilotMessage: cloudPilotResult.cloudPilotMessage,
+            error: cloudPilotResult.error || null
+        }, null, 2));
+    } else {
+        console.log("(none)");
+    }
+    console.log(" ");
 
     //Step 6E: HTTP success when user message saved and CloudPilot chat turn completed
     const userMessageSaved = currentUserMessageOutcome.outcome == 200;
@@ -159,7 +169,9 @@ async function postMessage(req, res) {
         }
     }
 
-    //STEP 7: Return Response
+    // Story 2 — OpenAI activity (after pipeline), then Total, then HTTP FOOTER
+    openAIFunctions.flushOpenAILogs();
+    openAIFunctions.logOpenAIMessageFooter();
     Functions.addFooter();
     res.json(messageOutcome);
 }

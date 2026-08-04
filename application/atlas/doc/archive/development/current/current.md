@@ -1,10 +1,10 @@
 # CloudPilot — Current Development (AI)
 
-**Last updated:** 2026-08-02  
+**Last updated:** 2026-08-03  
 **Audience:** Active AI work — control plane, region understanding, and planned chat enhancements.  
-**Next up:** OpenAI logging plan — [openai_logs.md](./openai_logs.md). Open Requests — [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md). Section D — ambiguous region (after demo MVP).
+**Next up:** **Question Feature** — [question_feature.md](./question_feature.md) (open-requests fix = Phase 1). OpenAI logging — [openai_logs.md](./openai_logs.md).  
 
-**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [openai_logs.md](./openai_logs.md) · [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
+**Related:** [sample_env.md](../../sample_env.md) · [ai_usage.md](./ai_usage.md) · [kite_formatting.md](./kite_formatting.md) · [openai_logs.md](./openai_logs.md) · [question_feature.md](./question_feature.md) · [cloud_pilot_open_requests.md](./cloud_pilot_open_requests.md) · [future/future.md](../future/future.md) · [mvp.md](./mvp.md) · **How-to chat OpenAI:** [../instructions/chat_use_open_ai.md](../../instructions/chat_use_open_ai.md)
 
 This file **combines** the live AI config/region work with the older chat-enhancement plan (`cloud_pilot_chat.md`). Sections are marked so similar work stays together.
 
