@@ -17,6 +17,8 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
+| [Intelligence Front Door](./feature_intelligence_front_door.md) | One place for all GenAI: Conversation `chat()`, then Understand. | Step 1 — Design locked |
+| [Organizational Knowledge](./feature_organizational_knowledge.md) | Explains why an S3 bucket exists in the organization. | Step 1 — Database + demo rows |
 | [Questions](./feature_questions.md) | CloudPilot answers things it already knows, starting with open requests. | Step 1 — Open Requests |
 | [OpenAI Logs](./feature_openai_logs.md) | Shows each OpenAI request, response, and cost in the API logs. | Step 2 — Verify all current AI paths |
 | [AI Spending](./feature_ai_spending.md) | Shows what CloudPilot spends on OpenAI. | Step 1 — Build the Kite spending card |
