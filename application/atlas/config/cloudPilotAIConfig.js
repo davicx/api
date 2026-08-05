@@ -1,25 +1,24 @@
 /**
  * CloudPilot AI configuration — master switch, feature implementations, logging.
  *
- * OpenAI is one implementation CloudPilot can choose (internal | openai).
- * Model presets / token ceilings: chatGPTconfig.js
+ * Front door: cloudPilotIntelligence/CloudPilotIntelligence.js
+ * OpenAI is one implementation (internal | openai). Model presets: chatGPTconfig.js
  *
- * Env:
- *   CLOUDPILOT_AI_ENABLED=true|false          (master; OFF always wins)
- *   OPENAI_SEND_CONVERSATION_HISTORY=true|false
- *   OPENAI_CONVERSATION_HISTORY_LIMIT=12
- *   CLOUDPILOT_MESSAGE_RESPONSE=internal|openai
- *   CLOUDPILOT_REGION_SEARCH=internal|openai
- *   CLOUDPILOT_ACTION_SEARCH=internal|openai
- *   CLOUDPILOT_MESSAGE_LOGS=true|false
- *   CLOUDPILOT_REGION_LOGS=true|false
- *   CLOUDPILOT_ACTION_LOGS=true|false
- *   CLOUDPILOT_ACTION_STATE_LOGS=true|false  (INITIAL/FINAL ACTION STATE)
- *   CLOUDPILOT_CONTEXT_LOGS=true|false       (Building Identity/Situation/…)
- *   CLOUDPILOT_OPENAI_LOGS=true|false        (unified OPENAI transaction block)
- *   CLOUDPILOT_MESSAGE_TOKEN_LIMIT=500
- *   CLOUDPILOT_REGION_TOKEN_LIMIT=40
- *   CLOUDPILOT_ACTION_TOKEN_LIMIT=40
+ * Feature ENV (each independent; master OFF always wins):
+ *   CLOUDPILOT_AI_ENABLED            master for all GenAI
+ *   CLOUDPILOT_MESSAGE_RESPONSE      chat() (+ Capabilities wording)
+ *   CLOUDPILOT_REGION_SEARCH         understandRegion / region search
+ *   CLOUDPILOT_ACTION_SEARCH         understandAction — config stub; OpenAI not wired yet
+ *
+ * History / OpenAI transport:
+ *   OPENAI_SEND_CONVERSATION_HISTORY, OPENAI_CONVERSATION_HISTORY_LIMIT
+ *
+ * Logging (each independent — not one LOGS_ON):
+ *   CLOUDPILOT_MESSAGE_LOGS, CLOUDPILOT_REGION_LOGS, CLOUDPILOT_ACTION_LOGS,
+ *   CLOUDPILOT_ACTION_STATE_LOGS, CLOUDPILOT_CONTEXT_LOGS,
+ *   CLOUDPILOT_OPENAI_LOGS          OPENAI: <Capability> (Request N) blocks
+ *
+ * Token limits: CLOUDPILOT_MESSAGE_TOKEN_LIMIT, REGION, ACTION
  */
 
 function readEnvBoolean(envName, defaultValue) {
@@ -85,8 +84,10 @@ const CLOUDPILOT_AI_CONFIG = {
     ),
 
     /**
-     * Individual AI implementations.
-     * Values: internal | openai
+     * Individual AI implementations (internal | openai).
+     * messageResponse → chat() / Capabilities
+     * regionSearch    → region search
+     * actionSearch    → action search (stub; keep internal)
      */
     messageResponse: readImplementation('CLOUDPILOT_MESSAGE_RESPONSE', 'internal'),
     regionSearch: readImplementation('CLOUDPILOT_REGION_SEARCH', 'internal'),
@@ -94,6 +95,7 @@ const CLOUDPILOT_AI_CONFIG = {
 
     /**
      * Individual logging switches (not one master LOGS_ON).
+     * openAILogs → per-capability OPENAI: <Capability> (Request N) blocks
      */
     messageLogs: readEnvBoolean('CLOUDPILOT_MESSAGE_LOGS', false),
     regionLogs: readEnvBoolean('CLOUDPILOT_REGION_LOGS', false),

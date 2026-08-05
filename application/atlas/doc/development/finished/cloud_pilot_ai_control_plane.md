@@ -2,7 +2,7 @@
 
 **Status:** Archived reference — retained so no prior AI control-plane notes are lost.  
 **Active work:** [Current Development](../current/current_development.md)  
-**Related:** [AI Spending](../current/feature_ai_spending.md) · [Chat Formatting](../current/feature_chat_formatting.md) · [OpenAI Logs](../current/feature_openai_logs.md) · [Questions](../current/feature_questions.md) · [Future MVP](../future/mvp.md) · **How-to chat OpenAI:** [Use OpenAI Chat](../how_to/use_openai_chat.md)
+**Related:** [AI Spending](../current/feature_ai_spending.md) · [Chat Formatting](../current/feature_chat_formatting.md) · [OpenAI Logs](./feature_openai_logs.md) · [Questions](../current/feature_questions.md) · [Future MVP](../future/mvp.md) · **How-to chat OpenAI:** [Use OpenAI Chat](../how_to/use_openai_chat.md)
 
 This was the old all-in-one active AI document. Its content is preserved here; new work belongs in an individual `feature_<name>.md` document.
 
@@ -181,7 +181,7 @@ CLOUDPILOT_ACTION_SEARCH=internal
 
 ### OpenAI logging audit (next before live OpenAI)
 
-**Plan:** [OpenAI Logs](../current/feature_openai_logs.md)
+**Plan:** [OpenAI Logs](./feature_openai_logs.md)
 
 Long-term direction: one block **per capability invocation**, numbered per user message:
 

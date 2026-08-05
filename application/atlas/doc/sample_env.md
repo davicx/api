@@ -41,16 +41,16 @@ OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 
 # ==================================================
 # CLOUDPILOT AI
+# Front door: cloudPilotIntelligence/CloudPilotIntelligence.js
+# Config: application/atlas/config/cloudPilotAIConfig.js
 # ==================================================
 
-# MASTER
-# false = all CloudPilot GenAI features are disabled.
-# Master OFF always wins over individual settings.
+# MASTER — OFF always wins over every feature below
 CLOUDPILOT_AI_ENABLED=false
 
 
 # ==================================================
-# OPENAI SETTINGS
+# OPENAI SETTINGS (transport / history for live sends)
 # ==================================================
 
 OPENAI_SEND_CONVERSATION_HISTORY=true
@@ -58,25 +58,24 @@ OPENAI_CONVERSATION_HISTORY_LIMIT=12
 
 
 # ==================================================
-# INDIVIDUAL AI FEATURES
+# INDIVIDUAL AI FEATURES (each on/off independently)
 # internal = CloudPilot logic
-# openai   = OpenAI implementation
+# openai   = OpenAI (only when master is true)
 # ==================================================
 
-# Chat/message response
+# Chat/message response (+ Capabilities wording)
 CLOUDPILOT_MESSAGE_RESPONSE=internal
 
 # Find AWS region in user message
 CLOUDPILOT_REGION_SEARCH=internal
 
-# Find requested action in user message
+# Find requested action in user message (stub; keep internal)
 CLOUDPILOT_ACTION_SEARCH=internal
 
 
 # ==================================================
-# AI TOKEN LIMITS
+# AI TOKEN LIMITS (per feature)
 # ==================================================
-# Maximum tokens OpenAI may generate for each feature
 
 CLOUDPILOT_MESSAGE_TOKEN_LIMIT=500
 CLOUDPILOT_REGION_TOKEN_LIMIT=40
@@ -84,7 +83,7 @@ CLOUDPILOT_ACTION_TOKEN_LIMIT=40
 
 
 # ==================================================
-# LOGGING (each switch is independent — not one LOGS_ON)
+# AI LOGGING (each switch is independent — not one LOGS_ON)
 # ==================================================
 
 # Verbose message / STEP 7a–7c dumps
@@ -102,7 +101,7 @@ CLOUDPILOT_ACTION_STATE_LOGS=false
 # Building Identity / Situation / Current Question / Knowledge
 CLOUDPILOT_CONTEXT_LOGS=false
 
-# Unified OPENAI block — exactly what was sent / returned / cost
+# Per-capability OPENAI: <Capability> (Request N) blocks (Preview when AI off)
 CLOUDPILOT_OPENAI_LOGS=true
 
 GITHUB_TOKEN=YOUR_GITHUB_TOKEN
@@ -155,4 +154,4 @@ Replace every `YOUR_*` value:
 
 Config is read by `application/atlas/config/cloudPilotAIConfig.js`.
 
-**How-to (chat OpenAI = same pattern as region):** [instructions/chat_use_open_ai.md](./instructions/chat_use_open_ai.md)
+**How-to:** [development/how_to/use_openai_chat.md](./development/how_to/use_openai_chat.md)

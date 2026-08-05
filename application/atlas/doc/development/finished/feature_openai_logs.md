@@ -4,16 +4,19 @@
 
 Shows every OpenAI request CloudPilot makes: why it ran, what was sent, what came back, and what it cost.
 
-## Current step
+## Status
 
-**Step 2 — Verify every current AI path uses the same log format.**
+**Finished** — 2026-08-04  
 
-## Next
+Verified in live console:
 
-Step 3 — Update the how-to and add an optional shorter log mode.
+- Pipeline STEPs 1–8 first (no OpenAI interleaved)
+- Then `OPENAI: Region Search (Request 1)`, `OPENAI: General Chat (Request 2)`, …
+- Preview when AI disabled; Total + HTTP FOOTER at the end
 
-**Status:** Active  
-**Related:** [Current Development](./current_development.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [Environment example](../../sample_env.md) · [Archived rollout](../finished/cloud_pilot_openai_rollout.md)
+Optional later (not blocking): shorter `CLOUDPILOT_OPENAI_LOG_LEVEL=summary` mode.
+
+**Related:** [Current Development](../current/current_development.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [Environment example](../../sample_env.md) · [Archived rollout](./cloud_pilot_openai_rollout.md)
 
 ---
 
@@ -141,20 +144,16 @@ Usage
 
 ## Timeline mental model
 
-CloudPilot Intelligence is multiple independent AI capabilities. Logs should read as a timeline:
+CloudPilot Intelligence is multiple independent AI capabilities. Logs show **pipeline first**, then OpenAI as a second story:
 
 ```text
-STEP 2 Initial State
+STEP 1–8 … CloudPilot pipeline
 
 OPENAI: Region Search (Request 1)
-
-STEP 3 Understanding
-
-STEP 4 Decision
-
 OPENAI: General Chat (Request 2)
 
-STEP 5 …
+Total: …
+FOOTER: …
 ```
 
 Immediately obvious:
@@ -254,7 +253,7 @@ CLOUDPILOT_OPENAI_LOG_LEVEL=verbose   # full Messages JSON (default for now)
 CLOUDPILOT_OPENAI_LOG_LEVEL=summary   # char counts / short response, no full JSON
 ```
 
-Do not block Step 1 on summary mode.
+Not required — full verbose logs are the shipped default.
 
 ---
 
@@ -265,17 +264,16 @@ Do not block Step 1 on summary mode.
 2. [x] Per-`processMessage` counter: increment on each `logOpenAI` call; reset at message start.
 3. [x] Rename section label to **Messages** (and **Response**).
 4. [x] Keep Status Preview / Executed behavior.
-5. [ ] Verify Region Search + General Chat in one turn show Request 1 / Request 2 (live smoke).
-6. [ ] Commit and stop.
+5. [x] Verify Region Search + General Chat in one turn show Request 1 / Request 2 (live smoke).
 
 ### Step 2 — All current AI paths
-1. Capabilities presentation uses same header + counter (already calls `logOpenAI` — verify label).
-2. Any other live OpenAI call sites use the same logger only.
-3. Smoke: skip region → only General Chat as Request 1.
+1. [x] Capabilities presentation uses same header + counter.
+2. [x] Live OpenAI call sites use the same logger.
+3. [x] Buffer + flush after STEP 8 (pipeline story, then OpenAI story).
 
-### Step 3 — Docs + shorter log mode (optional)
-1. Update `sample_env.md` / `chat_use_open_ai.md` examples to the new header.
-2. Optional `CLOUDPILOT_OPENAI_LOG_LEVEL`.
+### Step 3 — Docs
+1. [x] Feature moved to `finished/`; how-to + sample env remain the reference.
+2. [ ] Optional `CLOUDPILOT_OPENAI_LOG_LEVEL=summary` — deferred.
 
 ---
 
@@ -288,16 +286,11 @@ Do not block Step 1 on summary mode.
 
 ---
 
-## Acceptance checks (Step 1)
+## Acceptance checks
 
 - One user message, region + general chat → two blocks, Request 1 then Request 2
 - Next user message → numbering resets to Request 1
 - Preview still labeled `Preview (AI Disabled)` and shows full Messages that would be sent
 - `CLOUDPILOT_OPENAI_LOGS=false` → no OPENAI capability blocks
 - Compact `STEP 3: Region Search` / Region Found still works with `CLOUDPILOT_REGION_LOGS`
-
----
-
-## Next
-
-**Restart the API** (ENV changed), then send one chat message that mentions a region (e.g. “what’s in us-west-2?”). Confirm Request 1 = Region Search, Request 2 = General Chat. Then commit Step 1 when happy.
+- OpenAI blocks print **after** STEPs 1–8, before Total + FOOTER

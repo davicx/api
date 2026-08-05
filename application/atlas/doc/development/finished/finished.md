@@ -1,8 +1,15 @@
 # Finished
 
-**Last reviewed:** 2026-08-02
+**Last reviewed:** 2026-08-04
 
-> **Finished CloudPilot org work:** [finished.md](./finished.md) · **To do:** [To_do.md](../future/to_do.md) · **Scans:** [scans.md](../future/scans.md) · **History status:** [history.md](./history.md) · **Deferred:** [future_work.md](../future/future.md) · **Architecture:** [architecture/](../architecture/)
+> **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
+
+---
+
+## Recently finished (2026-08-04)
+
+- [x] **Intelligence Front Door** — GenAI via `CloudPilotIntelligence.chat()` — [feature_intelligence_front_door.md](./feature_intelligence_front_door.md)
+- [x] **OpenAI Logs** — per-capability blocks after pipeline STEPs — [feature_openai_logs.md](./feature_openai_logs.md)
 
 ---
 

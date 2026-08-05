@@ -17,13 +17,18 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
-| [Intelligence Front Door](./feature_intelligence_front_door.md) | One place for all GenAI: Conversation `chat()`, then Understand. | Step 1 — Design locked |
 | [Organizational Knowledge](./feature_organizational_knowledge.md) | Explains why an S3 bucket exists in the organization. | Step 1 — Database + demo rows |
 | [Questions](./feature_questions.md) | CloudPilot answers things it already knows, starting with open requests. | Step 1 — Open Requests |
-| [OpenAI Logs](./feature_openai_logs.md) | Shows each OpenAI request, response, and cost in the API logs. | Step 2 — Verify all current AI paths |
 | [AI Spending](./feature_ai_spending.md) | Shows what CloudPilot spends on OpenAI. | Step 1 — Build the Kite spending card |
 | [GitHub Pull Requests](./feature_github_pull_requests.md) | Creates a safe GitHub pull request instead of changing AWS directly. | Step 1 — Finish the real PR demo |
 | [Chat Formatting](./feature_chat_formatting.md) | Makes chat replies easier to read with bold text and bullets. | Step 1 — Render formatted chat text in Kite |
+
+## Just finished
+
+| Feature | What shipped |
+|---------|----------------|
+| [Intelligence Front Door](../finished/feature_intelligence_front_door.md) | GenAI goes through `CloudPilotIntelligence.chat()`; `speakGeneral` is voice only |
+| [OpenAI Logs](../finished/feature_openai_logs.md) | Pipeline STEPs first; then `OPENAI: Capability (Request N)`; Total + FOOTER |
 
 ## Useful References
 

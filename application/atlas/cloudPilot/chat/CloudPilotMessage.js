@@ -1,190 +1,35 @@
 const { CHAT_TYPE } = require('../requests/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
-const openAIFunctions = require('../../providers/openAI/client/openAIClient');
-const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
-const { buildAIContext } = require('../../cloudPilotIntelligence/context/buildContext');
-const { buildAISystemMessage } = require('../../cloudPilotIntelligence/context/buildSystemMessage');
-const ConversationHistoryContext = require('../../cloudPilotIntelligence/context/classes/ConversationHistoryContext');
+const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 
 /*
-CloudPilotMessage — how CloudPilot communicates with the user.
+CloudPilotMessage — the product's voice.
 
-Single voice for General and Request Conversation.
-General: AI context → system message → history log → OpenAI payload log → optional OpenAI.
-Request: templates.
+Select speaking strategy and package the outgoing chat message.
+GenAI thinking goes through CloudPilotIntelligence.chat().
 */
 
-const GENERAL_CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
-
-//Function A1: General Conversation speak
+//Function A1: General Conversation speak — voice wrapper around Intelligence chat()
 async function speakGeneral(processMessageContext) {
-    const context = processMessageContext || {};
-    const currentUserMessage = context.currentUserMessage || '';
-    const conversationID = context.conversationID;
-    const aiContext = buildAIContext(context);
-    const systemMessage = buildAISystemMessage(aiContext);
-    const useOpenAIMessageResponse =
-        CLOUDPILOT_AI_CONFIG.aiEnabled &&
-        CLOUDPILOT_AI_CONFIG.messageResponse === 'openai';
+    const chatResult = await CloudPilotIntelligence.chat(processMessageContext);
 
-    //STEP 7a: AI Context (verbose — CLOUDPILOT_MESSAGE_LOGS)
-    if (CLOUDPILOT_AI_CONFIG.messageLogs) {
-        console.log('______________________________________________________________');
-        console.log('STEP 7a: AI Context');
-        console.log(JSON.stringify(aiContext, null, 2));
-        console.log('organization knowledge: not used (empty)');
-        console.log('cloudPilotAIConfig:', CLOUDPILOT_AI_CONFIG);
-        console.log('______________________________________________________________');
-        console.log(' ');
-    }
-
-    //STEP 7b: OpenAI System Message (optional)
-    if (CLOUDPILOT_AI_CONFIG.messageLogs) {
-        console.log('______________________________________________________________');
-        console.log('STEP 7b: OpenAI System Message');
-        console.log(systemMessage || '(empty system message)');
-        console.log('______________________________________________________________');
-        console.log(' ');
-    }
-
-    //STEP 7c: Conversation History — human-readable names (not sent as this text)
-    const historyLimit = CLOUDPILOT_AI_CONFIG.conversationHistoryLimit;
-    let conversationHistory = [];
-    const historyEnabled =
-        CLOUDPILOT_AI_CONFIG.sendConversationHistory && Boolean(conversationID);
-
-    if (historyEnabled) {
-        const historyContext = new ConversationHistoryContext(conversationID, {
-            currentUserMessage: currentUserMessage
-        });
-        conversationHistory = await historyContext.getMessages(historyLimit);
-
-        if (CLOUDPILOT_AI_CONFIG.messageLogs) {
-            logConversationHistory(conversationHistory, historyLimit);
-        }
-    }
-
-    const openAiMessages = buildOpenAiMessagesPayload(
-        systemMessage,
-        conversationHistory,
-        currentUserMessage
-    );
-    const contextSummary = openAIFunctions.summarizeAIContext(aiContext);
-
-    // Unified OPENAI block: Preview when disabled; Executed path logs inside sendGeneralChat
-    if (!useOpenAIMessageResponse) {
-        openAIFunctions.logOpenAI({
-            capability: 'General Chat',
-            conversationHistoryEnabled: historyEnabled,
-            conversationHistoryCount: conversationHistory.length,
-            context: contextSummary,
-            messages: openAiMessages,
-            previewOnly: true
-        });
-    }
-
-    let openAIResult;
-
-    if (useOpenAIMessageResponse) {
-        //STEP 7d: Send OpenAI Request
-        if (CLOUDPILOT_AI_CONFIG.messageLogs) {
-            console.log('STEP 7d: Send OpenAI Request');
-            console.log(JSON.stringify({ messages: openAiMessages }, null, 2));
-        }
-
-        openAIResult = await openAIFunctions.sendGeneralChat({
-            systemMessage: systemMessage,
-            conversationHistory: conversationHistory,
-            userMessage: currentUserMessage,
-            capability: 'General Chat',
-            conversationHistoryEnabled: historyEnabled,
-            context: contextSummary
-        });
-    } else {
-        openAIResult = {
-            success: true,
-            data: GENERAL_CHAT_STUB_MESSAGE
-        };
-    }
-
-    if (!openAIResult.success) {
+    if (!chatResult.success) {
         return formatOutgoing({
             success: false,
             cloudPilotMessage: '',
             chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
             atlasResponse: null,
-            error: openAIResult.message || 'general_chat_failed'
+            error: chatResult.error || 'general_chat_failed'
         });
     }
 
-    const cloudPilotMessage = openAIResult.data ? String(openAIResult.data).trim() : '';
-
     return formatOutgoing({
-        success: Boolean(cloudPilotMessage),
-        cloudPilotMessage: cloudPilotMessage,
+        success: Boolean(chatResult.message),
+        cloudPilotMessage: chatResult.message || '',
         chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
         atlasResponse: null,
         error: null
     });
-}
-
-// Structured API messages: system + prior turns (roles only) + current user
-function buildOpenAiMessagesPayload(systemMessage, conversationHistory, currentUserMessage) {
-    const messages = [];
-
-    if (systemMessage) {
-        messages.push({
-            role: 'system',
-            content: systemMessage
-        });
-    }
-
-    for (let i = 0; i < conversationHistory.length; i++) {
-        const item = conversationHistory[i];
-        messages.push({
-            role: item.role,
-            content: item.content
-        });
-    }
-
-    if (currentUserMessage) {
-        messages.push({
-            role: 'user',
-            content: currentUserMessage
-        });
-    }
-
-    return messages;
-}
-
-function logConversationHistory(conversationHistory, historyLimit) {
-    console.log('______________________________________________________________');
-    console.log(
-        'STEP 7c: Conversation History (last ' + historyLimit + ' messages)'
-    );
-
-    if (!conversationHistory.length) {
-        console.log('(none)');
-    } else {
-        for (let i = 0; i < conversationHistory.length; i++) {
-            const item = conversationHistory[i];
-            const label = item.speakerName || (item.role === 'assistant' ? 'CloudPilot' : 'Current User');
-            console.log(label + ':');
-            console.log('"' + item.content + '"');
-            console.log(' ');
-        }
-    }
-
-    console.log('______________________________________________________________');
-    console.log(' ');
-}
-
-function logOpenAiMessagePayload(openAiMessages) {
-    console.log('______________________________________________________________');
-    console.log('OPEN AI MESSAGE: (structured payload for the API)');
-    console.log(JSON.stringify(openAiMessages, null, 2));
-    console.log('______________________________________________________________');
-    console.log(' ');
 }
 
 //Function A2: Request Conversation speak — deterministic templates

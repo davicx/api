@@ -12,38 +12,31 @@ cloudPilotIntelligence/CloudPilotIntelligence.js
 
 That file does not need to hold every implementation. It is the entry point. Every GenAI capability starts there and delegates to smaller modules.
 
-## Current step
+## Status
 
-**Step 1 — Lock the facade shape (this doc).**
+**Finished** — 2026-08-04  
 
-## Next
+Shipped:
 
-Step 2 — Add `chat()` and move Understand under Conversation’s sibling section.
+- `CloudPilotIntelligence.chat()` → `conversation/chat.js`
+- `CloudPilotMessage.speakGeneral` is a thin voice wrapper
+- Understand methods remain under FUNCTIONS B
+- `speakKnown` / `speakRequest` unchanged
 
-**Status:** Active  
-**Related:** [Current Development](./current_development.md) · [Organizational Knowledge](./feature_organizational_knowledge.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
+**Related:** [Current Development](../current/current_development.md) · [Organizational Knowledge](../current/feature_organizational_knowledge.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [OpenAI Logs](./feature_openai_logs.md)
 
 ---
 
 ## Why this exists
 
-Today almost everything intelligent lives under Intelligence — **except** the biggest GenAI path:
-
-```text
-CloudPilotMessage.speakGeneral()
-        │
-        ▼
-OpenAI
-```
-
-That is the inconsistency. Fixing it is more valuable than any single feature, because every future GenAI feature (including Organizational Knowledge) plugs into the same door.
+Previously almost everything intelligent lived under Intelligence — **except** the biggest GenAI path (`speakGeneral` → OpenAI). That inconsistency is fixed: every GenAI feature (including Organizational Knowledge) plugs into the same door.
 
 ---
 
 ## Locked idea
 
 **Do not move the `chat/` folder.**  
-The folder is fine. One function violates the architecture: `speakGeneral` currently builds context, history, prompt, and calls OpenAI.
+The folder is fine. GenAI guts live behind Intelligence; `speakGeneral` only selects the strategy and packages the result.
 
 **CloudPilotMessage is the product's voice. CloudPilotIntelligence is the product's brain.**
 
@@ -276,28 +269,29 @@ Same pattern later for other context providers. No `respondS3Knowledge.js`.
 
 ### Step 2 — Facade shape only
 
-1. Reorder `CloudPilotIntelligence.js` comments and exports:
-   - A Conversation → `chat` (stub or thin throw until Step 3)
+1. [x] Reorder `CloudPilotIntelligence.js` comments and exports:
+   - A Conversation → `chat` (stub until Step 3)
    - B Understand → existing understand methods
    - C–E placeholders renumbered
-2. No behavior change for users yet.
+2. [x] No behavior change for users yet (`speakGeneral` still owns GenAI).
 
 ### Step 3 — Implement `chat()`
 
-1. Lift GenAI pieces from `CloudPilotMessage.speakGeneral` into Intelligence (or a module it delegates to).
-2. Keep ENV: master off → stub; `MESSAGE_RESPONSE=openai` → live send.
-3. Keep OpenAI logs on the same path.
+1. [x] Lift GenAI pieces from `CloudPilotMessage.speakGeneral` into `cloudPilotIntelligence/conversation/chat.js`.
+2. [x] Keep ENV: master off → stub; `MESSAGE_RESPONSE=openai` → live send.
+3. [x] Keep OpenAI logs on the same path.
+4. [x] `CloudPilotIntelligence.chat()` delegates to that module.
 
 ### Step 4 — Thin CloudPilot wrapper
 
-1. `speakGeneral` calls `CloudPilotIntelligence.chat(...)`.
-2. Still returns CloudPilot message shape.
-3. `speakKnown` unchanged.
+1. [x] `speakGeneral` calls `CloudPilotIntelligence.chat(...)`.
+2. [x] Still returns CloudPilot message shape via `formatOutgoing`.
+3. [x] `speakKnown` / `speakRequest` unchanged.
 
 ### Step 5 — Docs
 
-1. Update [Use OpenAI Chat](../how_to/use_openai_chat.md) to point at `chat()`.
-2. Point Organizational Knowledge Step 4 at “append context → `chat()`”.
+1. [x] Update [Use OpenAI Chat](../how_to/use_openai_chat.md) to point at `chat()`.
+2. [x] Move this feature to `finished/`; Organizational Knowledge still points at “append context → `chat()`”.
 
 ---
 
@@ -320,10 +314,3 @@ Same pattern later for other context providers. No `respondS3Knowledge.js`.
 | Known / template answers | Still `speakKnown` in CloudPilot |
 | Org knowledge (when built) | Extra context into `chat()`, not a new speak system |
 | OpenAI off | Stub still works via `chat()` |
-
----
-
-## Next
-
-Say **go Step 2** for facade shape only (comments + `chat` stub + renumber Understand).  
-Or **go Step 3** to move real general-chat GenAI behind `chat()` in one pass.

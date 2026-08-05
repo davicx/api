@@ -1,8 +1,8 @@
 # To Do
 
-**Last reviewed:** 2026-07-27
+**Last reviewed:** 2026-08-04
 
-> **Active work:** [Current Development](../current/current_development.md) · **[Questions](../current/feature_questions.md)** · **[OpenAI Logs](../current/feature_openai_logs.md)** · [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
+> **Active work:** [Current Development](../current/current_development.md) · **[Questions](../current/feature_questions.md)** · **[Organizational Knowledge](../current/feature_organizational_knowledge.md)** · [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
 > **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Finished index:** [finished.md](../finished/finished.md)  
 > **History (MVP done):** [history.md](../finished/history.md) · **Deferred:** [future_work.md](./future.md)  
 > **Done:** [finished.md](../finished/finished.md) · **Architecture & reference:** [architecture/](../architecture/)
@@ -17,10 +17,10 @@
 
 **Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **GitHub pull requests:** [feature_github_pull_requests.md](../current/feature_github_pull_requests.md). **AI:** [Current Development](../current/current_development.md). **Questions:** [feature_questions.md](../current/feature_questions.md). **AI spending:** [feature_ai_spending.md](../current/feature_ai_spending.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
 
-#### OpenAI Logging — [feature_openai_logs.md](../current/feature_openai_logs.md)
-- [ ] Phase 1 — header `OPENAI: <Capability> (Request N)` + per-message counter
-- [ ] Phase 2 — all current AI paths use the same logger
-- [ ] Phase 3 — docs; optional `CLOUDPILOT_OPENAI_LOG_LEVEL=summary|verbose`
+#### OpenAI Logging — [feature_openai_logs.md](../finished/feature_openai_logs.md) (finished)
+- [x] Phase 1 — header `OPENAI: <Capability> (Request N)` + per-message counter
+- [x] Phase 2 — all current AI paths use the same logger
+- [x] Phase 3 — docs; optional `CLOUDPILOT_OPENAI_LOG_LEVEL=summary|verbose` deferred
 
 #### Questions / Open Requests — [feature_questions.md](../current/feature_questions.md)
 - [ ] Phase 1 — chat answer for “What open requests do I have?” (Internal; no table yet)
@@ -54,7 +54,7 @@ Shared (shipped)
 - [x] Capabilities `shouldRespondCapabilities` + Internal / OpenAI path (ENV off)
 
 **Next / deferred**
-- [ ] OpenAI logging — [feature_openai_logs.md](../current/feature_openai_logs.md):
+- [x] OpenAI logging — [feature_openai_logs.md](../finished/feature_openai_logs.md) (finished 2026-08-04):
   - `OPENAI: <Capability> (Request N)` per invocation
   - reset N each user message
   - Messages / Response / Usage kept

@@ -2,7 +2,7 @@
 
 **Mimic Region Search exactly.**  
 Reference implementation: `cloudPilotIntelligence/understand/search/searchMessageForRegion.js`  
-Chat target: `cloudPilot/chat/CloudPilotMessage.js` → `speakGeneral`
+Chat target: `CloudPilotMessage.speakGeneral` → `CloudPilotIntelligence.chat()`
 
 **Related:** [Environment example](../../sample_env.md) · [Current Development](../current/current_development.md) · `config/cloudPilotAIConfig.js`
 
@@ -24,7 +24,7 @@ Master ON + feature openai → live OpenAI
 | Env logs | `CLOUDPILOT_REGION_LOGS` | `CLOUDPILOT_MESSAGE_LOGS` |
 | Env tokens | `CLOUDPILOT_REGION_TOKEN_LIMIT` | `CLOUDPILOT_MESSAGE_TOKEN_LIMIT` |
 | When | STEP 3 understand | STEP 7 general speak |
-| Gateway file | `searchMessageForRegion.js` | `CloudPilotMessage.speakGeneral` |
+| Gateway file | `searchMessageForRegion.js` | `speakGeneral` → `CloudPilotIntelligence.chat()` |
 | Internal | Regex → `{ region }` or `{}` | Stub: `Open AI will respond when Live` |
 | OpenAI | `createOpenAiChatCompletion` | `sendGeneralChat` |
 | Public contract | `{ region }` or `{}` | `{ success, cloudPilotMessage, chatType, … }` |
@@ -155,13 +155,14 @@ if (useOpenAIMessageResponse) {
 
 | Piece | Path |
 |-------|------|
-| Gateway | `cloudPilot/chat/CloudPilotMessage.js` → `speakGeneral` |
+| Voice wrapper | `cloudPilot/chat/CloudPilotMessage.js` → `speakGeneral` |
+| GenAI front door | `CloudPilotIntelligence.chat()` → `cloudPilotIntelligence/conversation/chat.js` |
 | Called from | General Conversation after STEP 4 |
 | Context | `buildAIContext(context)` (default; no region situationTypes) |
 | System message | `buildAISystemMessage(aiContext)` |
 | History | `ConversationHistoryContext` if `OPENAI_SEND_CONVERSATION_HISTORY` |
 | Transport | `sendGeneralChat({ systemMessage, conversationHistory, userMessage })` |
-| Internal stub | `GENERAL_CHAT_STUB_MESSAGE = 'Open AI will respond when Live'` |
+| Internal stub | `'Open AI will respond when Live'` inside Intelligence `chat()` |
 | Config | `messageResponse` / `messageLogs` / `messageTokenLimit` |
 
 ---
