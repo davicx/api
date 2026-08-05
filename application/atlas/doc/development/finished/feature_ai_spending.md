@@ -2,24 +2,26 @@
 
 ## What this does
 
-Shows how much CloudPilot has spent using OpenAI.
+Shows how much CloudPilot has spent using AI (OpenAI today; provider-agnostic product name).
 
-## Current step
+## Status
 
-**Step 1 — Build the Kite spending card.**
+**Finished** — 2026-08-05  
 
-## Next
+Shipped:
 
-Step 2 — Keep the chat answer clear and grounded in saved usage data.
+- Persist usage + cost helper + `GET /ai/usage/summary`
+- Kite Dashboard `AiUsageCard`
+- Chat fulfillment via `show_ai_usage` handler
+- `searchForAiSpend()` as a **value** (Internal \| OpenAI classify) under `search/values/`
 
-**Status:** Active  
-**Related:** [Current Development](./current_development.md) · [Future billing](../future/billing.md)
+**Related:** [Current Development](../current/current_development.md) · [Add an Intelligence Capability](../how_to/add_intelligence_capability.md) · [Questions](../current/feature_questions.md) · [Future billing](../future/billing.md) · [Environment example](../../sample_env.md)
 
 ---
 
 ## Goal (one sentence)
 
-Show a small **OpenAI usage** summary in CloudPilot (card + chat), so you can answer “How much have I spent on AI?” without leaving the product.
+Show a small **AI Usage** summary in CloudPilot (card + chat), so you can answer “How much have I spent on AI?” without leaving the product.
 
 ```text
 AI Usage
@@ -36,21 +38,62 @@ No graphs. No filters. No drill-down.
 
 ## What already works
 
-Every successful OpenAI call already returns `usage` and we **log** it — we do **not** save it.
+Every successful OpenAI call already returns `usage` and we **persist** it.
 
 | Piece | Status |
 |-------|--------|
-| `createOpenAiChatCompletion` → `result.usage` (`prompt_tokens`, `completion_tokens`, `total_tokens`) | ✅ Live |
-| Console logs in `sendGeneralChat` / `sendChatWithAction` / etc. | ✅ Live |
+| `createOpenAiChatCompletion` → `result.usage` | ✅ Live |
 | Persist to DB | ✅ Live — `saveAiUsageFromOpenAIResponse` after each success |
 | Cost helper from model + tokens | ✅ Live — `calculateOpenAICost.js` |
 | `GET /ai/usage/summary` | ✅ Live |
-| Kite AI Usage card | ❌ Missing |
-| Chat: “what’s my OpenAI spend?” | ✅ Live — `show_ai_usage` |
+| Chat: “what’s my OpenAI spend?” | ✅ Live — `values.ai_spend` → `show_ai_usage` handler |
+| Kite AI Usage card | ✅ Dashboard — `AiUsageCard` → `GET /ai/usage/summary` |
+| Intelligence `searchForAiSpend()` | ✅ Internal \| OpenAI classify → `show_ai_usage` |
 
 Models today: `gpt-4o-mini` / `gpt-4o` in `chatGPTconfig.js`. Pricing table only needs those (plus any model you add later).
 
 AWS spend is a **different** path (`show_billing` → Atlas Cost Explorer). Do not mix tables or handlers.
+
+---
+
+## Intelligence — `searchForAiSpend()` (Step 2)
+
+Same capability pattern as [Add an Intelligence Capability](../how_to/add_intelligence_capability.md):
+
+```text
+searchMessageForValues()
+  → searchForAiSpend()     # value: ai_spend true|absent
+        │
+CLOUDPILOT_AI_SPEND_SEARCH = internal | openai
+        │
+understandMessage          # if values.ai_spend → fulfill via show_ai_usage handler
+CloudPilot                 # load ai_usage summary → speakKnown
+```
+
+| Layer | Job |
+|-------|-----|
+| `searchForAiSpend()` in **values** | “Is this about AI spend?” → `values.ai_spend` |
+| Actions (`toggle_ec2`, …) | Unchanged — do work |
+| `show_ai_usage` handler | Fulfillment only (not detected as an Action) |
+
+OpenAI (when ENV is `openai`) only **detects** the question. It never invents dollar amounts.
+
+**Files:**
+
+```text
+cloudPilotIntelligence/understand/search/
+  searchMessageForValues.js              # orchestrator
+  values/searchForAiSpend.js             # one file (Internal + OpenAI)
+  values/searchMessageForRegion.js
+  …
+CloudPilotIntelligence.js  →  export searchForAiSpend
+```
+
+```dotenv
+CLOUDPILOT_AI_SPEND_SEARCH=internal
+```
+
+Detection is via `searchForAiSpend` → `values.ai_spend` (not an Action like `toggle_ec2`). Handler still fulfills the reply from the DB.
 
 ---
 
@@ -158,12 +201,12 @@ Tiny intents — do **not** fold into AWS `show_billing`.
 
 | User says | Behavior |
 |-----------|----------|
-| “How much have I spent on OpenAI?” / “AI spend today” / “OpenAI costs” | Read `ai_usage` summary → template reply (or Feature 1-style explain later) |
-| “Show all costs” / “AWS + OpenAI” | **Deferred** — needs AWS `show_billing` + AI summary combined. If AWS path flaky, skip for now |
+| “How much have I spent on OpenAI?” / “AI spend today” / “OpenAI costs” | Read `ai_usage` summary → template reply |
+| “Show all costs” / “AWS + OpenAI” | **Deferred** — needs AWS `show_billing` + AI summary combined |
 
-Suggested action id (when wiring): `show_ai_usage` — immediate execution, like `show_billing`, but hits local DB not Atlas.
+Suggested action id: `show_ai_usage` — immediate execution, like `show_billing`, but hits local DB not Atlas.
 
-Templates are enough for MVP (deterministic numbers). No OpenAI needed to *answer* about OpenAI spend.
+Templates are enough for MVP (deterministic numbers). No OpenAI needed to *answer* about spend — only optional for *detecting* the question via `searchForAiSpend`.
 
 ---
 
@@ -192,8 +235,9 @@ Average         $0.0038
 | Persist | `services/aiUsage/functions/saveAiUsage.js` ← hooked from `createOpenAiChatCompletion` ✅ |
 | DB class | `services/aiUsage/classes/AiUsage.js` ✅ |
 | Summary route | `routes/aiUsageRoutes.js` → `GET /ai/usage/summary` ✅ |
-| Chat action | `actionMap.show_ai_usage` + `actions/aiUsage/showAiUsageHandler.js` ✅ |
-| Kite card | Small React card calling summary endpoint — not yet |
+| Chat action | `actionMap.show_ai_usage` + `scans/aiUsage/showAiUsageHandler.js` ✅ |
+| Kite card | `kite/.../AiUsageCard.js` + `aiUsageAPI.js` ✅ |
+| `searchForAiSpend` | Intelligence facade + Internal \| OpenAI ✅ |
 
 **Do not** put AI usage into AWS billing handlers or Navigator billing tables.
 
@@ -201,11 +245,12 @@ Average         $0.0038
 
 ## MVP slices
 
-1. [x] Table + cost helper + save after successful OpenAI calls (log already proves usage exists)  
+1. [x] Table + cost helper + save after successful OpenAI calls  
 2. [x] `GET /ai/usage/summary`  
-3. [ ] Kite AI Usage card  
-4. [x] Chat `show_ai_usage` (“what’s my OpenAI spend?”)  
-5. [ ] Explicitly out: combined AWS + OpenAI; OpenAI Costs API reconciliation; charts  
+3. [x] Kite AI Usage card  
+4. [x] Chat `show_ai_usage` (“what’s my OpenAI spend?”) via actionMap / handler  
+5. [x] `searchForAiSpend()` — Intelligence detect (Internal \| OpenAI)  
+6. [ ] Explicitly out: combined AWS + OpenAI; OpenAI Costs API reconciliation; charts  
 
 ---
 
@@ -221,11 +266,12 @@ Average         $0.0038
 
 ## Success criteria
 
-- [ ] Every successful CloudPilot OpenAI call can leave one `ai_usage` row (when usage present)  
-- [ ] Failed / missing usage → chat still works; no insert required  
-- [ ] Summary endpoint + card show today / month / requests / average  
-- [ ] Chat answers OpenAI-only spend without opening the OpenAI dashboard  
-- [ ] AWS billing path untouched  
+- [x] Every successful CloudPilot OpenAI call can leave one `ai_usage` row (when usage present)  
+- [x] Failed / missing usage → chat still works; no insert required  
+- [x] Summary endpoint + card show today / month / requests / average  
+- [x] Chat answers AI spend without opening the provider dashboard  
+- [x] AWS billing path untouched  
+- [x] Detection can go through `searchForAiSpend()` without inventing numbers  
 
 ---
 
@@ -236,3 +282,6 @@ Average         $0.0038
 | 2026-07-22 | Initial plan — store-per-call MVP; OpenAI Costs API deferred; separate from AWS billing |
 | 2026-07-24 | API slices 1–2 shipped — persist + `GET /ai/usage/summary` |
 | 2026-07-24 | Chat `show_ai_usage` — immediate informational action |
+| 2026-08-05 | How-to for Intelligence capabilities; plan `searchForAiSpend()` (classify only) |
+| 2026-08-05 | Shipped Kite `AiUsageCard` + `searchForAiSpend` (Internal \| OpenAI) + ENV |
+| 2026-08-05 | Moved to `finished/` |

@@ -15,7 +15,7 @@
 
 **History MVP is complete** — see [history.md](../finished/history.md) and [finished.md](../finished/finished.md). Deferred history items: [future_work.md](./future.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **GitHub pull requests:** [feature_github_pull_requests.md](../current/feature_github_pull_requests.md). **AI:** [Current Development](../current/current_development.md). **Questions:** [feature_questions.md](../current/feature_questions.md). **AI spending:** [feature_ai_spending.md](../current/feature_ai_spending.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **GitHub pull requests:** [feature_github_pull_requests.md](../current/feature_github_pull_requests.md). **AI:** [Current Development](../current/current_development.md). **Questions:** [feature_questions.md](../current/feature_questions.md). **AI spending (finished):** [feature_ai_spending.md](../finished/feature_ai_spending.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
 
 #### OpenAI Logging — [feature_openai_logs.md](../finished/feature_openai_logs.md) (finished)
 - [x] Phase 1 — header `OPENAI: <Capability> (Request N)` + per-message counter
@@ -82,12 +82,13 @@ Feature 2 — Friendly request conversations
 
 - [ ] Dashboard summary — deferred (see doc)
 
-#### AI Usage — OpenAI spend ([feature_ai_spending.md](../current/feature_ai_spending.md))
+#### AI Usage — OpenAI spend ([feature_ai_spending.md](../finished/feature_ai_spending.md)) (finished)
 
 - [x] Persist `usage` → `ai_usage` + `calculateOpenAICost` (after successful OpenAI calls)
 - [x] `GET /ai/usage/summary`
 - [x] Chat `show_ai_usage` (OpenAI only; AWS+AI combo deferred)
-- [ ] Kite AI Usage card
+- [x] Kite AI Usage card
+- [x] `searchForAiSpend()` value detect (Internal \| OpenAI)
 
 ### Future
 

@@ -12,10 +12,9 @@ What this file answers:
 
 Outputs: action, values, reply, conversation, ambiguous, candidates
 
-This is the WHAT layer (STEP 3). Action phrases are matched via
-cloudPilot/actionMap.js match rules in search/searchMessageForAction.js.
-
-See doc/development/architecture/action_map.md.
+This is the WHAT layer (STEP 3).
+Actions: actionMap via searchMessageForAction (scan_ec2, toggle_ec2, …).
+Values: searchMessageForValues (region, ids, ai_spend, …).
 */
 
 /*
@@ -33,6 +32,20 @@ async function understandMessage(message, requestState) {
     const conversation = SearchMessageForConversationFunctions.searchMessageForConversation(message);
     const actionResult = SearchMessageForActionFunctions.searchMessageForAction(message);
 
+    // AI spend is a value. Fulfillment still uses show_ai_usage handler (not an Action like toggle_ec2).
+    if (values.ai_spend === true) {
+        return {
+            action: 'show_ai_usage',
+            values,
+            reply,
+            conversation,
+            ambiguous: false,
+            candidates: [],
+            source: 'ai_spend_search',
+            confidence: 1.0
+        };
+    }
+
     return {
         action: actionResult.action,
         values,
@@ -44,6 +57,5 @@ async function understandMessage(message, requestState) {
         confidence: actionResult.confidence
     };
 }
-
 
 module.exports = { understandMessage };

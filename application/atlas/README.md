@@ -628,13 +628,14 @@ Reached via `CloudPilotIntelligence.understandMessage` (STEP 3). Internal vs Ope
 | `search/searchMessageForAction.js` | Detects which action the user wants. |
 | `search/searchMessageForConversation.js` | Detects list_open, status, focus_switch, undo, etc. |
 | `search/searchMessageForReply.js` | Detects yes, cancel, and execution mode 1–4. |
-| `search/searchMessageForValues.js` | Merges bare values into collected fields. |
-| `search/searchMessageForStructuredFields.js` | Parses `field: "value"` structured input. |
-| `search/searchMessageForRegion.js` | Extracts AWS region (Internal / OpenAI). |
-| `search/searchMessageForInstanceId.js` | Extracts EC2 instance ID(s). |
-| `search/searchMessageForInstanceType.js` | Extracts instance type (e.g. t3.micro). |
-| `search/searchMessageForName.js` | Extracts resource / request name. |
-| `search/searchMessageForTagUpdate.js` | Extracts tag update fields. |
+| `search/searchMessageForValues.js` | Values orchestrator — merges extractors under `search/values/` |
+| `search/helpers/searchMessageForStructuredFields.js` | Parses `field: "value"` structured input |
+| `search/values/searchMessageForRegion.js` | Extracts AWS region (Internal / OpenAI) |
+| `search/values/searchForAiSpend.js` | Detects AI spend questions (Internal / OpenAI) |
+| `search/values/searchMessageForInstanceId.js` | Extracts EC2 instance ID(s) |
+| `search/values/searchMessageForInstanceType.js` | Extracts instance type (e.g. t3.micro) |
+| `search/values/searchMessageForName.js` | Extracts resource / request name |
+| `search/values/searchMessageForTagUpdate.js` | Extracts tag update fields |
 
 ---
 

@@ -16,6 +16,7 @@ FUNCTIONS B: Understand (Gather Context)
     2) Function B2: understandRegion
     3) Function B3: understandAction
     4) Function B4: understandResource
+    5) Function B5: searchForAiSpend
 
 FUNCTIONS C: Explain (placeholder)
     1) Function C1: explain
@@ -31,9 +32,10 @@ Note: Legacy respond() kept as a placeholder export until callers are gone.
 
 const ConversationChatFunctions = require('./conversation/chat');
 const UnderstandMessageFunctions = require('./understand/understandMessage');
-const SearchMessageForRegionFunctions = require('./understand/search/searchMessageForRegion');
+const SearchMessageForRegionFunctions = require('./understand/search/values/searchMessageForRegion');
 const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
 const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
+const SearchForAiSpendFunctions = require('./understand/search/values/searchForAiSpend');
 
 //FUNCTIONS A: Conversation
 //Function A1: GenAI conversation front door
@@ -65,6 +67,12 @@ async function understandAction(message) {
 async function understandResource(message, requestState) {
     //STEP 1: Delegate to values extractors (region, ids, name, tags, structured fields)
     return SearchMessageForValuesFunctions.searchMessageForValues(message, requestState);
+}
+
+//Function B5: Detect AI spend / OpenAI usage questions (classify only)
+async function searchForAiSpend(message) {
+    //STEP 1: Delegate to AI spend search (shouldRun + Internal vs OpenAI)
+    return SearchForAiSpendFunctions.searchForAiSpend(message);
 }
 
 //FUNCTIONS C: Explain
@@ -100,6 +108,7 @@ module.exports = {
     understandRegion,
     understandAction,
     understandResource,
+    searchForAiSpend,
     explain,
     improve,
     generate,

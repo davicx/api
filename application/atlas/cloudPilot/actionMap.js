@@ -200,25 +200,9 @@ const actionMap = {
         requiresWorkflow: false,
         requiresExecution: true,
 
-        //Intent Detection — keep distinct from show_billing (AWS)
-        match: (text) =>
-            text.includes('openai spend') ||
-            text.includes('openai cost') ||
-            text.includes('openai usage') ||
-            text.includes('open ai spend') ||
-            text.includes('open ai cost') ||
-            text.includes('ai spend') ||
-            text.includes('ai usage') ||
-            text.includes('ai cost') ||
-            text.includes('how much have i spent on openai') ||
-            text.includes('how much have i spent on ai') ||
-            text.includes('how much did i spend on openai') ||
-            text.includes('how much did i spend on ai') ||
-            text.includes('show my openai') ||
-            text.includes('show openai') ||
-            text.includes('what is my openai') ||
-            text.includes("what's my openai") ||
-            text.includes('whats my openai'),
+        // Not an Action (toggle_ec2, …). Detected as value via searchForAiSpend → values.ai_spend.
+        // match kept empty so actionMap rules do not treat spend questions as actions.
+        match: () => false,
 
         //Fields Required Before Ready
         requiredFields: [],

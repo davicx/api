@@ -26,6 +26,18 @@ const situationPieces = {
             'Normalize AWS region codes to lowercase',
             'Natural language region references may be interpreted when clear'
         ]
+    },
+
+    ai_spend: {
+        purpose:
+            'Determine whether the current user message is asking about CloudPilot AI / OpenAI usage or spend.',
+
+        rules: [
+            'Return a hit only when the user is clearly asking about AI or OpenAI spend, cost, or usage',
+            'Do not treat AWS billing or cloud infrastructure cost questions as AI spend',
+            'Do not invent dollar amounts or usage totals',
+            'Classify only — CloudPilot will load real usage data'
+        ]
     }
 };
 

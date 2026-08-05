@@ -9,6 +9,7 @@
  *   CLOUDPILOT_MESSAGE_RESPONSE      chat() (+ Capabilities wording)
  *   CLOUDPILOT_REGION_SEARCH         understandRegion / region search
  *   CLOUDPILOT_ACTION_SEARCH         understandAction — config stub; OpenAI not wired yet
+ *   CLOUDPILOT_AI_SPEND_SEARCH       searchForAiSpend() — classify only
  *
  * History / OpenAI transport:
  *   OPENAI_SEND_CONVERSATION_HISTORY, OPENAI_CONVERSATION_HISTORY_LIMIT
@@ -18,7 +19,7 @@
  *   CLOUDPILOT_ACTION_STATE_LOGS, CLOUDPILOT_CONTEXT_LOGS,
  *   CLOUDPILOT_OPENAI_LOGS          OPENAI: <Capability> (Request N) blocks
  *
- * Token limits: CLOUDPILOT_MESSAGE_TOKEN_LIMIT, REGION, ACTION
+ * Token limits: CLOUDPILOT_MESSAGE_TOKEN_LIMIT, REGION, ACTION, AI_SPEND
  */
 
 function readEnvBoolean(envName, defaultValue) {
@@ -88,10 +89,12 @@ const CLOUDPILOT_AI_CONFIG = {
      * messageResponse → chat() / Capabilities
      * regionSearch    → region search
      * actionSearch    → action search (stub; keep internal)
+     * aiSpendSearch   → searchForAiSpend() classify only
      */
     messageResponse: readImplementation('CLOUDPILOT_MESSAGE_RESPONSE', 'internal'),
     regionSearch: readImplementation('CLOUDPILOT_REGION_SEARCH', 'internal'),
     actionSearch: readImplementation('CLOUDPILOT_ACTION_SEARCH', 'internal'),
+    aiSpendSearch: readImplementation('CLOUDPILOT_AI_SPEND_SEARCH', 'internal'),
 
     /**
      * Individual logging switches (not one master LOGS_ON).
@@ -109,7 +112,8 @@ const CLOUDPILOT_AI_CONFIG = {
      */
     messageTokenLimit: readEnvPositiveInt('CLOUDPILOT_MESSAGE_TOKEN_LIMIT', 500, 2000),
     regionTokenLimit: readEnvPositiveInt('CLOUDPILOT_REGION_TOKEN_LIMIT', 40, 100),
-    actionTokenLimit: readEnvPositiveInt('CLOUDPILOT_ACTION_TOKEN_LIMIT', 40, 100)
+    actionTokenLimit: readEnvPositiveInt('CLOUDPILOT_ACTION_TOKEN_LIMIT', 40, 100),
+    aiSpendTokenLimit: readEnvPositiveInt('CLOUDPILOT_AI_SPEND_TOKEN_LIMIT', 40, 100)
 };
 
 module.exports = {

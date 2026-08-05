@@ -1,10 +1,14 @@
 # Finished
 
-**Last reviewed:** 2026-08-04
+**Last reviewed:** 2026-08-05
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-05)
+
+- [x] **AI Spending** — Kite card + `searchForAiSpend` + summary API — [feature_ai_spending.md](./feature_ai_spending.md)
 
 ## Recently finished (2026-08-04)
 

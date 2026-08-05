@@ -1,13 +1,16 @@
-const SearchMessageForRegionFunctions = require('./searchMessageForRegion');
-const SearchMessageForStructuredFieldsFunctions = require('./searchMessageForStructuredFields');
-const SearchMessageForInstanceIdFunctions = require('./searchMessageForInstanceId');
-const SearchMessageForInstanceTypeFunctions = require('./searchMessageForInstanceType');
-const SearchMessageForNameFunctions = require('./searchMessageForName');
-const SearchMessageForTagUpdateFunctions = require('./searchMessageForTagUpdate');
+const SearchMessageForRegionFunctions = require('./values/searchMessageForRegion');
+const SearchMessageForStructuredFieldsFunctions = require('./helpers/searchMessageForStructuredFields');
+const SearchMessageForInstanceIdFunctions = require('./values/searchMessageForInstanceId');
+const SearchMessageForInstanceTypeFunctions = require('./values/searchMessageForInstanceType');
+const SearchMessageForNameFunctions = require('./values/searchMessageForName');
+const SearchMessageForTagUpdateFunctions = require('./values/searchMessageForTagUpdate');
+const SearchForAiSpendFunctions = require('./values/searchForAiSpend');
 
 /*
 FUNCTIONS A: Structured field extraction from user message
     1) Function A1: searchMessageForValues
+
+Orchestrator — loops value extractors under ./values/ (+ helpers).
 */
 
 //Function A1: Find all structured field values in the message
@@ -58,6 +61,12 @@ async function searchMessageForValues(message, requestState) {
     }
     if (tagUpdateResult.tag_value && values.tag_value === undefined) {
         values.tag_value = tagUpdateResult.tag_value;
+    }
+
+    // AI spend — value signal (not an action like toggle_ec2)
+    const aiSpendResult = await SearchForAiSpendFunctions.searchForAiSpend(message);
+    if (aiSpendResult.ai_spend === true && values.ai_spend === undefined) {
+        values.ai_spend = true;
     }
 
     return values;

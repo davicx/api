@@ -1,7 +1,7 @@
 # How to: Chat use OpenAI (`MESSAGE_RESPONSE`)
 
 **Mimic Region Search exactly.**  
-Reference implementation: `cloudPilotIntelligence/understand/search/searchMessageForRegion.js`  
+Reference implementation: `cloudPilotIntelligence/understand/search/values/searchMessageForRegion.js`
 Chat target: `CloudPilotMessage.speakGeneral` → `CloudPilotIntelligence.chat()`
 
 **Related:** [Environment example](../../sample_env.md) · [Current Development](../current/current_development.md) · `config/cloudPilotAIConfig.js`
@@ -143,7 +143,7 @@ if (useOpenAIMessageResponse) {
 
 | Piece | Path |
 |-------|------|
-| Gateway + Internal + OpenAI | `cloudPilotIntelligence/understand/search/searchMessageForRegion.js` |
+| Gateway + Internal + OpenAI | `cloudPilotIntelligence/understand/search/values/searchMessageForRegion.js` |
 | Called from | `searchMessageForValues.js` → `understandMessage.js` → `CloudPilotIntelligence.understandMessage` → STEP 3 |
 | Situation piece | `cloudPilotIntelligence/context/contextTypes/cloudPilotSituationContext.js` → `region` |
 | Context assemble | `cloudPilotIntelligence/context/buildContext.js` with `situationTypes: ['region']`, `includeKnowledge: false` |
