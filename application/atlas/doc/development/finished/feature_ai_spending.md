@@ -13,7 +13,8 @@ Shipped:
 - Persist usage + cost helper + `GET /ai/usage/summary`
 - Kite Dashboard `AiUsageCard`
 - Chat fulfillment via `show_ai_usage` handler
-- `searchForAiSpend()` as a **value** (Internal \| OpenAI classify) under `search/values/`
+- `searchForAiSpend()` as a **Question** (Internal \| OpenAI classify) under `search/questions/`
+- Detection: `question = ai_spend` → `IMMEDIATE_EXECUTION` / `show_ai_usage`
 
 **Related:** [Current Development](../current/current_development.md) · [Add an Intelligence Capability](../how_to/add_intelligence_capability.md) · [Questions](../current/feature_questions.md) · [Future billing](../future/billing.md) · [Environment example](../../sample_env.md)
 
@@ -46,7 +47,7 @@ Every successful OpenAI call already returns `usage` and we **persist** it.
 | Persist to DB | ✅ Live — `saveAiUsageFromOpenAIResponse` after each success |
 | Cost helper from model + tokens | ✅ Live — `calculateOpenAICost.js` |
 | `GET /ai/usage/summary` | ✅ Live |
-| Chat: “what’s my OpenAI spend?” | ✅ Live — `values.ai_spend` → `show_ai_usage` handler |
+| Chat: “what’s my OpenAI spend?” | ✅ Live — `question = ai_spend` → `show_ai_usage` handler |
 | Kite AI Usage card | ✅ Dashboard — `AiUsageCard` → `GET /ai/usage/summary` |
 | Intelligence `searchForAiSpend()` | ✅ Internal \| OpenAI classify → `show_ai_usage` |
 
@@ -61,18 +62,19 @@ AWS spend is a **different** path (`show_billing` → Atlas Cost Explorer). Do n
 Same capability pattern as [Add an Intelligence Capability](../how_to/add_intelligence_capability.md):
 
 ```text
-searchMessageForValues()
-  → searchForAiSpend()     # value: ai_spend true|absent
+searchMessageForQuestion()
+  → searchForAiSpend()     # question: ai_spend | null
         │
 CLOUDPILOT_AI_SPEND_SEARCH = internal | openai
         │
-understandMessage          # if values.ai_spend → fulfill via show_ai_usage handler
+understandMessage          # question = ai_spend
+decideNextStep             # IMMEDIATE_EXECUTION → show_ai_usage
 CloudPilot                 # load ai_usage summary → speakKnown
 ```
 
 | Layer | Job |
 |-------|-----|
-| `searchForAiSpend()` in **values** | “Is this about AI spend?” → `values.ai_spend` |
+| `searchForAiSpend()` in **questions** | “Is this about AI spend?” → `question = ai_spend` |
 | Actions (`toggle_ec2`, …) | Unchanged — do work |
 | `show_ai_usage` handler | Fulfillment only (not detected as an Action) |
 
@@ -82,8 +84,9 @@ OpenAI (when ENV is `openai`) only **detects** the question. It never invents do
 
 ```text
 cloudPilotIntelligence/understand/search/
-  searchMessageForValues.js              # orchestrator
-  values/searchForAiSpend.js             # one file (Internal + OpenAI)
+  searchMessageForQuestion.js            # orchestrator
+  questions/searchForAiSpend.js          # one file (Internal + OpenAI)
+  questions/searchForOpenRequests.js
   values/searchMessageForRegion.js
   …
 CloudPilotIntelligence.js  →  export searchForAiSpend
@@ -93,7 +96,7 @@ CloudPilotIntelligence.js  →  export searchForAiSpend
 CLOUDPILOT_AI_SPEND_SEARCH=internal
 ```
 
-Detection is via `searchForAiSpend` → `values.ai_spend` (not an Action like `toggle_ec2`). Handler still fulfills the reply from the DB.
+Detection is via `searchForAiSpend` → `question = ai_spend` (not an Action like `toggle_ec2`). Handler still fulfills the reply from the DB.
 
 ---
 

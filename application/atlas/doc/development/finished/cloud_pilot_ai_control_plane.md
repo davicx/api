@@ -212,7 +212,7 @@ Phase 3  Dashboard
 Phase 4  Multi-open (only when product ready; today = one open per conversation)
 ```
 
-Intent `list_open` already exists; speak path still needs a real open-requests response (like history).
+Intent moved to Question path (`question = open_requests`); speak uses `cloudPilot/questions/openRequests.js`.
 
 ---
 

@@ -5,7 +5,7 @@ FUNCTIONS A: Action detection from user message (rules / registry)
     1) Function A1: searchMessageForAction
 
 Actions = do something (scan_ec2, toggle_ec2, …).
-AI spend is a value (searchForAiSpend via searchMessageForValues) — not an action.
+AI spend is a Question (searchForAiSpend via searchMessageForQuestion) — not an action.
 */
 
 //Function A1: Find an action intent in the message

@@ -47,6 +47,21 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.AMBIGUOUS_ACTION);
     }
 
+    // Questions before Conversation — known-fact asks (open requests, AI spend)
+    if (u.question === 'open_requests') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+    }
+
+    if (u.question === 'ai_spend') {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: null,
+            response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
+            execute: { action: 'show_ai_usage' }
+        };
+    }
+
+    // Legacy conversation signal (phrases moved to questions/searchForOpenRequests)
     if (u.conversation === 'list_open') {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
     }

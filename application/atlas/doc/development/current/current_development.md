@@ -26,7 +26,7 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What shipped |
 |---------|----------------|
-| [AI Spending](../finished/feature_ai_spending.md) | Kite usage card + `searchForAiSpend` value (Internal \| OpenAI) + summary API |
+| [AI Spending](../finished/feature_ai_spending.md) | Kite usage card + `searchForAiSpend` Question (Internal \| OpenAI) + summary API |
 | [Intelligence Front Door](../finished/feature_intelligence_front_door.md) | GenAI goes through `CloudPilotIntelligence.chat()`; `speakGeneral` is voice only |
 | [OpenAI Logs](../finished/feature_openai_logs.md) | Pipeline STEPs first; then `OPENAI: Capability (Request N)`; Total + FOOTER |
 

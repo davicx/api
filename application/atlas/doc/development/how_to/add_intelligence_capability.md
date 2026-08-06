@@ -70,13 +70,16 @@ cloudPilotIntelligence/
   understand/
     search/
       searchMessageForValues.js      # values orchestrator
+      searchMessageForQuestion.js    # questions orchestrator
       searchMessageForAction.js
       searchMessageForConversation.js
       searchMessageForReply.js
       values/                        # value extractors
         searchMessageForRegion.js
-        searchForAiSpend.js
         …
+      questions/                     # question classifiers
+        searchForAiSpend.js
+        searchForOpenRequests.js
       helpers/
         searchMessageForStructuredFields.js
 ```

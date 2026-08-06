@@ -1,6 +1,8 @@
 /*
 FUNCTIONS A: Conversation intent extraction from user message (status / list / focus / undo)
     1) Function A1: searchMessageForConversation
+
+Open-requests phrases live in questions/searchForOpenRequests.js (Question path).
 */
 
 const UNDO_PHRASES = [
@@ -21,17 +23,6 @@ const LIST_HISTORY_PHRASES = [
     'show recent changes',
     'recent changes',
     'history'
-];
-
-const LIST_OPEN_PHRASES = [
-    'show open actions',
-    'show my open actions',
-    'list open actions',
-    'list my actions',
-    'what am i waiting on',
-    'what are my open actions',
-    'open actions',
-    'my open actions'
 ];
 
 const STATUS_PHRASES = [
@@ -71,13 +62,6 @@ function searchMessageForConversation(message) {
         const phrase = LIST_HISTORY_PHRASES[i];
         if (text === phrase || text.includes(phrase)) {
             return 'list_history';
-        }
-    }
-
-    for (let i = 0; i < LIST_OPEN_PHRASES.length; i++) {
-        const phrase = LIST_OPEN_PHRASES[i];
-        if (text === phrase || text.includes(phrase)) {
-            return 'list_open';
         }
     }
 

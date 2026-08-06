@@ -68,15 +68,13 @@ Same pattern as capabilities / history:
 
 | Piece | Status |
 |---|---|
-| Phrases → `list_open` in `searchMessageForConversation.js` | Partial — “open **actions**” wording; missing “open **requests**” |
+| Phrases → `question = open_requests` via `questions/searchForOpenRequests.js` | Wired |
 | `decideNextStep` → `RESPONSE_TYPE.LIST_OPEN_REQUESTS` | Wired |
 | Request store skips write for list intent | Wired |
-| Speak path for `LIST_OPEN_REQUESTS` | **Missing** — no dedicated handler like history |
+| Speak path for `LIST_OPEN_REQUESTS` → `cloudPilot/questions/openRequests.js` | Wired |
 | `navigatorResponse` table for open requests | **Missing** |
 | Dashboard open-requests page | **Missing** (future) |
 | Multi-open requests per conversation | **Policy today:** one open request per `conversation_id` |
-
-Today the intent is recognized but the speak path does not yet build a real open-requests answer the way history does.
 
 ---
 
@@ -145,11 +143,11 @@ Prefer exact / careful matching so `"help me create ec2"` does not become list_o
 ## Architecture (fits current pipeline)
 
 ```text
-STEP 3  understand → conversation = list_open
+STEP 3  understand → question = open_requests
 STEP 4  decide     → LIST_OPEN_REQUESTS
 STEP 5  store      → skip (no DB write)
 STEP 6  execute    → skip
-STEP 7  speak      → buildOpenRequestsResponse(conversationID)
+STEP 7  speak      → buildOpenRequestsResponse(requestState)
 ```
 
 Mirror history:
@@ -157,16 +155,20 @@ Mirror history:
 ```text
 HistoryFunctions.buildHistoryResponse(conversationID)
   ↓
-OpenRequestsFunctions.buildOpenRequestsResponse(conversationID)
+OpenRequestsFunctions.buildOpenRequestsResponse(requestState)
 ```
 
-Suggested home:
+Home:
 
 ```text
-cloudPilot/requests/functions/openRequestsFunctions.js
+cloudPilot/questions/openRequests.js
 ```
 
-or next to history if you prefer a shared “list” folder later. Prefer `requests/` because source of truth is request state.
+Intelligence classify:
+
+```text
+cloudPilotIntelligence/understand/search/questions/searchForOpenRequests.js
+```
 
 ---
 
@@ -211,13 +213,13 @@ Kite already renders generic Navigator tables — reuse that path (same idea as 
 
 ### Phase 1 — Chat answer (MVP)
 
-1. Expand match phrases to include “open requests”.
-2. Add `buildOpenRequestsResponse(conversationID)`.
-3. Wire `RequestConversation` for `LIST_OPEN_REQUESTS` (like `LIST_HISTORY`).
-4. Load open request(s) for this conversation from existing Request APIs.
-5. Deterministic chat text for 0 or 1 open request.
-6. Verify: no DB write, no execution, no history row.
-7. Commit and stop.
+1. [x] Expand match phrases to include “open requests” (`questions/searchForOpenRequests`).
+2. [x] Add `buildOpenRequestsResponse(requestState)` in `cloudPilot/questions/openRequests.js`.
+3. [x] Wire `RequestConversation` for `LIST_OPEN_REQUESTS` (like `LIST_HISTORY`).
+4. [x] Use already-loaded request state (no extra DB fetch for MVP).
+5. [x] Deterministic chat text for 0 or 1 open request.
+6. [x] Verify: no DB write, no execution, no history row (smoke).
+7. [ ] Commit and stop.
 
 ### Phase 2 — Table in chat (Navigator)
 

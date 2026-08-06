@@ -16,7 +16,7 @@ HELPERS
     2) Helper H2: buildAiSpendOpenAIMessages
 
 Public entry — shouldRun + Internal | OpenAI.
-Returns { ai_spend: true } or {}.
+Returns { question: 'ai_spend' } or {}.
 CloudPilot owns loading ai_usage and answering.
 */
 
@@ -159,8 +159,8 @@ function searchForAiSpendInternal(message) {
     ];
 
     for (let i = 0; i < phrases.length; i++) {
-                if (text.includes(phrases[i])) {
-            return { ai_spend: true };
+        if (text.includes(phrases[i])) {
+            return { question: 'ai_spend' };
         }
     }
 
@@ -225,7 +225,7 @@ async function searchForAiSpendOpenAI(message) {
         const hit = parseOpenAIAiSpendResponse(apiResult.data);
 
         return {
-            result: hit ? { ai_spend: true } : {},
+            result: hit ? { question: 'ai_spend' } : {},
             billing: true,
             openAIResponse: openAIResponse,
             fallback: null

@@ -38,6 +38,18 @@ const situationPieces = {
             'Do not invent dollar amounts or usage totals',
             'Classify only — CloudPilot will load real usage data'
         ]
+    },
+
+    open_requests: {
+        purpose:
+            'Determine whether the current user message is asking about open CloudPilot requests or actions in progress.',
+
+        rules: [
+            'Return a hit only when the user is clearly asking what requests or actions are open, pending, or waiting',
+            'Do not treat new action requests (scan, toggle, create) as open-requests questions',
+            'Do not invent a list of requests',
+            'Classify only — CloudPilot will load real request state'
+        ]
     }
 };
 

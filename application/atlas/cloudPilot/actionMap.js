@@ -200,7 +200,7 @@ const actionMap = {
         requiresWorkflow: false,
         requiresExecution: true,
 
-        // Not an Action (toggle_ec2, …). Detected as value via searchForAiSpend → values.ai_spend.
+        // Not an Action (toggle_ec2, …). Detected as Question via searchForAiSpend → question=ai_spend.
         // match kept empty so actionMap rules do not treat spend questions as actions.
         match: () => false,
 

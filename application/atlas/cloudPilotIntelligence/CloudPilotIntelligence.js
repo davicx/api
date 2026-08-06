@@ -17,6 +17,7 @@ FUNCTIONS B: Understand (Gather Context)
     3) Function B3: understandAction
     4) Function B4: understandResource
     5) Function B5: searchForAiSpend
+    6) Function B6: searchForOpenRequests
 
 FUNCTIONS C: Explain (placeholder)
     1) Function C1: explain
@@ -35,7 +36,8 @@ const UnderstandMessageFunctions = require('./understand/understandMessage');
 const SearchMessageForRegionFunctions = require('./understand/search/values/searchMessageForRegion');
 const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
 const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
-const SearchForAiSpendFunctions = require('./understand/search/values/searchForAiSpend');
+const SearchForAiSpendFunctions = require('./understand/search/questions/searchForAiSpend');
+const SearchForOpenRequestsFunctions = require('./understand/search/questions/searchForOpenRequests');
 
 //FUNCTIONS A: Conversation
 //Function A1: GenAI conversation front door
@@ -75,6 +77,12 @@ async function searchForAiSpend(message) {
     return SearchForAiSpendFunctions.searchForAiSpend(message);
 }
 
+//Function B6: Detect open-requests questions (classify only)
+async function searchForOpenRequests(message) {
+    //STEP 1: Delegate to open-requests search (shouldRun + Internal vs OpenAI)
+    return SearchForOpenRequestsFunctions.searchForOpenRequests(message);
+}
+
 //FUNCTIONS C: Explain
 //Function C1: Explain — placeholder until a later project
 async function explain(context) {
@@ -109,6 +117,7 @@ module.exports = {
     understandAction,
     understandResource,
     searchForAiSpend,
+    searchForOpenRequests,
     explain,
     improve,
     generate,

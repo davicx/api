@@ -12,7 +12,7 @@ Do I have any open requests?
 
 ## Current step
 
-**Step 1 — Detect open-requests questions + answer from CloudPilot data.**
+**Step 1 — Implement** ✅ (search path + open-requests speak wired)
 
 ## Next
 
@@ -35,7 +35,32 @@ Fell through to general chat → OpenAI invented AWS-console advice.
 
 ---
 
-## What Step 1 is (only this)
+## Locked classification
+
+```text
+Action       → “Do something”
+Value        → “What information did the user provide?”
+Question     → “What known information is the user requesting?”
+Conversation → “Talk with me”
+Reply        → “Confirm / cancel / select”
+```
+
+Examples:
+
+```text
+Turn off my EC2 in us-west-2
+  action = toggle_ec2
+  values.region = us-west-2
+
+Do I have any open requests?
+  question = open_requests
+```
+
+Open Requests and AI Spend are **Questions**, not Values and not Actions.
+
+---
+
+## What Step 1 is
 
 Add an Intelligence search that answers:
 
@@ -59,7 +84,7 @@ searchForOpenRequestsInternal()
 searchForOpenRequestsOpenAI()
 ```
 
-- **Search** only classifies (hit or `{}`). It does **not** load the DB or write the chat reply.
+- **Search** only classifies (`open_requests` or no hit). It does **not** load the DB or write the chat reply.
 - **CloudPilot** loads open requests from `requests/` and answers with `speakKnown`.
 - OpenAI (when that ENV is on) only helps **detect** the question — never invents the list.
 
@@ -70,8 +95,11 @@ User: Do I have any open requests?
 searchForOpenRequests()     # classify
       │
       ▼
+question = open_requests
+      │
+      ▼
 CloudPilot
-  questions/openRequests/   # load from requests/
+  questions/openRequests.js # use loaded request state
   speakKnown()
 ```
 
@@ -104,11 +132,50 @@ cloudPilotIntelligence/
   CloudPilotIntelligence.js
     → searchForOpenRequests()
   understand/search/
-    searchForOpenRequests.js    # shouldRun + Internal | OpenAI
+    searchMessageForQuestion.js     # NEW question orchestrator
+    questions/                      # NEW classification folder
+      searchForAiSpend.js           # MOVE from values/
+      searchForOpenRequests.js      # NEW; Internal + OpenAI in one file
+
+    searchMessageForValues.js
+    values/
+      searchMessageForRegion.js
+      searchMessageForName.js
+      …
 
 cloudPilot/
-  questions/openRequests/       # buildOpenRequestsResponse → requests/
-  requests/                     # owns the rows
+  questions/                    # NEW fulfillment folder
+    openRequests.js             # NEW grounded response builder
+  requests/                     # owns request rows
+```
+
+No per-capability subfolder yet. Each Question capability stays one file until it earns more structure.
+
+### Understanding shape
+
+```json
+{
+  "action": "general_chat",
+  "values": {},
+  "question": "open_requests",
+  "conversation": null,
+  "reply": null
+}
+```
+
+`searchMessageForQuestion()` runs the Question classifiers and returns one question signal.
+
+```text
+searchMessageForQuestion()
+  ├── searchForAiSpend()
+  └── searchForOpenRequests()
+```
+
+`decideNextStep()` handles `question` before general Conversation:
+
+```text
+ai_spend      → existing AI usage fulfillment
+open_requests → LIST_OPEN_REQUESTS
 ```
 
 ---
@@ -121,15 +188,24 @@ cloudPilot/
 - [x] Internal | OpenAI via `CLOUDPILOT_OPEN_REQUESTS_SEARCH`
 - [x] Search does not answer; CloudPilot owns facts
 - [x] OpenAI off for *answering* this question
+- [x] Questions are separate from Actions, Values, Conversation, and Reply
+- [x] AI Spend moves from `values/` to the Question search path
 
 ### Step 1 — Implement
 
-1. Facade: `searchForOpenRequests()` + Internal phrases (“open requests”, “do i have any open requests”, …).
-2. Optional OpenAI classify path behind `CLOUDPILOT_OPEN_REQUESTS_SEARCH=openai`.
-3. `questions/openRequests/` → `buildOpenRequestsResponse(conversationID)` via `requests/`.
-4. Wire `LIST_OPEN_REQUESTS` → `speakKnown`.
-5. Smoke: idle empty; one open scan + missing region; no invented OpenAI facts.
-6. Commit and stop.
+1. [x] Add `searchMessageForQuestion.js` and `understand/search/questions/`.
+2. [x] Move `searchForAiSpend.js` from `values/` to `questions/`; return `question = ai_spend`.
+3. [x] Add `questions/searchForOpenRequests.js`:
+   - TOC style
+   - `shouldRun`
+   - public selector
+   - Internal phrases
+   - OpenAI classifier
+4. [x] Add `question` to `understandMessage()` output.
+5. [x] Add `CLOUDPILOT_OPEN_REQUESTS_SEARCH=internal|openai` + token limit.
+6. [x] Add `cloudPilot/questions/openRequests.js` using the already-loaded request state.
+7. [x] Wire `question = open_requests` → `LIST_OPEN_REQUESTS` → builder → `speakKnown`.
+8. [x] Smoke Internal and OpenAI classification; facts always come from CloudPilot.
 
 ### Step 2 — Guardrail
 
@@ -143,12 +219,14 @@ With `MESSAGE_RESPONSE=openai`, open-requests facts still come from Internal spe
 |-------|----------|
 | `do i have any open requests` (idle) | Deterministic “no open requests” |
 | Same with open `scan_ec2` waiting on region | Lists that request + missing |
+| `what’s my OpenAI spend?` | `question = ai_spend`; existing grounded usage reply |
 | `hello` | Still Conversation |
 | `scan ec2` | Still Action |
+| `scan ec2 in us-west-2` | Action + `values.region`; no Question |
 | Side effects | No new request row, no Atlas, no invented list |
 
 ---
 
 ## Next
 
-Say **go Step 1** to implement `searchForOpenRequests` + CloudPilot answer path.
+Ready to implement Step 1: Question orchestrator + AI Spend migration + Open Requests classification and grounded answer.

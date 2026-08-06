@@ -1,6 +1,7 @@
 const actionMap = require('../../actionMap');
 const CloudPilotMessage = require('../CloudPilotMessage');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
+const OpenRequestsFunctions = require('../../questions/openRequests');
 const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 const InstructionsStrategy = require('../../executionModes/instructions/InstructionsLogic');
 const CliStrategy = require('../../executionModes/cli/CliLogic');
@@ -51,6 +52,20 @@ async function conversation(decision, context) {
             chatType: decision.chatType,
             atlasResponse: historyResponse.atlasResponse || null,
             error: historyResponse.error || null
+        });
+    }
+
+    if (responseType === RESPONSE_TYPE.LIST_OPEN_REQUESTS) {
+        const openRequestsResponse = OpenRequestsFunctions.buildOpenRequestsResponse(
+            requestState
+        );
+
+        return CloudPilotMessage.speakKnown({
+            success: openRequestsResponse.success,
+            cloudPilotMessage: openRequestsResponse.cloudPilotMessage,
+            chatType: decision.chatType,
+            atlasResponse: openRequestsResponse.atlasResponse || null,
+            error: openRequestsResponse.error || null
         });
     }
 
