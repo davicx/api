@@ -3,6 +3,7 @@ const { buildAIContext } = require('../../../context/buildContext');
 const { buildAISystemMessage } = require('../../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
+const SearchLogs = require('../helpers/searchLogs');
 
 /*
 FUNCTIONS A: Region search
@@ -184,6 +185,11 @@ async function searchMessageForRegion(message, requestState) {
             openAIResponse: null,
             result: {}
         });
+        SearchLogs.recordSearch({
+            name: 'Region',
+            method: 'Skipped',
+            result: null
+        });
         return {};
     }
 
@@ -227,6 +233,12 @@ async function searchMessageForRegion(message, requestState) {
         userMessage: userMessage,
         openAIResponse: openAIResponse,
         result: result
+    });
+
+    SearchLogs.recordSearch({
+        name: 'Region',
+        method: useOpenAI && !fallback ? 'OpenAI' : 'Internal',
+        result: result && result.region ? result.region : null
     });
 
     return result;

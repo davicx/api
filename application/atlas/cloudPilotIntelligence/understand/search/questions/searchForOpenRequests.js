@@ -3,6 +3,7 @@ const { buildAIContext } = require('../../../context/buildContext');
 const { buildAISystemMessage } = require('../../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
+const SearchLogs = require('../helpers/searchLogs');
 
 /*
 FUNCTIONS A: Open requests Question search
@@ -103,6 +104,11 @@ async function searchForOpenRequests(message) {
 
     //STEP 1: Should I run?
     if (!shouldRunOpenRequestsSearch(userMessage)) {
+        SearchLogs.recordSearch({
+            name: 'Open Requests',
+            method: 'Skipped',
+            result: null
+        });
         return {};
     }
 
@@ -111,9 +117,17 @@ async function searchForOpenRequests(message) {
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
 
+    let result;
+
     if (useOpenAI) {
         const openAIOutcome = await searchForOpenRequestsOpenAI(userMessage);
-        return openAIOutcome.result || {};
+        result = openAIOutcome.result || {};
+        SearchLogs.recordSearch({
+            name: 'Open Requests',
+            method: openAIOutcome.fallback ? 'Internal' : 'OpenAI',
+            result: result.question || null
+        });
+        return result;
     }
 
     // Preview when openai requested but master off
@@ -129,7 +143,13 @@ async function searchForOpenRequests(message) {
         });
     }
 
-    return searchForOpenRequestsInternal(userMessage);
+    result = searchForOpenRequestsInternal(userMessage);
+    SearchLogs.recordSearch({
+        name: 'Open Requests',
+        method: 'Internal',
+        result: result.question || null
+    });
+    return result;
 }
 
 //Function A3: Find open-requests Question using internal phrases

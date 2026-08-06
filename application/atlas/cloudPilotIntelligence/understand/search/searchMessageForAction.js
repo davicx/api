@@ -1,4 +1,5 @@
 const actionMap = require('../../../cloudPilot/actionMap');
+const SearchLogs = require('./helpers/searchLogs');
 
 /*
 FUNCTIONS A: Action detection from user message (rules / registry)
@@ -19,19 +20,27 @@ function searchMessageForAction(message) {
         }
     }
 
+    let outcome;
+
     if (matches.length > 1) {
-        return {
+        outcome = {
             action: null,
             ambiguous: true,
             candidates: matches.slice(),
             source: 'rules',
             confidence: 1.0
         };
-    }
-
-    if (matches.length === 1) {
-        return {
+    } else if (matches.length === 1) {
+        outcome = {
             action: matches[0],
+            ambiguous: false,
+            candidates: [],
+            source: 'rules',
+            confidence: 1.0
+        };
+    } else {
+        outcome = {
+            action: 'general_chat',
             ambiguous: false,
             candidates: [],
             source: 'rules',
@@ -39,13 +48,37 @@ function searchMessageForAction(message) {
         };
     }
 
-    return {
-        action: 'general_chat',
-        ambiguous: false,
-        candidates: [],
-        source: 'rules',
-        confidence: 1.0
-    };
+    SearchLogs.recordSearch({
+        name: 'Action',
+        method: 'Internal',
+        result: formatActionSearchResult(outcome)
+    });
+
+    return outcome;
+}
+
+function formatActionSearchResult(outcome) {
+    if (!outcome) {
+        return null;
+    }
+
+    if (outcome.ambiguous) {
+        return 'ambiguous: ' + (outcome.candidates || []).join(', ');
+    }
+
+    const actionType = outcome.action;
+
+    if (!actionType || actionType === 'general_chat') {
+        return 'general_chat';
+    }
+
+    const definition = actionMap[actionType];
+
+    if (definition && definition.actionLabel) {
+        return definition.actionLabel;
+    }
+
+    return actionType;
 }
 
 module.exports = { searchMessageForAction };

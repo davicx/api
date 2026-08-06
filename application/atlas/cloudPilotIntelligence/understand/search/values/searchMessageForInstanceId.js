@@ -1,3 +1,5 @@
+const SearchLogs = require('../helpers/searchLogs');
+
 /*
 FUNCTIONS A: EC2 instance ID extraction from user message
     1) Function A1: searchMessageForInstanceId
@@ -15,18 +17,24 @@ function searchMessageForInstanceId(message) {
         matches.push(String(match[1]).toLowerCase());
     }
 
-    if (matches.length === 0) {
-        return {};
-    }
+    let result = {};
 
     if (matches.length === 1) {
-        return { instance_id: matches[0] };
+        result = { instance_id: matches[0] };
+    } else if (matches.length > 1) {
+        result = {
+            primary_instance_id: matches[0],
+            secondary_instance_id: matches[1]
+        };
     }
 
-    return {
-        primary_instance_id: matches[0],
-        secondary_instance_id: matches[1]
-    };
+    SearchLogs.recordSearch({
+        name: 'Instance ID',
+        method: 'Internal',
+        result: Object.keys(result).length > 0 ? result : null
+    });
+
+    return result;
 }
 
 module.exports = { searchMessageForInstanceId };

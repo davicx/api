@@ -16,6 +16,7 @@
  *   OPENAI_SEND_CONVERSATION_HISTORY, OPENAI_CONVERSATION_HISTORY_LIMIT
  *
  * Logging (each independent — not one LOGS_ON):
+ *   CLOUDPILOT_SEARCH_LOGS          SEARCH block (how understand classified the message)
  *   CLOUDPILOT_MESSAGE_LOGS, CLOUDPILOT_REGION_LOGS, CLOUDPILOT_ACTION_LOGS,
  *   CLOUDPILOT_ACTION_STATE_LOGS, CLOUDPILOT_CONTEXT_LOGS,
  *   CLOUDPILOT_OPENAI_LOGS          OPENAI: <Capability> (Request N) blocks
@@ -101,8 +102,10 @@ const CLOUDPILOT_AI_CONFIG = {
 
     /**
      * Individual logging switches (not one master LOGS_ON).
+     * searchLogs → SEARCH block (understand layer)
      * openAILogs → per-capability OPENAI: <Capability> (Request N) blocks
      */
+    searchLogs: readEnvBoolean('CLOUDPILOT_SEARCH_LOGS', false),
     messageLogs: readEnvBoolean('CLOUDPILOT_MESSAGE_LOGS', false),
     regionLogs: readEnvBoolean('CLOUDPILOT_REGION_LOGS', false),
     actionLogs: readEnvBoolean('CLOUDPILOT_ACTION_LOGS', false),

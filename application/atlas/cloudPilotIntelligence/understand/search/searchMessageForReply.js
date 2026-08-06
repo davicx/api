@@ -27,30 +27,39 @@ const CONFIRM_MESSAGES = [
 
 const CANCEL_PHRASES = ['cancel', 'stop', 'never mind', 'nevermind', 'forget it', 'abort', 'quit'];
 
+const SearchLogs = require('./helpers/searchLogs');
+
 //Function A1: Find confirm, cancel, or execution mode in the message
 function searchMessageForReply(message) {
     const normalized = String(message || '').toLowerCase().trim().replace(/[.!?]+$/g, '');
 
-    if (!normalized) {
-        return null;
-    }
+    let result = null;
 
-    if (Object.prototype.hasOwnProperty.call(EXECUTION_MODES, normalized)) {
-        return EXECUTION_MODES[normalized];
-    }
+    if (normalized) {
+        if (Object.prototype.hasOwnProperty.call(EXECUTION_MODES, normalized)) {
+            result = EXECUTION_MODES[normalized];
+        } else {
+            for (let i = 0; i < CANCEL_PHRASES.length; i++) {
+                const phrase = CANCEL_PHRASES[i];
+                if (normalized === phrase || normalized.includes(phrase)) {
+                    result = 'cancel';
+                    break;
+                }
+            }
 
-    for (let i = 0; i < CANCEL_PHRASES.length; i++) {
-        const phrase = CANCEL_PHRASES[i];
-        if (normalized === phrase || normalized.includes(phrase)) {
-            return 'cancel';
+            if (result === null && CONFIRM_MESSAGES.includes(normalized)) {
+                result = 'confirm';
+            }
         }
     }
 
-    if (CONFIRM_MESSAGES.includes(normalized)) {
-        return 'confirm';
-    }
+    SearchLogs.recordSearch({
+        name: 'Reply',
+        method: 'Internal',
+        result: result
+    });
 
-    return null;
+    return result;
 }
 
 module.exports = { searchMessageForReply };

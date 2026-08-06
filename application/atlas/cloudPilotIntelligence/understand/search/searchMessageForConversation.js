@@ -5,6 +5,8 @@ FUNCTIONS A: Conversation intent extraction from user message (status / list / f
 Open-requests phrases live in questions/searchForOpenRequests.js (Question path).
 */
 
+const SearchLogs = require('./helpers/searchLogs');
+
 const UNDO_PHRASES = [
     'undo',
     'undo last',
@@ -47,40 +49,53 @@ const STATUS_PHRASES = [
 function searchMessageForConversation(message) {
     const text = String(message || '').toLowerCase().trim();
 
-    if (!text) {
-        return null;
-    }
+    let result = null;
 
-    for (let i = 0; i < UNDO_PHRASES.length; i++) {
-        const phrase = UNDO_PHRASES[i];
-        if (text === phrase || text.includes(phrase)) {
-            return 'undo';
+    if (text) {
+        for (let i = 0; i < UNDO_PHRASES.length; i++) {
+            const phrase = UNDO_PHRASES[i];
+            if (text === phrase || text.includes(phrase)) {
+                result = 'undo';
+                break;
+            }
+        }
+
+        if (result === null) {
+            for (let i = 0; i < LIST_HISTORY_PHRASES.length; i++) {
+                const phrase = LIST_HISTORY_PHRASES[i];
+                if (text === phrase || text.includes(phrase)) {
+                    result = 'list_history';
+                    break;
+                }
+            }
+        }
+
+        if (result === null) {
+            for (let i = 0; i < STATUS_PHRASES.length; i++) {
+                const phrase = STATUS_PHRASES[i];
+                if (text === phrase || text.includes(phrase)) {
+                    result = 'status';
+                    break;
+                }
+            }
+        }
+
+        if (result === null) {
+            if (/^(?:switch to|focus on|work on|use|select|run)\s*#?\d+$/i.test(text)) {
+                result = 'focus_switch';
+            } else if (/^(?:switch to|focus on|work on|use|select)\s+\S+/i.test(text)) {
+                result = 'focus_switch';
+            }
         }
     }
 
-    for (let i = 0; i < LIST_HISTORY_PHRASES.length; i++) {
-        const phrase = LIST_HISTORY_PHRASES[i];
-        if (text === phrase || text.includes(phrase)) {
-            return 'list_history';
-        }
-    }
+    SearchLogs.recordSearch({
+        name: 'Conversation',
+        method: 'Internal',
+        result: result
+    });
 
-    for (let i = 0; i < STATUS_PHRASES.length; i++) {
-        const phrase = STATUS_PHRASES[i];
-        if (text === phrase || text.includes(phrase)) {
-            return 'status';
-        }
-    }
-
-    if (/^(?:switch to|focus on|work on|use|select|run)\s*#?\d+$/i.test(text)) {
-        return 'focus_switch';
-    }
-
-    if (/^(?:switch to|focus on|work on|use|select)\s+\S+/i.test(text)) {
-        return 'focus_switch';
-    }
-
-    return null;
+    return result;
 }
 
 module.exports = { searchMessageForConversation };

@@ -3,6 +3,7 @@ const { buildAIContext } = require('../../../context/buildContext');
 const { buildAISystemMessage } = require('../../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
+const SearchLogs = require('../helpers/searchLogs');
 
 /*
 FUNCTIONS A: AI spend search
@@ -98,6 +99,11 @@ async function searchForAiSpend(message) {
 
     //STEP 1: Should I run?
     if (!shouldRunAiSpendSearch(userMessage)) {
+        SearchLogs.recordSearch({
+            name: 'AI Spend',
+            method: 'Skipped',
+            result: null
+        });
         return {};
     }
 
@@ -106,9 +112,17 @@ async function searchForAiSpend(message) {
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
 
+    let result;
+
     if (useOpenAI) {
         const openAIOutcome = await searchForAiSpendOpenAI(userMessage);
-        return openAIOutcome.result || {};
+        result = openAIOutcome.result || {};
+        SearchLogs.recordSearch({
+            name: 'AI Spend',
+            method: openAIOutcome.fallback ? 'Internal' : 'OpenAI',
+            result: result.question || null
+        });
+        return result;
     }
 
     // Preview when openai requested but master off
@@ -124,7 +138,13 @@ async function searchForAiSpend(message) {
         });
     }
 
-    return searchForAiSpendInternal(userMessage);
+    result = searchForAiSpendInternal(userMessage);
+    SearchLogs.recordSearch({
+        name: 'AI Spend',
+        method: 'Internal',
+        result: result.question || null
+    });
+    return result;
 }
 
 //Function A3: Find AI spend intent using internal phrases

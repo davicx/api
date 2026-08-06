@@ -1,5 +1,6 @@
 const SearchForAiSpendFunctions = require('./questions/searchForAiSpend');
 const SearchForOpenRequestsFunctions = require('./questions/searchForOpenRequests');
+const SearchLogs = require('./helpers/searchLogs');
 
 /*
 FUNCTIONS A: Question detection from user message
@@ -17,6 +18,12 @@ async function searchMessageForQuestion(message) {
     );
 
     if (openRequestsHit && openRequestsHit.question === 'open_requests') {
+        // Later question searches are not evaluated once one Question wins
+        SearchLogs.recordSearch({
+            name: 'AI Spend',
+            method: 'Skipped',
+            result: null
+        });
         return 'open_requests';
     }
 

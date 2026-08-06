@@ -3,6 +3,7 @@ const SearchMessageForValuesFunctions = require('./search/searchMessageForValues
 const SearchMessageForReplyFunctions = require('./search/searchMessageForReply');
 const SearchMessageForConversationFunctions = require('./search/searchMessageForConversation');
 const SearchMessageForQuestionFunctions = require('./search/searchMessageForQuestion');
+const SearchLogs = require('./search/helpers/searchLogs');
 
 /*
 What this file answers:
@@ -26,26 +27,35 @@ FUNCTIONS F: Message understanding — extract signals from a message (no DB, no
 
 //Function F1: Orchestrator entry — run all searches, merge into messageUnderstanding
 async function understandMessage(message, requestState) {
-    const values = await SearchMessageForValuesFunctions.searchMessageForValues(
-        message,
-        requestState
-    );
-    const reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
-    const conversation = SearchMessageForConversationFunctions.searchMessageForConversation(message);
-    const question = await SearchMessageForQuestionFunctions.searchMessageForQuestion(message);
-    const actionResult = SearchMessageForActionFunctions.searchMessageForAction(message);
+    SearchLogs.beginSearchSession();
 
-    return {
-        action: actionResult.action,
-        values,
-        reply,
-        conversation,
-        question: question,
-        ambiguous: actionResult.ambiguous,
-        candidates: actionResult.candidates.slice(),
-        source: question ? 'question_search' : actionResult.source,
-        confidence: actionResult.confidence
-    };
+    try {
+        const values = await SearchMessageForValuesFunctions.searchMessageForValues(
+            message,
+            requestState
+        );
+        const reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
+        const conversation =
+            SearchMessageForConversationFunctions.searchMessageForConversation(message);
+        const question = await SearchMessageForQuestionFunctions.searchMessageForQuestion(
+            message
+        );
+        const actionResult = SearchMessageForActionFunctions.searchMessageForAction(message);
+
+        return {
+            action: actionResult.action,
+            values,
+            reply,
+            conversation,
+            question: question,
+            ambiguous: actionResult.ambiguous,
+            candidates: actionResult.candidates.slice(),
+            source: question ? 'question_search' : actionResult.source,
+            confidence: actionResult.confidence
+        };
+    } finally {
+        SearchLogs.flushSearchLog();
+    }
 }
 
 module.exports = { understandMessage };
