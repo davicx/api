@@ -7,6 +7,7 @@ that targets an existing AWS resource, Atlas verifies the target exists.
 
 First implementation scope:
 
+
 ```text
 pause_ec2
 resume_ec2
