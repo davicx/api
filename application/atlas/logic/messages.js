@@ -38,6 +38,11 @@ async function postMessage(req, res) {
     var headerMessage = "New Message";
     Functions.addHeader(headerMessage);
 
+    const speakerName = formatMessageSpeakerName(messageFrom);
+    const spokenCaption = String(messageCaption || '').trim();
+    console.log(speakerName + ' Says: "' + spokenCaption + '"');
+    console.log(' ');
+
     var messageOutcome = {
         data: {},
         message: "",
@@ -400,6 +405,16 @@ async function getConversationMessages(req, res) {
     //console.log('STEP 3: Conversation messages outcome');
     //Functions.addFooter();
     res.json(messagesResponse);
+}
+
+function formatMessageSpeakerName(messageFrom) {
+    const raw = String(messageFrom || '').trim();
+
+    if (!raw) {
+        return 'User';
+    }
+
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 module.exports = { postMessageHello, postMessage, deleteMessage, editMessage, getGroupMessages, getConversationMessages };

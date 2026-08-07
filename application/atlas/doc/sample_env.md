@@ -69,7 +69,7 @@ CLOUDPILOT_MESSAGE_RESPONSE=internal
 # Find AWS region in user message
 CLOUDPILOT_REGION_SEARCH=internal
 
-# Find requested action in user message (stub; keep internal)
+# Find requested action (Internal rules first; optional OpenAI fallback)
 CLOUDPILOT_ACTION_SEARCH=internal
 
 # Detect AI spend / OpenAI usage questions (classify only — CloudPilot answers from DB)

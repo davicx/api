@@ -6,6 +6,7 @@ FUNCTIONS A: Open Requests Question fulfillment
 
 Grounded answer from already-loaded request state (requests/ owns the data).
 Does not invent rows. Does not create / update / close requests.
+Always Internal — never uses CLOUDPILOT_MESSAGE_RESPONSE / general OpenAI chat.
 */
 
 //Function A1: Build chat reply for LIST_OPEN_REQUESTS

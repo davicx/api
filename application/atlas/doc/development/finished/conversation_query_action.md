@@ -1,7 +1,7 @@
 # Conversation / Query / Action — superseded
 
 **Status:** Superseded  
-**Canonical design:** [Questions](../current/feature_questions.md)
+**Canonical design:** [Questions](./feature_questions.md)
 
 That doc combines:
 

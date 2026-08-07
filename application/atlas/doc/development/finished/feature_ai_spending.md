@@ -16,7 +16,7 @@ Shipped:
 - `searchForAiSpend()` as a **Question** (Internal \| OpenAI classify) under `search/questions/`
 - Detection: `question = ai_spend` → `IMMEDIATE_EXECUTION` / `show_ai_usage`
 
-**Related:** [Current Development](../current/current_development.md) · [Add an Intelligence Capability](../how_to/add_intelligence_capability.md) · [Questions](../current/feature_questions.md) · [Future billing](../future/billing.md) · [Environment example](../../sample_env.md)
+**Related:** [Current Development](../current/current_development.md) · [Add an Intelligence Capability](../how_to/add_intelligence_capability.md) · [Questions](./feature_questions.md) · [Future billing](../future/billing.md) · [Environment example](../../sample_env.md)
 
 ---
 

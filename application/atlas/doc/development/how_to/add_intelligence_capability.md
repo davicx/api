@@ -3,7 +3,7 @@
 **Status:** Development guide  
 **Goal:** Every Intelligence capability has one public entry point. Internal and OpenAI are implementations of that capability — not the product.
 
-**Related:** [Use OpenAI Chat](./use_openai_chat.md) · [Intelligence Front Door](../finished/feature_intelligence_front_door.md) · [Questions](../current/feature_questions.md) · [AI Spending](../finished/feature_ai_spending.md)
+**Related:** [Use OpenAI Chat](./use_openai_chat.md) · [Intelligence Front Door](../finished/feature_intelligence_front_door.md) · [Questions](../finished/feature_questions.md) · [AI Spending](../finished/feature_ai_spending.md)
 
 ---
 

@@ -1,16 +1,63 @@
 const actionMap = require('../../../cloudPilot/actionMap');
 const SearchLogs = require('./helpers/searchLogs');
+const OpenAIClient = require('../../../providers/openAI/client/openAIClient');
+const { buildAIContext } = require('../../context/buildContext');
+const { buildAISystemMessage } = require('../../context/buildSystemMessage');
+const { CHAT_CONFIG } = require('../../../config/chatGPTconfig');
+const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 
 /*
-FUNCTIONS A: Action detection from user message (rules / registry)
+FUNCTIONS A: Action detection from user message
     1) Function A1: searchMessageForAction
+    2) Function A2: searchMessageForActionInternal
+    3) Function A3: searchMessageForActionOpenAI
 
 Actions = do something (scan_ec2, toggle_ec2, …).
 AI spend is a Question (searchForAiSpend via searchMessageForQuestion) — not an action.
+Internal rules are the fast path. OpenAI is an optional fallback for natural
+phrasing and may return only an action that exists in actionMap.
 */
 
-//Function A1: Find an action intent in the message
-function searchMessageForAction(message) {
+//Function A1: Select Internal rules or optional OpenAI fallback
+async function searchMessageForAction(message) {
+    const internalOutcome = searchMessageForActionInternal(message);
+    const hasInternalAction =
+        internalOutcome.ambiguous ||
+        (internalOutcome.action && internalOutcome.action !== 'general_chat');
+    const openaiRequested = CLOUDPILOT_AI_CONFIG.actionSearch === 'openai';
+    const useOpenAI = openaiRequested && CLOUDPILOT_AI_CONFIG.aiEnabled;
+
+    let outcome = internalOutcome;
+    let method = 'Internal';
+
+    // Deterministic matches always win; OpenAI handles only unknown phrasing.
+    if (!hasInternalAction && useOpenAI) {
+        const openAIOutcome = await searchMessageForActionOpenAI(message);
+        outcome = openAIOutcome.result || internalOutcome;
+        method = openAIOutcome.fallback ? 'Internal' : 'OpenAI';
+    } else if (!hasInternalAction && openaiRequested && !CLOUDPILOT_AI_CONFIG.aiEnabled) {
+        const request = buildActionOpenAIMessages(message);
+        OpenAIClient.logOpenAI({
+            capability: 'Action Search',
+            conversationHistoryEnabled: false,
+            conversationHistoryCount: 0,
+            context: OpenAIClient.summarizeAIContext(request.aiContext),
+            messages: request.messages,
+            previewOnly: true
+        });
+    }
+
+    SearchLogs.recordSearch({
+        name: 'Action',
+        method: method,
+        result: formatActionSearchResult(outcome)
+    });
+
+    return outcome;
+}
+
+//Function A2: Find an action using actionMap rules
+function searchMessageForActionInternal(message) {
     const normalizedMessage = String(message || '').toLowerCase().trim();
     const matches = [];
 
@@ -48,13 +95,168 @@ function searchMessageForAction(message) {
         };
     }
 
-    SearchLogs.recordSearch({
-        name: 'Action',
-        method: 'Internal',
-        result: formatActionSearchResult(outcome)
-    });
-
     return outcome;
+}
+
+//Function A3: Ask OpenAI to map unknown phrasing to one approved action
+async function searchMessageForActionOpenAI(message) {
+    try {
+        const client = OpenAIClient.getOpenAIClient();
+
+        if (!client) {
+            return {
+                result: searchMessageForActionInternal(message),
+                billing: false,
+                openAIResponse: null,
+                fallback: 'no API key / client'
+            };
+        }
+
+        const config = CHAT_CONFIG.LOW;
+        const request = buildActionOpenAIMessages(message);
+        const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
+            model: config.model,
+            messages: request.messages,
+            max_tokens: CLOUDPILOT_AI_CONFIG.actionTokenLimit,
+            temperature: 0,
+            feature: 'action_search'
+        });
+        const responseText =
+            apiResult.data !== undefined && apiResult.data !== null
+                ? String(apiResult.data)
+                : '';
+
+        OpenAIClient.logOpenAI({
+            capability: 'Action Search',
+            model: config.model,
+            conversationHistoryEnabled: false,
+            conversationHistoryCount: 0,
+            context: OpenAIClient.summarizeAIContext(request.aiContext),
+            messages: request.messages,
+            previewOnly: false,
+            responseText: apiResult.success
+                ? responseText
+                : apiResult.message || apiResult.error || 'OpenAI request failed',
+            usage: apiResult.success ? apiResult.usage : null
+        });
+
+        if (!apiResult.success) {
+            return {
+                result: searchMessageForActionInternal(message),
+                billing: true,
+                openAIResponse: responseText,
+                fallback: apiResult.message || apiResult.error || 'request failed'
+            };
+        }
+
+        return {
+            result: parseOpenAIActionResponse(responseText),
+            billing: true,
+            openAIResponse: responseText,
+            fallback: null
+        };
+    } catch (error) {
+        return {
+            result: searchMessageForActionInternal(message),
+            billing: false,
+            openAIResponse: null,
+            fallback: error && error.message ? error.message : String(error)
+        };
+    }
+}
+
+function buildActionOpenAIMessages(message) {
+    const processMessageContext = {
+        currentUserMessage: String(message || '')
+    };
+    const aiContext = buildAIContext(processMessageContext, {
+        includeKnowledge: false
+    });
+    const systemMessage = buildAISystemMessage(aiContext);
+    const catalog = buildActionCatalog();
+
+    return {
+        aiContext: aiContext,
+        messages: [
+            { role: 'system', content: systemMessage },
+            {
+                role: 'user',
+                content:
+                    'Classify the current user message using only this approved action catalog:\n' +
+                    JSON.stringify(catalog, null, 2) +
+                    '\n\nRules:\n' +
+                    '- Return an action when the user wants CloudPilot to run that capability.\n' +
+                    '- A question about the user’s current AWS resources requires a read capability.\n' +
+                    '- General knowledge questions such as "what is an EC2 instance?" are not actions.\n' +
+                    '- Never answer the question and never invent AWS facts.\n' +
+                    '- Return JSON only: {"action":"scan_ec2"} or {}.'
+            }
+        ]
+    };
+}
+
+function buildActionCatalog() {
+    const catalog = [];
+
+    for (const definition of Object.values(actionMap)) {
+        if (!definition || typeof definition !== 'object') {
+            continue;
+        }
+
+        if (!definition.type || definition.type === 'general_chat') {
+            continue;
+        }
+
+        catalog.push({
+            action: definition.type,
+            label: definition.actionLabel || definition.type,
+            description:
+                definition.capability && definition.capability.description
+                    ? definition.capability.description
+                    : ''
+        });
+    }
+
+    return catalog;
+}
+
+function parseOpenAIActionResponse(raw) {
+    let text = String(raw || '').trim();
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+
+    if (fenced && fenced[1]) {
+        text = fenced[1].trim();
+    }
+
+    try {
+        const parsed = JSON.parse(text);
+        const action = parsed && parsed.action ? String(parsed.action).trim() : '';
+        const definition = actionMap[action];
+
+        if (!definition || typeof definition !== 'object' || action === 'general_chat') {
+            return buildNoActionOutcome('openai');
+        }
+
+        return {
+            action: action,
+            ambiguous: false,
+            candidates: [],
+            source: 'openai',
+            confidence: 0.8
+        };
+    } catch (error) {
+        return buildNoActionOutcome('openai');
+    }
+}
+
+function buildNoActionOutcome(source) {
+    return {
+        action: 'general_chat',
+        ambiguous: false,
+        candidates: [],
+        source: source,
+        confidence: 1.0
+    };
 }
 
 function formatActionSearchResult(outcome) {
@@ -81,4 +283,9 @@ function formatActionSearchResult(outcome) {
     return actionType;
 }
 
-module.exports = { searchMessageForAction };
+module.exports = {
+    searchMessageForAction,
+    searchMessageForActionInternal,
+    searchMessageForActionOpenAI,
+    parseOpenAIActionResponse
+};

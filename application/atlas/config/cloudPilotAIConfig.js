@@ -8,7 +8,7 @@
  *   CLOUDPILOT_AI_ENABLED            master for all GenAI
  *   CLOUDPILOT_MESSAGE_RESPONSE      chat() (+ Capabilities wording)
  *   CLOUDPILOT_REGION_SEARCH         understandRegion / region search
- *   CLOUDPILOT_ACTION_SEARCH         understandAction — config stub; OpenAI not wired yet
+ *   CLOUDPILOT_ACTION_SEARCH         understandAction — Internal rules + optional OpenAI fallback
  *   CLOUDPILOT_AI_SPEND_SEARCH       searchForAiSpend() — Question classify only
  *   CLOUDPILOT_OPEN_REQUESTS_SEARCH  searchForOpenRequests() — Question classify only
  *
@@ -90,7 +90,7 @@ const CLOUDPILOT_AI_CONFIG = {
      * Individual AI implementations (internal | openai).
      * messageResponse → chat() / Capabilities
      * regionSearch    → region search
-     * actionSearch    → action search (stub; keep internal)
+     * actionSearch    → action search (Internal rules first; OpenAI fallback)
      * aiSpendSearch       → searchForAiSpend() Question classify only
      * openRequestsSearch  → searchForOpenRequests() Question classify only
      */

@@ -36,6 +36,7 @@ FUNCTIONS B: Helpers
     12) Function B12: shouldStartExecutionOnConfirm
     13) Function B13: buildExecutionStartedDecision
     14) Function B14: buildGeneralChatDecision
+    15) Function B15: resolveQuestionDecision
 */
 
 //Function A1: Given understanding + loaded request state, return chatType, target request, and response type
@@ -47,18 +48,9 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.AMBIGUOUS_ACTION);
     }
 
-    // Questions before Conversation — known-fact asks (open requests, AI spend)
-    if (u.question === 'open_requests') {
-        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
-    }
-
-    if (u.question === 'ai_spend') {
-        return {
-            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
-            request: null,
-            response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
-            execute: { action: 'show_ai_usage' }
-        };
+    // Questions before Conversation — known-fact asks never use general OpenAI chat
+    if (u.question) {
+        return resolveQuestionDecision(state, u.question);
     }
 
     // Legacy conversation signal (phrases moved to questions/searchForOpenRequests)
@@ -123,11 +115,20 @@ function decideNextStep({ understanding, requestState }) {
     }
 
     if (u.action && u.action !== 'general_chat') {
+        if (!shouldStartNewRequest(state, u.action)) {
+            return resolveRequestChat(state);
+        }
+
         return buildNewRequestDecision(u);
     }
 
     if (state.pendingAction && hasApplicableValues(state, u.values)) {
         return buildFieldsMergedDecision(state, u.values);
+    }
+
+    // Guardrail: any Question signal must never reach general OpenAI chat
+    if (u.question) {
+        return resolveQuestionDecision(state, u.question);
     }
 
     return buildGeneralChatDecision();
@@ -493,6 +494,33 @@ function buildGeneralChatDecision() {
     };
 }
 
+//Function B15: Route a classified Question to CloudPilot fulfillment (never general chat)
+// MESSAGE_RESPONSE=openai must not invent open-request / AI-spend facts.
+function resolveQuestionDecision(requestState, question) {
+    const state = normalizeRequestState(requestState);
+
+    if (question === 'open_requests') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+    }
+
+    if (question === 'ai_spend') {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: null,
+            response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
+            execute: { action: 'show_ai_usage' }
+        };
+    }
+
+    console.warn(
+        '[CLOUDPILOT_QUESTION_GUARDRAIL] Unhandled question="' +
+            String(question) +
+            '" — refusing general chat'
+    );
+
+    return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+}
+
 function cloudpilotDecision(request, responseType) {
     return {
         chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
@@ -501,4 +529,4 @@ function cloudpilotDecision(request, responseType) {
     };
 }
 
-module.exports = { decideNextStep };
+module.exports = { decideNextStep, resolveQuestionDecision };

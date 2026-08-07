@@ -10,6 +10,8 @@ GenAI thinking goes through CloudPilotIntelligence.chat().
 */
 
 //Function A1: General Conversation speak — voice wrapper around Intelligence chat()
+// Questions (open_requests, ai_spend, …) must never call this.
+// CLOUDPILOT_MESSAGE_RESPONSE=openai only applies to general chat — not Question facts.
 async function speakGeneral(processMessageContext) {
     const chatResult = await CloudPilotIntelligence.chat(processMessageContext);
 

@@ -61,8 +61,29 @@ function writeIdentity(cloudPilotContext) {
         sections.push('Role: ' + identity.role + '.');
     }
 
+    if (identity.productDescription) {
+        sections.push('About this product: ' + identity.productDescription);
+    }
+
+    const capabilities = writeBulletList(identity.capabilities);
+    if (capabilities) {
+        sections.push('Actual CloudPilot capabilities:\n' + capabilities);
+    }
+
     if (identity.communication && identity.communication.tone) {
         sections.push('Communication tone: ' + identity.communication.tone + '.');
+    }
+
+    if (identity.communication && identity.communication.defaultLength) {
+        sections.push(
+            'Default response length: ' + identity.communication.defaultLength + '.'
+        );
+    }
+
+    if (identity.communication && identity.communication.formatting) {
+        sections.push(
+            'Formatting: ' + identity.communication.formatting + '.'
+        );
     }
 
     const goals = writeBulletList(identity.goals);
@@ -178,6 +199,32 @@ function writeCurrentQuestion(currentQuestionContext) {
         if (bullets.length > 0) {
             sections.push(
                 'The user is currently looking at a finding:\n' + writeBulletList(bullets)
+            );
+        }
+    }
+
+    if (data.openRequest && typeof data.openRequest === 'object') {
+        const request = data.openRequest;
+        const bullets = [];
+
+        if (request.action) {
+            bullets.push('Action: ' + request.action);
+        }
+        if (request.status) {
+            bullets.push('Status: ' + request.status);
+        }
+        if (Array.isArray(request.missing) && request.missing.length > 0) {
+            bullets.push('Missing fields: ' + request.missing.join(', '));
+        }
+        if (request.region) {
+            bullets.push('Region: ' + request.region);
+        }
+
+        if (bullets.length > 0) {
+            sections.push(
+                'Current CloudPilot request:\n' +
+                    writeBulletList(bullets) +
+                    '\nUse this only when it helps answer the current message.'
             );
         }
     }

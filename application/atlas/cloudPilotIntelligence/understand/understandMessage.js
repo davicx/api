@@ -40,7 +40,9 @@ async function understandMessage(message, requestState) {
         const question = await SearchMessageForQuestionFunctions.searchMessageForQuestion(
             message
         );
-        const actionResult = SearchMessageForActionFunctions.searchMessageForAction(message);
+        const actionResult = await SearchMessageForActionFunctions.searchMessageForAction(
+            message
+        );
 
         return {
             action: actionResult.action,

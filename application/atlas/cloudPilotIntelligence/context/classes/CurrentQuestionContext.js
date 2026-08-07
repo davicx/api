@@ -10,6 +10,7 @@ Assembles Current Question data from processMessageContext. Does not persist sou
 METHODS A: Read pieces from this turn
     1) Method A1: getUserMessage
     2) Method A2: getSelectedFinding
+    3) Method A3: getOpenRequest
 
 METHODS B: Build Current Question data
     1) Method B1: toData
@@ -37,12 +38,18 @@ class CurrentQuestionContext {
         return slimSelectedFinding(this.processMessageContext.selectedFinding);
     }
 
+    //Method A3: Small current request summary (already loaded by CloudPilot)
+    getOpenRequest() {
+        return slimOpenRequest(this.processMessageContext.requestState);
+    }
+
     //METHODS B: Build Current Question data
     //Method B1: Current Question object for AI context (JSON for CloudPilot)
     toData() {
         const data = {};
         const userMessage = this.getUserMessage();
         const selectedFinding = this.getSelectedFinding();
+        const openRequest = this.getOpenRequest();
 
         if (userMessage) {
             data.userMessage = userMessage;
@@ -52,8 +59,46 @@ class CurrentQuestionContext {
             data.selectedFinding = selectedFinding;
         }
 
+        if (openRequest) {
+            data.openRequest = openRequest;
+        }
+
         return data;
     }
+}
+
+// Keep only context useful for explaining the current request
+function slimOpenRequest(requestState) {
+    if (!requestState || typeof requestState !== 'object' || Array.isArray(requestState)) {
+        return null;
+    }
+
+    const action = requestState.pendingAction || requestState.action || null;
+
+    if (!action) {
+        return null;
+    }
+
+    const slim = {
+        action: String(action)
+    };
+
+    if (requestState.status) {
+        slim.status = String(requestState.status);
+    }
+
+    if (Array.isArray(requestState.missing) && requestState.missing.length > 0) {
+        slim.missing = requestState.missing.map(function (field) {
+            return String(field);
+        });
+    }
+
+    const collected = requestState.collected;
+    if (collected && typeof collected === 'object' && collected.region) {
+        slim.region = String(collected.region);
+    }
+
+    return slim;
 }
 
 // Keep only small scalar fields — never dump Navigator / Atlas payloads

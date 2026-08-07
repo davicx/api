@@ -10,22 +10,27 @@
 --   2. cloudpilot_requests  — user workflow / open request state
 --   3. cloudpilot_history   — audit trail + undo (planned)
 --   4. ai_usage             — OpenAI token/cost per CloudPilot call
+--   5. organization_knowledge (+ tags) — why a resource exists (org facts)
 --
 -- Docs: doc/database/database.md
 --       doc/development/architecture/development_undo_feature.md (history)
 --       doc/development/ai_usage.md (ai_usage)
+--       doc/development/current/feature_organizational_knowledge.md
 --
 -- Usage:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
 --
--- Or only AI usage on an existing DB:
---   mysql -u USER -p DATABASE_NAME < doc/sql/ai_usage.sql
+-- Or only org knowledge on an existing DB:
+--   mysql -u USER -p DATABASE_NAME < doc/sql/organization_knowledge.sql
+--   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_organization_knowledge.sql
 --
 -- Verify:
 --   SELECT * FROM cloudpilot_actions;
 --   SELECT * FROM cloudpilot_requests;
 --   SELECT * FROM cloudpilot_history;
 --   SELECT * FROM ai_usage;
+--   SELECT * FROM organization_knowledge;
+--   SELECT * FROM organization_knowledge_tags;
 -- =============================================================================
 
 
@@ -204,6 +209,64 @@ CREATE TABLE IF NOT EXISTS ai_usage (
 
 
 -- -----------------------------------------------------------------------------
+-- 5. organization_knowledge (+ tags)
+--     See doc/development/current/feature_organizational_knowledge.md
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS organization_knowledge (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    master_site VARCHAR(100) NOT NULL,
+
+    resource_type VARCHAR(50) NOT NULL,
+    resource_name VARCHAR(255) NOT NULL,
+
+    display_name VARCHAR(255) NULL,
+
+    purpose TEXT NULL,
+    notes TEXT NULL,
+
+    importance VARCHAR(20) NULL,
+    recommended_action TEXT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uq_org_resource (
+        master_site,
+        resource_type,
+        resource_name
+    ),
+
+    INDEX idx_org_knowledge_site_type (master_site, resource_type),
+    INDEX idx_org_knowledge_display (master_site, resource_type, display_name)
+);
+
+
+CREATE TABLE IF NOT EXISTS organization_knowledge_tags (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    organization_knowledge_id BIGINT UNSIGNED NOT NULL,
+    tag VARCHAR(100) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_org_knowledge_tag
+        FOREIGN KEY (organization_knowledge_id)
+        REFERENCES organization_knowledge (id)
+        ON DELETE CASCADE,
+
+    UNIQUE KEY uq_org_knowledge_tag (
+        organization_knowledge_id,
+        tag
+    ),
+
+    INDEX idx_org_knowledge_tag (tag)
+);
+
+
+-- -----------------------------------------------------------------------------
 -- Seed: cloudpilot_actions (required before app can create requests)
 -- -----------------------------------------------------------------------------
 -- Matches actionMap.js. Re-run safe via ON DUPLICATE KEY UPDATE.
@@ -223,3 +286,98 @@ AS new_action
 ON DUPLICATE KEY UPDATE
     display_name = new_action.display_name,
     requires_execution = new_action.requires_execution;
+
+
+-- -----------------------------------------------------------------------------
+-- Seed: organization_knowledge demo (kite / S3) + tags
+--     Full copy also in doc/sql/seed/seed_organization_knowledge.sql
+-- -----------------------------------------------------------------------------
+
+INSERT INTO organization_knowledge (
+    master_site,
+    resource_type,
+    resource_name,
+    display_name,
+    purpose,
+    notes,
+    importance,
+    recommended_action
+)
+VALUES
+(
+    'kite',
+    's3_bucket',
+    'sam-youtube-demo',
+    'Sam YouTube Demo',
+    'Created while following Sam''s YouTube tutorial.',
+    'Not used in over a month.',
+    'low',
+    'Likely safe to delete.'
+),
+(
+    'kite',
+    's3_bucket',
+    'cloudpilot-assets',
+    'CloudPilot Assets',
+    'Stores website images used by CloudPilot.',
+    'Production bucket.',
+    'medium',
+    'Do not delete unless migrated.'
+),
+(
+    'kite',
+    's3_bucket',
+    'cloudpilot-user-uploads',
+    'CloudPilot User Uploads',
+    'Stores user profile photos, group images, post images, and uploaded content.',
+    'Production user data.',
+    'critical',
+    'Do not delete. Recommend versioning. Recommend backups.'
+)
+AS new_row
+ON DUPLICATE KEY UPDATE
+    display_name = new_row.display_name,
+    purpose = new_row.purpose,
+    notes = new_row.notes,
+    importance = new_row.importance,
+    recommended_action = new_row.recommended_action;
+
+INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+SELECT ok.id, tag_list.tag
+FROM organization_knowledge ok
+INNER JOIN (
+    SELECT 'tutorial' AS tag
+    UNION ALL SELECT 'youtube'
+    UNION ALL SELECT 'hello world'
+    UNION ALL SELECT 'sam'
+) AS tag_list
+WHERE ok.master_site = 'kite'
+  AND ok.resource_type = 's3_bucket'
+  AND ok.resource_name = 'sam-youtube-demo';
+
+INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+SELECT ok.id, tag_list.tag
+FROM organization_knowledge ok
+INNER JOIN (
+    SELECT 'assets' AS tag
+    UNION ALL SELECT 'website images'
+    UNION ALL SELECT 'images'
+    UNION ALL SELECT 'frontend'
+) AS tag_list
+WHERE ok.master_site = 'kite'
+  AND ok.resource_type = 's3_bucket'
+  AND ok.resource_name = 'cloudpilot-assets';
+
+INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+SELECT ok.id, tag_list.tag
+FROM organization_knowledge ok
+INNER JOIN (
+    SELECT 'uploads' AS tag
+    UNION ALL SELECT 'user uploads'
+    UNION ALL SELECT 'profile photos'
+    UNION ALL SELECT 'group photos'
+    UNION ALL SELECT 'production data'
+) AS tag_list
+WHERE ok.master_site = 'kite'
+  AND ok.resource_type = 's3_bucket'
+  AND ok.resource_name = 'cloudpilot-user-uploads';

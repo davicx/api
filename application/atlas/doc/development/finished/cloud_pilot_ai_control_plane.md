@@ -2,7 +2,7 @@
 
 **Status:** Archived reference — retained so no prior AI control-plane notes are lost.  
 **Active work:** [Current Development](../current/current_development.md)  
-**Related:** [AI Spending](./feature_ai_spending.md) · [Chat Formatting](../current/feature_chat_formatting.md) · [OpenAI Logs](./feature_openai_logs.md) · [Questions](../current/feature_questions.md) · [Future MVP](../future/mvp.md) · **How-to chat OpenAI:** [Use OpenAI Chat](../how_to/use_openai_chat.md)
+**Related:** [AI Spending](./feature_ai_spending.md) · [Chat Message UI](./feature_chat_message_ui.md) · [OpenAI Logs](./feature_openai_logs.md) · [Questions](./feature_questions.md) · [Future MVP](../future/mvp.md) · **How-to chat OpenAI:** [Use OpenAI Chat](../how_to/use_openai_chat.md)
 
 This was the old all-in-one active AI document. Its content is preserved here; new work belongs in an individual `feature_<name>.md` document.
 
@@ -50,7 +50,7 @@ CLOUDPILOT_AI_ENABLED          ← master (OFF always wins)
         │
         ├── MESSAGE_RESPONSE → internal | openai
         ├── REGION_SEARCH    → internal | openai
-        └── ACTION_SEARCH    → internal | openai   (stub; not built yet)
+        └── ACTION_SEARCH    → internal | openai   (Internal rules + OpenAI fallback)
 ```
 
 Plus per-feature token limits and logs (`CLOUDPILOT_*_TOKEN_LIMIT`, `CLOUDPILOT_*_LOGS`).
@@ -201,7 +201,7 @@ Deferred from this plan (Stage 2 region, action-search OpenAI, Intelligence resp
 
 # SECTION C2 — Open Requests (**PLAN**)
 
-**Plan:** [Questions](../current/feature_questions.md) · [Open Requests design](../architecture/open_requests.md)
+**Plan:** [Questions](./feature_questions.md) · [Open Requests design](../architecture/open_requests.md)
 
 User asks: **What open requests do I have?**
 

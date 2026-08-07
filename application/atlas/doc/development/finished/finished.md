@@ -1,10 +1,15 @@
 # Finished
 
-**Last reviewed:** 2026-08-05
+**Last reviewed:** 2026-08-06
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-06)
+
+- [x] **Chat Message UI** — Markdown + ChatGPT-like layout in Kite — [feature_chat_message_ui.md](./feature_chat_message_ui.md)
+- [x] **Questions** — Question path + open-requests speak + guardrail vs general OpenAI — [feature_questions.md](./feature_questions.md)
 
 ## Recently finished (2026-08-05)
 

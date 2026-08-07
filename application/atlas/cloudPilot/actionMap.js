@@ -305,9 +305,7 @@ const actionMap = {
         requiresExecution: false,
 
         //Intent Detection
-        match: (text) =>
-            text.includes('scan') &&
-            text.includes('ec2'),
+        match: (text) => matchesScanEC2Intent(text),
 
         //Fields Required Before Ready
         requiredFields: [
@@ -640,6 +638,55 @@ const actionMap = {
     }
 };
 
+/*
+Natural EC2 data questions reuse scan_ec2.
+
+General knowledge ("what is an EC2 instance?") stays General Chat.
+Account/current-data questions ("how many do I have?") require a real scan.
+*/
+function matchesScanEC2Intent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text || !/\bec2\b/.test(text)) {
+        return false;
+    }
+
+    // Existing explicit command
+    if (/\bscan\b/.test(text)) {
+        return true;
+    }
+
+    const mentionsInstances = /\b(instances?|servers?)\b/.test(text);
+
+    if (!mentionsInstances) {
+        return false;
+    }
+
+    const asksForOwnedData =
+        /\b(my|our)\s+(ec2\s+)?(instances?|servers?)\b/.test(text) ||
+        /\b(do|does)\s+(i|we)\s+have\b/.test(text) ||
+        /\b(in\s+my|in\s+our)\s+(aws\s+)?account\b/.test(text);
+
+    const asksToInspect =
+        /\b(show|list|find|display)\b/.test(text) ||
+        /\bhow\s+many\b/.test(text) ||
+        /\b(what|which)\s+ec2\s+(instances?|servers?)\b/.test(text) ||
+        /\b(any|are)\s+ec2\s+(instances?|servers?)\b/.test(text);
+
+    const asksForCurrentState =
+        /\b(running|stopped|pending|terminated|active)\b/.test(text);
+
+    return (
+        asksToInspect &&
+        (
+            asksForOwnedData ||
+            asksForCurrentState ||
+            /\bhow\s+many\b/.test(text) ||
+            /\b(show|list|find|display)\b/.test(text)
+        )
+    );
+}
+
 function actionRequiresExecutionModeSelection(actionDefinition) {
     return Boolean(
         actionDefinition &&
@@ -652,5 +699,10 @@ module.exports = actionMap;
 
 Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
     value: actionRequiresExecutionModeSelection,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesScanEC2Intent', {
+    value: matchesScanEC2Intent,
     enumerable: false
 });

@@ -131,6 +131,21 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log(" ");
 
     // General Conversation — skip execute
+    // Guardrail: Questions never answer via MESSAGE_RESPONSE / OpenAI general chat
+    if (GeneralConversation.isGeneralConversation(decision)) {
+        if (messageUnderstanding.question) {
+            console.warn(
+                '[CLOUDPILOT_QUESTION_GUARDRAIL] question=' +
+                    messageUnderstanding.question +
+                    ' was routed to general chat; correcting to CloudPilot Question path'
+            );
+            decision = DecisionFunctions.resolveQuestionDecision(
+                currentRequestState,
+                messageUnderstanding.question
+            );
+        }
+    }
+
     if (GeneralConversation.isGeneralConversation(decision)) {
         console.log("STEP 6: Execute");
         console.log("Skipped (General Conversation)");
@@ -139,7 +154,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
         const conversationOutcome = await GeneralConversation.conversation({
             ...processMessageContext,
             currentUserMessage: currentUserMessage,
-            conversationID: conversationID
+            conversationID: conversationID,
+            requestState: currentRequestState
         });
 
         const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
