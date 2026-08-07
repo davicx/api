@@ -1,10 +1,14 @@
 # Finished
 
-**Last reviewed:** 2026-08-06
+**Last reviewed:** 2026-08-07
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-07)
+
+- [x] **EC2 Pause / Resume** — `pause_ec2` / `resume_ec2` (Atlas Test acceptance; live AWS optional) — [feature_pause_instance.md](./feature_pause_instance.md)
 
 ## Recently finished (2026-08-06)
 

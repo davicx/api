@@ -3,6 +3,8 @@ const scanS3Handler = require('./scans/s3/scanS3Handler');
 const toggleEC2Handler = require('./actions/toggleEC2/toggleEC2Handler');
 const createEC2Handler = require('./actions/createEC2/createEC2Handler');
 const deleteEC2Handler = require('./actions/deleteEC2/deleteEC2Handler');
+const pauseEC2Handler = require('./actions/pauseEC2/pauseEC2Handler');
+const resumeEC2Handler = require('./actions/resumeEC2/resumeEC2Handler');
 const updateEC2TagHandler = require('./actions/updateEC2Tag/updateEC2TagHandler');
 const inventoryAWSHandler = require('./scans/inventory/inventoryAWSHandler');
 const billingAWSHandler = require('./scans/billing/billingAWSHandler');
@@ -16,7 +18,7 @@ What this file answers:
 * How are actions detected? (match rules — used by cloudPilotIntelligence/understand/search/searchMessageForAction.js)
 * What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
 
-Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, show_capabilities, general_chat
+Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, pause_ec2, resume_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, show_capabilities, general_chat
 
 See doc/development/architecture/action_map.md.
 */
@@ -634,6 +636,161 @@ const actionMap = {
             executing: 'Updating EC2 tag.',
             success: 'EC2 tag updated.',
             failed: 'EC2 tag update failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Pause EC2 (AWS StopInstances)
+    pause_ec2: {
+        //Identity
+        type: 'pause_ec2',
+        actionLabel: 'Pause EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies — no PR for pause/resume
+        executionModes: [
+            'instructions',
+            'cli',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+
+            if (
+                normalized.includes('delete') ||
+                normalized.includes('terminate') ||
+                normalized.includes('toggle') ||
+                normalized.includes('switch')
+            ) {
+                return false;
+            }
+
+            if (normalized.includes('pause')) {
+                return true;
+            }
+
+            if (
+                normalized.includes('stop') &&
+                (normalized.includes('ec2') || normalized.includes('instance'))
+            ) {
+                return true;
+            }
+
+            return false;
+        },
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: pauseEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Pause (stop) one EC2 instance'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing to pause an EC2 instance.',
+            missingFields: {},
+            ready: 'Everything is ready to pause the EC2 instance.',
+            executing: 'Pausing EC2 instance.',
+            success: 'EC2 instance paused.',
+            failed: 'EC2 pause failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Resume EC2 (AWS StartInstances)
+    resume_ec2: {
+        //Identity
+        type: 'resume_ec2',
+        actionLabel: 'Resume EC2',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+
+        //Change strategies — no PR for pause/resume
+        executionModes: [
+            'instructions',
+            'cli',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+
+            if (
+                normalized.includes('create') ||
+                normalized.includes('toggle') ||
+                normalized.includes('switch')
+            ) {
+                return false;
+            }
+
+            if (normalized.includes('resume')) {
+                return true;
+            }
+
+            if (
+                normalized.includes('start') &&
+                (normalized.includes('ec2') || normalized.includes('instance'))
+            ) {
+                return true;
+            }
+
+            return false;
+        },
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: resumeEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Resume (start) one EC2 instance'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing to resume an EC2 instance.',
+            missingFields: {},
+            ready: 'Everything is ready to resume the EC2 instance.',
+            executing: 'Resuming EC2 instance.',
+            success: 'EC2 instance resumed.',
+            failed: 'EC2 resume failed.'
         }
     }
 };

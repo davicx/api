@@ -45,7 +45,9 @@ const DEFAULT_EXECUTION_FAILED = {
     toggle_ec2: 'I could not toggle the EC2 instances.',
     delete_ec2: 'I could not delete the EC2 instance.',
     create_ec2: 'I could not create the EC2 instance.',
-    update_ec2_tag: 'I could not update that EC2 tag.'
+    update_ec2_tag: 'I could not update that EC2 tag.',
+    pause_ec2: 'I could not pause the EC2 instance.',
+    resume_ec2: 'I could not resume the EC2 instance.'
 };
 
 function applyOutcomeTemplate(template, context) {

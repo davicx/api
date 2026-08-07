@@ -1,6 +1,6 @@
 /*
 CLI command templates for change strategies (Mode 2).
-MVP: create_ec2 only. Add buildDeleteEc2Cli / etc. when needed.
+Supported: create_ec2, pause_ec2, resume_ec2.
 */
 
 const CREATE_EC2_AMIS = {
@@ -40,6 +40,56 @@ function buildCreateEc2Cli(collected) {
     };
 }
 
+function buildPauseEc2Cli(collected) {
+    const fields = collected || {};
+    const region = pickValue(fields.region, 'us-west-2');
+    const instanceId = pickValue(fields.instance_id, 'i-0abc123');
+
+    const command = [
+        'aws ec2 stop-instances \\',
+        '  --instance-ids ' + instanceId + ' \\',
+        '  --region ' + region
+    ].join('\n');
+
+    return {
+        title: 'Pause EC2',
+        command: command,
+        cloudPilotMessage: [
+            'Here are AWS CLI commands to pause (stop) the EC2 instance you requested.',
+            '',
+            'This is a generated example for learning and review.',
+            'Running these commands will stop a real AWS instance.',
+            '',
+            command
+        ].join('\n')
+    };
+}
+
+function buildResumeEc2Cli(collected) {
+    const fields = collected || {};
+    const region = pickValue(fields.region, 'us-west-2');
+    const instanceId = pickValue(fields.instance_id, 'i-0abc123');
+
+    const command = [
+        'aws ec2 start-instances \\',
+        '  --instance-ids ' + instanceId + ' \\',
+        '  --region ' + region
+    ].join('\n');
+
+    return {
+        title: 'Resume EC2',
+        command: command,
+        cloudPilotMessage: [
+            'Here are AWS CLI commands to resume (start) the EC2 instance you requested.',
+            '',
+            'This is a generated example for learning and review.',
+            'Running these commands will start a real AWS instance and may incur charges.',
+            '',
+            command
+        ].join('\n')
+    };
+}
+
 function pickValue(value, fallback) {
     if (value === null || value === undefined) {
         return fallback;
@@ -58,5 +108,7 @@ function escapeTagValue(value) {
 }
 
 module.exports = {
-    buildCreateEc2Cli
+    buildCreateEc2Cli,
+    buildPauseEc2Cli,
+    buildResumeEc2Cli
 };

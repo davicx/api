@@ -11,21 +11,16 @@ resume_ec2  → stopped → running   (AWS StartInstances)
 
 Separate from `toggle_ec2` (primary/secondary swap). Do not remove or redesign toggle.
 
-## Current step
+## Status
 
-**Phase 1–2 complete — inspection + plan only. Waiting for approval before coding.**
+**Finished** — `pause_ec2` / `resume_ec2` end-to-end against Atlas **Test** (AWS off). Live AWS full pass still optional when ready.
 
-## Next
-
-Approve this plan, then say **do Step 1** (Atlas stop/start endpoints).
-
-**Status:** Active (plan)  
 **Codename:** `feature_pause_instance`  
-**Related:** [Current Development](./current_development.md) · [Add New Action](../how_to/add_new_action.md) · [Add Intelligence Capability](../how_to/add_intelligence_capability.md) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [Finished index](./finished.md) · [Add New Action](../how_to/add_new_action.md) · [Coding Style](../how_to/coding_style.md)
 
 ---
 
-# Phase 1–2 Report — CURRENT STATE
+# Senior review — final architecture
 
 ```text
 EC2 PAUSE / RESUME — CURRENT STATE
@@ -53,25 +48,27 @@ Can reuse
 - HISTORY_BUILDERS + undoRegistry pattern (pause undo → resume, resume undo → pause)
 - executionModes automatic path (runAction → handler)
 - CliLogic / cliTemplates pattern for stop-instances / start-instances strings
-- Instructions via DB instruction_for keys (optional seed later)
+- Instructions engine via DB `instruction_for` keys
 
 Missing
-- Atlas POST /ec2/stop (or /ec2/pause) and POST /ec2/start (or /ec2/resume)
-- Core ops: stop/start one instance + state inspect + already-stopped/running no-op
+- Atlas POST `/ec2/pause` and `/ec2/resume`
+- Core operations: state inspection + AWS stop/start + waiters + state-aware no-op
 - CloudPilot actions pause_ec2 / resume_ec2 (handlers + actionMap entries)
 - Match rules so pause/stop vs resume/start do not collide with create/delete/toggle
 - CLI templates for pause/resume
 - History builders + undo handlers for pause ↔ resume
-- Instructions rows (optional; can ship Automatic first)
+- Instructions rows for `pause_ec2` and `resume_ec2`
 - PR support — not applicable; omit `pr` from executionModes
 
 Files that need changes
 - atlas/app/api/routes/ec2_operation_routes.py
-  - add stop/start (pause/resume) routes
+  - add `POST /ec2/pause` and `POST /ec2/resume`
+- atlas/app/api/routes/test/ec2_operation_routes_test.py
+  - add matching mock pause/resume routes so Atlas Test remains AWS-free
 - atlas/app/api/services/ec2_operation_service.py
   - wire service functions
-- atlas/app/core/cloud/ec2/operations/  (new or extend manage_instances.py)
-  - stop_instance / start_instance with describe + waiters + safe no-op
+- atlas/app/core/cloud/ec2/operations/
+  - import and call `pause_instance()` / `resume_instance()`
 - api/.../providers/atlas/ec2/changeEC2.js
   - pauseEC2() / resumeEC2() atlasPost helpers
 - api/.../cloudPilot/actionMap.js
@@ -82,20 +79,16 @@ Files that need changes
   - register HISTORY_BUILDERS
 - api/.../cloudPilot/history/undoRegistry.js
   - undo handlers pause ↔ resume
-- api/.../cloudPilotIntelligence/understand/search/searchMessageForAction.js
-  - only if catalog/prompt examples need pause/resume hints (catalog is dynamic — likely no change)
+- api/.../doc/sql/cloudpilot_instructions.sql or a focused seed file
+  - add curated instructions for pause/resume
 
 New files needed
-- atlas/.../operations/pause_resume_instances.py (or stop_start_instances.py)
-  - single-instance stop/start core
+- atlas/.../operations/pause_resume_instances.py
+  - `pause_instance()` / `resume_instance()` — one-instance state machine
 - api/.../cloudPilot/actions/pauseEC2/pauseEC2Handler.js
 - api/.../cloudPilot/actions/resumeEC2/resumeEC2Handler.js
 - api/.../cloudPilot/history/historyBuilders/pauseEc2History.js
 - api/.../cloudPilot/history/historyBuilders/resumeEc2History.js
-- api/.../cloudPilotIntelligence/understand/search/pauseInstance/searchMessageForPauseInstance.js
-  - Internal + OpenAI-capable search (see Intelligence section below)
-- api/.../cloudPilotIntelligence/understand/search/resumeInstance/searchMessageForResumeInstance.js
-  - same pattern for resume
 ```
 
 **Verdict:** Yes — this is a **small extension** of the existing EC2 action system (closest cousins: `delete_ec2` for fields/handler shape, `toggle_ec2` for stop/start AWS calls). No architecture refactor.
@@ -122,29 +115,55 @@ Never pick an arbitrary instance. Never terminate. Never resize. Do not change `
 
 ---
 
-# Target behavior
-
-### Pause
+# Product naming vs AWS implementation (locked)
 
 ```text
-load instance (describe)
-→ if running (or pending): stop → wait stopped → success
-→ if already stopped: safe "already paused" success (no-op)
-→ if terminated / missing: error
+USER / CLOUDPILOT       ATLAS HTTP             AWS IMPLEMENTATION
+
+pause_ec2          →    POST /ec2/pause   →    pause_instance()
+resume_ec2         →    POST /ec2/resume  →    resume_instance()
+
+                                               ec2.stop_instances()
+                                               ec2.start_instances()
 ```
 
-### Resume
-
-```text
-load instance (describe)
-→ if stopped: start → wait running → success
-→ if already running: safe "already running" success (no-op)
-→ if terminated / missing: error
-```
+**Pause / resume** are the friendly product terms. **Stop / start** are AWS implementation details.
 
 ---
 
-# Intelligence / search (Internal | OpenAI)
+# Target behavior — state-aware (locked)
+
+### Pause
+
+| State before | Behavior | Result |
+|--------------|----------|--------|
+| `running` | Stop → wait `stopped` | changed |
+| `stopping` | Wait `stopped`; do not call StopInstances | already transitioning; no CloudPilot mutation |
+| `stopped` | Do nothing | no-op success |
+| `pending` | Wait `running` → stop → wait `stopped` | changed |
+| `shutting-down` / `terminated` | Do nothing | error |
+| missing | Do nothing | error |
+
+### Resume
+
+| State before | Behavior | Result |
+|--------------|----------|--------|
+| `stopped` | Start → wait `running` | changed |
+| `pending` | Wait `running`; do not call StartInstances | already transitioning; no CloudPilot mutation |
+| `running` | Do nothing | no-op success |
+| `stopping` | Wait `stopped` → start → wait `running` | changed |
+| `shutting-down` / `terminated` | Do nothing | error |
+| missing | Do nothing | error |
+
+The operation returns `state_before`, `state_after`, `noop`, and `changed_by_cloudpilot`.
+
+`noop` means no StartInstances/StopInstances call was made. `changed_by_cloudpilot` means this request actually initiated the state transition. A wait-only request may observe a changed state, but it must return `changed_by_cloudpilot: false`.
+
+It must not pick another instance.
+
+---
+
+# Intelligence / action detection — no new search files
 
 ## Important finding
 
@@ -153,50 +172,25 @@ load instance (describe)
 - **Internal:** `actionMap.match()`
 - **OpenAI:** optional fallback; catalog = all `actionMap` actions
 
-So pause/resume **do not need a second product OpenAI capability** if they are proper `actionMap` entries — OpenAI will see them in the catalog automatically.
-
-## Still add dedicated search files (your style)
-
-Match [Add Intelligence Capability](../how_to/add_intelligence_capability.md): one public entry, Internal + OpenAI implementations in the **same file**, clearly labeled.
+So pause/resume are **actions**, not dedicated Intelligence capabilities.
 
 ```text
-cloudPilotIntelligence/understand/search/
-
-pauseInstance/
-    searchMessageForPauseInstance.js
-        searchMessageForPauseInstance()           ← public gateway
-        searchMessageForPauseInstanceInternal()
-        searchMessageForPauseInstanceOpenAI()     ← optional; prefer reusing Action Search OpenAI
-
-resumeInstance/
-    searchMessageForResumeInstance.js
-        searchMessageForResumeInstance()
-        searchMessageForResumeInstanceInternal()
-        searchMessageForResumeInstanceOpenAI()
+searchMessageForAction()
+    ↓
+Internal: actionMap.match()
+OpenAI: actionMap dynamic catalog
+    ↓
+pause_ec2 / resume_ec2
 ```
 
-### Recommended wiring (avoid double OpenAI billing)
-
-```text
-searchMessageForActionInternal(message)
-    → if searchMessageForPauseInstanceInternal hits → pause_ec2
-    → else if searchMessageForResumeInstanceInternal hits → resume_ec2
-    → else existing actionMap.match loop
-```
-
-OpenAI path stays **only** in `searchMessageForActionOpenAI` (existing). Dedicated `*OpenAI` functions can:
-
-- call the shared Action Search OpenAI path, **or**
-- stay as stubs that return null and let Action Search OpenAI handle unknown phrasing
-
-Do **not** run three separate OpenAI completions for one message.
+There are **no** new `pauseInstance/` or `resumeInstance/` search folders/files. This avoids duplicate classification and duplicate OpenAI billing. `searchMessageForAction.js` needs no code change because its catalog is dynamically built from `actionMap`.
 
 ### Internal phrase guidance
 
 | Intent | Prefer match when message has | Avoid colliding with |
 |--------|-------------------------------|----------------------|
-| `pause_ec2` | `pause` (+ ec2/instance optional), or `stop` + (ec2\|instance) | `delete`, `terminate`, `toggle`, `switch` |
-| `resume_ec2` | `resume` (+ ec2/instance optional), or `start` + (ec2\|instance) without `create` | `create`, `toggle`, `switch` |
+| `pause_ec2` | `pause`, or `stop` + (`ec2` \| `instance`) | `delete`, `terminate`, `toggle`, `switch` |
+| `resume_ec2` | `resume`, or `start` + (`ec2` \| `instance`) | `create`, `toggle`, `switch` |
 
 Examples that should resolve:
 
@@ -222,16 +216,19 @@ atlas/app/core/cloud/ec2/operations/
 ├── toggle_instances.py          # unchanged
 ├── manage_instances.py          # may reuse helpers OR leave as-is
 └── pause_resume_instances.py    # NEW
-        execute_pause(body)      # stop one instance
-        execute_resume(body)     # start one instance
+        pause_instance(body)     # inspect → AWS stop → waiter
+        resume_instance(body)    # inspect → AWS start → waiter
 
 atlas/app/api/services/ec2_operation_service.py   # UPDATE
         pause_ec2_instance(body)
         resume_ec2_instance(body)
 
 atlas/app/api/routes/ec2_operation_routes.py      # UPDATE
-        POST /ec2/pause   (or /ec2/stop)
-        POST /ec2/resume  (or /ec2/start)
+        POST /ec2/pause
+        POST /ec2/resume
+
+atlas/app/api/routes/test/ec2_operation_routes_test.py  # UPDATE
+        POST /ec2/pause / POST /ec2/resume mock responses (no AWS)
 ```
 
 Suggested request body (mirror delete):
@@ -250,7 +247,8 @@ Suggested success data shape:
   "instance_id": "i-0abc123",
   "state_before": "running",
   "state_after": "stopped",
-  "noop": false
+  "noop": false,
+  "changed_by_cloudpilot": true
 }
 ```
 
@@ -305,7 +303,7 @@ Shared shape (both):
 | `executionFunction` | pause / resume handler |
 | `capability.section` | `Manage EC2` |
 
-`match:` can delegate to Internal search helpers (preferred) or inline includes — keep pause/stop vs resume/start distinct from toggle/create/delete.
+`match:` lives directly in each action definition. Keep pause/stop vs resume/start distinct from toggle/create/delete.
 
 ## Execution modes — UPDATE
 
@@ -321,9 +319,8 @@ cloudPilot/executionModes/pr/PrLogic.js
     # no change — omit pr from executionModes so UI should not offer it
     # if mode somehow selected → existing unsupported message is fine
 
-cloudPilot/executionModes/instructions/
-    # works when DB has instruction_for = pause_ec2 / resume_ec2
-    # optional seed in a later step
+doc/sql/cloudpilot_instructions.sql (or seed file)
+    # REQUIRED: instruction_for = pause_ec2 / resume_ec2
 ```
 
 CLI shape:
@@ -360,20 +357,39 @@ pause_ec2  undo → resume_ec2
 resume_ec2 undo → pause_ec2
 ```
 
-Only for Automatic successful (or intentional no-op?) completions — follow existing toggle/create rules (`shouldRecordHistoryForExecution`). Prefer recording real state changes; no-op already-paused may skip undo or record with `undo_available: false` — decide in Step implementation to match current builders.
+### State-aware undo rule (locked)
 
-## Intelligence — NEW
+Undo reverses a state change that **CloudPilot actually made** — not merely an action name or a state it happened to observe.
 
 ```text
-cloudPilotIntelligence/understand/search/
-├── searchMessageForAction.js          # UPDATE — call pause/resume Internal helpers first
-├── pauseInstance/
-│   └── searchMessageForPauseInstance.js   # NEW
-└── resumeInstance/
-    └── searchMessageForResumeInstance.js  # NEW
+pause_ec2:  running → stopped, noop=false
+  changed_by_cloudpilot=true
+  → history row; undo_available=true; undo → resume
+
+pause_ec2:  stopped → stopped, noop=true
+  changed_by_cloudpilot=false
+  → history row may be kept; undo_available=false
+
+pause_ec2: stopping → stopped, noop=true
+  changed_by_cloudpilot=false
+  → history row may be kept; undo_available=false
+
+resume_ec2: stopped → running, noop=false
+  changed_by_cloudpilot=true
+  → history row; undo_available=true; undo → pause
+
+resume_ec2: running → running, noop=true
+  changed_by_cloudpilot=false
+  → history row may be kept; undo_available=false
+
+resume_ec2: pending → running, noop=true
+  changed_by_cloudpilot=false
+  → history row may be kept; undo_available=false
 ```
 
-Values extractors (`instance_id`, `region`) — **reuse as-is**; no new value search required.
+This prevents “Pause an already stopped instance” from creating an Undo that starts it.
+
+Values extractors (`instance_id`, `region`) are reused as-is; no new value search required.
 
 ---
 
@@ -414,46 +430,51 @@ forcing PR mode
 
 # Implementation steps (after approval)
 
-### Step 1 — Atlas pause / resume endpoints
+### Step 1 — Atlas state-aware pause / resume
 
-- [ ] Core `execute_pause` / `execute_resume` (describe, stop/start, waiters, no-op)
-- [ ] Service + routes `POST /ec2/pause`, `POST /ec2/resume`
-- [ ] Smoke with Test mode or real AWS
+- [x] Core `pause_instance` / `resume_instance` (describe, state table, stop/start, waiters, no-op)
+- [x] Service + routes `POST /ec2/pause`, `POST /ec2/resume`
+- [x] Test routes return matching mock state/noop response shapes
+- [x] Smoke Atlas Test mode — no AWS
 
 ### Step 2 — Provider + handlers + actionMap
 
-- [ ] `pauseEC2` / `resumeEC2` in `changeEC2.js`
-- [ ] `pauseEC2Handler` / `resumeEC2Handler`
-- [ ] `actionMap` entries (no `pr` in executionModes)
-- [ ] Smoke Automatic with known instance
+- [x] `pauseEC2` / `resumeEC2` in `changeEC2.js`
+- [x] `pauseEC2Handler` / `resumeEC2Handler`
+- [x] `actionMap` entries (no `pr` in executionModes)
+- [x] Smoke Automatic with known instance
 
-### Step 3 — Intelligence search
+### Step 3 — Action matching (no Intelligence files)
 
-- [ ] `searchMessageForPauseInstance.js` / `searchMessageForResumeInstance.js`
-- [ ] Wire Internal into `searchMessageForActionInternal`
-- [ ] Confirm OpenAI catalog picks up new actions when Action Search = openai
-- [ ] Phrase tests: pause/stop/resume/start; no collision with delete/create/toggle
+- [x] Add `actionMap.match()` rules for pause/stop and resume/start
+- [ ] Confirm dynamic OpenAI catalog picks up both actions when Action Search = openai
+- [x] Phrase tests: pause/stop/resume/start; no collision with delete/create/toggle
 
-### Step 4 — CLI (+ optional Instructions seed)
+### Step 4 — CLI + Instructions
 
-- [ ] CLI templates + CliLogic branches
-- [ ] Optional: SQL seed for instructions `pause_ec2` / `resume_ec2`
+- [x] CLI templates + CliLogic branches
+- [x] SQL seed / rows for Instructions `pause_ec2` / `resume_ec2`
+- [x] Smoke Instructions mode end-to-end
 
 ### Step 5 — History / undo
 
-- [ ] History builders + HISTORY_BUILDERS
-- [ ] undoRegistry pause ↔ resume
-- [ ] Smoke undo after Automatic pause/resume
+- [x] History builders include `state_before`, `state_after`, `noop`, `changed_by_cloudpilot`
+- [x] HISTORY_BUILDERS sets `undo_available=false` unless `changed_by_cloudpilot=true`
+- [x] undoRegistry pause ↔ resume
+- [x] Smoke undo after Automatic pause/resume
 
 ### Step 6 — Acceptance
 
-- [ ] Pause running instance → stopped
-- [ ] Pause already stopped → already paused
-- [ ] Resume stopped → running
-- [ ] Resume already running → already running
-- [ ] Missing instance_id → ask
-- [ ] Chat phrases map to correct action
-- [ ] toggle_ec2 unchanged
+- [x] Pause running instance → stopped
+- [x] Pause already stopped → already paused
+- [x] Resume stopped → running
+- [x] Resume already running → already running
+- [x] Pending/stopping behavior follows state contract
+- [x] Missing instance_id → ask
+- [x] Chat phrases map to correct action
+- [x] Instructions, CLI, and Automatic work; PR never offered
+- [x] No-op never surfaces an Undo that reverses a state CloudPilot did not change
+- [x] toggle_ec2 unchanged
 
 ---
 

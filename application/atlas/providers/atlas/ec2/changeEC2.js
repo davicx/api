@@ -7,6 +7,8 @@ FUNCTIONS A: EC2 changes — thin Atlas POST /ec2/*
     3) Function A3: deleteEC2
     4) Function A4: updateEC2Tag
     5) Function A5: deleteEC2Tag
+    6) Function A6: pauseEC2
+    7) Function A7: resumeEC2
 */
 
 //Function A1: Toggle EC2 (Atlas /ec2/toggle)
@@ -34,4 +36,22 @@ async function deleteEC2Tag(requestBody) {
     return AtlasPostFunctions.atlasPost('/ec2/tag/delete', requestBody);
 }
 
-module.exports = { toggleEC2, createEC2, deleteEC2, updateEC2Tag, deleteEC2Tag };
+//Function A6: Pause EC2 (Atlas /ec2/pause → AWS stop)
+async function pauseEC2(requestBody) {
+    return AtlasPostFunctions.atlasPost('/ec2/pause', requestBody);
+}
+
+//Function A7: Resume EC2 (Atlas /ec2/resume → AWS start)
+async function resumeEC2(requestBody) {
+    return AtlasPostFunctions.atlasPost('/ec2/resume', requestBody);
+}
+
+module.exports = {
+    toggleEC2,
+    createEC2,
+    deleteEC2,
+    updateEC2Tag,
+    deleteEC2Tag,
+    pauseEC2,
+    resumeEC2
+};

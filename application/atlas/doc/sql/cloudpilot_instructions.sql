@@ -153,3 +153,148 @@ VALUES
     NULL,
     '1-2 min'
 );
+
+-- -----------------------------------------------------------------------------
+-- Seed: pause_ec2 / resume_ec2
+-- Full copy also in doc/sql/seed/seed_pause_resume_ec2_instructions.sql
+-- -----------------------------------------------------------------------------
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'pause_ec2',
+    1,
+    'Open EC2',
+    'Open the AWS Console and navigate to the EC2 service.',
+    NULL,
+    NULL,
+    '15 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'pause_ec2',
+    2,
+    'Select the Instance',
+    'In Instances, select the EC2 instance you want to pause (for example i-0abc123).',
+    NULL,
+    NULL,
+    '20 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'pause_ec2',
+    3,
+    'Choose Stop Instance',
+    'Choose Instance state, then Stop instance.',
+    NULL,
+    JSON_ARRAY(
+        JSON_OBJECT(
+            'type', 'warning',
+            'message', 'Stop pauses the instance. Terminate permanently deletes it — do not choose Terminate.'
+        )
+    ),
+    '15 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'pause_ec2',
+    4,
+    'Confirm Stop',
+    'Confirm Stop when AWS asks you to verify the action.',
+    NULL,
+    NULL,
+    '10 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'pause_ec2',
+    5,
+    'Wait for Stopped',
+    'Wait until the instance state becomes Stopped. The instance is now paused.',
+    NULL,
+    NULL,
+    '1-2 min'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'resume_ec2',
+    1,
+    'Open EC2',
+    'Open the AWS Console and navigate to the EC2 service.',
+    NULL,
+    NULL,
+    '15 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'resume_ec2',
+    2,
+    'Select the Instance',
+    'In Instances, select the stopped EC2 instance you want to resume (for example i-0abc123).',
+    NULL,
+    NULL,
+    '20 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'resume_ec2',
+    3,
+    'Choose Start Instance',
+    'Choose Instance state, then Start instance.',
+    NULL,
+    NULL,
+    '15 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'resume_ec2',
+    4,
+    'Confirm Start',
+    'Confirm Start when AWS asks you to verify the action.',
+    NULL,
+    JSON_ARRAY(
+        JSON_OBJECT(
+            'type', 'cost',
+            'message', 'Starting an instance resumes compute charges while it is running.'
+        )
+    ),
+    '10 sec'
+);
+
+INSERT INTO cloudpilot_instructions
+(instruction_for, step_number, title, instruction, image, warnings, estimated_time)
+VALUES
+(
+    'resume_ec2',
+    5,
+    'Wait for Running',
+    'Wait until the instance state becomes Running. The instance is now resumed.',
+    NULL,
+    NULL,
+    '1-2 min'
+);

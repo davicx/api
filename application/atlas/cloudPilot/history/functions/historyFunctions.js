@@ -3,6 +3,8 @@ const Request = require('../../requests/classes/Request');
 const ToggleEc2HistoryBuilder = require('../historyBuilders/toggleEc2History');
 const CreateEc2HistoryBuilder = require('../historyBuilders/createEc2History');
 const Ec2HistoryBuilder = require('../historyBuilders/ec2History');
+const PauseEc2HistoryBuilder = require('../historyBuilders/pauseEc2History');
+const ResumeEc2HistoryBuilder = require('../historyBuilders/resumeEc2History');
 const HistoryNavigatorAdapter = require('../historyNavigatorAdapter');
 const HistoryActionNameFunctions = require('./historyActionNameFunctions');
 
@@ -25,7 +27,9 @@ FUNCTIONS B: Helpers
 const HISTORY_BUILDERS = {
     toggle_ec2: ToggleEc2HistoryBuilder.buildToggleEc2HistoryFields,
     create_ec2: CreateEc2HistoryBuilder.buildCreateEc2HistoryFields,
-    update_ec2_tag: Ec2HistoryBuilder.buildUpdateEc2TagHistoryFields
+    update_ec2_tag: Ec2HistoryBuilder.buildUpdateEc2TagHistoryFields,
+    pause_ec2: PauseEc2HistoryBuilder.buildPauseEc2HistoryFields,
+    resume_ec2: ResumeEc2HistoryBuilder.buildResumeEc2HistoryFields
 };
 
 //Function A1: Build history fields and insert row when execution changed cloud resources (STEP 6B)
@@ -222,7 +226,9 @@ function shouldRecordHistoryForExecution(actionName, executionContext) {
     if (
         (actionName === 'toggle_ec2' ||
             actionName === 'create_ec2' ||
-            actionName === 'update_ec2_tag') &&
+            actionName === 'update_ec2_tag' ||
+            actionName === 'pause_ec2' ||
+            actionName === 'resume_ec2') &&
         executionMode !== 'automatic'
     ) {
         return false;

@@ -17,7 +17,9 @@ FUNCTIONS B: Helpers
 const UNDO_ACTION_NAMES = {
     toggle_ec2: 'undo_toggle_ec2',
     create_ec2: 'undo_create_ec2',
-    update_ec2_tag: 'undo_update_ec2_tag'
+    update_ec2_tag: 'undo_update_ec2_tag',
+    pause_ec2: 'undo_pause_ec2',
+    resume_ec2: 'undo_resume_ec2'
 };
 
 //Function A1: Lookup latest undoable row → Atlas restore → link history rows

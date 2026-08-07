@@ -4,6 +4,13 @@
 
 This is the active-work dashboard. It contains only features we are working on now.
 
+## End-of-day handoff — 2026-08-07
+
+Stopped after [Verify Request Target](./feature_verify_request.md) **Step 1**:
+Atlas Test now has shared mock infrastructure and a truthful `/ec2/verify`
+endpoint. **Next: Step 2 CloudPilot preflight gate.** No CloudPilot workflow
+or conversation behavior has been changed yet.
+
 ## How to use these docs
 
 - Each active feature is named `feature_<name>.md`.
@@ -17,8 +24,10 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
+| [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Plan locked — **awaiting approval** |
 | [CloudPilot Context](./feature_cloud_pilot_context.md) | Chat Identity vs tiny Search context; Situation for open requests; inventory ≠ General Chat. | Plan locked — **awaiting Step A (Identity)** |
-| [EC2 Pause / Resume](./feature_pause_instance.md) | `pause_ec2` / `resume_ec2` for one instance (separate from toggle). | Phase 1–2 done — **awaiting approval to code** |
+| [CloudPilot Images](./feature_images.md) | Normalize Create EC2 instruction image metadata into `cloud_pilot_images`. | Plan locked — **awaiting approval** |
+| [Verify Request Target](./feature_verify_request.md) | Verify target EC2 exists before modes; not found offers existing scan. | Step 1 done — shared Atlas Test infrastructure; **next: Step 2 CloudPilot gate** |
 | [Organizational Knowledge](./feature_organizational_knowledge.md) | Why an S3 bucket exists (org facts + tags). | Step 1 — DB + tags SQL ready; apply when ready |
 | [GitHub Pull Requests](./feature_github_pull_requests.md) | Creates a safe GitHub pull request instead of changing AWS directly. | Step 1 — Finish the real PR demo |
 
@@ -26,6 +35,7 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What shipped |
 |---------|----------------|
+| [EC2 Pause / Resume](../finished/feature_pause_instance.md) | `pause_ec2` / `resume_ec2` (Atlas Test acceptance; live AWS optional) |
 | [Chat Message UI](../finished/feature_chat_message_ui.md) | Markdown in Kite + ChatGPT-like bubbles (no gray card) |
 | [Questions](../finished/feature_questions.md) | Question search path + open-requests speak + guardrail vs general OpenAI chat |
 | [AI Spending](../finished/feature_ai_spending.md) | Kite usage card + `searchForAiSpend` Question (Internal \| OpenAI) + summary API |

@@ -281,7 +281,9 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('toggle_ec2', 'Toggle EC2', 0),
     ('create_ec2', 'Create EC2', 0),
     ('delete_ec2', 'Delete EC2', 0),
-    ('update_ec2_tag', 'Update EC2 Tag', 0)
+    ('update_ec2_tag', 'Update EC2 Tag', 0),
+    ('pause_ec2', 'Pause EC2', 0),
+    ('resume_ec2', 'Resume EC2', 0)
 AS new_action
 ON DUPLICATE KEY UPDATE
     display_name = new_action.display_name,

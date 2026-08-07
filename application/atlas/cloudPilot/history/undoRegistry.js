@@ -9,12 +9,16 @@ FUNCTIONS B: Handlers
     1) Function B1: restoreToggleEc2
     2) Function B2: deleteCreatedEc2
     3) Function B3: restoreEc2Tag
+    4) Function B4: undoPauseEc2
+    5) Function B5: undoResumeEc2
 */
 
 const UNDO_HANDLERS = {
     toggle_ec2_restore: restoreToggleEc2,
     delete_ec2_undo: deleteCreatedEc2,
-    restore_ec2_tag: restoreEc2Tag
+    restore_ec2_tag: restoreEc2Tag,
+    pause_ec2_undo: undoPauseEc2,
+    resume_ec2_undo: undoResumeEc2
 };
 
 //Function A1: Dispatch undo_payload.type to the matching restore handler
@@ -298,6 +302,150 @@ async function restoreEc2Tag(payload) {
         return {
             success: false,
             cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'update_ec2_tag'),
+            error: 'atlas_unreachable',
+            atlasResponse: null
+        };
+    }
+}
+
+//Function B4: Undo pause_ec2 by resuming the instance via Atlas /ec2/resume
+async function undoPauseEc2(payload) {
+    const region = String(payload.region || '').trim();
+    const instanceId = String(payload.instance_id || '').trim();
+
+    if (!region || !instanceId) {
+        return {
+            success: false,
+            cloudPilotMessage: 'Undo payload is missing required pause fields.',
+            error: 'invalid_undo_payload',
+            atlasResponse: null
+        };
+    }
+
+    const requestBody = {
+        region: region,
+        instance_id: instanceId
+    };
+
+    console.log('UNDO EXECUTION: Atlas pause undo (resume) request body:');
+    console.log(JSON.stringify(requestBody, null, 2));
+
+    try {
+        const atlasResponseRaw = await ChangeEC2Functions.resumeEC2(requestBody);
+
+        if (
+            atlasResponseRaw &&
+            atlasResponseRaw.success === true &&
+            atlasResponseRaw.data &&
+            atlasResponseRaw.data.instance_id
+        ) {
+            const atlasData = atlasResponseRaw.data;
+            const instanceIdOut = atlasData.instance_id;
+            const regionOut = atlasData.region || region;
+            const stateAfter = atlasData.state_after || 'running';
+
+            return {
+                success: true,
+                cloudPilotMessage:
+                    'Undo completed. Resumed ' +
+                    instanceIdOut +
+                    ' in ' +
+                    regionOut +
+                    ' (now ' +
+                    stateAfter +
+                    ').',
+                error: null,
+                atlasResponse: atlasData
+            };
+        }
+
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage(errCode, {}, 'resume_ec2'),
+            error: errCode || 'undo_execution_failed',
+            atlasResponse: null
+        };
+    } catch (error) {
+        console.log('UNDO EXECUTION: Atlas pause undo error');
+        console.log(error);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'resume_ec2'),
+            error: 'atlas_unreachable',
+            atlasResponse: null
+        };
+    }
+}
+
+//Function B5: Undo resume_ec2 by pausing the instance via Atlas /ec2/pause
+async function undoResumeEc2(payload) {
+    const region = String(payload.region || '').trim();
+    const instanceId = String(payload.instance_id || '').trim();
+
+    if (!region || !instanceId) {
+        return {
+            success: false,
+            cloudPilotMessage: 'Undo payload is missing required resume fields.',
+            error: 'invalid_undo_payload',
+            atlasResponse: null
+        };
+    }
+
+    const requestBody = {
+        region: region,
+        instance_id: instanceId
+    };
+
+    console.log('UNDO EXECUTION: Atlas resume undo (pause) request body:');
+    console.log(JSON.stringify(requestBody, null, 2));
+
+    try {
+        const atlasResponseRaw = await ChangeEC2Functions.pauseEC2(requestBody);
+
+        if (
+            atlasResponseRaw &&
+            atlasResponseRaw.success === true &&
+            atlasResponseRaw.data &&
+            atlasResponseRaw.data.instance_id
+        ) {
+            const atlasData = atlasResponseRaw.data;
+            const instanceIdOut = atlasData.instance_id;
+            const regionOut = atlasData.region || region;
+            const stateAfter = atlasData.state_after || 'stopped';
+
+            return {
+                success: true,
+                cloudPilotMessage:
+                    'Undo completed. Paused ' +
+                    instanceIdOut +
+                    ' in ' +
+                    regionOut +
+                    ' (now ' +
+                    stateAfter +
+                    ').',
+                error: null,
+                atlasResponse: atlasData
+            };
+        }
+
+        const errCode = getFirstOutcomeCode(atlasResponseRaw);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage(errCode, {}, 'pause_ec2'),
+            error: errCode || 'undo_execution_failed',
+            atlasResponse: null
+        };
+    } catch (error) {
+        console.log('UNDO EXECUTION: Atlas resume undo error');
+        console.log(error);
+
+        return {
+            success: false,
+            cloudPilotMessage: buildOutcomeMessage('atlas_unreachable', {}, 'pause_ec2'),
             error: 'atlas_unreachable',
             atlasResponse: null
         };

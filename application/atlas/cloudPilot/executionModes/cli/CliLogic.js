@@ -4,7 +4,8 @@ const cliTemplates = require('./cliTemplates');
 CLI EXECUTION — user picked option 2
 
 STEP 7 response only.
-MVP: create_ec2 template only. Same pattern as Instructions (action + collected).
+Supported: create_ec2, pause_ec2, resume_ec2.
+Same pattern as Instructions (action + collected).
 
 FUNCTIONS A: CLI Execution
     1) Function A1: buildCliStrategy
@@ -26,9 +27,17 @@ function buildCliStrategy(chatType, actionKey, collected) {
     }
 
     //STEP 2: Generate CLI Commands
-    if (key === 'create_ec2') {
-        const cli = cliTemplates.buildCreateEc2Cli(collected || {});
+    let cli = null;
 
+    if (key === 'create_ec2') {
+        cli = cliTemplates.buildCreateEc2Cli(collected || {});
+    } else if (key === 'pause_ec2') {
+        cli = cliTemplates.buildPauseEc2Cli(collected || {});
+    } else if (key === 'resume_ec2') {
+        cli = cliTemplates.buildResumeEc2Cli(collected || {});
+    }
+
+    if (cli) {
         //STEP 3: Build CLI Response
         return {
             success: true,
