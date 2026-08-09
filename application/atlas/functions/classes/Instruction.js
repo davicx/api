@@ -11,10 +11,30 @@ class Instruction {
 
     //METHODS A: GETTING INSTRUCTIONS
     //Method A1: Get Instructions by Action Key
+    // Left join cloud_pilot_images; image_path AS image keeps Kite contract.
+    // Doc: doc/development/finished/feature_images.md
     static async getInstructionsByAction(instructionFor) {
         const connection = db.getConnection();
         const queryString =
-            "SELECT * FROM cloudpilot_instructions WHERE instruction_for = ? ORDER BY step_number ASC";
+            `SELECT
+                instruction_row.instruction_id,
+                instruction_row.instruction_for,
+                instruction_row.step_number,
+                instruction_row.title,
+                instruction_row.instruction,
+                instruction_row.image_id,
+                instruction_row.warnings,
+                instruction_row.estimated_time,
+                instruction_row.optional,
+                instruction_row.created_at,
+                instruction_row.updated_at,
+                image_row.image_path AS image,
+                image_row.alt_text AS image_alt_text
+             FROM cloudpilot_instructions AS instruction_row
+             LEFT JOIN cloud_pilot_images AS image_row
+                ON instruction_row.image_id = image_row.image_id
+             WHERE instruction_row.instruction_for = ?
+             ORDER BY instruction_row.step_number ASC`;
 
         var instructionsOutcome = {
             success: false,

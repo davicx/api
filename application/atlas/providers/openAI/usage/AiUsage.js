@@ -1,11 +1,11 @@
 const db = require('../../../../functions/conn');
 
 /*
-METHODS A: ai_usage persistence + summary
+METHODS A: cloud_pilot_ai_usage persistence + summary
     1) Method A1: createUsage
     2) Method A2: getUsageSummary
 
-Doc: doc/development/current/ai_usage.md
+Doc: doc/development/finished/feature_ai_spending.md
 */
 
 class AiUsage {
@@ -24,7 +24,7 @@ class AiUsage {
         try {
             const insertResults = await runQuery(
                 connection,
-                `INSERT INTO ai_usage (
+                `INSERT INTO cloud_pilot_ai_usage (
                     organization_id,
                     conversation_id,
                     request_id,
@@ -80,7 +80,7 @@ class AiUsage {
                 `SELECT
                     COALESCE(SUM(estimated_cost), 0) AS total_cost,
                     COUNT(*) AS request_count
-                 FROM ai_usage
+                 FROM cloud_pilot_ai_usage
                  WHERE DATE(created_at) = CURRENT_DATE` + orgClause,
                 orgParams
             );
@@ -91,7 +91,7 @@ class AiUsage {
                     COALESCE(SUM(estimated_cost), 0) AS total_cost,
                     COUNT(*) AS request_count,
                     COALESCE(AVG(estimated_cost), 0) AS average_cost
-                 FROM ai_usage
+                 FROM cloud_pilot_ai_usage
                  WHERE YEAR(created_at) = YEAR(CURRENT_DATE)
                    AND MONTH(created_at) = MONTH(CURRENT_DATE)` + orgClause,
                 orgParams
@@ -100,7 +100,7 @@ class AiUsage {
             const modelRows = await runQuery(
                 connection,
                 `SELECT model, COUNT(*) AS request_count
-                 FROM ai_usage
+                 FROM cloud_pilot_ai_usage
                  WHERE YEAR(created_at) = YEAR(CURRENT_DATE)
                    AND MONTH(created_at) = MONTH(CURRENT_DATE)` + orgClause + `
                  GROUP BY model

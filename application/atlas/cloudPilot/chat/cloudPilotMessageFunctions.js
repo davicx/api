@@ -1,5 +1,6 @@
 const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const RequestStateFunctions = require('../requests/functions/requestLoadFunctions');
+const ResourceVerificationFunctions = require('../requests/functions/resourceVerificationFunctions');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 const DecisionFunctions = require('../requests/decideNextStep');
 const RequestWorkflow = require('../requests/workflow');
@@ -121,7 +122,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
 
     //STEP 5: Decide — which conversation is this?
-    const decision = DecisionFunctions.decideNextStep({
+    let decision = DecisionFunctions.decideNextStep({
         understanding: messageUnderstanding,
         requestState: currentRequestState
     });
@@ -141,7 +142,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
             );
             decision = DecisionFunctions.resolveQuestionDecision(
                 currentRequestState,
-                messageUnderstanding.question
+                messageUnderstanding.question,
+                messageUnderstanding
             );
         }
     }
@@ -191,6 +193,24 @@ async function processMessage(rawUserMessage, conversationID, context) {
 
     if (requestOutcome.success) {
         processMessageOutcome.success = true;
+    }
+
+    // Existing-resource preflight (pause/resume): Atlas verify after persist, before mode speech
+    // Doc: feature_verify_request.md Step 2 — decideNextStep stays sync; no Intelligence verify
+    const preflightOutcome = await ResourceVerificationFunctions.runVerifyResourcePreflight(
+        decision,
+        currentRequestState
+    );
+
+    if (preflightOutcome.requestState) {
+        currentRequestState = preflightOutcome.requestState;
+        activeRequestAction = currentRequestState.pendingAction;
+    }
+
+    if (preflightOutcome.blocked) {
+        console.log('STEP 6b: verifyResource preflight blocked progression');
+        console.log(JSON.stringify(preflightOutcome.verification, null, 2));
+        console.log(' ');
     }
 
     //RUN: executeRequest → runAction() → handler → capability → atlasPost → Atlas

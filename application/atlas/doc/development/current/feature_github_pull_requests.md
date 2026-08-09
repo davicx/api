@@ -6,13 +6,16 @@ CloudPilot creates a safe GitHub pull request for a proposed infrastructure chan
 
 ## Current step
 
-**Step 1 — Finish the real pull-request demo.**
+**Not finished for archive.** Implementation Steps 0–6 are largely ✅ (2026-07-19);
+**Step 7 — Manual E2E** checklist is still open. Also: Step 5 “end-to-end from chat”
+check box unchecked; doc header was stale (“Step 1”).
 
 ## Next
 
-Step 2 — Test the full chat-to-pull-request flow.
+Complete **Step 7** pass checklist (chat → real PR → link; no AWS from PR path),
+then archive to `finished/`.
 
-**Status:** Active  
+**Status:** Active — awaiting Step 7 E2E  
 **Related:** [Current Development](./current_development.md) · [MVP plan](../future/mvp.md) · [Future remediations](../future/remediations.md)
 
 ---
@@ -268,4 +271,4 @@ Same change, two delivery modes.
 
 ## Suggested next action
 
-Start at **Step 0** (confirm script still opens a PR), then **Step 1** (move Terraform to `environments/kite` and push). Do not wire chat until Step 1 is green on GitHub.
+Run **Step 7** manual E2E (reset base to `primary`, chat → Pull Request → verify GitHub + chat). Archive when that checklist passes.

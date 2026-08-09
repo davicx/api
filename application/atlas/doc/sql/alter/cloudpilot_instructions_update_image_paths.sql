@@ -1,6 +1,7 @@
 -- =============================================================================
 -- Migrate create_ec2 image paths to relative paths + normalize step 6 warnings
--- Run if you already seeded with bare filenames (create_ec2_image_N.png).
+-- HISTORICAL — legacy column `image` was dropped (feature_images Step 4).
+-- Keep only if you still have an old DB with `image` and bare filenames.
 -- =============================================================================
 
 UPDATE cloudpilot_instructions

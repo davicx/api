@@ -7,6 +7,7 @@ FUNCTIONS A: Request status rules (status column on cloudpilot_requests)
     5) Function A5: isCollectingFields
     6) Function A6: isTerminalStatus
     7) Function A7: shouldUpdateStatusWhenFieldsComplete
+    8) Function A8: isWaitingOnResourceScan
 */
 
 
@@ -14,6 +15,7 @@ const STATUS = {
     WAITING_ON_FIELDS: 'waiting_on_fields',
     WAITING_ON_EXECUTION_MODE: 'waiting_on_execution_mode',
     WAITING_ON_CONFIRMATION: 'waiting_on_confirmation',
+    WAITING_ON_RESOURCE_SCAN: 'waiting_on_resource_scan',
     RUNNING: 'running',
     COMPLETED: 'completed',
     FAILED: 'failed',
@@ -56,6 +58,11 @@ function isWaitingOnExecutionMode(status) {
     return (
         status === STATUS.WAITING_ON_EXECUTION_MODE
     );
+}
+
+//Function A8: Not-found preflight — user may accept an existing scan offer
+function isWaitingOnResourceScan(status) {
+    return status === STATUS.WAITING_ON_RESOURCE_SCAN;
 }
 
 //Function A5: User still owes field values
@@ -105,6 +112,7 @@ module.exports = {
     statusWhenFieldsComplete,
     isWaitingOnConfirmation,
     isWaitingOnExecutionMode,
+    isWaitingOnResourceScan,
     isCollectingFields,
     isTerminalStatus,
     shouldUpdateStatusWhenFieldsComplete

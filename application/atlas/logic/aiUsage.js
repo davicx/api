@@ -5,7 +5,7 @@ const Functions = require('../../functions/functions');
 FUNCTIONS A: AI usage HTTP handlers
     1) Function A1: getAiUsageSummary
 
-Doc: doc/development/current/ai_usage.md
+Doc: doc/development/finished/feature_ai_spending.md
 */
 
 //Function A1: GET summary — today / month cost + request counts

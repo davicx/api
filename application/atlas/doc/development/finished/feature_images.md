@@ -17,18 +17,16 @@ The first use case is the eight existing Create EC2 instruction images. This
 is a contained normalization of an existing working instruction feature, not
 a generic media system.
 
-## Current step
+## Status
 
-**Plan only — awaiting approval before coding.**
+**Finished** — 2026-08-08  
 
-## Next
+Steps 1–4 done. Legacy `cloudpilot_instructions.image` dropped; paths come only
+from `cloud_pilot_images` via `image_id`. Local URLs use
+`/kite-us-west-two/instructions/...` (bucket mirror).
 
-Approve this plan, then say **do Step 1** (SQL catalog + non-destructive
-migration).
-
-**Status:** Active (plan)  
 **Codename:** `feature_images`  
-**Related:** [Current Development](./current_development.md) · [Friendly Create EC2](./feature_friendly_create_instance.md) · [Instructions SQL](../../sql/cloudpilot_instructions.sql) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [Friendly Create EC2](../current/feature_friendly_create_instance.md) · [Images SQL](../../sql/cloud_pilot_images.sql) · [Instructions SQL](../../sql/cloudpilot_instructions.sql) · [Drop alter](../../sql/alter/cloudpilot_instructions_drop_image.sql) · [Coding Style](../how_to/coding_style.md)
 
 ---
 
@@ -59,7 +57,7 @@ then `instructionFunctions.normalizeInstructionStep()` emits:
 ```json
 {
   "image": "instructions/create_ec2/create_ec2_image_1.png",
-  "imageUrl": "/instructions/create_ec2/create_ec2_image_1.png"
+  "imageUrl": "/kite-us-west-two/instructions/create_ec2/create_ec2_image_1.png"
 }
 ```
 
@@ -149,9 +147,10 @@ create_ec2_step_5
     → instructions/create_ec2/create_ec2_image_5.png
 ```
 
-The table stores metadata and a relative path only. `buildImageUrl()` remains
-the single place that turns the relative path into a local URL or an AWS file
-URL based on existing environment configuration.
+The table stores metadata and a relative path only (object key — no bucket).
+`buildImageUrl()` prefixes `AWS_BUCKET_NAME` for local static URLs
+(`/kite-us-west-two/instructions/...` → `public/kite-us-west-two/...`) and
+uses the same object key inside the real S3 bucket when `FILE_LOCATION=aws`.
 
 ## 2. Optional image relationship
 
@@ -230,7 +229,17 @@ The query becomes a left join:
 
 ```sql
 SELECT
-    instruction_row.*,
+    instruction_row.instruction_id,
+    instruction_row.instruction_for,
+    instruction_row.step_number,
+    instruction_row.title,
+    instruction_row.instruction,
+    instruction_row.image_id,
+    instruction_row.warnings,
+    instruction_row.estimated_time,
+    instruction_row.optional,
+    instruction_row.created_at,
+    instruction_row.updated_at,
     image_row.image_path AS image,
     image_row.alt_text AS image_alt_text
 FROM cloudpilot_instructions AS instruction_row
@@ -239,6 +248,11 @@ LEFT JOIN cloud_pilot_images AS image_row
 WHERE instruction_row.instruction_for = ?
 ORDER BY instruction_row.step_number ASC;
 ```
+
+Do **not** use `instruction_row.*` plus `image_path AS image` — that yields two
+`image` columns and driver-dependent result objects. Select instruction columns
+explicitly and leave legacy `instruction_row.image` out of the SELECT so there
+is exactly one resulting `image` field (from the catalog).
 
 `image_path AS image` deliberately preserves the current `Instruction` model
 and API field names. `normalizeInstructionStep()` continues to build
@@ -254,29 +268,36 @@ needs it. Keeping the initial response unchanged reduces risk.
 
 ### Step 1 — SQL catalog and safe migration
 
-- [ ] Create `doc/sql/cloud_pilot_images.sql` with the image table and eight-image seed
-- [ ] Create an idempotent migration under `doc/sql/alter/` that adds nullable `image_id`, index, and foreign key
-- [ ] Map `create_ec2` steps 1–8 to `create_ec2_step_1` through `create_ec2_step_8`
-- [ ] Add the new table to `master_sql.sql` in dependency order
+- [x] Create `doc/sql/cloud_pilot_images.sql` with the image table and eight-image seed
+- [x] Create migration under `doc/sql/alter/cloudpilot_instructions_add_image_id.sql` that adds nullable `image_id`, index, and foreign key (also sections C–D in the one-shot file)
+- [x] Map `create_ec2` steps 1–8 to `create_ec2_step_1` through `create_ec2_step_8`
+- [x] Add the new table to `master_sql.sql` in dependency order
+
+**Run on existing DB (one shot):**
+
+```bash
+mysql -u USER -p DATABASE_NAME < application/atlas/doc/sql/cloud_pilot_images.sql
+```
 
 ### Step 2 — Preserve instruction loading
 
-- [ ] Update `Instruction.getInstructionsByAction()` to left join `cloud_pilot_images`
-- [ ] Alias `image_path AS image` so `Instruction.buildInstruction()` and Kite keep their existing contract
-- [ ] Do not change `buildImageUrl()` or the Kite instructions panel
+- [x] Update `Instruction.getInstructionsByAction()` to left join `cloud_pilot_images`
+- [x] Alias catalog path as `image` (`image_path AS image` only — no legacy `image` in SELECT) so `Instruction.buildInstruction()` and Kite keep their existing contract
+- [x] Do not change the Kite instructions panel; `buildImageUrl()` prefixes bucket mirror for local URLs
 
 ### Step 3 — Apply and verify
 
-- [ ] Apply the migration to the local CloudPilot DB
-- [ ] Verify eight catalog rows and eight linked Create EC2 instruction rows
-- [ ] Smoke `loadInstructionsPayload('create_ec2')`: eight steps and unchanged `image` / `imageUrl`
-- [ ] Smoke an instruction action with no images (`pause_ec2` or `resume_ec2`): image fields remain null
+- [x] Apply the migration to the local CloudPilot DB
+- [x] Verify eight catalog rows and eight linked Create EC2 instruction rows
+- [x] Smoke `loadInstructionsPayload('create_ec2')`: eight steps; `image` = object key; `imageUrl` = `/kite-us-west-two/instructions/...`
+- [x] Smoke no-image actions (`pause_ec2` / `resume_ec2`): `image` / `imageUrl` remain null
+- [x] Browser/static: Create EC2 image 1 returns HTTP 200
 
-### Step 4 — Later cleanup decision
+### Step 4 — Drop legacy path column
 
-- [ ] Keep legacy `cloudpilot_instructions.image` during the initial migration
-- [ ] Only after a real Create EC2 walkthrough verification, make a separate decision to drop `image`
-- [ ] If dropped, change the SQL seed source-of-truth to use `image_id` rather than the legacy path
+- [x] Kept legacy `image` through Steps 1–3; verified loader from catalog
+- [x] Dropped `cloudpilot_instructions.image` (`doc/sql/alter/cloudpilot_instructions_drop_image.sql`)
+- [x] Updated `cloudpilot_instructions.sql` + pause/resume seed to use `image_id` only
 
 ---
 

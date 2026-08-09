@@ -170,7 +170,9 @@ function buildActionOpenAIMessages(message) {
         currentUserMessage: String(message || '')
     };
     const aiContext = buildAIContext(processMessageContext, {
-        includeKnowledge: false
+        includeKnowledge: false,
+        includeIdentity: false,
+        includeCurrentState: false
     });
     const systemMessage = buildAISystemMessage(aiContext);
     const catalog = buildActionCatalog();

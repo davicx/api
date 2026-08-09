@@ -69,6 +69,53 @@ async function conversation(decision, context) {
         });
     }
 
+    if (responseType === RESPONSE_TYPE.RESOURCE_NOT_FOUND) {
+        const collected = requestState.collected || {};
+        const region = String(collected.region || '').trim() || 'that region';
+        const instanceId = String(collected.instance_id || '').trim() || 'that instance';
+
+        return CloudPilotMessage.speakKnown({
+            success: true,
+            cloudPilotMessage:
+                'I couldn\'t find EC2 instance ' + instanceId + ' in ' + region + '.\n\n' +
+                'Would you like me to scan EC2 and show you the instances you have?',
+            chatType: decision.chatType,
+            atlasResponse: decision.response && decision.response.verifyResource
+                ? decision.response.verifyResource.atlasResponse
+                : null,
+            error: null
+        });
+    }
+
+    if (responseType === RESPONSE_TYPE.RESOURCE_SCAN_DECLINED) {
+        return CloudPilotMessage.speakKnown({
+            success: true,
+            cloudPilotMessage: 'Okay — I will not scan EC2 for that request.',
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: null
+        });
+    }
+
+    if (responseType === RESPONSE_TYPE.RESOURCE_VERIFY_FAILED) {
+        const verification = decision.response && decision.response.verifyResource
+            ? decision.response.verifyResource
+            : null;
+        const errorMessage =
+            (verification && verification.message) ||
+            'Could not verify that EC2 instance with Atlas.';
+
+        return CloudPilotMessage.speakKnown({
+            success: false,
+            cloudPilotMessage: errorMessage,
+            chatType: decision.chatType,
+            atlasResponse: verification && verification.atlasResponse
+                ? verification.atlasResponse
+                : null,
+            error: 'resource_verify_failed'
+        });
+    }
+
     const changeStrategyResponse = await buildChangeStrategyResponse(
         responseType,
         decision.chatType,

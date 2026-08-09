@@ -1,16 +1,19 @@
 -- =============================================================================
--- ai_usage — one row per successful CloudPilot OpenAI call
+-- cloud_pilot_ai_usage — one row per successful CloudPilot OpenAI call
 -- =============================================================================
 --
--- Doc: doc/development/ai_usage.md
+-- Doc: doc/development/finished/feature_ai_spending.md
 --
--- Usage (existing DB on another machine):
---   mysql -u USER -p DATABASE_NAME < doc/sql/ai_usage.sql
+-- Usage (existing DB — create if missing):
+--   mysql -u USER -p DATABASE_NAME < doc/sql/cloud_pilot_ai_usage.sql
+--
+-- Rename from legacy ai_usage (if that table already exists):
+--   mysql -u USER -p DATABASE_NAME < doc/sql/alter/ai_usage_rename_cloud_pilot_ai_usage.sql
 --
 -- Safe to re-run: CREATE TABLE IF NOT EXISTS.
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS ai_usage (
+CREATE TABLE IF NOT EXISTS cloud_pilot_ai_usage (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
     organization_id VARCHAR(100) NULL,
@@ -30,6 +33,6 @@ CREATE TABLE IF NOT EXISTS ai_usage (
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    INDEX idx_ai_usage_created (created_at),
-    INDEX idx_ai_usage_org_created (organization_id, created_at)
+    INDEX idx_cloud_pilot_ai_usage_created (created_at),
+    INDEX idx_cloud_pilot_ai_usage_org_created (organization_id, created_at)
 );

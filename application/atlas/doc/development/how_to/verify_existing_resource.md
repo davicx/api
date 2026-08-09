@@ -50,11 +50,11 @@ user’s request; neither decides whether a resource exists.
 
 # Required action metadata
 
-For every eligible action, add `targetVerification` to its `actionMap`
+For every eligible action, add `verifyResource` to its `actionMap`
 definition:
 
 ```js
-targetVerification: {
+verifyResource: {
     resourceType: 'ec2',
     regionField: 'region',
     scanAction: 'scan_ec2',
@@ -69,7 +69,7 @@ covering both one-target and multi-target actions. For example,
 `toggle_ec2` verifies both known instances before it can offer modes:
 
 ```js
-targetVerification: {
+verifyResource: {
     resourceType: 'ec2',
     regionField: 'region',
     scanAction: 'scan_ec2',
@@ -83,7 +83,7 @@ targetVerification: {
 For a later S3 action:
 
 ```js
-targetVerification: {
+verifyResource: {
     resourceType: 's3',
     regionField: null,
     scanAction: 'scan_s3',
@@ -292,8 +292,8 @@ api/application/atlas/
 │   │   └── request/RequestConversation.js # UPDATE: not-found speech
 │   └── actionMap.js                       # UPDATE: targetResource metadata
 └── doc/
-    ├── development/current/
-    │   └── feature_verify_request.md      # active implementation plan
+    ├── development/finished/
+    │   └── feature_verify_request.md      # finished implementation record
     └── development/how_to/
         └── verify_existing_resource.md    # this reusable guide
 ```
@@ -321,7 +321,7 @@ scan/verify observe that resulting state.
 
 # Checklist for each existing-resource action
 
-- [ ] Action declares correct `targetVerification` metadata
+- [ ] Action declares correct `verifyResource` metadata
 - [ ] All target fields are required before verification
 - [ ] Atlas has a resource-specific verify endpoint
 - [ ] Found target reaches the existing mode/confirmation flow

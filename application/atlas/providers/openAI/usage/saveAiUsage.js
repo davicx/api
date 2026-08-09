@@ -6,10 +6,10 @@ FUNCTIONS A: Persist OpenAI usage after a successful call
     1) Function A1: saveAiUsageFromOpenAIResponse
 
 Never throws to the chat path — missing usage or DB errors are skipped/logged.
-Doc: doc/development/current/ai_usage.md
+Doc: doc/development/finished/feature_ai_spending.md
 */
 
-//Function A1: Map OpenAI usage → cost → insert ai_usage row
+//Function A1: Map OpenAI usage → cost → insert cloud_pilot_ai_usage row
 async function saveAiUsageFromOpenAIResponse(options) {
     const opts = options || {};
     const usage = opts.usage;

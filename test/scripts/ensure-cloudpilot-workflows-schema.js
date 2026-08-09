@@ -56,7 +56,7 @@ async function main() {
 
     if (!hasTable) {
         console.error(
-            'Table cloudpilot_workflows not found. Run application/atlas/doc/sql/cloudpilot_workflows_phase1.sql first.'
+            'Table cloudpilot_workflows not found. Run application/atlas/doc/sql/cloudpilot_workflows.sql first.'
         );
         process.exit(1);
     }

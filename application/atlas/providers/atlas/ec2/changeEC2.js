@@ -9,6 +9,7 @@ FUNCTIONS A: EC2 changes — thin Atlas POST /ec2/*
     5) Function A5: deleteEC2Tag
     6) Function A6: pauseEC2
     7) Function A7: resumeEC2
+    8) Function A8: verifyEC2
 */
 
 //Function A1: Toggle EC2 (Atlas /ec2/toggle)
@@ -46,6 +47,11 @@ async function resumeEC2(requestBody) {
     return AtlasPostFunctions.atlasPost('/ec2/resume', requestBody);
 }
 
+//Function A8: Verify EC2 exists (Atlas /ec2/verify — found / not found / error)
+async function verifyEC2(requestBody) {
+    return AtlasPostFunctions.atlasPost('/ec2/verify', requestBody);
+}
+
 module.exports = {
     toggleEC2,
     createEC2,
@@ -53,5 +59,6 @@ module.exports = {
     updateEC2Tag,
     deleteEC2Tag,
     pauseEC2,
-    resumeEC2
+    resumeEC2,
+    verifyEC2
 };

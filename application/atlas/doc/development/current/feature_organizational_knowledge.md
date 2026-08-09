@@ -44,7 +44,7 @@ SQL ready:
 Say **go Step 1** to apply SQL (or apply the files above). Then Step 2 — Intelligence search.
 
 **Status:** Active  
-**Related:** [Current Development](./current_development.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [Intelligence Front Door](../finished/feature_intelligence_front_door.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
+**Related:** [Current Development](./current_development.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [Intelligence Front Door](../finished/feature_intelligence_front_door.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
 
 ---
 
@@ -119,7 +119,7 @@ OpenAI extracts reference (or {})
         (may also include live AWS facts such as cost)
 ```
 
-Fits [CloudPilot Context](./feature_cloud_pilot_context.md): Search is a tiny classifier/extractor; CloudPilot owns truth; Chat speaks grounded facts.
+Fits [CloudPilot Context](../finished/feature_cloud_pilot_context.md): Search is a tiny classifier/extractor; CloudPilot owns truth; Chat speaks grounded facts.
 
 Facade:
 

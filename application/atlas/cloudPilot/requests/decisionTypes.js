@@ -28,7 +28,10 @@ const RESPONSE_TYPE = {
     WORKFLOW_RUNNING: 'workflow_running',
     GENERAL_CHAT: 'general_chat',
     IMMEDIATE_EXECUTION: 'immediate_execution',
-    UNDO_EXECUTION: 'undo_execution'
+    UNDO_EXECUTION: 'undo_execution',
+    RESOURCE_NOT_FOUND: 'resource_not_found',
+    RESOURCE_VERIFY_FAILED: 'resource_verify_failed',
+    RESOURCE_SCAN_DECLINED: 'resource_scan_declined'
 };
 
 const EXECUTION_MODE_REPLIES = ['instructions', 'cli', 'pr', 'automatic'];

@@ -6,7 +6,7 @@ const aiUsage = require('../logic/aiUsage');
 FUNCTIONS A: AI usage routes
     1) Route A1: Get AI usage summary
 
-Doc: doc/development/current/ai_usage.md
+Doc: doc/development/finished/feature_ai_spending.md
 */
 
 //Route A1: GET /ai/usage/summary

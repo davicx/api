@@ -5,8 +5,8 @@ const AiUsageMessageBuilder = require('./aiUsageMessageBuilder');
 FUNCTIONS A: show_ai_usage handler
     1) Function A1: showAiUsageHandler
 
-Immediate informational action — local ai_usage table, not Atlas / AWS.
-Doc: doc/development/current/ai_usage.md
+Immediate informational action — local cloud_pilot_ai_usage table, not Atlas / AWS.
+Doc: doc/development/finished/feature_ai_spending.md
 */
 
 //Function A1: Load OpenAI usage summary → chat message

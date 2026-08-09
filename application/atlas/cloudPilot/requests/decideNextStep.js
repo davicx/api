@@ -37,6 +37,8 @@ FUNCTIONS B: Helpers
     13) Function B13: buildExecutionStartedDecision
     14) Function B14: buildGeneralChatDecision
     15) Function B15: resolveQuestionDecision
+    16) Function B16: resolveResourceScanOfferReply
+    17) Function B17: buildResourceScanAcceptedDecision
 */
 
 //Function A1: Given understanding + loaded request state, return chatType, target request, and response type
@@ -50,7 +52,7 @@ function decideNextStep({ understanding, requestState }) {
 
     // Questions before Conversation — known-fact asks never use general OpenAI chat
     if (u.question) {
-        return resolveQuestionDecision(state, u.question);
+        return resolveQuestionDecision(state, u.question, u);
     }
 
     // Legacy conversation signal (phrases moved to questions/searchForOpenRequests)
@@ -76,6 +78,14 @@ function decideNextStep({ understanding, requestState }) {
 
     if (state.pendingAction && state.status === ActionStatusFunctions.STATUS.RUNNING) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.WORKFLOW_RUNNING);
+    }
+
+    // Not-found scan offer — before cancel/confirm/mode so "yes" cannot run the mutation
+    if (
+        state.pendingAction &&
+        ActionStatusFunctions.isWaitingOnResourceScan(state.status)
+    ) {
+        return resolveResourceScanOfferReply(state, u);
     }
 
     if (u.reply === 'cancel' && state.pendingAction) {
@@ -128,7 +138,7 @@ function decideNextStep({ understanding, requestState }) {
 
     // Guardrail: any Question signal must never reach general OpenAI chat
     if (u.question) {
-        return resolveQuestionDecision(state, u.question);
+        return resolveQuestionDecision(state, u.question, u);
     }
 
     return buildGeneralChatDecision();
@@ -410,6 +420,8 @@ function resolveRequestChat(state) {
         responseType = RESPONSE_TYPE.WORKFLOW_RUNNING;
     } else if (state.status === ActionStatusFunctions.STATUS.FAILED) {
         responseType = RESPONSE_TYPE.REQUEST_FAILED;
+    } else if (ActionStatusFunctions.isWaitingOnResourceScan(state.status)) {
+        responseType = RESPONSE_TYPE.RESOURCE_NOT_FOUND;
     } else if (ready && supportsExecutionModes && !state.executionMode) {
         responseType = RESPONSE_TYPE.AWAITING_EXECUTION_MODE;
     } else if (ready && ActionStatusFunctions.isWaitingOnConfirmation(state.status)) {
@@ -495,9 +507,11 @@ function buildGeneralChatDecision() {
 }
 
 //Function B15: Route a classified Question to CloudPilot fulfillment (never general chat)
-// MESSAGE_RESPONSE=openai must not invent open-request / AI-spend facts.
-function resolveQuestionDecision(requestState, question) {
+// MESSAGE_RESPONSE=openai must not invent open-request / AI-spend / inventory facts.
+// understanding (optional): values for ec2_inventory → scan_ec2 field merge
+function resolveQuestionDecision(requestState, question, understanding) {
     const state = normalizeRequestState(requestState);
+    const u = understanding || {};
 
     if (question === 'open_requests') {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
@@ -512,6 +526,14 @@ function resolveQuestionDecision(requestState, question) {
         };
     }
 
+    // Question conceptually — reuse scan_ec2 / Atlas for truth (not General Chat)
+    if (question === 'ec2_inventory') {
+        return buildNewRequestDecision({
+            action: 'scan_ec2',
+            values: u.values && typeof u.values === 'object' ? u.values : {}
+        });
+    }
+
     console.warn(
         '[CLOUDPILOT_QUESTION_GUARDRAIL] Unhandled question="' +
             String(question) +
@@ -519,6 +541,59 @@ function resolveQuestionDecision(requestState, question) {
     );
 
     return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+}
+
+//Function B16: yes → existing scan_ec2; no/cancel → close; else re-ask scan offer
+function resolveResourceScanOfferReply(state, understanding) {
+    const u = understanding || {};
+
+    if (u.reply === 'confirm') {
+        return buildResourceScanAcceptedDecision(state);
+    }
+
+    if (u.reply === 'decline' || u.reply === 'cancel') {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: null,
+            response: { type: RESPONSE_TYPE.RESOURCE_SCAN_DECLINED },
+            closeRequest: true
+        };
+    }
+
+    return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.RESOURCE_NOT_FOUND);
+}
+
+//Function B17: Replace blocked mutation with configured scanAction + run it now
+function buildResourceScanAcceptedDecision(state) {
+    const blockedAction = actionMap[state.pendingAction] || {};
+    const verifyMeta = blockedAction.verifyResource || {};
+    const scanAction = verifyMeta.scanAction
+        ? String(verifyMeta.scanAction).trim()
+        : 'scan_ec2';
+    const regionField = verifyMeta.regionField
+        ? String(verifyMeta.regionField).trim()
+        : 'region';
+    const region = String((state.collected || {})[regionField] || '').trim();
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        replaceOpenRequest: true,
+        request: {
+            action: scanAction,
+            collected: region ? { region: region } : {},
+            missing: region ? [] : ['region'],
+            status: region
+                ? ActionStatusFunctions.STATUS.RUNNING
+                : ActionStatusFunctions.STATUS.WAITING_ON_FIELDS,
+            executionMode: null,
+            ready: Boolean(region)
+        },
+        response: {
+            type: region
+                ? RESPONSE_TYPE.EXECUTION_STARTED
+                : RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS
+        }
+    };
 }
 
 function cloudpilotDecision(request, responseType) {

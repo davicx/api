@@ -13,7 +13,7 @@
 | Add a new action | `doc/instructions/adding_new_action.md` |
 | Atlas → Navigator mapping | `doc/instructions/converting_atlas_data.md` |
 | Scan expansion (deferred) | [../future/scans.md](../future/scans.md) · [../future/future.md](../future/future.md) |
-| Legacy request SQL (historical) | `doc/sql/cloudpilot_workflows_phase1.sql` |
+| Legacy request SQL (historical) | `doc/sql/cloudpilot_workflows.sql` |
 | **Master SQL (source of truth)** | `doc/sql/master_sql.sql` |
 | EC2 chat samples | `api/README.md` |
 | Create tags / delete safety (future) | `api/doc/instructions/cloudpilot_tagging_metadata.md` |

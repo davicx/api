@@ -40,19 +40,16 @@ NOT FOUND → stop this action and offer the existing scan_ec2 flow
 ERROR     → show Atlas/AWS error; do not claim not found
 ```
 
-## Current step
+## Status
 
-**Step 1 complete — shared Atlas Test infrastructure + `/ec2/verify` smoke
-passed.**
+**Finished** — 2026-08-08  
 
-## Next
+Steps 1–4 done. Shared Atlas Test infrastructure, CloudPilot `verifyResource`
+preflight for `pause_ec2` / `resume_ec2`, not-found → existing `scan_ec2`
+offer, and regression smoke (20/20) passed.
 
-Say **do Step 2** (CloudPilot preflight gate). Step 2 is intentionally not
-started yet.
-
-**Status:** Active (plan)  
 **Codename:** `feature_verify_request`  
-**Related:** [Current Development](./current_development.md) · [EC2 Pause / Resume](../finished/feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [EC2 Pause / Resume](./feature_pause_instance.md) · [Verify how-to](../how_to/verify_existing_resource.md) · [Coding Style](../how_to/coding_style.md)
 
 ---
 
@@ -97,7 +94,7 @@ Next session:
 
 ```text
 do Step 2
-→ add pause/resume targetVerification metadata
+→ add pause/resume verifyResource metadata
 → add CloudPilot Atlas provider
 → run the asynchronous preflight after fields persist,
   before execution-mode speech
@@ -236,7 +233,7 @@ actions, and add it initially only to `pause_ec2` and `resume_ec2`. A list
 keeps one-target and two-target actions in the same current `actionMap` style:
 
 ```js
-targetVerification: {
+verifyResource: {
     resourceType: 'ec2',
     regionField: 'region',
     scanAction: 'scan_ec2',
@@ -249,7 +246,7 @@ targetVerification: {
 `toggle_ec2` uses the same shape:
 
 ```js
-targetVerification: {
+verifyResource: {
     resourceType: 'ec2',
     regionField: 'region',
     scanAction: 'scan_ec2',
@@ -489,13 +486,11 @@ app/api/routes/test/ec2_scan_routes_test.py      # UPDATE derive EC2 inventory
 ```text
 providers/atlas/ec2/changeEC2.js                 # UPDATE verifyEC2
 cloudPilot/.../resourceVerificationFunctions.js  # NEW narrow preflight bridge
-cloudPilot/actionMap.js                          # UPDATE targetResource metadata
-cloudPilot/requests/decisionTypes.js             # UPDATE verification response type
-cloudPilot/requests/functions/requestStatusFunctions.js # UPDATE scan-offer status
-cloudPilot/requests/decideNextStep.js            # UPDATE yes/no scan bridge only
+cloudPilot/actionMap.js                          # UPDATE verifyResource metadata
+cloudPilot/requests/decisionTypes.js             # UPDATE verification response types
+cloudPilot/requests/functions/resourceVerificationFunctions.js  # NEW narrow preflight bridge
 cloudPilot/chat/cloudPilotMessageFunctions.js    # UPDATE run preflight after store
-cloudPilot/chat/request/RequestConversation.js   # UPDATE deterministic scan-offer speech
-cloudPilot/chat/templates/requestTemplates.js    # UPDATE only if template mapping is cleaner
+cloudPilot/chat/request/RequestConversation.js   # UPDATE not-found / verify-failed speech (Step 2)
 ```
 
 Exact placement of the CloudPilot preflight helper should follow the current
@@ -518,28 +513,29 @@ infrastructure truth.
 
 ### Step 2 — CloudPilot preflight gate
 
-- [ ] Add `targetVerification` metadata to only pause/resume
-- [ ] Add Atlas provider `verifyEC2`
-- [ ] Run verification after fields persist and before execution-mode speech
-- [ ] Found → preserve the existing execution-mode flow
-- [ ] Verification error → block progression with the real error
+- [x] Add `verifyResource` metadata to only pause/resume
+- [x] Add Atlas provider `verifyEC2`
+- [x] Run verification after fields persist and before execution-mode speech
+- [x] Found → preserve the existing execution-mode flow
+- [x] Not found → block progression (no mode speech; Step 3 scan offer later)
+- [x] Verification error → block progression with the real error (never as not-found)
 
 ### Step 3 — Not found → existing scan
 
-- [ ] Add `waiting_on_resource_scan` and a deterministic not-found response
-- [ ] `yes` replaces the blocked mutation with the existing regional `scan_ec2`
-- [ ] `no` cancels/closes the blocked mutation without a scan
-- [ ] Ensure `yes` cannot reach Automatic execution for the not-found target
+- [x] Add `waiting_on_resource_scan` and a deterministic not-found response
+- [x] `yes` replaces the blocked mutation with the existing regional `scan_ec2`
+- [x] `no` cancels/closes the blocked mutation without a scan
+- [x] Ensure `yes` cannot reach Automatic execution for the not-found target
 
 ### Step 4 — Verification and regression smoke
 
-- [ ] Test found/not-found/error at the Atlas endpoint
-- [ ] Test Test-mode scan and pause/resume read the same instance state
-- [ ] Pause/resume valid target → verify → mode selection
-- [ ] Invalid target → no mode selection → scan offer
-- [ ] `yes` → existing scan output; `no` → no scan
-- [ ] Internal and OpenAI understanding paths converge at the same verification gate
-- [ ] Simulate target disappearance after preflight; Automatic reports action error, never false success
+- [x] Test found/not-found/error at the Atlas endpoint
+- [x] Test Test-mode scan and pause/resume read the same instance state
+- [x] Pause/resume valid target → verify → mode selection (decide + preflight keep modes)
+- [x] Invalid target → no mode selection → scan offer (`RESOURCE_NOT_FOUND`)
+- [x] `yes` → existing `scan_ec2` EXECUTION_STARTED; `no` → `RESOURCE_SCAN_DECLINED`
+- [x] Same `verifyResource` gate after Internal/OpenAI understanding (no OpenAI-specific path)
+- [x] Unknown pause returns `instance_not_found` (never false success) after shared-store pause/resume
 
 ---
 

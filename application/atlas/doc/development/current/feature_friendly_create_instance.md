@@ -26,7 +26,7 @@ Approve this plan, then say **do Step 1** (add `createEC2Context` + `createEC2Gu
 
 **Status:** Active (plan)  
 **Codename:** `feature_friendly_create_instance`  
-**Related:** [Current Development](./current_development.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [Pause / Resume](../finished/feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](./current_development.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [CloudPilot Images](../finished/feature_images.md) · [Pause / Resume](../finished/feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md)
 
 ---
 
@@ -307,7 +307,7 @@ User
 
 | Feature | Overlap |
 |---------|---------|
-| [CloudPilot Context](./feature_cloud_pilot_context.md) | Global Chat Identity vs tiny **Search** — this is **per-request** create experience |
+| [CloudPilot Context](../finished/feature_cloud_pilot_context.md) | Global Chat Identity vs tiny **Search** — this is **per-request** create experience |
 | [Pause / Resume](../finished/feature_pause_instance.md) | Success may **point at** pause; pause/resume shipped separately |
 
 ---

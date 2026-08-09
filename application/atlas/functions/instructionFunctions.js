@@ -107,20 +107,33 @@ function normalizeWarnings(warnings) {
 }
 
 //Function B2: Build Image URL
+// DB stores object key only (e.g. instructions/create_ec2/...).
+// Local: public/<AWS_BUCKET_NAME>/<key> via express.static('public')
+// AWS: same key inside bucket AWS_BUCKET_NAME
+// Doc: doc/development/finished/feature_images.md
 async function buildImageUrl(relativeImagePath) {
     if (!relativeImagePath || String(relativeImagePath).trim() === '') {
         return null;
     }
 
-    const imagePath = String(relativeImagePath).trim().replace(/^\/+/, '');
+    const objectKey = String(relativeImagePath).trim().replace(/^\/+/, '');
+    const bucketName = String(process.env.AWS_BUCKET_NAME || 'kite-us-west-two').trim().replace(/^\/+|\/+$/g, '');
     const publicFileBaseUrl = (process.env.PUBLIC_FILE_BASE_URL || '').replace(/\/+$/, '');
     const fileLocation = process.env.FILE_LOCATION || 'local';
+
+    // Avoid double-prefix if a caller already included the bucket folder
+    const alreadyPrefixed = bucketName !== ''
+        && (objectKey === bucketName || objectKey.indexOf(bucketName + '/') === 0);
+    const localStaticPath = alreadyPrefixed || bucketName === ''
+        ? objectKey
+        : bucketName + '/' + objectKey;
+
     const localImageUrl = publicFileBaseUrl
-        ? publicFileBaseUrl + '/' + imagePath
-        : '/' + imagePath;
+        ? publicFileBaseUrl + '/' + localStaticPath
+        : '/' + localStaticPath;
 
     if (Functions.compareStrings(fileLocation, "aws") == true) {
-        return await fileFunctions.getImageURL(fileLocation, localImageUrl, imagePath);
+        return await fileFunctions.getImageURL(fileLocation, localImageUrl, objectKey);
     }
 
     return localImageUrl;

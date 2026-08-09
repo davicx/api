@@ -6,10 +6,9 @@
 #ALL#
 #########
 
-SELECT * FROM cloudpilot_actions;
+SELECT * FROM cloud_pilot_ai_usage;
+
 #SELECT * FROM cloudpilot_workflows;
-
-
 
 
 /*

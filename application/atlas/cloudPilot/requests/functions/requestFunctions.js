@@ -41,6 +41,21 @@ async function applyDecision(decision, context) {
         return buildSkipOutcome(requestState, 'immediate_execution_no_row');
     }
 
+    if (decision.response && decision.response.type === RESPONSE_TYPE.RESOURCE_SCAN_DECLINED) {
+        if (requestState.workflowId) {
+            await Request.cancelAction(requestState.workflowId);
+        }
+
+        return {
+            success: true,
+            action: 'cancelled',
+            reason: 'resource_scan_declined',
+            requestID: requestState.workflowId || null,
+            request: RequestStateFunctions.emptyActionState(),
+            error: null
+        };
+    }
+
     if (!targetRequest || !targetRequest.action) {
         const reason = resolveSkipReasonForNoRequest(decision);
         return buildSkipOutcome(requestState, reason);

@@ -28,30 +28,21 @@ function buildOpenRequestsResponse(requestState) {
         actionDefinition && actionDefinition.actionLabel
             ? actionDefinition.actionLabel
             : String(pendingAction);
-    const status = state.status || 'unknown';
     const missing = Array.isArray(state.missing) ? state.missing : [];
-    const workflowId = state.workflowId || null;
 
-    const lines = [
-        'You have 1 open request:',
-        '',
-        '• ' + actionLabel,
-        '  Status: ' + formatStatus(status)
-    ];
+    // No Request ID unless the user asks for details (feature_cloud_pilot_context Step D)
+    const lines = ['You have 1 open request:', ''];
 
     if (missing.length > 0) {
-        lines.push('  Missing: ' + missing.join(', '));
-    }
-
-    if (workflowId !== null && workflowId !== undefined && String(workflowId).trim() !== '') {
-        lines.push('  Request ID: ' + String(workflowId));
-    }
-
-    if (missing.length > 0) {
+        lines.push(actionLabel + ' — waiting for ' + formatWaitingFor(missing) + '.');
         lines.push('');
-        lines.push(
-            'Say the missing field (for example region: "us-west-2"), or ask "what\'s the status?"'
-        );
+        if (missing.indexOf('region') !== -1) {
+            lines.push('You can reply with something like us-west-2 to continue.');
+        } else {
+            lines.push('Reply with the missing information to continue.');
+        }
+    } else {
+        lines.push(actionLabel + '.');
     }
 
     return {
@@ -62,14 +53,20 @@ function buildOpenRequestsResponse(requestState) {
     };
 }
 
-function formatStatus(status) {
-    const raw = String(status || '').trim();
-
-    if (!raw) {
-        return 'unknown';
+function formatWaitingFor(missing) {
+    if (!Array.isArray(missing) || missing.length === 0) {
+        return 'more information';
     }
 
-    return raw.replace(/_/g, ' ');
+    if (missing.length === 1) {
+        return 'a ' + String(missing[0]).replace(/_/g, ' ');
+    }
+
+    return missing
+        .map(function (field) {
+            return String(field).replace(/_/g, ' ');
+        })
+        .join(', ');
 }
 
 module.exports = {

@@ -1,6 +1,4 @@
 const OpenAIClient = require('../../../../providers/openAI/client/openAIClient');
-const { buildAIContext } = require('../../../context/buildContext');
-const { buildAISystemMessage } = require('../../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
@@ -17,6 +15,9 @@ HELPERS
     2) Helper H2: formatRegionFound
     3) Helper H3: logRegionSearch
     4) Helper H4: buildRegionOpenAIMessages
+
+Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
+Doc: feature_cloud_pilot_context.md Step B
 */
 
 //HELPERS
@@ -86,35 +87,70 @@ function logRegionSearchVerbose(details) {
     console.log('==================================================');
 }
 
-//Helper H4: Build the exact OpenAI messages for region search
+//Helper H4: Build tiny Region Search TASK messages (no Identity / Situation stack)
 function buildRegionOpenAIMessages(message) {
-    const processMessageContext = {
-        currentUserMessage: String(message || '')
-    };
+    const userMessage = String(message || '');
 
-    const aiContext = buildAIContext(processMessageContext, {
-        situationTypes: ['region'],
-        includeKnowledge: false
-    });
+    const systemMessage = [
+        'TASK',
+        '',
+        'Determine whether the user is PROVIDING an AWS region',
+        'to be used for the current request.',
+        '',
+        'Return the normalized AWS region if provided.',
+        '',
+        'Do not return a region when the user is:',
+        '- asking about a region',
+        '- mentioning a region as an example',
+        '- rejecting a region',
+        '- discussing regions generally',
+        '',
+        'Interpret obvious natural-language names and minor spelling mistakes.',
+        '',
+        'EXAMPLES',
+        '',
+        '"I want to use US West 2"',
+        '{"region":"us-west-2"}',
+        '',
+        '"use USA West 2"',
+        '{"region":"us-west-2"}',
+        '',
+        '"I want to use USA Weste 2"',
+        '{"region":"us-west-2"}',
+        '',
+        '"Let\'s do this in Oregon"',
+        '{"region":"us-west-2"}',
+        '',
+        '"What is US West 2?"',
+        '{}',
+        '',
+        '"Why do you want a region like US West 2?"',
+        '{}',
+        '',
+        '"I don\'t want to use US West 2"',
+        '{}',
+        '',
+        '"Which region should I use?"',
+        '{}',
+        '',
+        'Return JSON only:',
+        '{"region":"us-west-2"}',
+        'or',
+        '{}'
+    ].join('\n');
 
-    const systemMessage = buildAISystemMessage(aiContext);
     const messages = [
         { role: 'system', content: systemMessage },
         {
             role: 'user',
-            content:
-                'Follow the SITUATION instructions.\n\n' +
-                'Return JSON only:\n\n' +
-                '{"region":"us-west-2"}\n\n' +
-                'or:\n\n' +
-                '{}'
+            content: 'CURRENT MESSAGE\n\n"' + userMessage + '"\n\nReturn JSON only.'
         }
     ];
 
     return {
         systemMessage: systemMessage,
         messages: messages,
-        aiContext: aiContext
+        contextSummary: OpenAIClient.summarizeSearchTaskContext()
     };
 }
 
@@ -217,7 +253,7 @@ async function searchMessageForRegion(message, requestState) {
             capability: 'Region Search',
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
-            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            context: openAIRequest.contextSummary,
             messages: openAIRequest.messages,
             previewOnly: true
         });
@@ -294,7 +330,7 @@ async function searchMessageForRegionOpenAI(message) {
             model: config.model,
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
-            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            context: openAIRequest.contextSummary,
             messages: openAIRequest.messages,
             previewOnly: false,
             responseText: apiResult.success
@@ -343,5 +379,6 @@ async function searchMessageForRegionOpenAI(message) {
 
 module.exports = {
     shouldRunRegionSearch,
-    searchMessageForRegion
+    searchMessageForRegion,
+    buildRegionOpenAIMessages
 };

@@ -279,7 +279,7 @@ CLOUDPILOT_MESSAGE_RESPONSE=openai
 CLOUDPILOT_MESSAGE_LOGS=true
 ```
 
-Send general chat → STEP 7d runs → live reply; usage may appear in `ai_usage`.
+Send general chat → STEP 7d runs → live reply; usage may appear in `cloud_pilot_ai_usage`.
 
 **Master blocks feature**
 

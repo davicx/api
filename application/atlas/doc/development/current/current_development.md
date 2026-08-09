@@ -1,15 +1,16 @@
 # Current Development — What We Are Working On
 
-**Last updated:** 2026-08-07  
+**Last updated:** 2026-08-08  
 
 This is the active-work dashboard. It contains only features we are working on now.
 
-## End-of-day handoff — 2026-08-07
+## End-of-day handoff — 2026-08-08
 
-Stopped after [Verify Request Target](./feature_verify_request.md) **Step 1**:
-Atlas Test now has shared mock infrastructure and a truthful `/ec2/verify`
-endpoint. **Next: Step 2 CloudPilot preflight gate.** No CloudPilot workflow
-or conversation behavior has been changed yet.
+Active work includes [Friendly Create EC2](./feature_friendly_create_instance.md),
+[Organizational Knowledge](./feature_organizational_knowledge.md), and
+[GitHub Pull Requests](./feature_github_pull_requests.md).
+[CloudPilot Context](../finished/feature_cloud_pilot_context.md) shipped today
+(A–E: Identity, Search TASK, CURRENT STATE, `ec2_inventory`).
 
 ## How to use these docs
 
@@ -25,16 +26,16 @@ or conversation behavior has been changed yet.
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
 | [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Plan locked — **awaiting approval** |
-| [CloudPilot Context](./feature_cloud_pilot_context.md) | Chat Identity vs tiny Search context; Situation for open requests; inventory ≠ General Chat. | Plan locked — **awaiting Step A (Identity)** |
-| [CloudPilot Images](./feature_images.md) | Normalize Create EC2 instruction image metadata into `cloud_pilot_images`. | Plan locked — **awaiting approval** |
-| [Verify Request Target](./feature_verify_request.md) | Verify target EC2 exists before modes; not found offers existing scan. | Step 1 done — shared Atlas Test infrastructure; **next: Step 2 CloudPilot gate** |
 | [Organizational Knowledge](./feature_organizational_knowledge.md) | Why an S3 bucket exists (org facts + tags). | Step 1 — DB + tags SQL ready; apply when ready |
-| [GitHub Pull Requests](./feature_github_pull_requests.md) | Creates a safe GitHub pull request instead of changing AWS directly. | Step 1 — Finish the real PR demo |
+| [GitHub Pull Requests](./feature_github_pull_requests.md) | Creates a safe GitHub pull request instead of changing AWS directly. | Steps 0–6 mostly shipped; **Step 7 manual E2E** still open |
 
 ## Just finished
 
 | Feature | What shipped |
 |---------|----------------|
+| [CloudPilot Context](../finished/feature_cloud_pilot_context.md) | Chat Identity vs tiny Search TASK; CURRENT STATE; `ec2_inventory` → `scan_ec2` |
+| [Verify Request Target](../finished/feature_verify_request.md) | Atlas Test infra + `verifyResource` gate + not-found → `scan_ec2` offer |
+| [CloudPilot Images](../finished/feature_images.md) | `cloud_pilot_images` catalog + loader join + bucket URL + drop legacy `image` |
 | [EC2 Pause / Resume](../finished/feature_pause_instance.md) | `pause_ec2` / `resume_ec2` (Atlas Test acceptance; live AWS optional) |
 | [Chat Message UI](../finished/feature_chat_message_ui.md) | Markdown in Kite + ChatGPT-like bubbles (no gray card) |
 | [Questions](../finished/feature_questions.md) | Question search path + open-requests speak + guardrail vs general OpenAI chat |
@@ -44,7 +45,7 @@ or conversation behavior has been changed yet.
 
 ## Useful References
 
-- [How-to guides](../how_to/README.md) — including [Add an Intelligence Capability](../how_to/add_intelligence_capability.md)
+- [How-to guides](../how_to/how_to_guides.md) — including [CloudPilot Context](../how_to/cloud_pilot_context.md)
 - [Architecture](../architecture/)
 - [Finished work](../finished/finished.md)
 - [Future ideas](../future/future.md)

@@ -24,7 +24,7 @@ easy scaling
 - [ ] Add/import execution handler
 - [ ] Decide if action needs workflow fields
 - [ ] Add required fields and missing-field messages
-- [ ] For an existing-resource target, add `targetVerification` metadata — see [Verify an Existing Resource](./verify_existing_resource.md)
+- [ ] For an existing-resource target, add `verifyResource` metadata — see [Verify an Existing Resource](./verify_existing_resource.md)
 - [ ] Add field extractors if needed
 - [ ] Add Atlas API function
 - [ ] Add formatter

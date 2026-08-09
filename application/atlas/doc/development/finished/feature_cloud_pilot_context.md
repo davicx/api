@@ -1,5 +1,16 @@
 # CloudPilot Context
 
+## Forbidden — OpenAI smoke / test traffic
+
+**Never smoke-test by sending real (or test) messages to OpenAI.**
+
+- Do **not** flip features to `openai` just to “try” Chat / Search during development of this feature.
+- Do **not** paste user messages, AWS account details, request state, or inventory into live OpenAI calls for verification.
+- Verify with **OpenAI off / preview-only**: inspect built system messages, Search prompts, and logs locally.
+- Live OpenAI is for intentional product use with real users — not for agent or engineer smoke runs in this feature.
+
+---
+
 ## What this does
 
 Fix how CloudPilot uses OpenAI context so responses feel like an engineer beside you — and so **Search** calls stop getting a full CloudPilot personality dump.
@@ -13,24 +24,41 @@ Third issue underneath:
 
 > “How many EC2 instances are running?” must not be General Chat inventing an answer from open-request chatter. CloudPilot must retrieve AWS state (Question / scan path).
 
-## Current step
+## Status
 
-**Plan locked — awaiting approval to code.**  
-Next: **Step A — Rewrite General Chat Identity** (remove mandatory why/risks/impact).
+**Finished** — 2026-08-08  
 
-## Next
+Steps A–E done: Chat Identity, tiny Search/Question TASK prompts, Chat CURRENT STATE,
+and `ec2_inventory` Question → `scan_ec2` grounded path. Offline verification only
+(OpenAI smoke forbidden — see above).
 
-Say **do Step A** when ready to change Identity / chat context only.
-
-**Status:** Active  
 **Codename:** `cloudPilotContext`  
-**Related:** [Current Development](./current_development.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [Questions](../finished/feature_questions.md) · [Intelligence Front Door](../finished/feature_intelligence_front_door.md) · Prior work lived as “Be Cool Man” (Internal scan detection shipped; live wording still wrong)
+**Related:** [How-to: CloudPilot Context](../how_to/cloud_pilot_context.md) · [Current Development](../current/current_development.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [Questions](./feature_questions.md) · [Intelligence Front Door](./feature_intelligence_front_door.md)
+
+**Search / Question family** (tiny TASK / classify — not mini-Chat):
+
+```text
+values/searchMessageForRegion.js       ← value extractor (OpenAI TASK)
+questions/searchForOpenRequests.js     ← question classify (OpenAI TASK)
+questions/searchForAiSpend.js          ← question classify (OpenAI TASK)
+questions/searchForEc2Inventory.js     ← question classify (Internal MVP → scan_ec2)
+searchMessageForValues.js              ← orchestrator only
+searchMessageForAction.js              ← Action catalog (scan stays here)
+```
 
 ---
 
 ## One-sentence rule
 
-> **Search gets only the information required to classify/extract. Chat gets the information required to converse. CloudPilot—not OpenAI—provides user-specific truth.**
+> **Search understands language. CloudPilot owns truth. Chat communicates truth.**
+
+Invariant (Step A):
+
+```text
+General Chat → CloudPilot Identity
+Region Search → Region task prompt (includeIdentity: false)
+Open Requests Search → Open Requests task prompt (includeIdentity: false)
+```
 
 ---
 
@@ -38,39 +66,41 @@ Say **do Step A** when ready to change Identity / chat context only.
 
 ### Step A — Rewrite General Chat Identity
 
-- [ ] Remove universal “explain why / risks / impact” as mandatory communication principles
-- [ ] Install conversational engineer voice (concise, direct, no report sections by default)
-- [ ] Accurate CloudPilot product blurb (what it actually does + execution modes)
-- [ ] Keep grounding: never invent AWS / requests / costs / findings
-- [ ] Move why/risks/impact to a future ACTION EXPLANATION / REMEDIATION RESPONSE context only
-- [ ] Smoke with OpenAI off (system message text) then brief live: `hello`, `what is cloud pilot?`, `what is a region`
+- [x] Remove universal “explain why / risks / impact” as mandatory communication principles
+- [x] Install conversational engineer voice (concise, direct, no report sections by default)
+- [x] Accurate CloudPilot product blurb (what it actually does + execution modes)
+- [x] Keep grounding: never invent AWS / requests / costs / findings
+- [x] Move why/risks/impact to a future ACTION EXPLANATION / REMEDIATION RESPONSE context only
+- [x] Smoke with OpenAI off (system message text) — Identity on Chat only; Search has no Identity
+- [x] No live OpenAI smoke (forbidden for this feature)
 
 ### Step B — Tiny Region Search context
 
-- [ ] Region OpenAI prompt = TASK + examples + current message + JSON only
-- [ ] Semantic rule: user is **providing** a region for the open request — not merely mentioning one
-- [ ] No Identity, no product philosophy, no Knowledge, no conversation history (default)
-- [ ] Logs should read: Task / Current Message / Examples — Identity Not Used
-- [ ] Accept: “US West 2” / “USA Weste 2” → `us-west-2`; “What is US West 2?” → `{}`
+- [x] Region OpenAI prompt = TASK + examples + current message + JSON only
+- [x] Semantic rule: user is **providing** a region for the open request — not merely mentioning one
+- [x] No Identity, no product philosophy, no Knowledge, no conversation history (default)
+- [x] Logs: search_task → Task / Current Message / Examples — Identity Not Used
+- [x] Offline accept shape only (no OpenAI calls): provide vs ask/reject examples in built prompt
 
-### Step C — Tiny Open Requests Search context
+### Step C — Tiny Open Requests Search context (+ AI Spend same family)
 
-- [ ] Same pattern as Region Search (TASK + examples + message + JSON)
-- [ ] No Identity / history / AWS knowledge
-- [ ] Classify only — CloudPilot still loads and speaks real open requests
+- [x] Same pattern as Region Search (TASK + examples + message + JSON)
+- [x] AI Spend Search uses the same tiny TASK pattern
+- [x] No Identity / history / AWS knowledge
+- [x] Classify only — CloudPilot still loads and speaks real open requests / spend
 
 ### Step D — Situation for General Chat (small)
 
-- [ ] When one open request exists, inject a tiny CURRENT STATE block into Chat context
-- [ ] Use only when relevant to the current question
-- [ ] Example: Scan EC2 waiting for region → “what is a region” can mention continuing with `us-west-2`
-- [ ] Soften open-requests speak: drop Request ID unless user asks for details (optional polish)
+- [x] When one open request exists, inject a tiny CURRENT STATE block into Chat context
+- [x] Facts only (label + waiting for) — not prose instructions; “use only when relevant” line kept
+- [x] Example shape: Scan EC2 / Waiting for: region
+- [x] Soften open-requests speak: drop Request ID unless user asks for details
 
 ### Step E — EC2 inventory Question (separate from wording)
 
-- [ ] “how many EC2… / what’s running…” must not stay in General Chat
-- [ ] Prefer Question `ec2_inventory` (or reuse / extend Action → `scan_ec2`) so Atlas retrieves truth
-- [ ] OpenAI may classify need; CloudPilot obtains data; Chat may polish the grounded answer later
+- [x] “how many EC2… / what’s running…” → Question `ec2_inventory` (not General Chat)
+- [x] Explicit `scan` stays Action `scan_ec2`; inventory Question reuses `scan_ec2` / Atlas for truth
+- [x] Internal classify MVP (no OpenAI for this Question yet); CloudPilot obtains data
 
 Do **not** build a giant universal context system in this feature.
 
@@ -483,7 +513,7 @@ Prior Be Cool Man work broadened Internal Action matching toward `scan_ec2` — 
 
 ---
 
-# 10. Acceptance (after Steps A–D; E separate)
+# 10. Acceptance — A–D = context behavior; E = grounded AWS question routing
 
 | # | Input | Expect |
 |---|--------|--------|
@@ -509,10 +539,10 @@ Already useful and should remain:
 
 Still failing live (this doc’s job):
 
-- [ ] Chat Identity / voice in real OpenAI answers
-- [ ] Search context size and semantics (provide vs mention)
-- [ ] Situation used in Chat for open request
-- [ ] Inventory questions never answered as pure General Chat
+- [x] Chat Identity / system message rewrite
+- [x] Search / Question OpenAI = tiny TASK (Region, Open Requests, AI Spend)
+- [x] Situation / CURRENT STATE used in Chat for open request
+- [x] Inventory questions → `ec2_inventory` → `scan_ec2` grounded path
 
 ---
 

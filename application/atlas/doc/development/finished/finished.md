@@ -1,10 +1,16 @@
 # Finished
 
-**Last reviewed:** 2026-08-07
+**Last reviewed:** 2026-08-08
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-08)
+
+- [x] **CloudPilot Context** — Chat Identity vs tiny Search TASK; CURRENT STATE; `ec2_inventory` → `scan_ec2` — [feature_cloud_pilot_context.md](./feature_cloud_pilot_context.md)
+- [x] **Verify Request Target** — Atlas Test infra + `verifyResource` gate + not-found → `scan_ec2` — [feature_verify_request.md](./feature_verify_request.md)
+- [x] **CloudPilot Images** — `cloud_pilot_images` catalog + loader join + bucket URL + drop legacy `image` — [feature_images.md](./feature_images.md)
 
 ## Recently finished (2026-08-07)
 

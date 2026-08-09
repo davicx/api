@@ -7,6 +7,7 @@ Intelligence lives in contextTypes/ builders and services/knowledge/.
 Conceptual sections:
   IDENTITY         — Who is CloudPilot?              (cloudPilotContext)
   SITUATION        — What should AI look for / do?   (cloudPilotSituationContext)
+  CURRENT STATE    — Factual open request (Chat)     (cloudPilotCurrentStateContext)
   CURRENT QUESTION — What did the user say?          (currentQuestionContext)
   Knowledge        — Optional organization/product   (organizationKnowledgeContext)
 
@@ -15,9 +16,10 @@ FUNCTIONS A: Build AI system message
 
 FUNCTIONS B: Write each part of the message
     1) Function B1: writeIdentity
-    2) Function B2: writeSituation
-    3) Function B3: writeCurrentQuestion
-    4) Function B4: writeKnowledge
+    2) Function B1b: writeCurrentState
+    3) Function B2: writeSituation
+    4) Function B3: writeCurrentQuestion
+    5) Function B4: writeKnowledge
 
 FUNCTIONS C: Small helpers
     1) Function C1: writeBulletList
@@ -47,7 +49,8 @@ function hasContent(data) {
 }
 
 //FUNCTIONS B: Write each part of the message
-//Function B1: Write Identity (Who is CloudPilot?)
+//Function B1: Write Identity (Who is CloudPilot?) — General Chat voice
+// Doc: feature_cloud_pilot_context.md Step A — not used by Search
 function writeIdentity(cloudPilotContext) {
     const identity = cloudPilotContext && cloudPilotContext.data;
 
@@ -55,53 +58,78 @@ function writeIdentity(cloudPilotContext) {
         return '';
     }
 
-    const sections = [`You are ${identity.name || 'CloudPilot'}.`];
+    const name = identity.name || 'CloudPilot';
+    const intro = identity.intro
+        ? String(identity.intro).trim()
+        : 'an AI assistant for understanding and managing AWS infrastructure';
 
-    if (identity.role) {
-        sections.push('Role: ' + identity.role + '.');
+    const sections = [
+        'You are ' + name + ', ' + intro + '.'
+    ];
+
+    const voice = writeBulletList(identity.voice);
+    if (voice) {
+        sections.push('VOICE\n\n' + voice);
     }
 
+    const productParts = [];
     if (identity.productDescription) {
-        sections.push('About this product: ' + identity.productDescription);
+        productParts.push(String(identity.productDescription).trim());
+    }
+    const modes = writeBulletList(identity.executionModes);
+    if (modes) {
+        productParts.push('CloudPilot may carry out work through:\n' + modes);
+    }
+    if (productParts.length > 0) {
+        sections.push('CLOUDPILOT\n\n' + productParts.join('\n\n'));
     }
 
-    const capabilities = writeBulletList(identity.capabilities);
-    if (capabilities) {
-        sections.push('Actual CloudPilot capabilities:\n' + capabilities);
+    const grounding = writeBulletList(identity.grounding);
+    if (grounding) {
+        sections.push('GROUNDING\n\n' + grounding);
     }
 
-    if (identity.communication && identity.communication.tone) {
-        sections.push('Communication tone: ' + identity.communication.tone + '.');
-    }
-
-    if (identity.communication && identity.communication.defaultLength) {
-        sections.push(
-            'Default response length: ' + identity.communication.defaultLength + '.'
-        );
-    }
-
-    if (identity.communication && identity.communication.formatting) {
-        sections.push(
-            'Formatting: ' + identity.communication.formatting + '.'
-        );
-    }
-
-    const goals = writeBulletList(identity.goals);
-    if (goals) {
-        sections.push('Goals:\n' + goals);
-    }
-
-    const principles = writeBulletList(identity.principles);
-    if (principles) {
-        sections.push('Communication principles:\n' + principles);
-    }
-
-    const constraints = writeBulletList(identity.constraints);
-    if (constraints) {
-        sections.push('Constraints:\n' + constraints);
+    const conversation = writeBulletList(identity.conversation);
+    if (conversation) {
+        sections.push('CONVERSATION\n\n' + conversation);
     }
 
     return sections.join('\n\n');
+}
+
+//Function B1b: Write Current State (factual open request — Chat Situation MVP)
+// Doc: feature_cloud_pilot_context.md Step D — facts only, not prose instructions
+function writeCurrentState(currentStateContext) {
+    const data = currentStateContext && currentStateContext.data;
+    const openRequest = data && data.openRequest;
+
+    if (!openRequest || typeof openRequest !== 'object') {
+        return '';
+    }
+
+    const label = openRequest.label ? String(openRequest.label).trim() : '';
+
+    if (!label) {
+        return '';
+    }
+
+    const lines = [
+        'CURRENT CLOUDPILOT STATE',
+        '',
+        'Open request:',
+        label
+    ];
+
+    if (Array.isArray(openRequest.waitingFor) && openRequest.waitingFor.length > 0) {
+        lines.push('Waiting for: ' + openRequest.waitingFor.join(', '));
+    }
+
+    lines.push('');
+    lines.push(
+        'Use this information only when relevant to the user\'s current question.'
+    );
+
+    return lines.join('\n');
 }
 
 //Function B2: Write Situation (What should AI look for / do?)
@@ -203,32 +231,6 @@ function writeCurrentQuestion(currentQuestionContext) {
         }
     }
 
-    if (data.openRequest && typeof data.openRequest === 'object') {
-        const request = data.openRequest;
-        const bullets = [];
-
-        if (request.action) {
-            bullets.push('Action: ' + request.action);
-        }
-        if (request.status) {
-            bullets.push('Status: ' + request.status);
-        }
-        if (Array.isArray(request.missing) && request.missing.length > 0) {
-            bullets.push('Missing fields: ' + request.missing.join(', '));
-        }
-        if (request.region) {
-            bullets.push('Region: ' + request.region);
-        }
-
-        if (bullets.length > 0) {
-            sections.push(
-                'Current CloudPilot request:\n' +
-                    writeBulletList(bullets) +
-                    '\nUse this only when it helps answer the current message.'
-            );
-        }
-    }
-
     if (sections.length === 0) {
         return '';
     }
@@ -276,14 +278,19 @@ function buildAISystemMessage(aiContext) {
         sections.push(situationText);
     }
 
-    const currentQuestionText = writeCurrentQuestion(aiContext && aiContext.currentQuestion);
-    if (currentQuestionText) {
-        sections.push(currentQuestionText);
-    }
-
     const knowledgeText = writeKnowledge(aiContext && aiContext.knowledge);
     if (knowledgeText) {
         sections.push(knowledgeText);
+    }
+
+    const currentStateText = writeCurrentState(aiContext && aiContext.currentState);
+    if (currentStateText) {
+        sections.push(currentStateText);
+    }
+
+    const currentQuestionText = writeCurrentQuestion(aiContext && aiContext.currentQuestion);
+    if (currentQuestionText) {
+        sections.push(currentQuestionText);
     }
 
     return sections.join('\n\n');

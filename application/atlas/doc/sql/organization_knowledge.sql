@@ -14,6 +14,37 @@
 -- Safe to re-run: CREATE TABLE IF NOT EXISTS.
 -- =============================================================================
 
+There is only one SQL detail I would have Cursor watch carefully in Step 2. With:
+
+SELECT
+    instruction_row.*,
+    image_row.image_path AS image
+
+instruction_row.* already contains the legacy image column, and you're then returning another column named image. Depending on the MySQL driver/result-object behavior, duplicate column names can be confusing or implementation-dependent.
+
+So when implementing the join, I would prefer explicitly selecting the instruction columns and having exactly one resulting image field:
+
+SELECT
+    instruction_row.instruction_id,
+    instruction_row.instruction_for,
+    instruction_row.step_number,
+    instruction_row.title,
+    instruction_row.instruction,
+    instruction_row.image_id,
+    instruction_row.duration,
+    instruction_row.is_optional,
+    instruction_row.created_at,
+    instruction_row.updated_at,
+    image_row.image_path AS image,
+    image_row.alt_text AS image_alt_text
+FROM cloudpilot_instructions AS instruction_row
+LEFT JOIN cloud_pilot_images AS image_row
+    ON instruction_row.image_id = image_row.image_id
+WHERE instruction_row.instruction_for = ?
+ORDER BY instruction_row.step_number ASC;
+
+Cursor should of course use the actual current column list
+
 CREATE TABLE IF NOT EXISTS organization_knowledge (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 

@@ -69,7 +69,7 @@ CLOUDPILOT_AI_SPEND_SEARCH = internal | openai
         │
 understandMessage          # question = ai_spend
 decideNextStep             # IMMEDIATE_EXECUTION → show_ai_usage
-CloudPilot                 # load ai_usage summary → speakKnown
+CloudPilot                 # load cloud_pilot_ai_usage summary → speakKnown
 ```
 
 | Layer | Job |
@@ -111,7 +111,7 @@ Detection is via `searchForAiSpend` → `question = ai_spend` (not an Action lik
 
 Why: CloudPilot is the command center for *this product’s* AI use. Per-response usage is already in hand. Local rows unlock “today / this month / by conversation” without OpenAI’s billing API.
 
-**Later (not MVP):** optional reconciliation job against OpenAI Costs API for finance-grade totals. Same `ai_usage` table stays the product source for chat/UI.
+**Later (not MVP):** optional reconciliation job against OpenAI Costs API for finance-grade totals. Same `cloud_pilot_ai_usage` table stays the product source for chat/UI.
 
 Label UI copy as **Estimated** if you want honesty (`Estimated OpenAI spend`).
 
@@ -126,7 +126,7 @@ Read usage (skip if missing — never fail the chat)
         ↓
 calculateOpenAICost(model, inputTokens, outputTokens)
         ↓
-INSERT ai_usage (one row)
+INSERT cloud_pilot_ai_usage (one row)
 ```
 
 Fire-and-forget insert after the reply is already decided. Usage save must **never** break STEP 7 / Feature 1–3.
@@ -136,7 +136,7 @@ Fire-and-forget insert after the reply is already decided. Usage save must **nev
 ## Database
 
 ```sql
-CREATE TABLE ai_usage (
+CREATE TABLE cloud_pilot_ai_usage (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     organization_id VARCHAR(100) NULL,
     conversation_id VARCHAR(100) NULL,
@@ -148,8 +148,8 @@ CREATE TABLE ai_usage (
     total_tokens INT NOT NULL,
     estimated_cost DECIMAL(10,6) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ai_usage_created (created_at),
-    INDEX idx_ai_usage_org_created (organization_id, created_at)
+    INDEX idx_cloud_pilot_ai_usage_created (created_at),
+    INDEX idx_cloud_pilot_ai_usage_org_created (organization_id, created_at)
 );
 ```
 
@@ -204,7 +204,7 @@ Tiny intents — do **not** fold into AWS `show_billing`.
 
 | User says | Behavior |
 |-----------|----------|
-| “How much have I spent on OpenAI?” / “AI spend today” / “OpenAI costs” | Read `ai_usage` summary → template reply |
+| “How much have I spent on OpenAI?” / “AI spend today” / “OpenAI costs” | Read `cloud_pilot_ai_usage` summary → template reply |
 | “Show all costs” / “AWS + OpenAI” | **Deferred** — needs AWS `show_billing` + AI summary combined |
 
 Suggested action id: `show_ai_usage` — immediate execution, like `show_billing`, but hits local DB not Atlas.
@@ -233,7 +233,7 @@ Average         $0.0038
 
 | Piece | Where |
 |-------|--------|
-| SQL | `doc/sql/ai_usage.sql` (+ `master_sql.sql`) ✅ |
+| SQL | `doc/sql/cloud_pilot_ai_usage.sql` (+ `master_sql.sql`) ✅ |
 | Cost helper | `services/engines/llm/openai/calculateOpenAICost.js` ✅ |
 | Persist | `services/aiUsage/functions/saveAiUsage.js` ← hooked from `createOpenAiChatCompletion` ✅ |
 | DB class | `services/aiUsage/classes/AiUsage.js` ✅ |
@@ -269,7 +269,7 @@ Average         $0.0038
 
 ## Success criteria
 
-- [x] Every successful CloudPilot OpenAI call can leave one `ai_usage` row (when usage present)  
+- [x] Every successful CloudPilot OpenAI call can leave one `cloud_pilot_ai_usage` row (when usage present)  
 - [x] Failed / missing usage → chat still works; no insert required  
 - [x] Summary endpoint + card show today / month / requests / average  
 - [x] Chat answers AI spend without opening the provider dashboard  

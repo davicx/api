@@ -1,6 +1,4 @@
 const OpenAIClient = require('../../../../providers/openAI/client/openAIClient');
-const { buildAIContext } = require('../../../context/buildContext');
-const { buildAISystemMessage } = require('../../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
@@ -19,6 +17,9 @@ HELPERS
 Public entry — shouldRun + Internal | OpenAI.
 Returns { question: 'open_requests' } or {}.
 CloudPilot owns loading request rows and answering.
+
+Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
+Doc: feature_cloud_pilot_context.md Step C
 */
 
 //HELPERS
@@ -52,35 +53,51 @@ function parseOpenAIOpenRequestsResponse(raw) {
     }
 }
 
-//Helper H2: Build messages for open-requests classify
+//Helper H2: Build tiny Open Requests Search TASK messages
 function buildOpenRequestsOpenAIMessages(message) {
-    const processMessageContext = {
-        currentUserMessage: String(message || '')
-    };
+    const userMessage = String(message || '');
 
-    const aiContext = buildAIContext(processMessageContext, {
-        situationTypes: ['open_requests'],
-        includeKnowledge: false
-    });
+    const systemMessage = [
+        'TASK',
+        '',
+        'Determine whether the user is asking to see CloudPilot requests',
+        'that are currently open, pending, or waiting.',
+        '',
+        'Classify only. Do not answer. Do not invent requests.',
+        'Do not treat new action requests (scan, toggle, create) as open-requests questions.',
+        '',
+        'EXAMPLES',
+        '',
+        '"do I have any open requests"',
+        '{"open_requests":true}',
+        '',
+        '"what am I waiting on"',
+        '{"open_requests":true}',
+        '',
+        '"scan ec2"',
+        '{}',
+        '',
+        '"what is a request?"',
+        '{}',
+        '',
+        'Return JSON only:',
+        '{"open_requests":true}',
+        'or',
+        '{}'
+    ].join('\n');
 
-    const systemMessage = buildAISystemMessage(aiContext);
     const messages = [
         { role: 'system', content: systemMessage },
         {
             role: 'user',
-            content:
-                'Follow the SITUATION instructions.\n\n' +
-                'Return JSON only:\n\n' +
-                '{"open_requests":true}\n\n' +
-                'or:\n\n' +
-                '{}'
+            content: 'CURRENT MESSAGE\n\n"' + userMessage + '"\n\nReturn JSON only.'
         }
     ];
 
     return {
         systemMessage: systemMessage,
         messages: messages,
-        aiContext: aiContext
+        contextSummary: OpenAIClient.summarizeSearchTaskContext()
     };
 }
 
@@ -137,7 +154,7 @@ async function searchForOpenRequests(message) {
             capability: 'Open Requests Search',
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
-            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            context: openAIRequest.contextSummary,
             messages: openAIRequest.messages,
             previewOnly: true
         });
@@ -227,7 +244,7 @@ async function searchForOpenRequestsOpenAI(message) {
             model: config.model,
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
-            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            context: openAIRequest.contextSummary,
             messages: openAIRequest.messages,
             previewOnly: false,
             responseText: apiResult.success
@@ -267,5 +284,6 @@ module.exports = {
     shouldRunOpenRequestsSearch,
     searchForOpenRequests,
     searchForOpenRequestsInternal,
-    searchForOpenRequestsOpenAI
+    searchForOpenRequestsOpenAI,
+    buildOpenRequestsOpenAIMessages
 };

@@ -9,13 +9,15 @@
 --   1. cloudpilot_actions   — static action catalog
 --   2. cloudpilot_requests  — user workflow / open request state
 --   3. cloudpilot_history   — audit trail + undo (planned)
---   4. ai_usage             — OpenAI token/cost per CloudPilot call
+--   4. cloud_pilot_ai_usage — OpenAI token/cost per CloudPilot call
 --   5. organization_knowledge (+ tags) — why a resource exists (org facts)
+--   6. cloud_pilot_images   — instruction image catalog (relative paths)
 --
 -- Docs: doc/database/database.md
 --       doc/development/architecture/development_undo_feature.md (history)
---       doc/development/ai_usage.md (ai_usage)
+--       doc/development/finished/feature_ai_spending.md (cloud_pilot_ai_usage)
 --       doc/development/current/feature_organizational_knowledge.md
+--       doc/development/finished/feature_images.md
 --
 -- Usage:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
@@ -24,13 +26,17 @@
 --   mysql -u USER -p DATABASE_NAME < doc/sql/organization_knowledge.sql
 --   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_organization_knowledge.sql
 --
+-- Existing DB — images catalog + link create_ec2 instructions:
+--   mysql -u USER -p DATABASE_NAME < doc/sql/cloud_pilot_images.sql
+--
 -- Verify:
 --   SELECT * FROM cloudpilot_actions;
 --   SELECT * FROM cloudpilot_requests;
 --   SELECT * FROM cloudpilot_history;
---   SELECT * FROM ai_usage;
+--   SELECT * FROM cloud_pilot_ai_usage;
 --   SELECT * FROM organization_knowledge;
 --   SELECT * FROM organization_knowledge_tags;
+--   SELECT * FROM cloud_pilot_images;
 -- =============================================================================
 
 
@@ -180,10 +186,12 @@ CREATE TABLE IF NOT EXISTS cloudpilot_history (
 
 
 -- -----------------------------------------------------------------------------
--- 4. ai_usage (OpenAI spend — see doc/development/ai_usage.md)
+-- 4. cloud_pilot_ai_usage (OpenAI spend — feature_ai_spending.md)
+--     Standalone: doc/sql/cloud_pilot_ai_usage.sql
+--     Rename legacy: doc/sql/alter/ai_usage_rename_cloud_pilot_ai_usage.sql
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS ai_usage (
+CREATE TABLE IF NOT EXISTS cloud_pilot_ai_usage (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
     organization_id VARCHAR(100) NULL,
@@ -203,8 +211,8 @@ CREATE TABLE IF NOT EXISTS ai_usage (
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    INDEX idx_ai_usage_created (created_at),
-    INDEX idx_ai_usage_org_created (organization_id, created_at)
+    INDEX idx_cloud_pilot_ai_usage_created (created_at),
+    INDEX idx_cloud_pilot_ai_usage_org_created (organization_id, created_at)
 );
 
 
@@ -383,3 +391,94 @@ INNER JOIN (
 WHERE ok.master_site = 'kite'
   AND ok.resource_type = 's3_bucket'
   AND ok.resource_name = 'cloudpilot-user-uploads';
+
+
+-- -----------------------------------------------------------------------------
+-- 6. cloud_pilot_images (instruction image catalog)
+--     See doc/development/finished/feature_images.md
+--     Full one-shot for existing DBs (incl. instructions.image_id):
+--       doc/sql/cloud_pilot_images.sql
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS cloud_pilot_images (
+    image_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    image_key VARCHAR(100) NOT NULL,
+    image_name VARCHAR(255) NOT NULL,
+    image_path VARCHAR(500) NOT NULL,
+
+    alt_text VARCHAR(255) NULL,
+    description TEXT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uk_cloud_pilot_images_key (image_key),
+    INDEX idx_cloud_pilot_images_path (image_path)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO cloud_pilot_images
+    (image_key, image_name, image_path, alt_text, description)
+VALUES
+    (
+        'create_ec2_step_1',
+        'Open EC2',
+        'instructions/create_ec2/create_ec2_image_1.png',
+        'Open EC2',
+        'Create EC2 walkthrough step 1 — open the EC2 service'
+    ),
+    (
+        'create_ec2_step_2',
+        'Launch Instance',
+        'instructions/create_ec2/create_ec2_image_2.png',
+        'Launch Instance',
+        'Create EC2 walkthrough step 2 — click Launch Instance'
+    ),
+    (
+        'create_ec2_step_3',
+        'Choose a Name',
+        'instructions/create_ec2/create_ec2_image_3.png',
+        'Choose a Name',
+        'Create EC2 walkthrough step 3 — name the instance'
+    ),
+    (
+        'create_ec2_step_4',
+        'Select an AMI',
+        'instructions/create_ec2/create_ec2_image_4.png',
+        'Select an AMI',
+        'Create EC2 walkthrough step 4 — choose an AMI'
+    ),
+    (
+        'create_ec2_step_5',
+        'Choose an Instance Type',
+        'instructions/create_ec2/create_ec2_image_5.png',
+        'Choose an Instance Type',
+        'Create EC2 walkthrough step 5 — choose instance type'
+    ),
+    (
+        'create_ec2_step_6',
+        'Configure Security',
+        'instructions/create_ec2/create_ec2_image_6.png',
+        'Configure Security',
+        'Create EC2 walkthrough step 6 — review security group'
+    ),
+    (
+        'create_ec2_step_7',
+        'Review Settings',
+        'instructions/create_ec2/create_ec2_image_7.png',
+        'Review Settings',
+        'Create EC2 walkthrough step 7 — review settings'
+    ),
+    (
+        'create_ec2_step_8',
+        'Launch Instance',
+        'instructions/create_ec2/create_ec2_image_8.png',
+        'Launch Instance',
+        'Create EC2 walkthrough step 8 — launch the instance'
+    )
+ON DUPLICATE KEY UPDATE
+    image_name = VALUES(image_name),
+    image_path = VALUES(image_path),
+    alt_text = VALUES(alt_text),
+    description = VALUES(description);

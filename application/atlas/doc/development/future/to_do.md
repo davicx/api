@@ -15,7 +15,7 @@
 
 **History MVP is complete** — see [history.md](../finished/history.md) and [finished.md](../finished/finished.md). Deferred history items: [future_work.md](./future.md).
 
-**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **GitHub pull requests:** [feature_github_pull_requests.md](../current/feature_github_pull_requests.md). **AI:** [Current Development](../current/current_development.md). **Questions (finished):** [feature_questions.md](../finished/feature_questions.md). **AI spending (finished):** [feature_ai_spending.md](../finished/feature_ai_spending.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
+**Active product areas:** [billing.md](./billing.md) (B1 shipped; polish optional). **GitHub pull requests:** [feature_github_pull_requests.md](../current/feature_github_pull_requests.md). **Friendly Create EC2:** [feature_friendly_create_instance.md](../current/feature_friendly_create_instance.md). **AI:** [Current Development](../current/current_development.md). **CloudPilot Context (finished):** [feature_cloud_pilot_context.md](../finished/feature_cloud_pilot_context.md). **CloudPilot Images (finished):** [feature_images.md](../finished/feature_images.md). **Questions (finished):** [feature_questions.md](../finished/feature_questions.md). **AI spending (finished):** [feature_ai_spending.md](../finished/feature_ai_spending.md). **CloudPilot org work (finished A/B/C):** [finished.md](../finished/finished.md).
 
 #### OpenAI Logging — [feature_openai_logs.md](../finished/feature_openai_logs.md) (finished)
 - [x] Phase 1 — header `OPENAI: <Capability> (Request N)` + per-message counter
@@ -84,7 +84,7 @@ Feature 2 — Friendly request conversations
 
 #### AI Usage — OpenAI spend ([feature_ai_spending.md](../finished/feature_ai_spending.md)) (finished)
 
-- [x] Persist `usage` → `ai_usage` + `calculateOpenAICost` (after successful OpenAI calls)
+- [x] Persist `usage` → `cloud_pilot_ai_usage` + `calculateOpenAICost` (after successful OpenAI calls)
 - [x] `GET /ai/usage/summary`
 - [x] Chat `show_ai_usage` (OpenAI only; AWS+AI combo deferred)
 - [x] Kite AI Usage card

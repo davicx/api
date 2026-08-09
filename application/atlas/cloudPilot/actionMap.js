@@ -188,7 +188,7 @@ const actionMap = {
     },
 
     //SERVICE: CloudPilot
-    //Action: OpenAI / AI usage summary (local ai_usage table — not AWS)
+    //Action: OpenAI / AI usage summary (local cloud_pilot_ai_usage table — not AWS)
     show_ai_usage: {
         //Identity
         type: 'show_ai_usage',
@@ -694,6 +694,17 @@ const actionMap = {
             'instance_id'
         ],
 
+        // Verify target exists in Atlas before execution-mode speech
+        // Doc: doc/development/finished/feature_verify_request.md
+        verifyResource: {
+            resourceType: 'ec2',
+            regionField: 'region',
+            scanAction: 'scan_ec2',
+            targets: [
+                { idField: 'instance_id' }
+            ]
+        },
+
         //Optional Defaults
         defaults: {},
 
@@ -770,6 +781,17 @@ const actionMap = {
             'region',
             'instance_id'
         ],
+
+        // Verify target exists in Atlas before execution-mode speech
+        // Doc: doc/development/finished/feature_verify_request.md
+        verifyResource: {
+            resourceType: 'ec2',
+            regionField: 'region',
+            scanAction: 'scan_ec2',
+            targets: [
+                { idField: 'instance_id' }
+            ]
+        },
 
         //Optional Defaults
         defaults: {},

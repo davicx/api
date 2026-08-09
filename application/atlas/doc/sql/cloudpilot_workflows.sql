@@ -1,9 +1,9 @@
 -- =============================================================================
--- CloudPilot Phase 1 — cloudpilot_workflows
+-- cloudpilot_workflows
 -- =============================================================================
 -- Doc: application/atlas/doc/Master_Database.md
 --
--- Phase 1 rules:
+-- Rules:
 --   - At most ONE row with is_open = 1 per conversation_id (enforce in app)
 --   - outcome_code: machine-readable; NULL while open
 --   - No outcome_message — user text lives in messages table

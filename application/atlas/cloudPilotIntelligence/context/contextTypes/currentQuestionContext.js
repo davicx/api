@@ -9,7 +9,7 @@ Application owns this. Temporary for this turn.
 Build from processMessageContext — do not invent AWS facts.
 
 MVP: userMessage + selectedFinding (from request body).
-Later: open request, execution mode, conversation excerpts.
+Open request facts → cloudPilotCurrentStateContext (Step D).
 
 Used by: buildAIContext → buildAISystemMessage → AI
 (Situation / what to look for is cloudPilotSituationContext — not this file.)

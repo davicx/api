@@ -512,7 +512,7 @@ api/application/atlas/
 
 | File | What it does |
 |------|----------------|
-| `AiUsage.js` | Insert + summary aggregates for `ai_usage`. |
+| `AiUsage.js` | Insert + summary aggregates for `cloud_pilot_ai_usage`. |
 | `saveAiUsage.js` | Map OpenAI `usage` → cost → insert (never fails chat). |
 | `calculateOpenAICost.js` | Estimated USD from model + tokens. |
 
@@ -673,7 +673,7 @@ routes/messageRoutes.js
 | `scan_s3` | `scanS3Handler` | ⚠️ `atlasS3Functions` |
 | `inventory_aws` | `inventoryAWSHandler` | ⚠️ `atlasAWSFunctions` |
 | `show_billing` | `billingAWSHandler` | ✅ `billing/getBillingSummary.js` |
-| `show_ai_usage` | `showAiUsageHandler` | local `ai_usage` (not Atlas) |
+| `show_ai_usage` | `showAiUsageHandler` | local `cloud_pilot_ai_usage` (not Atlas) |
 | `general_chat` | — (not STEP 6) | ⚠️ stub; engine in `ai/client/openAIClient.js` |
 
 ---
@@ -690,6 +690,6 @@ routes/messageRoutes.js
 | [doc/development/current/current.md](./doc/development/current/current.md) | AI — live control plane + region + planned chat features |
 | [doc/instructions/chat_use_open_ai.md](./doc/instructions/chat_use_open_ai.md) | How to wire OpenAI into chat features |
 | [doc/sample_env.md](./doc/sample_env.md) | Sample env vars (no secrets) |
-| [doc/development/current/ai_usage.md](./doc/development/current/ai_usage.md) | OpenAI usage tracking |
+| [doc/development/finished/feature_ai_spending.md](./doc/development/finished/feature_ai_spending.md) | OpenAI usage tracking |
 | [doc/development/future/to_do.md](./doc/development/future/to_do.md) | Backlog |
 | [doc/development/finished/finished.md](./doc/development/finished/finished.md) | Shipped work |

@@ -117,10 +117,20 @@ function logOpenAI(options) {
 
     push(' ');
     push('Context Loaded');
-    push(formatContextLine('Identity', context.identity));
-    push(formatContextLine('Situation', context.situation));
-    push(formatContextLine('Current Question', context.currentQuestion));
-    push(formatContextLine('Knowledge', context.knowledge));
+    if (context.mode === 'search_task') {
+        // Search / Question OpenAI — tiny TASK (not Chat Identity stack)
+        push(formatContextLine('Identity', context.identity));
+        push(formatContextLine('Task', context.task));
+        push(formatContextLine('Current Message', context.currentMessage));
+        push(formatContextLine('Examples', context.examples));
+        push(formatContextLine('Knowledge', context.knowledge));
+    } else {
+        push(formatContextLine('Identity', context.identity));
+        push(formatContextLine('Situation', context.situation));
+        push(formatContextLine('Current State', context.currentState));
+        push(formatContextLine('Current Question', context.currentQuestion));
+        push(formatContextLine('Knowledge', context.knowledge));
+    }
     push(' ');
     push('Messages');
     push('----------------------------------');
@@ -223,8 +233,21 @@ function summarizeAIContext(aiContext) {
     return {
         identity: Boolean(context.cloudPilot && context.cloudPilot.loaded),
         situation: Boolean(context.situation && context.situation.loaded),
+        currentState: Boolean(context.currentState && context.currentState.loaded),
         currentQuestion: Boolean(context.currentQuestion && context.currentQuestion.loaded),
         knowledge: Boolean(context.knowledge && context.knowledge.loaded)
+    };
+}
+
+/** Context Loaded lines for Search / Question OpenAI TASK prompts */
+function summarizeSearchTaskContext() {
+    return {
+        mode: 'search_task',
+        identity: false,
+        task: true,
+        currentMessage: true,
+        examples: true,
+        knowledge: false
     };
 }
 
@@ -605,6 +628,7 @@ module.exports = {
     flushOpenAILogs,
     logOpenAIMessageFooter,
     summarizeAIContext,
+    summarizeSearchTaskContext,
     logOpenAIMessageContext,
     logOpenAIResponse,
     logOpenAICost,

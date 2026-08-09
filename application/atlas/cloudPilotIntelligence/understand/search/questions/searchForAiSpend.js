@@ -1,6 +1,4 @@
 const OpenAIClient = require('../../../../providers/openAI/client/openAIClient');
-const { buildAIContext } = require('../../../context/buildContext');
-const { buildAISystemMessage } = require('../../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
@@ -18,7 +16,10 @@ HELPERS
 
 Public entry — shouldRun + Internal | OpenAI.
 Returns { question: 'ai_spend' } or {}.
-CloudPilot owns loading ai_usage and answering.
+CloudPilot owns loading cloud_pilot_ai_usage and answering.
+
+Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
+Same family as Region / Open Requests Search.
 */
 
 //HELPERS
@@ -49,35 +50,53 @@ function parseOpenAIAiSpendResponse(raw) {
     }
 }
 
-//Helper H2: Build messages for AI spend classify
+//Helper H2: Build tiny AI Spend Search TASK messages
 function buildAiSpendOpenAIMessages(message) {
-    const processMessageContext = {
-        currentUserMessage: String(message || '')
-    };
+    const userMessage = String(message || '');
 
-    const aiContext = buildAIContext(processMessageContext, {
-        situationTypes: ['ai_spend'],
-        includeKnowledge: false
-    });
+    const systemMessage = [
+        'TASK',
+        '',
+        'Determine whether the user is asking about CloudPilot AI / OpenAI',
+        'usage or spend.',
+        '',
+        'Return a hit only when the user is clearly asking about AI or OpenAI',
+        'spend, cost, or usage.',
+        'Do not treat AWS billing or cloud infrastructure cost questions as AI spend.',
+        'Classify only — do not invent dollar amounts or usage totals.',
+        '',
+        'EXAMPLES',
+        '',
+        '"how much have I spent on openai"',
+        '{"ai_spend":true}',
+        '',
+        '"show my ai spend"',
+        '{"ai_spend":true}',
+        '',
+        '"how much is my EC2 costing"',
+        '{}',
+        '',
+        '"scan ec2"',
+        '{}',
+        '',
+        'Return JSON only:',
+        '{"ai_spend":true}',
+        'or',
+        '{}'
+    ].join('\n');
 
-    const systemMessage = buildAISystemMessage(aiContext);
     const messages = [
         { role: 'system', content: systemMessage },
         {
             role: 'user',
-            content:
-                'Follow the SITUATION instructions.\n\n' +
-                'Return JSON only:\n\n' +
-                '{"ai_spend":true}\n\n' +
-                'or:\n\n' +
-                '{}'
+            content: 'CURRENT MESSAGE\n\n"' + userMessage + '"\n\nReturn JSON only.'
         }
     ];
 
     return {
         systemMessage: systemMessage,
         messages: messages,
-        aiContext: aiContext
+        contextSummary: OpenAIClient.summarizeSearchTaskContext()
     };
 }
 
@@ -132,7 +151,7 @@ async function searchForAiSpend(message) {
             capability: 'AI Spend Search',
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
-            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            context: openAIRequest.contextSummary,
             messages: openAIRequest.messages,
             previewOnly: true
         });
@@ -224,7 +243,7 @@ async function searchForAiSpendOpenAI(message) {
             model: config.model,
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
-            context: OpenAIClient.summarizeAIContext(openAIRequest.aiContext),
+            context: openAIRequest.contextSummary,
             messages: openAIRequest.messages,
             previewOnly: false,
             responseText: apiResult.success
@@ -264,5 +283,6 @@ module.exports = {
     shouldRunAiSpendSearch,
     searchForAiSpend,
     searchForAiSpendInternal,
-    searchForAiSpendOpenAI
+    searchForAiSpendOpenAI,
+    buildAiSpendOpenAIMessages
 };

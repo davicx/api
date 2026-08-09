@@ -5,7 +5,7 @@
 **Status:** Active — all other product work lives in [future/](../future/).
 
 > **Active work:** [Current Development](../current/current_development.md)  
-> **Architecture & how-to:** [Architecture](../architecture/architecture.md) · [How-to guides](../how_to/README.md)  
+> **Architecture & how-to:** [Architecture](../architecture/architecture.md) · [How-to guides](../how_to/how_to_guides.md)  
 > **Deferred:** [to_do.md](./to_do.md) · [scans.md](./scans.md) · [remediations.md](./remediations.md)
 
 ---

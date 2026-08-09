@@ -25,6 +25,13 @@ const CONFIRM_MESSAGES = [
     'execute'
 ];
 
+const DECLINE_MESSAGES = [
+    'no',
+    'nope',
+    'no thanks',
+    'no thank you'
+];
+
 const CANCEL_PHRASES = ['cancel', 'stop', 'never mind', 'nevermind', 'forget it', 'abort', 'quit'];
 
 const SearchLogs = require('./helpers/searchLogs');
@@ -49,6 +56,10 @@ function searchMessageForReply(message) {
 
             if (result === null && CONFIRM_MESSAGES.includes(normalized)) {
                 result = 'confirm';
+            }
+
+            if (result === null && DECLINE_MESSAGES.includes(normalized)) {
+                result = 'decline';
             }
         }
     }
