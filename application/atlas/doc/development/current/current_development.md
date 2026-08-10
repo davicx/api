@@ -7,7 +7,8 @@ This is the active-work dashboard. It contains only features we are working on n
 ## End-of-day handoff — 2026-08-08
 
 Active work includes [Friendly Create EC2](./feature_friendly_create_instance.md),
-[Organizational Knowledge](./feature_organizational_knowledge.md), and
+[Organizational Knowledge](./feature_organizational_knowledge.md),
+[CloudPilot Safety](./feature_cloud_pilot_safety.md), and
 [GitHub Pull Requests](./feature_github_pull_requests.md).
 [CloudPilot Context](../finished/feature_cloud_pilot_context.md) shipped today
 (A–E: Identity, Search TASK, CURRENT STATE, `ec2_inventory`).
@@ -25,8 +26,9 @@ Active work includes [Friendly Create EC2](./feature_friendly_create_instance.md
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
-| [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Plan locked — **awaiting approval** |
+| [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Plan locked — **awaiting Step 0 / Step 1** |
 | [Organizational Knowledge](./feature_organizational_knowledge.md) | Why an S3 bucket exists (org facts + tags). | Step 1 — DB + tags SQL ready; apply when ready |
+| [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
 | [GitHub Pull Requests](./feature_github_pull_requests.md) | Creates a safe GitHub pull request instead of changing AWS directly. | Steps 0–6 mostly shipped; **Step 7 manual E2E** still open |
 
 ## Just finished

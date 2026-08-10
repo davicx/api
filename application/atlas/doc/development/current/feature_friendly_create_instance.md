@@ -18,11 +18,12 @@ Then the **existing** request / action flow runs unchanged.
 
 ## Current step
 
-**Plan only — awaiting approval before coding.**
+**Plan locked — awaiting Step 0 / Step 1.**
 
 ## Next
 
-Approve this plan, then say **do Step 1** (add `createEC2Context` + `createEC2Guidance`, wire guided start).
+Say **do Step 0** to inspect the current create speak points and confirm the exact file-touch map.  
+Then say **do Step 1** to add `createEC2Context` + `createEC2Guidance` and wire guided start.
 
 **Status:** Active (plan)  
 **Codename:** `feature_friendly_create_instance`  
@@ -47,32 +48,39 @@ Different requests should eventually feel different (create = educational/reassu
 | Scope | **`create_ec2` only** — no `RequestContextRegistry`, `GuidanceEngine`, etc. |
 | Later pattern | If delete/pause grow the same pair, *then* you’ve discovered a real pattern |
 | Execution layer | **Unchanged** — same handler → Atlas `/ec2/create` |
+| Orchestrator | **Existing CloudPilot request flow owns WHEN** — Guidance does not become a new orchestration layer |
+| Handler boundary | `createEC2Handler.js` **does**, not **speaks** |
 | Live AWS for this feature | Optional; demo fine on Atlas **Test** mocks |
-| Pricing | **Estimated compute cost** when CloudPilot has data — never invent; not “total bill” |
+| Pricing | **Estimated compute cost** when CloudPilot has data — never invent; not “total bill”; never hardcode real prices in Context |
 | “Securely” language | **Forbidden** unless CloudPilot knows real protections |
 | Reassure with truth | “I’ll show you exactly what will be created before anything changes.” |
 | Post-create alerts / pause | Suggest next actions; label **Coming soon / Demo** until real |
 | Confirm UX | Prefer **Create · Cancel** UI later; chat `yes` OK until then |
 | Deterministic speak | Guidance drives start / review / confirm / success with OpenAI **off**; context feeds Chat/OpenAI when on |
+| Major new abstraction | **Forbidden** in this feature — no framework / engine / registry unless a later second request type proves the pattern |
 
 ---
 
 ## Context vs Guidance (aligned)
 
 ```text
-CREATE EC2 REQUEST
-
-        createEC2Context
-                ↓
-        What should I know?
-
-        createEC2Guidance
-                ↓
-        How should I guide them?
-
-                ↓
-        Existing CloudPilot
-        request / action flow
+                    createEC2Context
+                     facts / rules
+                          │
+                          ▼
+User → Existing create_ec2 request flow
+              │
+              ├── STARTED  → createEC2Guidance
+              ├── MISSING  → createEC2Guidance
+              ├── READY    → createEC2Guidance
+              ├── CONFIRM  → createEC2Guidance
+              └── SUCCESS  → createEC2Guidance
+                          │
+                          ▼
+                   Existing execution
+                          │
+                          ▼
+                     Atlas / Test
 ```
 
 ### 1. Request Context — what CloudPilot should know
@@ -83,13 +91,25 @@ create_ec2_context  →  createEC2Context.js
 - What creating an EC2 instance means
 - What instance type means
 - What region means
-- Pricing information CloudPilot has available
+- Pricing reasoning rules CloudPilot has available
 - Security considerations (what we can / cannot claim)
 - What happens after creation
 - Available follow-up actions
 ```
 
 Answers: **"What does CloudPilot need to know about this request?"**
+
+Context can know:
+
+```text
+Instance type affects compute cost.
+Region can affect pricing.
+Running continuously costs more than stopping when unused.
+Only show an estimate when CloudPilot has pricing data.
+Estimate is compute cost, not total AWS bill.
+```
+
+Context must **not** hardcode actual current prices like `t3.micro = $7.59/month`.
 
 ### 2. Request Guidance — how CloudPilot should guide the user
 
@@ -132,12 +152,12 @@ cloudPilot/
     createEC2Guidance.js      # NEW — walkthrough copy / stages
 ```
 
-Optional thin `createEC2.js` only if it helps export helpers — **not** a registry.
+Optional thin `createEC2.js` only if it helps export helpers — **not** a registry or framework.
 
 **Only `create_ec2` imports these.**  
 Later evidence may add `deleteEC2Context` / `pauseEC2Guidance` — not now.
 
-Wire guidance into existing speak points (`requestTemplates` / action messages / handler success) by calling create-specific helpers when `action === create_ec2` — avoid a global GuidanceEngine.
+Wire guidance into existing speak points by calling create-specific helpers when `action === create_ec2` — avoid a global GuidanceEngine.
 
 ---
 
@@ -163,7 +183,7 @@ Nothing will be created until you review and approve it.
 ### 2. Fields collected — ready for mode pick (Guidance: before execution / review)
 
 ```text
-Your EC2 instance is ready to create.
+I have everything I need to create your EC2 instance.
 
 Name: my-app-server
 Region: us-west-2
@@ -223,12 +243,17 @@ You can now ask me things like:
 ## Architecture boundary
 
 ```text
-User
-  → createEC2Guidance (walkthrough stages)
-  → createEC2Context (facts / rules for Chat when needed)
-  → existing request + execution modes
-  → createEC2Handler → Atlas /ec2/create (live or Test)
-  → guidance after-execution message
+Existing CloudPilot request flow
+  owns WHEN
+
+createEC2Context
+  owns WHAT CLOUDPILOT KNOWS
+
+createEC2Guidance
+  owns HOW CLOUDPILOT EXPLAINS
+
+createEC2Handler
+  owns WHAT CLOUDPILOT DOES
 ```
 
 **Out of scope**
@@ -247,10 +272,10 @@ User
 |------|------|--------|
 | Context | `…/createEC2/createEC2Context.js` | **NEW** — knowledge block |
 | Guidance | `…/createEC2/createEC2Guidance.js` | **NEW** — stage copy builders |
-| Started / missing | `actionMap.js` and/or guidance-driven started | Call guidance for create |
+| Started / missing | existing speak points | Call guidance for create |
 | Ready + modes | `chat/templates/requestTemplates.js` | If `create_ec2`, use guidance review |
 | Confirm | `requestTemplates.js` | Create-specific confirm via guidance |
-| Success | `createEC2Handler.js` | Guidance after-execution message |
+| Success | existing speaking / outcome layer | After execution result, call create guidance success |
 | Chat (optional) | append create context when OpenAI speaks about create | Context only |
 | Kite (later) | Create · Cancel buttons | Step 5 |
 
@@ -262,6 +287,7 @@ User
 
 - [ ] Confirm folder: beside `createEC2Handler` vs under `requests/createEC2/`
 - [ ] Map speak stages: started → missing → ready/modes → confirm → success
+- [ ] Confirm success speak can happen after execution result without pushing presentation into `createEC2Handler.js`
 
 ### Step 1 — Add the two files + guided start
 
@@ -273,11 +299,13 @@ User
 
 - [ ] Guidance review summary (name / region / type / cost if known)
 - [ ] Honest PR handling for create
+- [ ] Use “I have everything I need to create your EC2 instance” wording (not “ready to create”)
 
 ### Step 3 — Confirm + success
 
 - [ ] Safer automatic confirm
 - [ ] Rich success + Coming soon next steps
+- [ ] Keep `createEC2Handler.js` free of presentation
 - [ ] End-to-end Atlas Test
 
 ### Step 4 — Optional: feed Context into Chat
@@ -300,6 +328,8 @@ User
 | Success (Test) | Rich card + Coming soon labels |
 | No false “secure” | |
 | OpenAI off | Friendly flow still works |
+| No framework | No `GuidanceEngine` / registry / extra orchestration layer |
+| Handler boundary | `createEC2Handler.js` still just does the work |
 
 ---
 

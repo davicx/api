@@ -6,7 +6,9 @@
 #ALL#
 #########
 
-SELECT * FROM cloud_pilot_ai_usage;
+
+#UPDATE shareshare.groups SET group_name = "A weekend in Sunriver" WHERE group_id = 70;
+SELECT * FROM shareshare.groups;
 
 #SELECT * FROM cloudpilot_workflows;
 
