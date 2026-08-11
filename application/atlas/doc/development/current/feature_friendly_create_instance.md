@@ -18,16 +18,152 @@ Then the **existing** request / action flow runs unchanged.
 
 ## Current step
 
-**Plan locked — awaiting Step 0 / Step 1.**
+**Step 0 complete — speak-point map below. No code changed.**
 
 ## Next
 
-Say **do Step 0** to inspect the current create speak points and confirm the exact file-touch map.  
-Then say **do Step 1** to add `createEC2Context` + `createEC2Guidance` and wire guided start.
+Review the Step 0 map, then say **do Step 1** (add `createEC2Context` +
+`createEC2Guidance`, wire guided start only).
 
-**Status:** Active (plan)  
+**Status:** Active (Step 0 done)  
 **Codename:** `feature_friendly_create_instance`  
-**Related:** [Current Development](./current_development.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [CloudPilot Images](../finished/feature_images.md) · [Pause / Resume](../finished/feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](./current_development.md) · [CloudPilot MVP](./feature_mvp.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [CloudPilot Images](../finished/feature_images.md) · [Pause / Resume](../finished/feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md)
+
+---
+
+# Step 0 — Speak-point map (2026-08-11)
+
+Inspect only. No files added or refactored.
+
+## Folder placement
+
+```text
+cloudPilot/actions/createEC2/
+  createEC2Handler.js          EXISTING — keep here
+  createEC2Context.js          NEW in Step 1 — beside handler
+  createEC2Guidance.js         NEW in Step 1 — beside handler
+```
+
+Stay under `actions/createEC2/`. Do not create `requests/createEC2/`.
+
+## Speak-point map
+
+```text
+STARTED
+  file/function:
+    cloudPilot/chat/request/RequestConversation.js
+      → mapResponseTypeToActionEvent('ask_for_missing_fields') = 'new_action'
+        when requestOutcome.action === 'created'
+    cloudPilot/chat/CloudPilotMessage.js → speakRequest()
+    cloudPilot/chat/templates/requestTemplates.js
+      → cloudPilotRespondNewRequest()
+  current speaker:
+    actionMap.create_ec2.messages.started
+      ("Preparing EC2 create.")
+    OR fieldPromptExamples.buildMissingFieldsMessage() when fields missing
+  proposed create guidance hook:
+    In cloudPilotRespondNewRequest(), if actionDefinition.type === 'create_ec2',
+    call createEC2Guidance.buildStartedMessage(...) instead of
+    messages.started / generic missing intro.
+    Include the START choices list (name, region, instance type).
+
+MISSING
+  file/function:
+    RequestConversation.mapResponseTypeToActionEvent
+      → 'missing_fields_given' when requestOutcome.action === 'updated'
+    requestTemplates.js → cloudPilotRespondMissingFieldsGiven()
+    fieldPromptExamples.js → buildMissingFieldsMessage()
+  current speaker:
+    Generic "Great, I now have the <field>." + missing-field format examples
+  proposed create guidance hook:
+    In cloudPilotRespondMissingFieldsGiven(), if create_ec2,
+    call createEC2Guidance.buildMissingFieldsMessage(...)
+    Keep fieldPromptExamples for the copy-paste lines;
+    Guidance owns the educational wrapper / demo-default wording.
+
+READY / MODE PICK
+  file/function:
+    decideNextStep → RESPONSE_TYPE.AWAITING_EXECUTION_MODE
+    RequestConversation → actionEvent 'awaiting_execution_mode'
+    requestTemplates.js → cloudPilotRespondAwaitingExecutionMode()
+  current speaker:
+    Hardcoded:
+      "Everything is ready.
+       How would you like me to perform this action?
+       1. Instructions
+       2. CLI Commands
+       3. Pull Request
+       4. Cloud Pilot Does It"
+  proposed create guidance hook:
+    In cloudPilotRespondAwaitingExecutionMode(), if create_ec2,
+    call createEC2Guidance.buildReadyReviewMessage(collected)
+    then append the existing mode list.
+    Show ACTUAL choices (name / region / instance type / cost if known).
+    Prefer “I have everything I need…” over “Everything is ready.”
+
+CONFIRM
+  file/function:
+    decideNextStep → RESPONSE_TYPE.AWAITING_CONFIRMATION
+      (after user picks automatic / mode 4)
+    RequestConversation → actionEvent 'awaiting_confirmation'
+    requestTemplates.js → cloudPilotRespondAwaitingConfirmation()
+  current speaker:
+    actionMap.create_ec2.messages.ready
+      ("Everything is ready for the EC2 create.")
+    + "Would you like me to execute this action?"
+    + optional "Execution mode: automatic"
+  proposed create guidance hook:
+    In cloudPilotRespondAwaitingConfirmation(), if create_ec2,
+    call createEC2Guidance.buildConfirmMessage(collected, executionMode).
+    Repeat ACTUAL choices and say this creates a real AWS resource.
+
+SUCCESS
+  file/function:
+    RequestConversation.conversation()
+      first branch: if executionOutcome.ran && cloudPilotMessage
+        → CloudPilotMessage.speakKnown(executionOutcome)
+    createEC2Handler.js currently builds:
+      "Created EC2 instance <id> in <region>."
+  current speaker:
+    createEC2Handler (execution result message)
+  proposed create guidance hook:
+    Keep createEC2Handler free of rich presentation.
+    Preferred: after Automatic execution, in RequestConversation
+    (or a thin success speak helper), if pendingAction === 'create_ec2'
+    and execution succeeded, replace/wrap the handler message with
+    createEC2Guidance.buildSuccessMessage(executionResult, collected).
+    Success claims only facts from atlasResponse / known collected fields.
+    Do not put walkthrough copy into createEC2Handler.js.
+```
+
+## Handler boundary confirmation
+
+Success speak can happen **after** execution without growing presentation inside
+`createEC2Handler.js`:
+
+```text
+STEP 6 execute → createEC2Handler returns atlas data + thin/default message
+STEP 7 RequestConversation sees executionOutcome
+        → create-specific success guidance uses atlasResponse facts
+        → speakKnown(rich create success)
+```
+
+Handler may keep a short fallback message for non-conversation callers; rich
+create UX belongs in Guidance.
+
+## Step 1 touch map (preview only)
+
+```text
+NEW
+  actions/createEC2/createEC2Context.js
+  actions/createEC2/createEC2Guidance.js
+
+UPDATE (thin create_ec2 branch only)
+  chat/templates/requestTemplates.js
+    cloudPilotRespondNewRequest  ← Step 1 start
+```
+
+Steps 2–3 wire READY / CONFIRM / SUCCESS. Do not start those in Step 1.
 
 ---
 
@@ -36,6 +172,24 @@ Then say **do Step 1** to add `createEC2Context` + `createEC2Guidance` and wire 
 > AWS is complicated, but CloudPilot knows what's happening, explains it, shows consequences, asks before anything important, and keeps helping after the action completes.
 
 Different requests should eventually feel different (create = educational/reassuring; delete = cautious; pause = simple) — **same CloudPilot architecture**, different per-request experience. Prove it on create first.
+
+---
+
+## Locked architecture
+
+```text
+Existing request flow  → WHEN
+createEC2Context       → WHAT CLOUDPILOT KNOWS
+createEC2Guidance      → HOW CLOUDPILOT EXPLAINS
+createEC2Handler       → WHAT CLOUDPILOT DOES
+```
+
+`createEC2Guidance` is **not** an orchestrator. The existing request flow decides
+the stage (`STARTED`, `MISSING`, `READY`, `CONFIRM`, success after execution);
+guidance only supplies the create-specific experience for that stage.
+
+`createEC2Handler.js` stays free of presentation: no walkthrough strings,
+recommendations, pricing explanations, or UI behavior.
 
 ---
 
@@ -54,9 +208,12 @@ Different requests should eventually feel different (create = educational/reassu
 | Pricing | **Estimated compute cost** when CloudPilot has data — never invent; not “total bill”; never hardcode real prices in Context |
 | “Securely” language | **Forbidden** unless CloudPilot knows real protections |
 | Reassure with truth | “I’ll show you exactly what will be created before anything changes.” |
+| Success claims | Success guidance must describe **facts from the execution result**. Do not claim tags, status, pricing, or protections unless known. |
+| Instance-type suggestion | Suggest a small type only when CloudPilot has enough information; otherwise offer `t3.micro` as a **demo/default choice**, not a workload recommendation |
 | Post-create alerts / pause | Suggest next actions; label **Coming soon / Demo** until real |
 | Confirm UX | Prefer **Create · Cancel** UI later; chat `yes` OK until then |
 | Deterministic speak | Guidance drives start / review / confirm / success with OpenAI **off**; context feeds Chat/OpenAI when on |
+| OpenAI timing | Steps 1–3 first with OpenAI off; Step 4 Context→Chat only after deterministic create feels excellent |
 | Major new abstraction | **Forbidden** in this feature — no framework / engine / registry unless a later second request type proves the pattern |
 
 ---
@@ -122,7 +279,10 @@ BEFORE COLLECTING INFORMATION
 
 WHILE COLLECTING INFORMATION
 - Explain unfamiliar fields
-- Suggest a small instance when appropriate
+- Suggest a small instance only when CloudPilot has enough
+  information to make that recommendation
+- Otherwise offer t3.micro as a demo/default choice,
+  not as a workload recommendation
 
 BEFORE EXECUTION
 - Show a review
@@ -131,14 +291,30 @@ BEFORE EXECUTION
 - Ask for confirmation
 
 AFTER EXECUTION
-- Explain what was created
-- Show status, tags, price (when known)
+- Explain what was created from known execution-result facts
+- Show status, tags, price only when known from the result
 - Suggest cost alert / pause (Coming soon until live)
 ```
 
 Answers: **"How should CloudPilot walk the user through this request?"**
 
----
+### Choices summary pattern (not a new system)
+
+Create guidance should repeat the same small set of choices at the start and again when values are known:
+
+```text
+START (choices we will collect)
+• name
+• region
+• instance type (instanceSize)
+
+READY / CONFIRM / SUCCESS (actual choices)
+• name: …
+• region: …
+• instance type: …
+```
+
+This is copy structure inside `createEC2Guidance.js`, not a new choices engine, form framework, or request-state redesign. The existing request flow still owns collecting those fields.
 
 ## MVP file layout (two files + thin entry — no framework)
 
@@ -228,6 +404,7 @@ Status: Running
 Estimated compute cost: ~$X/month if continuously running   ← only if known
 
 I've tagged the instance so CloudPilot can identify and manage it later.
+← only if the create result confirms the tag was applied
 
 You can now ask me things like:
 • Pause this instance
@@ -283,11 +460,11 @@ createEC2Handler
 
 ## Implementation steps (after approval)
 
-### Step 0 — Inspect
+### Step 0 — Inspect only (no code changes)
 
-- [ ] Confirm folder: beside `createEC2Handler` vs under `requests/createEC2/`
-- [ ] Map speak stages: started → missing → ready/modes → confirm → success
-- [ ] Confirm success speak can happen after execution result without pushing presentation into `createEC2Handler.js`
+- [x] Folder placement: beside `createEC2Handler` under `actions/createEC2/`
+- [x] Speak-point map recorded above (STARTED → SUCCESS)
+- [x] Success speak can happen after execution without presentation in handler
 
 ### Step 1 — Add the two files + guided start
 
@@ -305,10 +482,14 @@ createEC2Handler
 
 - [ ] Safer automatic confirm
 - [ ] Rich success + Coming soon next steps
+- [ ] Success claims only facts from the execution result
 - [ ] Keep `createEC2Handler.js` free of presentation
 - [ ] End-to-end Atlas Test
 
 ### Step 4 — Optional: feed Context into Chat
+
+Do **not** combine with Steps 1–3. Deterministic OpenAI-off create must feel
+excellent first.
 
 - [ ] When OpenAI is on for create-related speak, attach `createEC2Context`
 - [ ] Templates remain primary with OpenAI off
@@ -323,9 +504,11 @@ createEC2Handler
 |-------|----------|
 | Only create uses context/guidance files | No registry / engine |
 | `create ec2` | Calm guided intro |
+| Collecting fields | `t3.micro` is demo/default unless CloudPilot can honestly recommend |
 | Ready | Review before modes |
 | Mode 4 | Explicit confirm + charges |
 | Success (Test) | Rich card + Coming soon labels |
+| Success claims | No tags/status/price claims unless known from result |
 | No false “secure” | |
 | OpenAI off | Friendly flow still works |
 | No framework | No `GuidanceEngine` / registry / extra orchestration layer |

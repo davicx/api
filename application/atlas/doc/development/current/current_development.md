@@ -1,18 +1,14 @@
 # Current Development — What We Are Working On
 
-**Last updated:** 2026-08-10  
+**Last updated:** 2026-08-11  
 
 This is the active-work dashboard. It contains only features we are working on now.
 
-## End-of-day handoff — 2026-08-10
+## End-of-day handoff — 2026-08-11
 
-Active work includes [Feature Chat](./feature_chat.md),
-[Friendly Create EC2](./feature_friendly_create_instance.md),
-[Organizational Knowledge](./feature_organizational_knowledge.md),
-[CloudPilot Safety](./feature_cloud_pilot_safety.md), and
-[GitHub Pull Requests](./feature_github_pull_requests.md).
-[CloudPilot Context](../finished/feature_cloud_pilot_context.md) shipped earlier
-(A–E: Identity, Search TASK, CURRENT STATE, `ec2_inventory`).
+MVP product boundary locked in [CloudPilot MVP](./feature_mvp.md)
+(Create / Delete / Pause-Resume / History UI / PR concept). Friendly Create is
+at Step 0 complete → next Step 1.
 
 ## How to use these docs
 
@@ -27,8 +23,9 @@ Active work includes [Feature Chat](./feature_chat.md),
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
+| [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
 | [Feature Chat](./feature_chat.md) | Friendly request presentation when OpenAI is on; deterministic templates stay Internal + fallback. | Plan locked — **awaiting Step 1** |
-| [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Plan locked — **awaiting Step 0 / Step 1** |
+| [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Step 0 done — speak-point map; **next: Step 1** |
 | [Organizational Knowledge](./feature_organizational_knowledge.md) | Why an S3 bucket exists (org facts + tags). | Step 1 — DB + tags SQL ready; apply when ready |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
 | [GitHub Pull Requests](./feature_github_pull_requests.md) | Creates a safe GitHub pull request instead of changing AWS directly. | Steps 0–6 mostly shipped; **Step 7 manual E2E** still open |
