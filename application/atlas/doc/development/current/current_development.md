@@ -1,16 +1,17 @@
 # Current Development — What We Are Working On
 
-**Last updated:** 2026-08-08  
+**Last updated:** 2026-08-10  
 
 This is the active-work dashboard. It contains only features we are working on now.
 
-## End-of-day handoff — 2026-08-08
+## End-of-day handoff — 2026-08-10
 
-Active work includes [Friendly Create EC2](./feature_friendly_create_instance.md),
+Active work includes [Feature Chat](./feature_chat.md),
+[Friendly Create EC2](./feature_friendly_create_instance.md),
 [Organizational Knowledge](./feature_organizational_knowledge.md),
 [CloudPilot Safety](./feature_cloud_pilot_safety.md), and
 [GitHub Pull Requests](./feature_github_pull_requests.md).
-[CloudPilot Context](../finished/feature_cloud_pilot_context.md) shipped today
+[CloudPilot Context](../finished/feature_cloud_pilot_context.md) shipped earlier
 (A–E: Identity, Search TASK, CURRENT STATE, `ec2_inventory`).
 
 ## How to use these docs
@@ -26,6 +27,7 @@ Active work includes [Friendly Create EC2](./feature_friendly_create_instance.md
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
+| [Feature Chat](./feature_chat.md) | Friendly request presentation when OpenAI is on; deterministic templates stay Internal + fallback. | Plan locked — **awaiting Step 1** |
 | [Friendly Create EC2](./feature_friendly_create_instance.md) | Guide / review / confirm / success for `create_ec2` (`create_ec2_context`) — not Atlas changes. | Plan locked — **awaiting Step 0 / Step 1** |
 | [Organizational Knowledge](./feature_organizational_knowledge.md) | Why an S3 bucket exists (org facts + tags). | Step 1 — DB + tags SQL ready; apply when ready |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |

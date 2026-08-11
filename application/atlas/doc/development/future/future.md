@@ -1,8 +1,9 @@
 # Future work
 
-**Last reviewed:** 2026-07-05
+**Last reviewed:** 2026-08-10
 
-> **Active plans:** [scans.md](./scans.md) · [billing.md](./billing.md) · [history.md](../finished/history.md) · **Shipped:** [finished.md](../finished/finished.md) · **Platform:** [To_do.md](./to_do.md)
+> **Active plans:** [scans.md](./scans.md) · [billing.md](./billing.md) · [history.md](../finished/history.md) · **Shipped:** [finished.md](../finished/finished.md) · **Platform:** [To_do.md](./to_do.md)  
+> **Chat backlog:** [feature_chat_guardrails.md](./feature_chat_guardrails.md) (after [feature_chat](../current/feature_chat.md))
 
 ## History & undo
 
@@ -167,6 +168,16 @@ understand
 Also: when an open request is waiting on a field and understanding finds nothing applicable, prefer **re-ask missing fields** over falling through to general chat.
 
 Establish this pattern on **region** before expanding OpenAI to action search / other fields.
+
+---
+
+## Chat — off-topic guardrails (later)
+
+**Do nothing for MVP demos.** Spec: [feature_chat_guardrails.md](./feature_chat_guardrails.md).
+
+Allow occasional casual chat; after a **consecutive** off-topic streak (~4), deterministic redirect back to tech / AWS / engineering. Reset streak on any in-domain turn. Broad in-domain (not AWS-only).
+
+Ship after friendlier request-field presentation — [feature_chat](../current/feature_chat.md).
 
 ---
 
