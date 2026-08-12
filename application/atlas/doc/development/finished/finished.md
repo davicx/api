@@ -6,6 +6,10 @@
 
 ---
 
+## Recently finished (2026-08-11)
+
+- [x] **Friendly Create EC2** — create Context + Guidance (start/review/confirm/success) + Chat create knowledge; Kite Create · Cancel deferred — [feature_friendly_create_instance.md](./feature_friendly_create_instance.md)
+
 ## Recently finished (2026-08-08)
 
 - [x] **CloudPilot Context** — Chat Identity vs tiny Search TASK; CURRENT STATE; `ec2_inventory` → `scan_ec2` — [feature_cloud_pilot_context.md](./feature_cloud_pilot_context.md)

@@ -20,7 +20,11 @@ FUNCTIONS A: All Functions Related to Groups
 	1) Function A1: Check if users are already in the group
 	2) Function A2: Check if Group exists (by ID)
 	3) Function A3: Check if a User is in a Group
-	10) Function A10: Get a users total Groups Count
+	4) Function A4: Get a users total Groups Count
+	5) Function A5: Process Group Users from Request
+	6) Function A6: Create Group and Add Users
+	7) Function A7: Send Group Notifications and Requests
+	8) Function A8: Verify Post Matches Site (group_type vs item/post)
 
 */
 
@@ -144,7 +148,7 @@ async function checkUserInGroup(userName, groupID)  {
 
 }
 
-//Function A10: Get a users total Groups Count
+//Function A4: Get a users total Groups Count
 async function getUserGroupCount(userName) {
     const connection = db.getConnection();
     
@@ -179,6 +183,7 @@ async function getUserGroupCount(userName) {
     });
 }
 
+//Function A5: Process Group Users from Request
 function processGroupUsers(req) {
     let newGroupUsersRaw;
 
@@ -199,6 +204,7 @@ function processGroupUsers(req) {
     return newGroupUsers; // Optionally return the final array
 }
 
+//Function A6: Create Group and Add Users
 async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers) {
 	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
 	if (groupOutcome.outcome !== 1) {
@@ -225,6 +231,7 @@ async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType
 	};
 }
 
+//Function A7: Send Group Notifications and Requests
 async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupID, message, link, type) {
 	const notification = {
 		masterSite: "kite",
@@ -247,7 +254,75 @@ async function sendGroupNotificationsAndRequests(currentUser, groupUsers, groupI
 	Requests.newGroupRequest(request);
 }
 
-module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, getUserGroupCount, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests }
+//Function A8: Verify Post Matches Site (group_type vs item/post)
+// intendedContent: "item" (wishlist only) or "post" (kite only — text/photo/video)
+async function verifyPostMatchesSite(groupID, intendedContent) {
+	const connection = db.getConnection();
+
+	var verifyOutcome = {
+		success: false,
+		groupType: "",
+		message: "",
+		errors: []
+	};
+
+	return new Promise(function(resolve, reject) {
+		try {
+			const queryString = "SELECT group_type, group_deleted FROM shareshare.groups WHERE group_id = ?";
+
+			connection.query(queryString, [groupID], function(err, rows) {
+				if (err) {
+					verifyOutcome.message = "Could not verify group type";
+					verifyOutcome.errors.push(err);
+					return resolve(verifyOutcome);
+				}
+
+				if (!rows || rows.length === 0) {
+					verifyOutcome.message = "Group not found";
+					return resolve(verifyOutcome);
+				}
+
+				if (rows[0].group_deleted == 1) {
+					verifyOutcome.message = "Group not found";
+					return resolve(verifyOutcome);
+				}
+
+				const groupType = String(rows[0].group_type || "").trim().toLowerCase();
+				const contentType = String(intendedContent || "").trim().toLowerCase();
+				verifyOutcome.groupType = groupType;
+
+				if (contentType === "item") {
+					if (groupType === "wishlist") {
+						verifyOutcome.success = true;
+						verifyOutcome.message = "Item matches wishlist group";
+					} else {
+						verifyOutcome.message = "You tried to post an item to Kite";
+					}
+					return resolve(verifyOutcome);
+				}
+
+				if (contentType === "post") {
+					if (groupType === "kite") {
+						verifyOutcome.success = true;
+						verifyOutcome.message = "Post matches kite group";
+					} else {
+						verifyOutcome.message = "You tried to make a normal post to Wishlist";
+					}
+					return resolve(verifyOutcome);
+				}
+
+				verifyOutcome.message = "Unknown content type";
+				resolve(verifyOutcome);
+			});
+		} catch (err) {
+			verifyOutcome.message = "Could not verify group type";
+			verifyOutcome.errors.push(err);
+			reject(verifyOutcome);
+		}
+	});
+}
+
+module.exports = { checkUserGroupStatus, checkGroupExists, checkUserInGroup, getUserGroupCount, processGroupUsers, createGroupAndUsers, sendGroupNotificationsAndRequests, verifyPostMatchesSite }
 
 
 

@@ -1,13 +1,15 @@
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 const actionMap = require('../../../cloudPilot/actionMap');
+const CreateEC2Context = require('../../../cloudPilot/actions/createEC2/createEC2Context');
 
 /*
 TYPE — CURRENT STATE (General Chat only)
 
 Factual CloudPilot truth for this turn — not instructions, not personality.
 Step D: tiny open-request block when one request is open.
+Friendly Create Step 4: when open request is create_ec2, attach createEC2Context facts.
 
-Doc: feature_cloud_pilot_context.md
+Doc: feature_cloud_pilot_context.md · feature_friendly_create_instance.md
 
 Used by: buildAIContext → buildAISystemMessage → General Chat
 */
@@ -24,8 +26,14 @@ function buildCurrentStateContext(processMessageContext) {
         data.openRequest = openRequest;
     }
 
+    const createEc2Knowledge = slimCreateEc2Knowledge(requestState);
+
+    if (createEc2Knowledge) {
+        data.createEc2 = createEc2Knowledge;
+    }
+
     const currentState = {
-        loaded: Boolean(openRequest),
+        loaded: Boolean(openRequest || createEc2Knowledge),
         type: 'current_state',
         data: data
     };
@@ -68,6 +76,41 @@ function slimOpenRequestState(requestState) {
     }
 
     return slim;
+}
+
+// create_ec2 only — facts/rules from createEC2Context (not guidance copy)
+function slimCreateEc2Knowledge(requestState) {
+    if (!requestState || typeof requestState !== 'object' || Array.isArray(requestState)) {
+        return null;
+    }
+
+    const action = requestState.pendingAction || requestState.action || null;
+
+    if (String(action || '') !== 'create_ec2') {
+        return null;
+    }
+
+    const createContext = CreateEC2Context.getCreateEc2Context();
+    const choiceFields = CreateEC2Context.getCreateEc2ChoiceFields();
+    const demoDefaults = createContext.demoDefaults || {};
+    const pricingRules = createContext.pricingRules || {};
+    const securityRules = createContext.securityRules || {};
+
+    return {
+        meaning: createContext.meaning || null,
+        choiceFields: choiceFields.map(function (choice) {
+            return {
+                field: choice.field,
+                label: choice.label,
+                summary: choice.summary
+            };
+        }),
+        demoDefaultInstanceType: demoDefaults.instance_type || null,
+        instanceTypeIsDemoDefault: Boolean(demoDefaults.instanceTypeIsDemoDefault),
+        neverInventPrices: Boolean(pricingRules.neverInventPrices),
+        showEstimateOnlyWhenKnown: Boolean(pricingRules.showEstimateOnlyWhenKnown),
+        neverClaimSecureUnlessKnown: Boolean(securityRules.neverClaimSecureUnlessKnown)
+    };
 }
 
 module.exports = {

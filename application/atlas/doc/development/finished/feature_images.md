@@ -26,7 +26,7 @@ from `cloud_pilot_images` via `image_id`. Local URLs use
 `/kite-us-west-two/instructions/...` (bucket mirror).
 
 **Codename:** `feature_images`  
-**Related:** [Current Development](../current/current_development.md) · [Friendly Create EC2](../current/feature_friendly_create_instance.md) · [Images SQL](../../sql/cloud_pilot_images.sql) · [Instructions SQL](../../sql/cloudpilot_instructions.sql) · [Drop alter](../../sql/alter/cloudpilot_instructions_drop_image.sql) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [Friendly Create EC2](./feature_friendly_create_instance.md) · [Images SQL](../../sql/cloud_pilot_images.sql) · [Instructions SQL](../../sql/cloudpilot_instructions.sql) · [Drop alter](../../sql/alter/cloudpilot_instructions_drop_image.sql) · [Coding Style](../how_to/coding_style.md)
 
 ---
 

@@ -1,9 +1,10 @@
 # Future work
 
-**Last reviewed:** 2026-08-10
+**Last reviewed:** 2026-08-12
 
 > **Active plans:** [scans.md](./scans.md) · [billing.md](./billing.md) · [history.md](../finished/history.md) · **Shipped:** [finished.md](../finished/finished.md) · **Platform:** [To_do.md](./to_do.md)  
-> **Chat backlog:** [feature_chat_guardrails.md](./feature_chat_guardrails.md) (after [feature_chat](../current/feature_chat.md))
+> **Chat backlog:** [feature_chat_guardrails.md](./feature_chat_guardrails.md) (after [feature_chat](../current/feature_chat.md))  
+> **PR demo (deferred):** [feature_github_pull_requests.md](./feature_github_pull_requests.md)
 
 ## History & undo
 
@@ -178,6 +179,16 @@ Establish this pattern on **region** before expanding OpenAI to action search / 
 Allow occasional casual chat; after a **consecutive** off-topic streak (~4), deterministic redirect back to tech / AWS / engineering. Reset streak on any in-domain turn. Broad in-domain (not AWS-only).
 
 Ship after friendlier request-field presentation — [feature_chat](../current/feature_chat.md).
+
+---
+
+## GitHub Pull Requests (deferred)
+
+Moved out of current. Spec: [feature_github_pull_requests.md](./feature_github_pull_requests.md).
+
+Steps 0–6 largely shipped; **Step 7 manual E2E** still open. Pick up when ready to finish the PR demo path, then archive to finished.
+
+Also see older remediations plan: [remediations.md](./remediations.md).
 
 ---
 

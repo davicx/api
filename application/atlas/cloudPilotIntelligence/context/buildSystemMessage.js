@@ -99,32 +99,81 @@ function writeIdentity(cloudPilotContext) {
 
 //Function B1b: Write Current State (factual open request — Chat Situation MVP)
 // Doc: feature_cloud_pilot_context.md Step D — facts only, not prose instructions
+// Friendly Create Step 4: optional create_ec2 knowledge facts when that request is open
 function writeCurrentState(currentStateContext) {
     const data = currentStateContext && currentStateContext.data;
     const openRequest = data && data.openRequest;
+    const createEc2 = data && data.createEc2;
 
-    if (!openRequest || typeof openRequest !== 'object') {
+    const hasOpenRequest = openRequest && typeof openRequest === 'object';
+    const hasCreateEc2 = createEc2 && typeof createEc2 === 'object';
+
+    if (!hasOpenRequest && !hasCreateEc2) {
         return '';
     }
 
-    const label = openRequest.label ? String(openRequest.label).trim() : '';
+    const lines = ['CURRENT CLOUDPILOT STATE', ''];
 
-    if (!label) {
-        return '';
+    if (hasOpenRequest) {
+        const label = openRequest.label ? String(openRequest.label).trim() : '';
+
+        if (label) {
+            lines.push('Open request:');
+            lines.push(label);
+
+            if (Array.isArray(openRequest.waitingFor) && openRequest.waitingFor.length > 0) {
+                lines.push('Waiting for: ' + openRequest.waitingFor.join(', '));
+            }
+
+            lines.push('');
+        }
     }
 
-    const lines = [
-        'CURRENT CLOUDPILOT STATE',
-        '',
-        'Open request:',
-        label
-    ];
+    if (hasCreateEc2) {
+        lines.push('Create EC2 knowledge (facts only):');
 
-    if (Array.isArray(openRequest.waitingFor) && openRequest.waitingFor.length > 0) {
-        lines.push('Waiting for: ' + openRequest.waitingFor.join(', '));
+        if (createEc2.meaning) {
+            lines.push('- Meaning: ' + String(createEc2.meaning).trim());
+        }
+
+        if (Array.isArray(createEc2.choiceFields) && createEc2.choiceFields.length > 0) {
+            for (let i = 0; i < createEc2.choiceFields.length; i++) {
+                const choice = createEc2.choiceFields[i];
+                const choiceLabel = choice.label || choice.field || 'Field';
+                const choiceSummary = choice.summary ? String(choice.summary).trim() : '';
+                lines.push(
+                    '- Choice — ' +
+                        choiceLabel +
+                        (choiceSummary ? ': ' + choiceSummary : '')
+                );
+            }
+        }
+
+        if (createEc2.demoDefaultInstanceType) {
+            lines.push(
+                '- Demo default instance type: ' +
+                    String(createEc2.demoDefaultInstanceType).trim() +
+                    (createEc2.instanceTypeIsDemoDefault
+                        ? ' (demo default, not a workload recommendation)'
+                        : '')
+            );
+        }
+
+        if (createEc2.neverInventPrices) {
+            lines.push('- Do not invent prices or cost estimates.');
+        }
+
+        if (createEc2.showEstimateOnlyWhenKnown) {
+            lines.push('- Show an estimated compute cost only when known.');
+        }
+
+        if (createEc2.neverClaimSecureUnlessKnown) {
+            lines.push('- Do not claim the instance is secure unless protections are known.');
+        }
+
+        lines.push('');
     }
 
-    lines.push('');
     lines.push(
         'Use this information only when relevant to the user\'s current question.'
     );

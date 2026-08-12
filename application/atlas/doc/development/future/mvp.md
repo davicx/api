@@ -629,7 +629,7 @@ All four modes appear in the **demo** — but not all on the same action.
 
 ### M4b — Pull Request (toggle story — real GitHub, tiny Terraform)
 
-> **Full checklist:** [GitHub Pull Requests](../current/feature_github_pull_requests.md) — use simple Step numbers.
+> **Full checklist:** [GitHub Pull Requests](./feature_github_pull_requests.md) — use simple Step numbers.
 
 > **Goal:** Prove CloudPilot can **prepare a PR for infrastructure changes** — not that it can edit any repo.
 > **Action:** `toggle_ec2` only for the demo climax. Skip create-instance PR.
@@ -640,7 +640,7 @@ All four modes appear in the **demo** — but not all on the same action.
 **Same pattern as CLI:** `pr.js` → toggle builder → GitHub client.  
 String replace one value. No OpenAI. No Terraform parser for MVP.
 
-Follow [GitHub Pull Requests](../current/feature_github_pull_requests.md) using simple numbered Steps.
+Follow [GitHub Pull Requests](./feature_github_pull_requests.md) using simple numbered Steps.
 
 **After “merge” in the room:** Automatic = existing Atlas toggle (stop primary / start secondary). Do **not** auto-apply Terraform on merge for MVP.
 

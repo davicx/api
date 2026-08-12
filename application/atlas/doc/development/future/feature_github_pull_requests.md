@@ -6,17 +6,17 @@ CloudPilot creates a safe GitHub pull request for a proposed infrastructure chan
 
 ## Current step
 
-**Not finished for archive.** Implementation Steps 0–6 are largely ✅ (2026-07-19);
-**Step 7 — Manual E2E** checklist is still open. Also: Step 5 “end-to-end from chat”
-check box unchecked; doc header was stale (“Step 1”).
+**Moved to future** — Implementation Steps 0–6 are largely ✅ (2026-07-19).
+**Step 7 — Manual E2E** checklist remains open (also Step 5 “end-to-end from chat”
+unchecked). Not active demo work right now.
 
 ## Next
 
-Complete **Step 7** pass checklist (chat → real PR → link; no AWS from PR path),
-then archive to `finished/`.
+When picked up again: complete **Step 7** pass checklist (chat → real PR → link;
+no AWS from PR path), then archive to `finished/`.
 
-**Status:** Active — awaiting Step 7 E2E  
-**Related:** [Current Development](./current_development.md) · [MVP plan](../future/mvp.md) · [Future remediations](../future/remediations.md)
+**Status:** Future — deferred Step 7 E2E  
+**Related:** [Current Development](../current/current_development.md) · [CloudPilot MVP](../current/feature_mvp.md) · [MVP plan](./mvp.md) · [Remediations](./remediations.md) · [Future work](./future.md)
 
 ---
 

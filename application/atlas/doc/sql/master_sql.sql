@@ -12,12 +12,14 @@
 --   4. cloud_pilot_ai_usage — OpenAI token/cost per CloudPilot call
 --   5. organization_knowledge (+ tags) — why a resource exists (org facts)
 --   6. cloud_pilot_images   — instruction image catalog (relative paths)
+--   7. cloud_service_pricing — curated unit rates (MVP: EC2 hourly)
 --
 -- Docs: doc/database/database.md
 --       doc/development/architecture/development_undo_feature.md (history)
 --       doc/development/finished/feature_ai_spending.md (cloud_pilot_ai_usage)
 --       doc/development/current/feature_organizational_knowledge.md
 --       doc/development/finished/feature_images.md
+--       doc/development/current/feature_useful_price.md
 --
 -- Usage:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
@@ -29,6 +31,10 @@
 -- Existing DB — images catalog + link create_ec2 instructions:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/cloud_pilot_images.sql
 --
+-- Existing DB — useful price (EC2 rates):
+--   mysql -u USER -p DATABASE_NAME < doc/sql/cloud_service_pricing.sql
+--   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_cloud_service_pricing.sql
+--
 -- Verify:
 --   SELECT * FROM cloudpilot_actions;
 --   SELECT * FROM cloudpilot_requests;
@@ -37,6 +43,7 @@
 --   SELECT * FROM organization_knowledge;
 --   SELECT * FROM organization_knowledge_tags;
 --   SELECT * FROM cloud_pilot_images;
+--   SELECT * FROM cloud_service_pricing;
 -- =============================================================================
 
 
@@ -482,3 +489,89 @@ ON DUPLICATE KEY UPDATE
     image_path = VALUES(image_path),
     alt_text = VALUES(alt_text),
     description = VALUES(description);
+
+
+-- -----------------------------------------------------------------------------
+-- 7. cloud_service_pricing (curated unit rates — MVP EC2 hourly)
+--     See doc/development/current/feature_useful_price.md
+--     Full copy also in:
+--       doc/sql/cloud_service_pricing.sql
+--       doc/sql/seed/seed_cloud_service_pricing.sql
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS cloud_service_pricing (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    provider VARCHAR(50) NOT NULL,
+    service VARCHAR(50) NOT NULL,
+    region VARCHAR(50) NOT NULL,
+
+    resource_type VARCHAR(100) NOT NULL,
+    resource_name VARCHAR(100) NOT NULL,
+
+    price DECIMAL(12, 6) NOT NULL,
+    unit VARCHAR(50) NOT NULL,
+
+    pricing_model VARCHAR(50) DEFAULT 'on_demand',
+    operating_system VARCHAR(50),
+
+    currency VARCHAR(10) DEFAULT 'USD',
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY unique_price (
+        provider,
+        service,
+        region,
+        resource_type,
+        resource_name,
+        pricing_model,
+        operating_system
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed: aws / ec2 / us-west-2 On-Demand Linux hourly (recorded 2026-08-11)
+INSERT INTO cloud_service_pricing (
+    provider,
+    service,
+    region,
+    resource_type,
+    resource_name,
+    price,
+    unit,
+    pricing_model,
+    operating_system,
+    currency
+)
+VALUES
+(
+    'aws',
+    'ec2',
+    'us-west-2',
+    'instance',
+    't3.nano',
+    0.005200,
+    'hour',
+    'on_demand',
+    'linux',
+    'USD'
+),
+(
+    'aws',
+    'ec2',
+    'us-west-2',
+    'instance',
+    't3.micro',
+    0.010400,
+    'hour',
+    'on_demand',
+    'linux',
+    'USD'
+)
+AS new_row
+ON DUPLICATE KEY UPDATE
+    price = new_row.price,
+    unit = new_row.unit,
+    currency = new_row.currency,
+    updated_at = CURRENT_TIMESTAMP;

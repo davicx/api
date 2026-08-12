@@ -2,6 +2,7 @@ const ScanEC2Functions = require('../../../providers/atlas/ec2/scanEC2');
 const atlasEC2Formatter = require('./atlasEC2Formatter');
 const atlasEC2MessageBuilder = require('./atlasEC2MessageBuilder');
 const atlasEC2ScanNavigatorAdapter = require('./atlasEC2ScanNavigatorAdapter');
+const EnrichEC2InstancesWithPricingFunctions = require('./enrichEC2InstancesWithPricing');
 const { buildOutcomeMessage, getFirstOutcomeCode, buildActionOutcomeContext } = require('../../execution/outcomes/outcomeRegistry');
 
 async function scanEC2Handler(context) {
@@ -43,6 +44,16 @@ async function scanEC2Handler(context) {
         atlasResponseFormatted =
             atlasEC2Formatter.formatAtlasEC2Output(
                 atlasResponseRaw
+            );
+
+        const scanRegion =
+            (atlasResponseFormatted.summary && atlasResponseFormatted.summary.region) ||
+            region;
+
+        atlasResponseFormatted.instances =
+            await EnrichEC2InstancesWithPricingFunctions.enrichEC2InstancesWithPricing(
+                atlasResponseFormatted.instances,
+                scanRegion
             );
 
         // console.log("_____________________________________");

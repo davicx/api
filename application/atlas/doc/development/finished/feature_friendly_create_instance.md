@@ -16,18 +16,12 @@ Then the **existing** request / action flow runs unchanged.
 **Do not complicate Atlas execution** (route → function → boto3/mock → result stays as-is).  
 **Do not build a guidance framework** — two files, one request, prove the idea.
 
-## Current step
+## Status
 
-**Step 0 complete — speak-point map below. No code changed.**
+**Finished** — Steps 0–4 + acceptance against Atlas **Test** (OpenAI off templates primary; create context attached to Chat CURRENT STATE when `create_ec2` is open). Step 5 Kite Create · Cancel deferred (chat confirm OK).
 
-## Next
-
-Review the Step 0 map, then say **do Step 1** (add `createEC2Context` +
-`createEC2Guidance`, wire guided start only).
-
-**Status:** Active (Step 0 done)  
 **Codename:** `feature_friendly_create_instance`  
-**Related:** [Current Development](./current_development.md) · [CloudPilot MVP](./feature_mvp.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [CloudPilot Images](../finished/feature_images.md) · [Pause / Resume](../finished/feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [Finished index](./finished.md) · [CloudPilot MVP](../current/feature_mvp.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [CloudPilot Images](./feature_images.md) · [Pause / Resume](./feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md) · [CloudPilot Context how-to](../how_to/cloud_pilot_context.md)
 
 ---
 
@@ -468,51 +462,51 @@ createEC2Handler
 
 ### Step 1 — Add the two files + guided start
 
-- [ ] `createEC2Context.js` + `createEC2Guidance.js` (create only)
-- [ ] Wire **before collecting** intro (nothing created until approval)
-- [ ] Smoke OpenAI off + Atlas Test
+- [x] `createEC2Context.js` + `createEC2Guidance.js` (create only)
+- [x] Wire **before collecting** intro (nothing created until approval)
+- [x] Smoke OpenAI off + Atlas Test
 
 ### Step 2 — Review + mode pick
 
-- [ ] Guidance review summary (name / region / type / cost if known)
-- [ ] Honest PR handling for create
-- [ ] Use “I have everything I need to create your EC2 instance” wording (not “ready to create”)
+- [x] Guidance review summary (name / region / type / cost if known)
+- [x] Honest PR handling for create
+- [x] Use “I have everything I need to create your EC2 instance” wording (not “ready to create”)
 
 ### Step 3 — Confirm + success
 
-- [ ] Safer automatic confirm
-- [ ] Rich success + Coming soon next steps
-- [ ] Success claims only facts from the execution result
-- [ ] Keep `createEC2Handler.js` free of presentation
-- [ ] End-to-end Atlas Test
+- [x] Safer automatic confirm (`buildConfirmMessage` → `cloudPilotRespondAwaitingConfirmation`)
+- [x] Rich success + Coming soon next steps (`buildSuccessMessage` via `RequestConversation`)
+- [x] Success claims only facts from the execution result (no tags/status unless in atlasResponse)
+- [x] Keep `createEC2Handler.js` free of presentation (short fallback only; speak wraps on create success)
+- [x] End-to-end Atlas Test
 
 ### Step 4 — Optional: feed Context into Chat
 
 Do **not** combine with Steps 1–3. Deterministic OpenAI-off create must feel
 excellent first.
 
-- [ ] When OpenAI is on for create-related speak, attach `createEC2Context`
-- [ ] Templates remain primary with OpenAI off
+- [x] When OpenAI is on for create-related speak, attach `createEC2Context` (CURRENT STATE `createEc2` facts when pendingAction is `create_ec2`)
+- [x] Templates remain primary with OpenAI off
 
 ### Step 5 — Kite Create · Cancel (optional)
 
-- [ ] UI confirm controls
+- [ ] UI confirm controls — **deferred** (chat `yes` / Create · Cancel text OK; not required to finish this feature)
 
 ### Step 6 — Acceptance
 
-| Check | Expected |
-|-------|----------|
-| Only create uses context/guidance files | No registry / engine |
-| `create ec2` | Calm guided intro |
-| Collecting fields | `t3.micro` is demo/default unless CloudPilot can honestly recommend |
-| Ready | Review before modes |
-| Mode 4 | Explicit confirm + charges |
-| Success (Test) | Rich card + Coming soon labels |
-| Success claims | No tags/status/price claims unless known from result |
-| No false “secure” | |
-| OpenAI off | Friendly flow still works |
-| No framework | No `GuidanceEngine` / registry / extra orchestration layer |
-| Handler boundary | `createEC2Handler.js` still just does the work |
+| Check | Expected | Result |
+|-------|----------|--------|
+| Only create uses context/guidance files | No registry / engine | Pass |
+| `create ec2` | Calm guided intro | Pass |
+| Collecting fields | `t3.micro` is demo/default unless CloudPilot can honestly recommend | Pass |
+| Ready | Review before modes | Pass |
+| Mode 4 | Explicit confirm + charges | Pass |
+| Success (Test) | Rich card + Coming soon labels | Pass |
+| Success claims | No tags/status/price claims unless known from result | Pass |
+| No false “secure” | | Pass |
+| OpenAI off | Friendly flow still works | Pass |
+| No framework | No `GuidanceEngine` / registry / extra orchestration layer | Pass |
+| Handler boundary | `createEC2Handler.js` still just does the work | Pass |
 
 ---
 
@@ -520,8 +514,8 @@ excellent first.
 
 | Feature | Overlap |
 |---------|---------|
-| [CloudPilot Context](../finished/feature_cloud_pilot_context.md) | Global Chat Identity vs tiny **Search** — this is **per-request** create experience |
-| [Pause / Resume](../finished/feature_pause_instance.md) | Success may **point at** pause; pause/resume shipped separately |
+| [CloudPilot Context](./feature_cloud_pilot_context.md) | Global Chat Identity vs tiny **Search** — this is **per-request** create experience |
+| [Pause / Resume](./feature_pause_instance.md) | Success may **point at** pause; pause/resume shipped separately |
 
 ---
 

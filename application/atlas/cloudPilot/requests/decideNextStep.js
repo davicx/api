@@ -126,6 +126,12 @@ function decideNextStep({ understanding, requestState }) {
 
     if (u.action && u.action !== 'general_chat') {
         if (!shouldStartNewRequest(state, u.action)) {
+            // Same open action rematched (e.g. soft-fill text contains "EC2" + "scan").
+            // Still apply field values from this message — do not ignore the paste.
+            if (state.pendingAction && hasApplicableValues(state, u.values)) {
+                return buildFieldsMergedDecision(state, u.values);
+            }
+
             return resolveRequestChat(state);
         }
 

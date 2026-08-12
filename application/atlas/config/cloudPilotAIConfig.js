@@ -1,11 +1,16 @@
 /**
- * CloudPilot AI configuration — master switch, feature implementations, logging.
+ * CloudPilot AI configuration — master AI switch, feature implementations, logging.
  *
  * Front door: cloudPilotIntelligence/CloudPilotIntelligence.js
  * OpenAI is one implementation (internal | openai). Model presets: chatGPTconfig.js
  *
+ * ★ MASTER AI SWITCH (local GenAI on/off):
+ *   CLOUDPILOT_AI_ENABLED
+ *     false → ALL GenAI / OpenAI OFF (wins over every feature below)
+ *     true  → GenAI allowed; each feature still needs its own =openai
+ *   Restart the API after changing this env var.
+ *
  * Feature ENV (each independent; master OFF always wins):
- *   CLOUDPILOT_AI_ENABLED            master for all GenAI
  *   CLOUDPILOT_MESSAGE_RESPONSE      chat() (+ Capabilities wording)
  *   CLOUDPILOT_REGION_SEARCH         understandRegion / region search
  *   CLOUDPILOT_ACTION_SEARCH         understandAction — Internal rules + optional OpenAI fallback

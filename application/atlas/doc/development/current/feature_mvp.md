@@ -29,8 +29,9 @@ For IaC environments, propose the change through a PR instead.
 Work the five items below toward `works` + `passed`. Primary product work that
 feeds this checklist:
 
-- [Friendly Create EC2](./feature_friendly_create_instance.md) — create polish
-- [GitHub Pull Requests](./feature_github_pull_requests.md) — PR demo concept
+- [Friendly Create EC2](../finished/feature_friendly_create_instance.md) — create polish
+- [Useful Price](./feature_useful_price.md) — honest compute cost estimates in speak
+- [GitHub Pull Requests](../future/feature_github_pull_requests.md) — PR demo concept (deferred)
 - Pause / Resume already shipped — [feature_pause_instance](../finished/feature_pause_instance.md)
 - Verify / scan recovery shipped — [feature_verify_request](../finished/feature_verify_request.md)
 - History backend shipped — [history](../finished/history.md); UI polish still open
@@ -81,8 +82,8 @@ Conversation → understand intent → AWS action → result → history → und
 
 ### Friendly guidance around what CloudPilot is about to do
 
-- [ ] works
-- [ ] passed
+- [x] works
+- [x] passed
 
 ### Automatic execution works
 
@@ -99,7 +100,7 @@ Conversation → understand intent → AWS action → result → history → und
 - [ ] works
 - [ ] passed
 
-**Primary feature:** [Friendly Create EC2](./feature_friendly_create_instance.md)
+**Primary feature:** [Friendly Create EC2](../finished/feature_friendly_create_instance.md)
 
 ---
 
@@ -247,7 +248,7 @@ CloudPilot). Keep a demo branch where CloudPilot can show a realistic change.
 - [ ] works
 - [ ] passed
 
-**Primary feature:** [GitHub Pull Requests](./feature_github_pull_requests.md)
+**Primary feature:** [GitHub Pull Requests](../future/feature_github_pull_requests.md)
 
 Preferred demo prompt:
 

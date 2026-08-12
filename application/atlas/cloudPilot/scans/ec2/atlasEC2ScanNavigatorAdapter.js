@@ -70,6 +70,11 @@ function buildEC2InstancesTable(instances) {
         title: "EC2 Instances",
         columns: [
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "name", label: "Name", type: "text" }),
+            navigatorResponseFunctions.createNavigatorTableColumn({
+                key: "estimated_monthly_cost",
+                label: "Cost",
+                type: "currency"
+            }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "instance_id", label: "Instance ID", type: "text" }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "region", label: "Region", type: "text" }),
             navigatorResponseFunctions.createNavigatorTableColumn({ key: "instance_type", label: "Type", type: "text" }),
@@ -102,6 +107,8 @@ function buildEC2InstanceRow(instance) {
     return {
         row_id: buildEC2RowID(instance.instanceID, instance.name, instance.region),
         name: name,
+        estimated_monthly_cost:
+            instance.estimatedMonthlyCost != null ? instance.estimatedMonthlyCost : null,
         instance_id: instanceId,
         region: instance.region || null,
         instance_type: instance.instanceType || null,

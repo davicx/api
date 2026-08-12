@@ -1,4 +1,6 @@
 const AtlasExecution = require('../../execution/AtlasExecution');
+const CreateEC2Guidance = require('../../actions/createEC2/createEC2Guidance');
+const EstimatePricingFunctions = require('../../pricing/estimatePricing');
 const {
     buildMissingFieldsMessage,
     buildOptionalRequestNamePrompt
@@ -78,7 +80,15 @@ async function cloudPilotRespondNewRequest(payload) {
         missingFields,
         collectedFields
     );
-    const message = missingFieldsMessage || actionDefinition.messages.started;
+
+    let message = missingFieldsMessage || actionDefinition.messages.started;
+
+    if (actionDefinition && actionDefinition.type === 'create_ec2') {
+        message = CreateEC2Guidance.buildStartedMessage({
+            missingFieldsMessage: missingFieldsMessage,
+            collectedFields: collectedFields
+        });
+    }
 
     return {
         success: true,
@@ -140,7 +150,15 @@ async function cloudPilotRespondAwaitingExecutionMode(payload) {
         '3. Pull Request\n' +
         '4. Cloud Pilot Does It';
 
-    if (requestNamePrompt) {
+    if (actionDefinition && actionDefinition.type === 'create_ec2') {
+        const estimatedComputeCost = await buildCreateEc2EstimatedCostSpeak(collectedFields);
+
+        message = CreateEC2Guidance.buildReadyReviewMessage({
+            collectedFields: collectedFields,
+            estimatedComputeCost: estimatedComputeCost,
+            requestNamePrompt: requestNamePrompt
+        });
+    } else if (requestNamePrompt) {
         message += '\n\n' + requestNamePrompt;
     }
 
@@ -156,15 +174,30 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
     const actionDefinition = payload.actionDefinition;
     const readyMessage = actionDefinition.messages.ready || 'Everything is ready.';
     const executionMode = payload.actionState && payload.actionState.executionMode;
+    const collectedFields =
+        payload.actionState && payload.actionState.collectedFields
+            ? payload.actionState.collectedFields
+            : {};
+    const actionType =
+        actionDefinition && actionDefinition.type ? String(actionDefinition.type) : '';
 
-    let message = readyMessage + '\n\nWould you like me to execute this action?';
+    let message = readyMessage + '\n\n' + buildConfirmOrCancelLine(actionType);
 
-    if (executionMode) {
+    if (actionDefinition && actionDefinition.type === 'create_ec2') {
+        const estimatedComputeCost = await buildCreateEc2EstimatedCostSpeak(collectedFields);
+
+        message = CreateEC2Guidance.buildConfirmMessage({
+            collectedFields: collectedFields,
+            executionMode: executionMode,
+            estimatedComputeCost: estimatedComputeCost
+        });
+    } else if (executionMode) {
         message =
             readyMessage +
             '\n\nExecution mode: ' +
             executionMode +
-            '\n\nWould you like me to execute this action?';
+            '\n\n' +
+            buildConfirmOrCancelLine(actionType);
     }
 
     return {
@@ -178,6 +211,8 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
 async function cloudPilotRespondWorkflowInProgress(payload) {
     const actionDefinition = payload.actionDefinition;
     const actionLabel = actionDefinition.actionLabel || actionDefinition.type || 'workflow';
+    const actionType =
+        actionDefinition && actionDefinition.type ? String(actionDefinition.type) : '';
     const missingFields = payload.actionState.missingFields || [];
     const collectedFields = payload.actionState.collectedFields || {};
     const missingFieldsMessage = buildMissingFieldsMessage(
@@ -185,10 +220,15 @@ async function cloudPilotRespondWorkflowInProgress(payload) {
         missingFields,
         collectedFields
     );
+    const actionReady = payload.actionReady === true;
 
     let message = 'You already have a ' + actionLabel + ' workflow in progress.';
 
-    if (missingFieldsMessage) {
+    if (missingFields.length > 0 && missingFieldsMessage) {
+        message += '\n\n' + missingFieldsMessage;
+    } else if (actionReady) {
+        message += '\n\n' + buildConfirmOrCancelLine(actionType);
+    } else if (missingFieldsMessage) {
         message += '\n\n' + missingFieldsMessage;
     } else {
         message += ' Please continue where we left off.';
@@ -294,6 +334,40 @@ async function cloudPilotRespondExecutionStarted(payload) {
         atlasResponse: null,
         error: null
     };
+}
+
+function buildConfirmOrCancelLine(actionType) {
+    if (actionType === 'scan_ec2') {
+        return 'Confirm to run now, or cancel the scan.';
+    }
+
+    if (actionType === 'scan_s3') {
+        return 'Confirm to run now, or cancel the scan.';
+    }
+
+    return 'Confirm to run now, or cancel.';
+}
+
+function buildContinueOrCancelLine(actionType) {
+    if (actionType === 'scan_ec2' || actionType === 'scan_s3') {
+        return 'Reply with the value above to continue, or cancel the scan.';
+    }
+
+    return 'Reply with the value above to continue, or cancel.';
+}
+
+async function buildCreateEc2EstimatedCostSpeak(collectedFields) {
+    const collected = collectedFields || {};
+    const region = String(collected.region || '').trim();
+    const instanceType = String(collected.instance_type || '').trim();
+
+    if (!region || !instanceType) {
+        return null;
+    }
+
+    const estimate = await EstimatePricingFunctions.estimateEc2OnDemand(region, instanceType);
+
+    return EstimatePricingFunctions.formatEstimateSpeakLine(estimate);
 }
 
 module.exports = {

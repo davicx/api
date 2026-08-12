@@ -99,6 +99,10 @@ Waiting for: region
 Use this information only when relevant to the user's current question.
 ```
 
+- When the open request is **`create_ec2`**, also attach create knowledge facts from
+  `createEC2Context` (meaning, choice fields, demo default, pricing/security rules).
+  Still facts only — not guidance walkthrough copy. See
+  [Friendly Create EC2](../finished/feature_friendly_create_instance.md).
 - Do not dump Request IDs, full collected blobs, or instruction essays.
 
 ### 4. Grounded Questions (AWS / product facts)

@@ -6,6 +6,8 @@ const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 const InstructionsStrategy = require('../../executionModes/instructions/InstructionsLogic');
 const CliStrategy = require('../../executionModes/cli/CliLogic');
 const PrStrategy = require('../../executionModes/pr/PrLogic');
+const CreateEC2Guidance = require('../../actions/createEC2/createEC2Guidance');
+const EstimatePricingFunctions = require('../../pricing/estimatePricing');
 
 /*
 Request Conversation — speak (STEP 7 only)
@@ -18,9 +20,26 @@ async function conversation(decision, context) {
     const executionOutcome = context.executionOutcome || null;
 
     if (executionOutcome && executionOutcome.ran && executionOutcome.cloudPilotMessage) {
+        const requestState = getRequestStateFromContext(context);
+        let cloudPilotMessage = executionOutcome.cloudPilotMessage;
+
+        if (
+            executionOutcome.success === true &&
+            requestState.pendingAction === 'create_ec2'
+        ) {
+            const collectedFields = requestState.collected || {};
+            const estimatedComputeCost = await buildCreateEc2EstimatedCostSpeak(collectedFields);
+
+            cloudPilotMessage = CreateEC2Guidance.buildSuccessMessage({
+                atlasResponse: executionOutcome.atlasResponse || {},
+                collectedFields: collectedFields,
+                estimatedComputeCost: estimatedComputeCost
+            });
+        }
+
         return CloudPilotMessage.speakKnown({
             success: Boolean(executionOutcome.success),
-            cloudPilotMessage: executionOutcome.cloudPilotMessage,
+            cloudPilotMessage: cloudPilotMessage,
             chatType: decision.chatType,
             atlasResponse: executionOutcome.atlasResponse || null,
             error: executionOutcome.error || null
@@ -347,6 +366,20 @@ function buildRequestSeedErrorMessage(requestOutcome) {
     }
 
     return '';
+}
+
+async function buildCreateEc2EstimatedCostSpeak(collectedFields) {
+    const collected = collectedFields || {};
+    const region = String(collected.region || '').trim();
+    const instanceType = String(collected.instance_type || '').trim();
+
+    if (!region || !instanceType) {
+        return null;
+    }
+
+    const estimate = await EstimatePricingFunctions.estimateEc2OnDemand(region, instanceType);
+
+    return EstimatePricingFunctions.formatEstimateSpeakLine(estimate);
 }
 
 module.exports = {

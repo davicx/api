@@ -63,29 +63,41 @@ async function postItemLocal(req, res) {
 
 		var uploadFile = {}
 
-		//STEP 1: Check for Valid File
+		//STEP 1: Verify item matches group type (wishlist only)
+		console.log("STEP 1: Verify item matches group type")
+		var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "item");
+		if (!verifySiteOutcome.success) {
+			postOutcome.message = verifySiteOutcome.message;
+			postOutcome.statusCode = 400;
+			postOutcome.success = false;
+			console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+			Functions.addFooter();
+			return res.status(postOutcome.statusCode).json(postOutcome);
+		}
+
+		//STEP 2: Check for Valid File
 		const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
-		console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
+		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
 
 		uploadSuccess = uploadResult.uploadSuccess;
 		postOutcome.message = uploadResult.message;
 		
 		//Step 1A: Handle if there is a file but it has an issue uploading
 		if (!uploadResult.uploadSuccess) {
-			console.log("STEP 1 (ERROR): Invalid or missing file.");
+			console.log("STEP 2 (ERROR): Invalid or missing file.");
 			Functions.addFooter();
 			return res.status(postOutcome.statusCode).json(postOutcome);
 		}
 
-		//STEP 2: Upload File to storage (Local) and get file information
+		//STEP 3: Upload File to storage (Local) and get file information
 		//Step 2A: Update with a image 
 		if(uploadResult.containsFile == true) {
 			console.log("FILE!!")
 
 			let file = req.file
-			console.log("STEP 2: Upload File to storage (Local) and get file information")
+			console.log("STEP 3: Upload File to storage (Local) and get file information")
 
-			//STEP 3: Create the Upload File with its information
+			//STEP 4: Create the Upload File with its information
 			uploadFile.fileMimetype = file.mimetype; 
 			uploadFile.originalname = file.originalname; //file_name
 			uploadFile.fileNameServer = file.filename; //file_name_server
@@ -122,8 +134,8 @@ async function postItemLocal(req, res) {
 			  //console.log(uploadFile)
 		}
 
-		//STEP 4: Get Group Post Information
-		console.log("STEP 4: Get Group Post Information")
+		//STEP 5: Get Group Post Information
+		console.log("STEP 5: Get Group Post Information")
 		
 		// Get user image
 		let userImage = null;
@@ -153,8 +165,8 @@ async function postItemLocal(req, res) {
 			}
 		}
 
-		//STEP 5: Create Post with all information
-		console.log("STEP 5: Create Post with all information")
+		//STEP 6: Create Post with all information
+		console.log("STEP 6: Create Post with all information")
 		let newPostOutcome = await Post.createPostItem(req, uploadFile, userImage, groupInfo);
 
         console.log("newPostOutcome")
@@ -166,12 +178,12 @@ async function postItemLocal(req, res) {
 		postOutcome.statusCode = 200
 		postOutcome.success = true
 
-		//STEP 3: Add the Notifications
+		//STEP 7: Add the Notifications
 		if(newPostOutcome.outcome == 200) {
 			var notification = {}
 			const groupUsersOutcome = await Group.getGroupUsers(groupID);
 			const groupUsers = groupUsersOutcome.groupUsers;
-			console.log("STEP 4: Add notifications")
+			console.log("STEP 7: Add notifications")
 
 			var postID = 0
 			if (newPostOutcome.newPost.postID) {
@@ -224,28 +236,40 @@ async function postItemLocalAWS(req, res) {
 			currentUser: req.body.postFrom
 		}
 
-		//STEP 1: Check for a valid file
+		//STEP 1: Verify item matches group type (wishlist only)
+		console.log("STEP 1: Verify item matches group type")
+		var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "item");
+		if (!verifySiteOutcome.success) {
+			postOutcome.message = verifySiteOutcome.message;
+			postOutcome.statusCode = 400;
+			postOutcome.success = false;
+			console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+			Functions.addFooter();
+			return res.status(postOutcome.statusCode).json(postOutcome);
+		}
+
+		//STEP 2: Check for a valid file
 		const uploadResult = fileFunctions.handleUploadResult(req, err);
-		console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
+		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
 	
 		uploadSuccess = uploadResult.uploadSuccess;
 		postOutcome.message = uploadResult.message;
 		
 		if (!uploadResult.uploadSuccess) {
-			console.log("STEP 1 (ERROR): Invalid or missing file.");
+			console.log("STEP 2 (ERROR): Invalid or missing file.");
 			Functions.addFooter();
 		}
 
-		//STEP 2: Upload File to storage (AWS) and get file information
+		//STEP 3: Upload File to storage (AWS) and get file information
 		var uploadFile = {}
 		let file = req.file
-		console.log("STEP 2: Upload File to storage (AWS) and get file information")
+		console.log("STEP 3: Upload File to storage (AWS) and get file information")
 			
 		//const fileExtension = mime.extension(file.mimetype) 
 		const result = await awsStorage.uploadPost(file)
 
 
-		//STEP 3: Create the Upload File with its information
+		//STEP 4: Create the Upload File with its information
 		//File Information
 		uploadFile.fileMimetype = file.mimetype; 
 		uploadFile.originalname = file.originalname; //file_name
@@ -263,24 +287,24 @@ async function postItemLocalAWS(req, res) {
 		uploadFile.bucket = result.Bucket; // cloud_bucket 	
 		uploadFile.storageType = "aws"; //storage_type		
 
-		//STEP 3: Add Post to Database
+		//STEP 5: Add Post to Database
 		let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 
-		//STEP 4: Get a Signed URL so we can display this new post
+		//STEP 6: Get a Signed URL so we can display this new post
 		var newPost = await PostFunctions.getSignedURL(newPostOutcome.newPost);
 		
 		postOutcome.data = newPost;
 		postOutcome.message = "Your photo was posted!"
 		postOutcome.statusCode = 200
 		postOutcome.success = true
-		console.log("STEP 3: Post was added to the Database")
+		console.log("STEP 5: Post was added to the Database")
 
-		//STEP 4: Add the Notifications
+		//STEP 7: Add the Notifications
 		if(newPostOutcome.outcome == 200) {
 			var notification = {}
 			const groupUsersOutcome = await Group.getGroupUsers(groupID);
 			const groupUsers = groupUsersOutcome.groupUsers;
-			console.log("STEP 4: Add notifications")
+			console.log("STEP 7: Add notifications")
 
 			//Set the Post ID for the new post in notifications
 			var postID = 0

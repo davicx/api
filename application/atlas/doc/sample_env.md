@@ -45,7 +45,15 @@ OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 # Config: application/atlas/config/cloudPilotAIConfig.js
 # ==================================================
 
-# MASTER — OFF always wins over every feature below
+# ★ MASTER AI SWITCH ★  ← flip this for local GenAI on/off testing
+# Variable: CLOUDPILOT_AI_ENABLED
+#
+# false = ALL CloudPilot GenAI / OpenAI is OFF
+#         (chat, region AI, action AI, question classify AI, …)
+# true  = GenAI may run; each feature below still needs its own =openai
+#
+# Master OFF always wins over every individual CLOUDPILOT_* setting.
+# Restart the API process after changing this.
 CLOUDPILOT_AI_ENABLED=false
 
 
@@ -138,7 +146,10 @@ CLOUDPILOT_MESSAGE_LOGS=false
 
 ## Quiet local development (OpenAI off)
 
+Flip only the master AI switch — individual features do not matter when it is false:
+
 ```env
+# ★ MASTER AI SWITCH — false = all GenAI off
 CLOUDPILOT_AI_ENABLED=false
 CLOUDPILOT_MESSAGE_RESPONSE=internal
 CLOUDPILOT_REGION_SEARCH=internal
