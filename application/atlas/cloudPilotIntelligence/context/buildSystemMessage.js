@@ -300,16 +300,24 @@ function writeKnowledge(knowledgeContext) {
     const product = data.product;
 
     if (hasContent(organization)) {
-        sections.push(
-            'Organization knowledge:\n' + JSON.stringify(organization, null, 2)
-        );
+        if (organization.contextBlock) {
+            sections.push(String(organization.contextBlock).trim());
+        } else {
+            sections.push(
+                'Organization knowledge:\n' + JSON.stringify(organization, null, 2)
+            );
+        }
     }
 
     if (Array.isArray(product) && product.length > 0) {
         sections.push('Product knowledge:\n' + JSON.stringify(product, null, 2));
     }
 
-    return sections.join('\n\n');
+    if (sections.length === 0) {
+        return '';
+    }
+
+    return 'KNOWLEDGE\n\n' + sections.join('\n\n');
 }
 
 //FUNCTIONS A: Build AI system message

@@ -33,7 +33,8 @@ Action Search         → catalog + rules; not Chat Identity
 - Search is **not** a miniature Chat.
 - Chat Identity must **never** become the Search system prompt.
 - CURRENT STATE for Chat is **factual data only** (e.g. open request label + waiting for). No prose like “the user is trying to…”.
-- Questions that need AWS facts (`ec2_inventory`, spend, open requests) must **not** fall through to General Chat inventing answers.
+- Questions that need AWS facts (`ec2_inventory`, `s3_inventory`, spend, open requests) must **not** fall through to General Chat inventing answers.
+  Pattern: [Route inventory question → scan](./route_inventory_question_to_scan.md).
 
 ---
 

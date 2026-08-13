@@ -16,6 +16,7 @@
  *   CLOUDPILOT_ACTION_SEARCH         understandAction — Internal rules + optional OpenAI fallback
  *   CLOUDPILOT_AI_SPEND_SEARCH       searchForAiSpend() — Question classify only
  *   CLOUDPILOT_OPEN_REQUESTS_SEARCH  searchForOpenRequests() — Question classify only
+ *   CLOUDPILOT_ORG_KNOWLEDGE_SEARCH  understandOrganizationalKnowledge() — extract reference only
  *
  * History / OpenAI transport:
  *   OPENAI_SEND_CONVERSATION_HISTORY, OPENAI_CONVERSATION_HISTORY_LIMIT
@@ -26,7 +27,8 @@
  *   CLOUDPILOT_ACTION_STATE_LOGS, CLOUDPILOT_CONTEXT_LOGS,
  *   CLOUDPILOT_OPENAI_LOGS          OPENAI: <Capability> (Request N) blocks
  *
- * Token limits: CLOUDPILOT_MESSAGE_TOKEN_LIMIT, REGION, ACTION, AI_SPEND, OPEN_REQUESTS
+ * Token limits: CLOUDPILOT_MESSAGE_TOKEN_LIMIT, REGION, ACTION, AI_SPEND, OPEN_REQUESTS,
+ *   ORG_KNOWLEDGE
  */
 
 function readEnvBoolean(envName, defaultValue) {
@@ -98,12 +100,17 @@ const CLOUDPILOT_AI_CONFIG = {
      * actionSearch    → action search (Internal rules first; OpenAI fallback)
      * aiSpendSearch       → searchForAiSpend() Question classify only
      * openRequestsSearch  → searchForOpenRequests() Question classify only
+     * orgKnowledgeSearch  → understandOrganizationalKnowledge() extract reference only
      */
     messageResponse: readImplementation('CLOUDPILOT_MESSAGE_RESPONSE', 'internal'),
     regionSearch: readImplementation('CLOUDPILOT_REGION_SEARCH', 'internal'),
     actionSearch: readImplementation('CLOUDPILOT_ACTION_SEARCH', 'internal'),
     aiSpendSearch: readImplementation('CLOUDPILOT_AI_SPEND_SEARCH', 'internal'),
     openRequestsSearch: readImplementation('CLOUDPILOT_OPEN_REQUESTS_SEARCH', 'internal'),
+    orgKnowledgeSearch: readImplementation(
+        'CLOUDPILOT_ORG_KNOWLEDGE_SEARCH',
+        'internal'
+    ),
 
     /**
      * Individual logging switches (not one master LOGS_ON).
@@ -128,6 +135,11 @@ const CLOUDPILOT_AI_CONFIG = {
     openRequestsTokenLimit: readEnvPositiveInt(
         'CLOUDPILOT_OPEN_REQUESTS_TOKEN_LIMIT',
         40,
+        100
+    ),
+    orgKnowledgeTokenLimit: readEnvPositiveInt(
+        'CLOUDPILOT_ORG_KNOWLEDGE_TOKEN_LIMIT',
+        60,
         100
     )
 };

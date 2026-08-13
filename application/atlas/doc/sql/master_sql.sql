@@ -10,14 +10,14 @@
 --   2. cloudpilot_requests  — user workflow / open request state
 --   3. cloudpilot_history   — audit trail + undo (planned)
 --   4. cloud_pilot_ai_usage — OpenAI token/cost per CloudPilot call
---   5. organization_knowledge (+ tags) — why a resource exists (org facts)
+--   5. cloudpilot_organization_knowledge (+ tags) — why a resource exists (org facts)
 --   6. cloud_pilot_images   — instruction image catalog (relative paths)
 --   7. cloud_service_pricing — curated unit rates (MVP: EC2 hourly)
 --
 -- Docs: doc/database/database.md
 --       doc/development/architecture/development_undo_feature.md (history)
 --       doc/development/finished/feature_ai_spending.md (cloud_pilot_ai_usage)
---       doc/development/current/feature_organizational_knowledge.md
+--       doc/development/finished/feature_organizational_knowledge.md
 --       doc/development/finished/feature_images.md
 --       doc/development/current/feature_useful_price.md
 --
@@ -25,8 +25,8 @@
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
 --
 -- Or only org knowledge on an existing DB:
---   mysql -u USER -p DATABASE_NAME < doc/sql/organization_knowledge.sql
---   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_organization_knowledge.sql
+--   mysql -u USER -p DATABASE_NAME < doc/sql/cloudpilot_organization_knowledge.sql
+--   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_cloudpilot_organization_knowledge.sql
 --
 -- Existing DB — images catalog + link create_ec2 instructions:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/cloud_pilot_images.sql
@@ -40,8 +40,8 @@
 --   SELECT * FROM cloudpilot_requests;
 --   SELECT * FROM cloudpilot_history;
 --   SELECT * FROM cloud_pilot_ai_usage;
---   SELECT * FROM organization_knowledge;
---   SELECT * FROM organization_knowledge_tags;
+--   SELECT * FROM cloudpilot_organization_knowledge;
+--   SELECT * FROM cloudpilot_organization_knowledge_tags;
 --   SELECT * FROM cloud_pilot_images;
 --   SELECT * FROM cloud_service_pricing;
 -- =============================================================================
@@ -224,11 +224,11 @@ CREATE TABLE IF NOT EXISTS cloud_pilot_ai_usage (
 
 
 -- -----------------------------------------------------------------------------
--- 5. organization_knowledge (+ tags)
---     See doc/development/current/feature_organizational_knowledge.md
+-- 5. cloudpilot_organization_knowledge (+ tags)
+--     See doc/development/finished/feature_organizational_knowledge.md
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS organization_knowledge (
+CREATE TABLE IF NOT EXISTS cloudpilot_organization_knowledge (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
     master_site VARCHAR(100) NOT NULL,
@@ -259,7 +259,7 @@ CREATE TABLE IF NOT EXISTS organization_knowledge (
 );
 
 
-CREATE TABLE IF NOT EXISTS organization_knowledge_tags (
+CREATE TABLE IF NOT EXISTS cloudpilot_organization_knowledge_tags (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
     organization_knowledge_id BIGINT UNSIGNED NOT NULL,
@@ -267,9 +267,9 @@ CREATE TABLE IF NOT EXISTS organization_knowledge_tags (
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_org_knowledge_tag
+    CONSTRAINT fk_cloudpilot_org_knowledge_tag
         FOREIGN KEY (organization_knowledge_id)
-        REFERENCES organization_knowledge (id)
+        REFERENCES cloudpilot_organization_knowledge (id)
         ON DELETE CASCADE,
 
     UNIQUE KEY uq_org_knowledge_tag (
@@ -306,11 +306,11 @@ ON DUPLICATE KEY UPDATE
 
 
 -- -----------------------------------------------------------------------------
--- Seed: organization_knowledge demo (kite / S3) + tags
---     Full copy also in doc/sql/seed/seed_organization_knowledge.sql
+-- Seed: cloudpilot_organization_knowledge demo (kite / S3) + tags
+--     Full copy also in doc/sql/seed/seed_cloudpilot_organization_knowledge.sql
 -- -----------------------------------------------------------------------------
 
-INSERT INTO organization_knowledge (
+INSERT INTO cloudpilot_organization_knowledge (
     master_site,
     resource_type,
     resource_name,
@@ -359,9 +359,9 @@ ON DUPLICATE KEY UPDATE
     importance = new_row.importance,
     recommended_action = new_row.recommended_action;
 
-INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
 SELECT ok.id, tag_list.tag
-FROM organization_knowledge ok
+FROM cloudpilot_organization_knowledge ok
 INNER JOIN (
     SELECT 'tutorial' AS tag
     UNION ALL SELECT 'youtube'
@@ -372,9 +372,9 @@ WHERE ok.master_site = 'kite'
   AND ok.resource_type = 's3_bucket'
   AND ok.resource_name = 'sam-youtube-demo';
 
-INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
 SELECT ok.id, tag_list.tag
-FROM organization_knowledge ok
+FROM cloudpilot_organization_knowledge ok
 INNER JOIN (
     SELECT 'assets' AS tag
     UNION ALL SELECT 'website images'
@@ -385,9 +385,9 @@ WHERE ok.master_site = 'kite'
   AND ok.resource_type = 's3_bucket'
   AND ok.resource_name = 'cloudpilot-assets';
 
-INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
 SELECT ok.id, tag_list.tag
-FROM organization_knowledge ok
+FROM cloudpilot_organization_knowledge ok
 INNER JOIN (
     SELECT 'uploads' AS tag
     UNION ALL SELECT 'user uploads'

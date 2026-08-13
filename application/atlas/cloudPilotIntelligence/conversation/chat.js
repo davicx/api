@@ -3,21 +3,29 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 const { buildAIContext } = require('../context/buildContext');
 const { buildAISystemMessage } = require('../context/buildSystemMessage');
 const ConversationHistoryContext = require('../context/classes/ConversationHistoryContext');
+const SearchForOrganizationalKnowledgeFunctions = require('../understand/search/searchForOrganizationalKnowledge');
+const OrganizationKnowledgeFunctions = require('../../cloudPilot/knowledge/organizationKnowledgeFunctions');
 
 /*
 CloudPilot Intelligence — Conversation chat()
 
 GenAI conversation front door. Builds context, history, and Internal stub vs OpenAI.
 CloudPilotMessage.speakGeneral calls this, then formats the outgoing product message.
+
+Step 4 org knowledge: search → DB resolve → Knowledge context (and Internal speak when OpenAI chat off).
 */
 
 const CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
 
 //Function A1: Run GenAI conversation for a processMessage context
 async function chat(processMessageContext) {
-    const context = processMessageContext || {};
+    let context = processMessageContext || {};
     const currentUserMessage = context.currentUserMessage || '';
     const conversationID = context.conversationID;
+
+    //STEP 0: Resolve organization knowledge for this turn (detect → DB → context block)
+    context = await attachOrganizationKnowledgeToContext(context);
+
     const aiContext = buildAIContext(context);
     const systemMessage = buildAISystemMessage(aiContext);
     const useOpenAIMessageResponse =
@@ -29,7 +37,12 @@ async function chat(processMessageContext) {
         console.log('______________________________________________________________');
         console.log('STEP 7a: AI Context');
         console.log(JSON.stringify(aiContext, null, 2));
-        console.log('organization knowledge: not used (empty)');
+        console.log(
+            'organization knowledge:',
+            context.organizationKnowledge && context.organizationKnowledge.status
+                ? context.organizationKnowledge.status
+                : 'not used (empty)'
+        );
         console.log('cloudPilotAIConfig:', CLOUDPILOT_AI_CONFIG);
         console.log('______________________________________________________________');
         console.log(' ');
@@ -42,6 +55,34 @@ async function chat(processMessageContext) {
         console.log(systemMessage || '(empty system message)');
         console.log('______________________________________________________________');
         console.log(' ');
+    }
+
+    //STEP 2b: Internal grounded answer from org knowledge when MESSAGE_RESPONSE is Internal
+    if (!useOpenAIMessageResponse) {
+        const internalKnowledgeMessage = buildInternalOrganizationKnowledgeMessage(
+            context.organizationKnowledge
+        );
+
+        if (internalKnowledgeMessage) {
+            openAIFunctions.logOpenAI({
+                capability: 'General Chat',
+                conversationHistoryEnabled: false,
+                conversationHistoryCount: 0,
+                context: openAIFunctions.summarizeAIContext(aiContext),
+                messages: buildOpenAiMessagesPayload(
+                    systemMessage,
+                    [],
+                    currentUserMessage
+                ),
+                previewOnly: true
+            });
+
+            return {
+                success: true,
+                message: internalKnowledgeMessage,
+                error: null
+            };
+        }
     }
 
     //STEP 3: Conversation history
@@ -68,7 +109,7 @@ async function chat(processMessageContext) {
     );
     const contextSummary = openAIFunctions.summarizeAIContext(aiContext);
 
-    //STEP 4: Preview OpenAI block when AI disabled
+    //STEP 4: Preview OpenAI block when AI disabled / Internal message response
     if (!useOpenAIMessageResponse) {
         openAIFunctions.logOpenAI({
             capability: 'General Chat',
@@ -119,6 +160,99 @@ async function chat(processMessageContext) {
         message: message,
         error: null
     };
+}
+
+//Function A2: Search + load org knowledge onto process context (facts only)
+async function attachOrganizationKnowledgeToContext(processMessageContext) {
+    const context = processMessageContext || {};
+    const currentUserMessage = context.currentUserMessage || '';
+
+    try {
+        const searchHit =
+            await SearchForOrganizationalKnowledgeFunctions.searchForOrganizationalKnowledge(
+                currentUserMessage,
+                {
+                    selectedFinding: context.selectedFinding || null
+                }
+            );
+
+        if (!searchHit || !searchHit.resourceReference) {
+            return context;
+        }
+
+        const loaded = await OrganizationKnowledgeFunctions.loadOrganizationKnowledgeForReference(
+            context.masterSite || 'kite',
+            searchHit.knowledgeType || 's3',
+            searchHit.resourceReference
+        );
+
+        return Object.assign({}, context, {
+            organizationKnowledge: loaded
+        });
+    } catch (err) {
+        console.log('attachOrganizationKnowledgeToContext failed', err);
+        return context;
+    }
+}
+
+//Function A3: Deterministic speak from loaded org facts (Internal MESSAGE_RESPONSE)
+function buildInternalOrganizationKnowledgeMessage(organizationKnowledge) {
+    const loaded = organizationKnowledge || null;
+
+    if (!loaded || typeof loaded !== 'object') {
+        return '';
+    }
+
+    if (loaded.status === 'ambiguous') {
+        const names = [];
+        const records = Array.isArray(loaded.records) ? loaded.records : [];
+
+        for (let i = 0; i < records.length; i++) {
+            if (records[i] && records[i].resourceName) {
+                names.push(records[i].resourceName);
+            }
+        }
+
+        return (
+            'I found more than one match for "' +
+            String(loaded.resourceReference || '') +
+            '". Which resource did you mean' +
+            (names.length ? ': ' + names.join(', ') : '') +
+            '?'
+        );
+    }
+
+    if (loaded.status !== 'found' || !loaded.record) {
+        return '';
+    }
+
+    const record = loaded.record;
+    const lines = [];
+    const title = record.displayName || record.resourceName;
+
+    if (title) {
+        lines.push(title);
+        lines.push('');
+    }
+
+    if (record.purpose) {
+        lines.push(record.purpose);
+    }
+
+    if (record.notes) {
+        lines.push(record.notes);
+    }
+
+    if (record.importance) {
+        lines.push('');
+        lines.push('Importance: ' + record.importance + '.');
+    }
+
+    if (record.recommendedAction) {
+        lines.push(record.recommendedAction);
+    }
+
+    return lines.join('\n').trim();
 }
 
 function buildOpenAiMessagesPayload(systemMessage, conversationHistory, currentUserMessage) {
@@ -172,5 +306,7 @@ function logConversationHistory(conversationHistory, historyLimit) {
 }
 
 module.exports = {
-    chat
+    chat,
+    attachOrganizationKnowledgeToContext,
+    buildInternalOrganizationKnowledgeMessage
 };

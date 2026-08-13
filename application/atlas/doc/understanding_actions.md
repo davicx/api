@@ -1,6 +1,6 @@
 # CloudPilot — Actions & Input Types
 
-Quick reference for understanding, decision, and local DB setup. Planning docs live in [`development/`](./development/) — **active work:** [`development/history.md`](./development/history.md).
+Quick reference for understanding, decision, and local DB setup. Planning docs live in [`development/`](./development/) — **active work:** [`development/current/current_development.md`](./development/current/current_development.md). Copy-paste chat smokes: [`chat_prompts.md`](./chat_prompts.md).
 
 **Code layout:** [`../README.md`](../README.md)
 

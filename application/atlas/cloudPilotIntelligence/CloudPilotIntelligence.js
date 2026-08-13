@@ -18,6 +18,7 @@ FUNCTIONS B: Understand (Gather Context)
     4) Function B4: understandResource
     5) Function B5: searchForAiSpend
     6) Function B6: searchForOpenRequests
+    7) Function B7: understandOrganizationalKnowledge
 
 FUNCTIONS C: Explain (placeholder)
     1) Function C1: explain
@@ -38,6 +39,7 @@ const SearchMessageForActionFunctions = require('./understand/search/searchMessa
 const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
 const SearchForAiSpendFunctions = require('./understand/search/questions/searchForAiSpend');
 const SearchForOpenRequestsFunctions = require('./understand/search/questions/searchForOpenRequests');
+const SearchForOrganizationalKnowledgeFunctions = require('./understand/search/searchForOrganizationalKnowledge');
 
 //FUNCTIONS A: Conversation
 //Function A1: GenAI conversation front door
@@ -83,6 +85,15 @@ async function searchForOpenRequests(message) {
     return SearchForOpenRequestsFunctions.searchForOpenRequests(message);
 }
 
+//Function B7: Detect org-knowledge question + extract resourceReference only
+async function understandOrganizationalKnowledge(message, options) {
+    //STEP 1: Delegate to org-knowledge search (shouldRun + Internal vs OpenAI)
+    return SearchForOrganizationalKnowledgeFunctions.searchForOrganizationalKnowledge(
+        message,
+        options
+    );
+}
+
 //FUNCTIONS C: Explain
 //Function C1: Explain — placeholder until a later project
 async function explain(context) {
@@ -118,6 +129,7 @@ module.exports = {
     understandResource,
     searchForAiSpend,
     searchForOpenRequests,
+    understandOrganizationalKnowledge,
     explain,
     improve,
     generate,

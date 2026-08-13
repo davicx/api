@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-08-04
 
-> **Active work:** [Current Development](../current/current_development.md) · **[Organizational Knowledge](../current/feature_organizational_knowledge.md)** · [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
+> **Active work:** [Current Development](../current/current_development.md) · **[Organizational Knowledge (finished)](../finished/feature_organizational_knowledge.md)** · [billing.md](./billing.md) · [scans.md](./scans.md) · **[remediations.md](./remediations.md)**  
 > **Architecture refactor (finished):** **[responsibility_refactor.md](../finished/responsibility_refactor.md)** · **Finished index:** [finished.md](../finished/finished.md)  
 > **History (MVP done):** [history.md](../finished/history.md) · **Deferred:** [future_work.md](./future.md)  
 > **Done:** [finished.md](../finished/finished.md) · **Architecture & reference:** [architecture/](../architecture/)

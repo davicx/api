@@ -166,8 +166,10 @@ async function createGroup(req, res) {
 		newGroupOutcome.statusCode = 200;
 		newGroupOutcome.data = {
 			groupName: groupName, 
+			groupType: groupType,
 			groupImage: uploadFile.fileURL,
 			groupID: groupOutcome.groupID, 
+			createdBy: currentUser,
 			activeGroupMembers: [req.body.currentUser],
 			pendingGroupMembers: groupUsersOutcome.pendingUsers,
 		};
@@ -338,8 +340,10 @@ async function createGroupLocalAWS(req, res) {
 		newGroupOutcome.statusCode = 200;
 		newGroupOutcome.data = {
 			groupName: groupName, 
+			groupType: groupType,
 			groupImage: signedURL,
 			groupID: groupOutcome.groupID, 
+			createdBy: currentUser,
 			activeGroupMembers: [req.body.currentUser],
 			pendingGroupMembers: groupUsersOutcome.pendingUsers,
 		};
@@ -378,6 +382,7 @@ async function getGroups(req, res) {
 	for (let i = 0; i < userGroupList.length; i++) {
 		let currentGroup = {
 			groupID: "",
+			groupType: "",
 			groupName: "",
 			groupImage: "",
 			createdBy: "",
@@ -397,6 +402,7 @@ async function getGroups(req, res) {
 		let currentGroupUsers = await Group.getGroupUsers(groupID)	
 		//console.log(currentGroupUsers)
 		currentGroup.groupID = groupID
+		currentGroup.groupType = currentGroupInformation.groupType
 		currentGroup.groupName = currentGroupInformation.groupName
 		currentGroup.groupImage = currentGroupInformation.groupImage
 		currentGroup.createdBy = currentGroupInformation.groupCreatedBy

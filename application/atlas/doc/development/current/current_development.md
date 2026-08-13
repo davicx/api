@@ -6,10 +6,10 @@ This is the active-work dashboard. It contains only features we are working on n
 
 ## End-of-day handoff — 2026-08-12
 
-MVP product boundary in [CloudPilot MVP](./feature_mvp.md).
-[GitHub Pull Requests](../future/feature_github_pull_requests.md) deferred to future
-(Steps 0–6 shipped; Step 7 E2E later). Finished work lives in
-[finished/](../finished/finished.md) — not listed here.
+[Organizational Knowledge](../finished/feature_organizational_knowledge.md) shipped
+(S3 org facts + tags → Chat Knowledge). MVP boundary remains in
+[CloudPilot MVP](./feature_mvp.md). Finished work lives in
+[finished/](../finished/finished.md).
 
 ## How to use these docs
 
@@ -26,14 +26,21 @@ MVP product boundary in [CloudPilot MVP](./feature_mvp.md).
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
+| [Friendly Dashboard](./feature_friendly_dashboard.md) | S3 Findings-first Dashboard: exact friendly table; Fix→Chat “coming soon”; no fake S3 remediation modes. | **MVP locked (1A–4B, 5 Fix→Chat, 6B) — ready for Step 1** |
+| [S3 inventory ask](./feature_s3_inventory_ask.md) | “What S3 buckets do I have?” → Question `s3_inventory` → `scan_s3` (EC2 pattern). | Plan locked — **awaiting Step 1** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
 | [Feature Chat](./feature_chat.md) | Friendly request presentation when OpenAI is on; deterministic templates stay Internal + fallback. | Plan locked — **awaiting Step 1** |
-| [Organizational Knowledge](./feature_organizational_knowledge.md) | Why an S3 bucket exists (org facts + tags). | Step 1 — DB + tags SQL ready; apply when ready |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
+
+## Just finished
+
+| Feature | What shipped |
+|---------|----------------|
+| [Organizational Knowledge](../finished/feature_organizational_knowledge.md) | S3 org facts + tags; search extract → DB resolve → Chat Knowledge / Internal speak |
 
 ## Useful References
 
-- [How-to guides](../how_to/how_to_guides.md) — including [CloudPilot Context](../how_to/cloud_pilot_context.md)
+- [How-to guides](../how_to/how_to_guides.md) — including [CloudPilot Context](../how_to/cloud_pilot_context.md) and [inventory question → scan](../how_to/route_inventory_question_to_scan.md)
 - [Architecture](../architecture/)
 - [Finished work](../finished/finished.md)
 - [Future ideas](../future/future.md) — including [GitHub Pull Requests](../future/feature_github_pull_requests.md)

@@ -23,7 +23,7 @@ Shipped:
 - Understand methods remain under FUNCTIONS B
 - `speakKnown` / `speakRequest` unchanged
 
-**Related:** [Current Development](../current/current_development.md) · [Organizational Knowledge](../current/feature_organizational_knowledge.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [OpenAI Logs](./feature_openai_logs.md)
+**Related:** [Current Development](../current/current_development.md) · [Organizational Knowledge](./feature_organizational_knowledge.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [OpenAI Logs](./feature_openai_logs.md)
 
 ---
 

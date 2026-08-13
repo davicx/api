@@ -61,7 +61,10 @@ CloudPilot:
        Which one would you like to inspect?
 ```
 
-**Implementation note:** `inventory_aws` already returns S3 buckets. Add match phrases like `show my s3 buckets` (very easy).
+**Implementation note:** Prefer the EC2 pattern — Question `s3_inventory` → `scan_s3`
+(see [feature_s3_inventory_ask](../current/feature_s3_inventory_ask.md) and
+[route inventory → scan](../how_to/route_inventory_question_to_scan.md)).
+Inventory-phrase shortcuts via `inventory_aws` remain optional later.
 
 ### Step 2 — Scan one bucket
 

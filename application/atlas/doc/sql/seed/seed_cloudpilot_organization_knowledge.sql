@@ -1,22 +1,23 @@
 -- =============================================================================
--- Seed organization_knowledge + tags (demo S3 rows)
+-- Seed cloudpilot_organization_knowledge + tags (demo S3 rows)
 -- =============================================================================
 --
--- Doc: doc/development/current/feature_organizational_knowledge.md
--- Requires: doc/sql/organization_knowledge.sql already applied
+-- Doc: doc/development/finished/feature_organizational_knowledge.md
+-- Requires: doc/sql/cloudpilot_organization_knowledge.sql already applied
+-- Atlas mock: atlas/app/api/routes/test/s3_scan_routes_test.py (same 5 buckets)
 --
 -- Usage:
---   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_organization_knowledge.sql
+--   mysql -u USER -p DATABASE_NAME < doc/sql/seed/seed_cloudpilot_organization_knowledge.sql
 --
 -- Safe to re-run: upserts knowledge by unique key; INSERT IGNORE on tags.
 -- Demo master_site: kite
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
--- Knowledge rows
+-- Knowledge rows (aligned with Atlas S3 test mock — 5 buckets)
 -- -----------------------------------------------------------------------------
 
-INSERT INTO organization_knowledge (
+INSERT INTO cloudpilot_organization_knowledge (
     master_site,
     resource_type,
     resource_name,
@@ -56,6 +57,26 @@ VALUES
     'Production user data.',
     'critical',
     'Do not delete. Recommend versioning. Recommend backups.'
+),
+(
+    'kite',
+    's3_bucket',
+    'customer-uploads-demo',
+    'Customer Uploads Demo',
+    'Demo bucket for customer upload experiments and tutorials.',
+    'Intentionally misconfigured for scan demos.',
+    'low',
+    'Safe to delete after demos. Fix public access before any real data.'
+),
+(
+    'kite',
+    's3_bucket',
+    'kite-app-assets',
+    'Kite App Assets',
+    'Stores static assets for the Kite app (images, front-end bundles).',
+    'Production-shaped demo bucket with strong defaults.',
+    'medium',
+    'Do not delete unless migrated.'
 )
 AS new_row
 ON DUPLICATE KEY UPDATE
@@ -70,9 +91,9 @@ ON DUPLICATE KEY UPDATE
 -- Tags — sam-youtube-demo
 -- -----------------------------------------------------------------------------
 
-INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
 SELECT ok.id, tag_list.tag
-FROM organization_knowledge ok
+FROM cloudpilot_organization_knowledge ok
 INNER JOIN (
     SELECT 'tutorial' AS tag
     UNION ALL SELECT 'youtube'
@@ -88,9 +109,9 @@ WHERE ok.master_site = 'kite'
 -- Tags — cloudpilot-assets
 -- -----------------------------------------------------------------------------
 
-INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
 SELECT ok.id, tag_list.tag
-FROM organization_knowledge ok
+FROM cloudpilot_organization_knowledge ok
 INNER JOIN (
     SELECT 'assets' AS tag
     UNION ALL SELECT 'website images'
@@ -106,9 +127,9 @@ WHERE ok.master_site = 'kite'
 -- Tags — cloudpilot-user-uploads
 -- -----------------------------------------------------------------------------
 
-INSERT IGNORE INTO organization_knowledge_tags (organization_knowledge_id, tag)
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
 SELECT ok.id, tag_list.tag
-FROM organization_knowledge ok
+FROM cloudpilot_organization_knowledge ok
 INNER JOIN (
     SELECT 'uploads' AS tag
     UNION ALL SELECT 'user uploads'
@@ -119,3 +140,39 @@ INNER JOIN (
 WHERE ok.master_site = 'kite'
   AND ok.resource_type = 's3_bucket'
   AND ok.resource_name = 'cloudpilot-user-uploads';
+
+
+-- -----------------------------------------------------------------------------
+-- Tags — customer-uploads-demo
+-- -----------------------------------------------------------------------------
+
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
+SELECT ok.id, tag_list.tag
+FROM cloudpilot_organization_knowledge ok
+INNER JOIN (
+    SELECT 'demo' AS tag
+    UNION ALL SELECT 'customer uploads'
+    UNION ALL SELECT 'uploads demo'
+    UNION ALL SELECT 'misconfigured'
+) AS tag_list
+WHERE ok.master_site = 'kite'
+  AND ok.resource_type = 's3_bucket'
+  AND ok.resource_name = 'customer-uploads-demo';
+
+
+-- -----------------------------------------------------------------------------
+-- Tags — kite-app-assets
+-- -----------------------------------------------------------------------------
+
+INSERT IGNORE INTO cloudpilot_organization_knowledge_tags (organization_knowledge_id, tag)
+SELECT ok.id, tag_list.tag
+FROM cloudpilot_organization_knowledge ok
+INNER JOIN (
+    SELECT 'kite' AS tag
+    UNION ALL SELECT 'app assets'
+    UNION ALL SELECT 'static assets'
+    UNION ALL SELECT 'kite images'
+) AS tag_list
+WHERE ok.master_site = 'kite'
+  AND ok.resource_type = 's3_bucket'
+  AND ok.resource_name = 'kite-app-assets';

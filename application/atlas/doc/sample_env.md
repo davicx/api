@@ -86,6 +86,9 @@ CLOUDPILOT_AI_SPEND_SEARCH=internal
 # Detect open-requests questions (classify only — CloudPilot answers from request state)
 CLOUDPILOT_OPEN_REQUESTS_SEARCH=internal
 
+# Org knowledge — extract resourceReference only (CloudPilot DB resolves facts)
+CLOUDPILOT_ORG_KNOWLEDGE_SEARCH=internal
+
 
 # ==================================================
 # AI TOKEN LIMITS (per feature)
@@ -96,6 +99,7 @@ CLOUDPILOT_REGION_TOKEN_LIMIT=40
 CLOUDPILOT_ACTION_TOKEN_LIMIT=40
 CLOUDPILOT_AI_SPEND_TOKEN_LIMIT=40
 CLOUDPILOT_OPEN_REQUESTS_TOKEN_LIMIT=40
+CLOUDPILOT_ORG_KNOWLEDGE_TOKEN_LIMIT=60
 
 
 # ==================================================

@@ -1,10 +1,14 @@
 # Finished
 
-**Last reviewed:** 2026-08-08
+**Last reviewed:** 2026-08-12
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-12)
+
+- [x] **Organizational Knowledge** — S3 org facts + tags; extract `resourceReference` → DB resolve → Chat Knowledge / Internal speak — [feature_organizational_knowledge.md](./feature_organizational_knowledge.md)
 
 ## Recently finished (2026-08-11)
 

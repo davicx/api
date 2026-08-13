@@ -29,22 +29,20 @@ CloudPilot owns the organizational facts.
 OpenAI only helps understand the question and speak naturally about those facts.  
 It does **not** invent why a bucket exists.
 
-## Current step
+## Status
 
-**Step 1 — Database + demo data** (`organization_knowledge` + `organization_knowledge_tags` + three S3 rows + tags).
+**Finished** — 2026-08-12  
 
-SQL ready:
+Steps 1–5 done: `cloudpilot_organization_knowledge` (+ tags), Intelligence extract,
+sequential DB loader, General Chat Knowledge wiring, acceptance smoke (Internal).
 
-* [organization_knowledge.sql](../../sql/organization_knowledge.sql) — tables
-* [seed/seed_organization_knowledge.sql](../../sql/seed/seed_organization_knowledge.sql) — demo rows + tags  
-* Also included in [master_sql.sql](../../sql/master_sql.sql)
+**Codename:** `feature_organizational_knowledge`  
+**Related:** [Current Development](../current/current_development.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [Intelligence Front Door](./feature_intelligence_front_door.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
 
-## Next
-
-Say **go Step 1** to apply SQL (or apply the files above). Then Step 2 — Intelligence search.
-
-**Status:** Active  
-**Related:** [Current Development](./current_development.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [Intelligence Front Door](../finished/feature_intelligence_front_door.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
+**SQL:**
+* [cloudpilot_organization_knowledge.sql](../../sql/cloudpilot_organization_knowledge.sql)
+* [seed_cloudpilot_organization_knowledge.sql](../../sql/seed/seed_cloudpilot_organization_knowledge.sql)
+* [alter rename](../../sql/alter/organization_knowledge_rename_cloudpilot.sql)
 
 ---
 
@@ -77,12 +75,14 @@ Say **go Step 1** to apply SQL (or apply the files above). Then Step 2 — Intel
 | Canonical DB key | `master_site` + `resource_type` + `resource_name` (exact) |
 | How much knowledge to load? | **Only the matching row** — never every S3 bucket / never all tags into OpenAI |
 | Who detects the question? | **OpenAI** via tiny `searchForOrganizationalKnowledge()` — extract reference, do not invent facts |
-| OpenAI hit shape | `{ knowledgeType, resourceReference }` — reference may be name, display, or tag text |
-| Who resolves the resource? | **CloudPilot DB** (`findOrganizationKnowledge`) |
-| Ambiguous tag/name | `LIMIT 2` — if 2+ rows, return ambiguous (ask user); MVP tags stay unique enough |
+| OpenAI hit shape | `{ knowledgeType, resourceReference }` **only** — never `resourceName` / `importance` / `recommendedAction` from the model |
+| Who resolves the resource? | **CloudPilot DB** (`findOrganizationKnowledge`) — three sequential lookups |
+| Resolution priority | **1)** `resource_name` → **2)** `display_name` → **3)** tag (not one OR across all three) |
+| Ambiguous within a step | `LIMIT 2` — if 2+ rows at that step, return ambiguous (ask user) |
 | Where does it live? | Intelligence search + `cloudPilot/knowledge/` loader — **no new response system** |
-| Tags schema | Dedicated `organization_knowledge_tags` (1→many) — not a global tags table |
+| Tags schema | Dedicated `cloudpilot_organization_knowledge_tags` (1→many) — not a global tags table |
 | Cost? | From **AWS scan / live data**, not from the knowledge table |
+| Out before build | No embeddings, CRUD, auto-learning, generic knowledge framework, other AWS services, extra response handlers |
 
 ---
 
@@ -119,7 +119,7 @@ OpenAI extracts reference (or {})
         (may also include live AWS facts such as cost)
 ```
 
-Fits [CloudPilot Context](../finished/feature_cloud_pilot_context.md): Search is a tiny classifier/extractor; CloudPilot owns truth; Chat speaks grounded facts.
+Fits [CloudPilot Context](./feature_cloud_pilot_context.md): Search is a tiny classifier/extractor; CloudPilot owns truth; Chat speaks grounded facts.
 
 Facade:
 
@@ -135,15 +135,15 @@ CloudPilotIntelligence.understandOrganizationalKnowledge(...)
 ### Tables
 
 ```text
-organization_knowledge
+cloudpilot_organization_knowledge
         1
         │
         ▼
         many
-organization_knowledge_tags
+cloudpilot_organization_knowledge_tags
 ```
 
-**`organization_knowledge`** — identity + org facts
+**`cloudpilot_organization_knowledge`** — identity + org facts
 
 | Column | Purpose |
 |--------|---------|
@@ -160,7 +160,7 @@ organization_knowledge_tags
 
 Unique: `(master_site, resource_type, resource_name)`.
 
-**`organization_knowledge_tags`** — human aliases / ways people refer to the resource
+**`cloudpilot_organization_knowledge_tags`** — human aliases / ways people refer to the resource
 
 | Column | Purpose |
 |--------|---------|
@@ -179,7 +179,7 @@ No separate global `tags` + map table for MVP.
 1. Selected finding          → exact resource_name
 2. Exact AWS resource name   → resource_name
 3. Friendly display name     → display_name
-4. Tag / alias               → organization_knowledge_tags.tag
+4. Tag / alias               → cloudpilot_organization_knowledge_tags.tag
 ```
 
 Canonical exact lookup remains:
@@ -194,22 +194,21 @@ Conceptual loader:
 findOrganizationKnowledge(masterSite, resourceType, resourceReference)
 ```
 
-```sql
-SELECT DISTINCT ok.*
-FROM organization_knowledge ok
-LEFT JOIN organization_knowledge_tags okt
-    ON okt.organization_knowledge_id = ok.id
-WHERE ok.master_site = ?
-  AND ok.resource_type = ?
-  AND (
-      ok.resource_name = ?
-      OR ok.display_name = ?
-      OR okt.tag = ?
-  )
-LIMIT 2;
+**Implement as three tiny lookups (priority order) — not one OR query:**
+
+```text
+1. SELECT … WHERE resource_name = ?  LIMIT 2
+   ↓ 0 rows
+2. SELECT … WHERE display_name = ?   LIMIT 2
+   ↓ 0 rows
+3. SELECT … JOIN tags WHERE tag = ?  LIMIT 2
 ```
 
-`LIMIT 2` so CloudPilot can detect ambiguity instead of guessing.
+Stop at the first step that returns rows. `LIMIT 2` at each step detects ambiguity
+without guessing. Avoids a future collision where one bucket’s `display_name`
+equals another bucket’s tag.
+
+(Do **not** use a single `resource_name OR display_name OR tag` query for MVP.)
 
 ### Demo data (master_site = `kite`)
 
@@ -305,42 +304,55 @@ No separate `respondS3Knowledge.js`.
 
 ### Step 1 — Database + demo data
 
-1. Create `organization_knowledge`.
-2. Create `organization_knowledge_tags`.
-3. Insert three S3 demo resources (`master_site = kite`).
-4. Insert human-friendly tags for each.
-5. Confirm exact lookup by `resource_name`.
-6. Confirm alias lookup by `tag` (e.g. `tutorial` → `sam-youtube-demo`).
+1. [x] Create `cloudpilot_organization_knowledge`.
+2. [x] Create `cloudpilot_organization_knowledge_tags`.
+3. [x] Insert three S3 demo resources (`master_site = kite`).
+4. [x] Insert human-friendly tags for each.
+5. [x] Confirm exact lookup by `resource_name`.
+6. [x] Confirm alias lookup by `tag` (e.g. `tutorial` → `sam-youtube-demo`).
 
-SQL files: [organization_knowledge.sql](../../sql/organization_knowledge.sql) · [seed/seed_organization_knowledge.sql](../../sql/seed/seed_organization_knowledge.sql)
+SQL files: [cloudpilot_organization_knowledge.sql](../../sql/cloudpilot_organization_knowledge.sql) · [seed/seed_cloudpilot_organization_knowledge.sql](../../sql/seed/seed_cloudpilot_organization_knowledge.sql)
 
 ### Step 2 — Intelligence search + facade
 
-1. Add `searchForOrganizationalKnowledge.js` (tiny TASK + message; no Identity dump).
-2. Wire `CloudPilotIntelligence.understandOrganizationalKnowledge(...)`.
-3. Return `{ knowledgeType, resourceReference }` or `{}`.
-4. Support selected finding (exact name) + named / tagged references in message.
+1. [x] Add `searchForOrganizationalKnowledge.js` (tiny TASK + message; no Identity dump).
+2. [x] Wire `CloudPilotIntelligence.understandOrganizationalKnowledge(...)`.
+3. [x] Return `{ knowledgeType, resourceReference }` or `{}` — **strict; no org facts from OpenAI**.
+4. [x] Support selected finding (exact name) + named / tagged references in message.
+
+Env: `CLOUDPILOT_ORG_KNOWLEDGE_SEARCH=internal|openai`, `CLOUDPILOT_ORG_KNOWLEDGE_TOKEN_LIMIT`.
 
 ### Step 3 — Loader
 
-1. Add `cloudPilot/knowledge/organizationKnowledgeFunctions.js`.
-2. Implement `findOrganizationKnowledge` (name / display / tag, LIMIT 2).
-3. Format one-row context block; handle ambiguous.
+1. [x] Add `cloudPilot/knowledge/organizationKnowledgeFunctions.js`.
+2. [x] Implement `findOrganizationKnowledge` — sequential `resource_name` → `display_name` → tag (`LIMIT 2` each step).
+3. [x] Format one-row context block; handle ambiguous.
+
+Code: `findOrganizationKnowledge`, `loadOrganizationKnowledgeTags`,
+`formatOrganizationKnowledgeContext`, `loadOrganizationKnowledgeForReference`.
 
 ### Step 4 — Append context in existing chat path
 
-1. On hit → resolve → append knowledge to Chat context.
-2. Existing chat path speaks using that context.
-3. Live AWS cost (if any) as AWS fact, not org knowledge.
+1. [x] On hit → resolve → append knowledge to Chat context.
+2. [x] Existing chat path speaks using that context.
+3. [x] Live AWS cost (if any) as AWS fact, not org knowledge.
+
+Wiring:
+* `conversation/chat.js` — search → loader → `organizationKnowledge` on context
+* `organizationKnowledgeContext.js` — Knowledge section from loaded facts
+* `buildSystemMessage.writeKnowledge` — renders Organization S3 Knowledge block
+* Internal `MESSAGE_RESPONSE` — grounded speak from DB facts (no invent); OpenAI chat uses Knowledge in system message
 
 ### Step 5 — Demo smoke
 
-1. Selected `cloudpilot-user-uploads` + “What is this bucket for?”
-2. Named `sam-youtube-demo` in message.
-3. Tag: “Tell me about my tutorial bucket.”
-4. Display-ish: “Tell me about the Sam YouTube Demo bucket.”
-5. Unrelated chat does not load knowledge.
-6. No row → no invented purpose.
+1. [x] Selected `cloudpilot-user-uploads` + “What is this bucket for?”
+2. [x] Named `sam-youtube-demo` in message.
+3. [x] Tag: “Tell me about my tutorial bucket.”
+4. [x] Display-ish: “Tell me about the Sam YouTube Demo bucket.”
+5. [x] Unrelated chat does not load knowledge.
+6. [x] No row → no invented purpose.
+
+Also verified: tag `website images` → `cloudpilot-assets`.
 
 ---
 
@@ -354,18 +366,20 @@ SQL files: [organization_knowledge.sql](../../sql/organization_knowledge.sql) ·
 
 ## Acceptance (MVP)
 
-| Check | Expected |
-|-------|----------|
-| Selected production uploads bucket | Accurate purpose + do-not-delete guidance |
-| Named `sam-youtube-demo` | Low importance / likely safe |
-| Tag `tutorial` | Resolves to `sam-youtube-demo` |
-| Tag `website images` | Resolves to `cloudpilot-assets` |
-| No matching row | No invented org story |
-| Unrelated “hello” | No knowledge block loaded |
-| Cost mentioned | From AWS/live data when available, not from the table |
+| Check | Expected | Result |
+|-------|----------|--------|
+| Selected production uploads bucket | Accurate purpose + do-not-delete guidance | PASS |
+| Named `sam-youtube-demo` | Low importance / likely safe | PASS |
+| Tag `tutorial` | Resolves to `sam-youtube-demo` | PASS |
+| Tag `website images` | Resolves to `cloudpilot-assets` | PASS |
+| No matching row | No invented org story | PASS |
+| Unrelated “hello” | No knowledge block loaded | PASS |
+| Cost mentioned | From AWS/live data when available, not from the table | N/A this smoke (not in org block) |
 
 ---
 
-## Next
+## Shipped
 
-Say **go Step 1** to apply the SQL (tables + seed) only — or apply the files under `doc/sql/` yourself.
+MVP closed 2026-08-12. Org facts live in `cloudpilot_organization_knowledge*`;
+Search extracts `resourceReference` only; CloudPilot resolves and speaks
+(Internal) or supplies Knowledge context (OpenAI chat).

@@ -48,9 +48,11 @@ function buildAIContext(processMessageContext, options) {
     //STEP 4: Current question (what the user said)
     const currentQuestion = buildCurrentQuestionContext(processMessageContext);
 
-    //STEP 5: Knowledge (optional)
+    //STEP 5: Knowledge (optional — organization facts for this turn when loaded)
     const includeKnowledge = opts.includeKnowledge !== false;
-    const knowledge = includeKnowledge ? getKnowledgeContext() : null;
+    const knowledge = includeKnowledge
+        ? getKnowledgeContext(processMessageContext)
+        : null;
 
     //STEP 6: Combine
     const aiContext = {
