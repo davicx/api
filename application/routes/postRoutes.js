@@ -32,6 +32,7 @@ FUNCTIONS C: All Routes Related to Post Actions
 */
 
 
+
 //FUNCTIONS A: All Functions Related to Posts
 //Route A1: Post Text
 postRouter.post('/post/text', function(req, res) {

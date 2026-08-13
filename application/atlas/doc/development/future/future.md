@@ -4,7 +4,8 @@
 
 > **Active plans:** [scans.md](./scans.md) · [billing.md](./billing.md) · [history.md](../finished/history.md) · **Shipped:** [finished.md](../finished/finished.md) · **Platform:** [To_do.md](./to_do.md)  
 > **Chat backlog:** [feature_chat_guardrails.md](./feature_chat_guardrails.md) (after [feature_chat](../current/feature_chat.md))  
-> **PR demo (deferred):** [feature_github_pull_requests.md](./feature_github_pull_requests.md)
+> **PR demo (deferred):** [feature_github_pull_requests.md](./feature_github_pull_requests.md)  
+> **Friendly Dashboard (deferred):** [feature_friendly_dashboard.md](./feature_friendly_dashboard.md)
 
 ## History & undo
 
@@ -179,6 +180,16 @@ Establish this pattern on **region** before expanding OpenAI to action search / 
 Allow occasional casual chat; after a **consecutive** off-topic streak (~4), deterministic redirect back to tech / AWS / engineering. Reset streak on any in-domain turn. Broad in-domain (not AWS-only).
 
 Ship after friendlier request-field presentation — [feature_chat](../current/feature_chat.md).
+
+---
+
+## Friendly Dashboard (deferred)
+
+Moved out of current. Spec: [feature_friendly_dashboard.md](./feature_friendly_dashboard.md).
+
+S3 Findings-first Dashboard — exact friendly table; Fix→Chat “coming soon”; no fake S3 remediation modes. MVP locked (1A–4B, 5, 6B) but **not started**. Pick up when dashboard UX is next.
+
+Also see [make_scans_useful.md](./make_scans_useful.md).
 
 ---
 

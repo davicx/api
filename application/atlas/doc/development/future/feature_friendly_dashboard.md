@@ -12,15 +12,16 @@ Default dashboard answers:
 3. **What does it mean?**
 4. **What can I do about it?**
 
-**Status:** MVP locked (1A, 2B, 3A, 4B, **5 Fix→Chat coming soon**, 6B) — **ready for Step 1**  
+**Status:** Future — deferred (MVP locked, not started)  
 **Codename:** `feature_friendly_dashboard`  
 **Aligned with:** User Cursor Plan — Friendly S3 Findings Dashboard (2026-08-12)
 
 **Related:**
-* [Current Development](./current_development.md)
-* [Make scans useful](../future/make_scans_useful.md)
-* [Remediations](../future/remediations.md) — reuse Fix → Automatic / Instructions / CLI / PR
-* [CloudPilot MVP](./feature_mvp.md)
+* [Current Development](../current/current_development.md)
+* [Future work](./future.md)
+* [Make scans useful](./make_scans_useful.md)
+* [Remediations](./remediations.md) — reuse Fix → Automatic / Instructions / CLI / PR
+* [CloudPilot MVP](../current/feature_mvp.md)
 
 ---
 
