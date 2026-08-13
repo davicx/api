@@ -514,7 +514,7 @@ function buildGeneralChatDecision() {
 
 //Function B15: Route a classified Question to CloudPilot fulfillment (never general chat)
 // MESSAGE_RESPONSE=openai must not invent open-request / AI-spend / inventory facts.
-// understanding (optional): values for ec2_inventory → scan_ec2 field merge
+// understanding (optional): values for ec2_inventory → scan_ec2 / s3_inventory → scan_s3 field merge
 function resolveQuestionDecision(requestState, question, understanding) {
     const state = normalizeRequestState(requestState);
     const u = understanding || {};
@@ -536,6 +536,14 @@ function resolveQuestionDecision(requestState, question, understanding) {
     if (question === 'ec2_inventory') {
         return buildNewRequestDecision({
             action: 'scan_ec2',
+            values: u.values && typeof u.values === 'object' ? u.values : {}
+        });
+    }
+
+    // Question conceptually — reuse scan_s3 / Atlas for truth (not General Chat)
+    if (question === 's3_inventory') {
+        return buildNewRequestDecision({
+            action: 'scan_s3',
             values: u.values && typeof u.values === 'object' ? u.values : {}
         });
     }

@@ -1,10 +1,14 @@
 # Finished
 
-**Last reviewed:** 2026-08-12
+**Last reviewed:** 2026-08-13
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-13)
+
+- [x] **S3 inventory ask** — “What S3 buckets do I have?” → Question `s3_inventory` → `scan_s3` — [feature_s3_inventory_ask.md](./feature_s3_inventory_ask.md)
 
 ## Recently finished (2026-08-12)
 

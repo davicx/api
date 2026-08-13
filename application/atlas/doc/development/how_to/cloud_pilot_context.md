@@ -52,6 +52,7 @@ understand/search/
   questions/searchForOpenRequests.js          # tiny Open Requests TASK
   questions/searchForAiSpend.js               # tiny AI Spend TASK
   questions/searchForEc2Inventory.js          # Question → scan_ec2 grounded path
+  questions/searchForS3Inventory.js           # Question → scan_s3 grounded path
   searchMessageForQuestion.js                 # Question orchestrator
   searchMessageForAction.js                   # Action catalog (not Chat Identity)
 

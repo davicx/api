@@ -17,7 +17,7 @@ Outputs: action, values, reply, conversation, question, ambiguous, candidates
 This is the WHAT layer (STEP 3).
 Actions: actionMap via searchMessageForAction (scan_ec2, toggle_ec2, …).
 Values: searchMessageForValues (region, ids, name, …).
-Questions: searchMessageForQuestion (open_requests, ai_spend, …).
+Questions: searchMessageForQuestion (open_requests, ai_spend, ec2_inventory, s3_inventory, …).
 */
 
 /*

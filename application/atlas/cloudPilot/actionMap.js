@@ -353,9 +353,7 @@ const actionMap = {
         requiresExecution: false,
 
         //Intent Detection
-        match: (text) =>
-            text.includes('scan') &&
-            text.includes('s3'),
+        match: (text) => matchesScanS3Intent(text),
 
         //Fields Required Before Ready
         requiredFields: [
@@ -818,6 +816,66 @@ const actionMap = {
 };
 
 /*
+Natural S3 data questions reuse scan_s3.
+
+General knowledge ("what is S3?" / "what is a bucket?") stays General Chat.
+Named-bucket purpose ("what is this bucket for?") stays org knowledge.
+Account/current-data questions ("what buckets do I have?") require a real scan.
+*/
+function matchesScanS3Intent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text) {
+        return false;
+    }
+
+    if (isS3DefinitionQuestion(text)) {
+        return false;
+    }
+
+    const mentionsS3 = /\bs3\b/.test(text);
+    const mentionsBuckets = /\bbuckets\b/.test(text);
+
+    if (!mentionsS3 && !mentionsBuckets) {
+        return false;
+    }
+
+    // Existing explicit command
+    if (/\bscan\b/.test(text) && mentionsS3) {
+        return true;
+    }
+
+    const asksForOwnedData =
+        /\b(my|our)\s+(s3\s+)?buckets\b/.test(text) ||
+        /\b(my|our)\s+s3\b/.test(text) ||
+        /\b(do|does)\s+(i|we)\s+have\b/.test(text) ||
+        /\b(in\s+my|in\s+our)\s+(aws\s+)?account\b/.test(text);
+
+    const asksToInspect =
+        /\b(show|list|find|display)\b/.test(text) ||
+        /\bhow\s+many\b/.test(text) ||
+        /\b(what|which)\s+(s3\s+)?buckets\b/.test(text) ||
+        /\b(any|are)\s+(s3\s+)?buckets\b/.test(text);
+
+    return (
+        asksToInspect &&
+        (
+            asksForOwnedData ||
+            /\bhow\s+many\b/.test(text) ||
+            /\b(show|list|find|display)\b/.test(text)
+        )
+    );
+}
+
+function isS3DefinitionQuestion(text) {
+    return (
+        /\bwhat\s+is\s+(an?\s+)?s3\b/.test(text) ||
+        /\bwhat\s+is\s+(an?\s+)?s3\s+bucket\b/.test(text) ||
+        /\bwhat\s+is\s+a\s+bucket\b/.test(text)
+    );
+}
+
+/*
 Natural EC2 data questions reuse scan_ec2.
 
 General knowledge ("what is an EC2 instance?") stays General Chat.
@@ -883,5 +941,10 @@ Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
 
 Object.defineProperty(module.exports, 'matchesScanEC2Intent', {
     value: matchesScanEC2Intent,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesScanS3Intent', {
+    value: matchesScanS3Intent,
     enumerable: false
 });

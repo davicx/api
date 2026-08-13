@@ -1,6 +1,7 @@
 const SearchForAiSpendFunctions = require('./questions/searchForAiSpend');
 const SearchForOpenRequestsFunctions = require('./questions/searchForOpenRequests');
 const SearchForEc2InventoryFunctions = require('./questions/searchForEc2Inventory');
+const SearchForS3InventoryFunctions = require('./questions/searchForS3Inventory');
 const SearchLogs = require('./helpers/searchLogs');
 
 /*
@@ -10,7 +11,7 @@ FUNCTIONS A: Question detection from user message
 Questions ask CloudPilot about known information (not Actions, not Values).
 Returns one question id string or null.
 
-Family: open_requests, ai_spend, ec2_inventory (Step E — grounded AWS data).
+Family: open_requests, ai_spend, ec2_inventory, s3_inventory (grounded AWS data).
 */
 
 //Function A1: Find the Question the user is asking (if any)
@@ -32,6 +33,11 @@ async function searchMessageForQuestion(message) {
             method: 'Skipped',
             result: null
         });
+        SearchLogs.recordSearch({
+            name: 'S3 Inventory',
+            method: 'Skipped',
+            result: null
+        });
         return 'open_requests';
     }
 
@@ -41,6 +47,11 @@ async function searchMessageForQuestion(message) {
     if (aiSpendHit && aiSpendHit.question === 'ai_spend') {
         SearchLogs.recordSearch({
             name: 'EC2 Inventory',
+            method: 'Skipped',
+            result: null
+        });
+        SearchLogs.recordSearch({
+            name: 'S3 Inventory',
             method: 'Skipped',
             result: null
         });
@@ -54,6 +65,11 @@ async function searchMessageForQuestion(message) {
             method: 'Skipped',
             result: null
         });
+        SearchLogs.recordSearch({
+            name: 'S3 Inventory',
+            method: 'Skipped',
+            result: null
+        });
         return 'ai_spend';
     }
 
@@ -63,7 +79,21 @@ async function searchMessageForQuestion(message) {
     );
 
     if (ec2InventoryHit && ec2InventoryHit.question === 'ec2_inventory') {
+        SearchLogs.recordSearch({
+            name: 'S3 Inventory',
+            method: 'Skipped',
+            result: null
+        });
         return 'ec2_inventory';
+    }
+
+    //STEP 4: S3 inventory Question (needs Atlas truth — not General Chat)
+    const s3InventoryHit = await SearchForS3InventoryFunctions.searchForS3Inventory(
+        message
+    );
+
+    if (s3InventoryHit && s3InventoryHit.question === 's3_inventory') {
+        return 's3_inventory';
     }
 
     return null;

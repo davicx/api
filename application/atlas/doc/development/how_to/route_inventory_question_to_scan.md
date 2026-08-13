@@ -6,7 +6,7 @@ answer must come from **Atlas** (or another CloudPilot-owned inventory), not
 General Chat.
 
 **Reference implementation (shipped):** EC2 — `ec2_inventory` → `scan_ec2`  
-**Next consumer (plan):** S3 — [feature_s3_inventory_ask](../current/feature_s3_inventory_ask.md) → `scan_s3`
+**S3 (shipped):** [feature_s3_inventory_ask](../finished/feature_s3_inventory_ask.md) → `scan_s3`
 
 **Related:** [CloudPilot Context](./cloud_pilot_context.md) · [Add Intelligence Capability](./add_intelligence_capability.md) · [Questions](../finished/feature_questions.md) · [Add a New Action](./add_new_action.md)
 
@@ -180,4 +180,4 @@ Watch: Question hit → decision action `scan_*` → Atlas test log `(TEST MOCK)
 | Service | Question | Action | Feature doc |
 |---------|----------|--------|-------------|
 | EC2 | `ec2_inventory` | `scan_ec2` | [feature_cloud_pilot_context](../finished/feature_cloud_pilot_context.md) (Step E) |
-| S3 | `s3_inventory` | `scan_s3` | [feature_s3_inventory_ask](../current/feature_s3_inventory_ask.md) *(planned)* |
+| S3 | `s3_inventory` | `scan_s3` | [feature_s3_inventory_ask](../finished/feature_s3_inventory_ask.md) |

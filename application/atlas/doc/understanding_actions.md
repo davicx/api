@@ -27,7 +27,8 @@ Reference for **STEP 3: MESSAGE UNDERSTANDING**. These tables describe what `und
 |--------|------------------|
 | `general_chat` | `hello`, `hi` |
 | `inventory_aws` | `show me all my aws resources` |
-| `scan_ec2` | `scan ec2` |
+| `scan_ec2` | `scan ec2`, `how many EC2 instances do I have` |
+| `scan_s3` | `scan s3`, `what S3 buckets do I have`, `show my s3 buckets` |
 | `toggle_ec2` | `toggle ec2`, `switch ec2` |
 | `create_ec2` | `create ec2`, `create instance` |
 | `delete_ec2` | `delete ec2`, `delete instance` |
@@ -53,6 +54,7 @@ Reference for **STEP 3: MESSAGE UNDERSTANDING**. These tables describe what `und
 | Action | Needs |
 |--------|--------|
 | `scan_ec2` | `region` |
+| `scan_s3` | `region` |
 | `toggle_ec2` | `region`, `primary_instance_id`, `secondary_instance_id` |
 | `create_ec2` | `name`, `region`, `instance_type` |
 | `delete_ec2` | `region`, `instance_id` |

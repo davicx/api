@@ -62,7 +62,7 @@ CloudPilot:
 ```
 
 **Implementation note:** Prefer the EC2 pattern — Question `s3_inventory` → `scan_s3`
-(see [feature_s3_inventory_ask](../current/feature_s3_inventory_ask.md) and
+(see [feature_s3_inventory_ask](../finished/feature_s3_inventory_ask.md) and
 [route inventory → scan](../how_to/route_inventory_question_to_scan.md)).
 Inventory-phrase shortcuts via `inventory_aws` remain optional later.
 

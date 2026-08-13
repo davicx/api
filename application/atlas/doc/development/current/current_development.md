@@ -1,13 +1,13 @@
 # Current Development — What We Are Working On
 
-**Last updated:** 2026-08-12  
+**Last updated:** 2026-08-13  
 
 This is the active-work dashboard. It contains only features we are working on now.
 
-## End-of-day handoff — 2026-08-12
+## End-of-day handoff — 2026-08-13
 
-[Organizational Knowledge](../finished/feature_organizational_knowledge.md) shipped
-(S3 org facts + tags → Chat Knowledge). MVP boundary remains in
+[S3 inventory ask](../finished/feature_s3_inventory_ask.md) shipped
+(Question `s3_inventory` → `scan_s3`). MVP boundary remains in
 [CloudPilot MVP](./feature_mvp.md). Finished work lives in
 [finished/](../finished/finished.md).
 
@@ -26,7 +26,6 @@ This is the active-work dashboard. It contains only features we are working on n
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
-| [S3 inventory ask](./feature_s3_inventory_ask.md) | “What S3 buckets do I have?” → Question `s3_inventory` → `scan_s3` (EC2 pattern). | Plan locked — **awaiting Step 1** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
 | [Feature Chat](./feature_chat.md) | Friendly request presentation when OpenAI is on; deterministic templates stay Internal + fallback. | Plan locked — **awaiting Step 1** |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
@@ -35,6 +34,7 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What shipped |
 |---------|----------------|
+| [S3 inventory ask](../finished/feature_s3_inventory_ask.md) | Natural “what S3 buckets do I have?” → Question `s3_inventory` → `scan_s3` |
 | [Organizational Knowledge](../finished/feature_organizational_knowledge.md) | S3 org facts + tags; search extract → DB resolve → Chat Knowledge / Internal speak |
 
 ## Useful References

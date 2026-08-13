@@ -14,18 +14,20 @@ Also:    "scan s3" still works as the explicit Action
 
 ## Current step
 
-**Plan locked — awaiting Step 1** (intent match + Question → `scan_s3`).
+**Finished** — 2026-08-13
 
 ## Next
 
-Say **do Step 1** when ready to implement.
+_(none — archived)_
 
-**Status:** Active (plan only — no code yet)  
+**Status:** Finished  
 **Codename:** `feature_s3_inventory_ask`  
 **Related:**
 * [How-to: Route inventory question → scan](../how_to/route_inventory_question_to_scan.md) ← **pattern for every service**
-* [CloudPilot Context](../finished/feature_cloud_pilot_context.md) / [how-to](../how_to/cloud_pilot_context.md)
-* [Questions](../finished/feature_questions.md)
+* [Current Development](../current/current_development.md)
+* [CloudPilot Context](./feature_cloud_pilot_context.md) / [how-to](../how_to/cloud_pilot_context.md)
+* [Questions](./feature_questions.md)
+* [Organizational Knowledge](./feature_organizational_knowledge.md)
 * [Make scans useful](../future/make_scans_useful.md) — richer S3 conversation UX (later)
 * [Chat prompts](../../chat_prompts.md)
 * EC2 reference: `matchesScanEC2Intent` + `searchForEc2Inventory.js` → `ec2_inventory` → `scan_ec2`
@@ -123,7 +125,7 @@ Action Search → scan_s3   # no Question needed
 
 ---
 
-## Implementation sketch (no code in this step)
+## Implementation sketch
 
 | Piece | Role |
 |-------|------|
@@ -131,7 +133,7 @@ Action Search → scan_s3   # no Question needed
 | `questions/searchForS3Inventory.js` | Question classify; skip explicit `scan` |
 | `searchMessageForQuestion.js` | Return `s3_inventory` when hit |
 | `decideNextStep.resolveQuestionDecision` | `s3_inventory` → `scan_s3` + values |
-| Atlas | No change required for local — test router already mocks `/scan/s3` |
+| Atlas | Local test router already mocks `/scan/s3` (5 buckets aligned with org seed) |
 
 Mirror files: `matchesScanEC2Intent`, `searchForEc2Inventory.js`, `ec2_inventory` branch in `resolveQuestionDecision`.
 
@@ -143,25 +145,25 @@ Full recipe: [route_inventory_question_to_scan.md](../how_to/route_inventory_que
 
 ### Step 1 — Intent + Question → `scan_s3`
 
-- [ ] Add `matchesScanS3Intent` (EC2-shaped; buckets / S3 ownership / list-show-how-many)
-- [ ] Point `scan_s3.match` at it (keep requiring S3 signal; explicit `scan` still wins)
-- [ ] Add `searchForS3Inventory` (Internal); wire into question orchestrator
-- [ ] `resolveQuestionDecision`: `s3_inventory` → `scan_s3`
-- [ ] Guard: `"what is S3"` / `"what is a bucket"` do **not** become inventory
+- [x] Add `matchesScanS3Intent` (EC2-shaped; buckets / S3 ownership / list-show-how-many)
+- [x] Point `scan_s3.match` at it (keep requiring S3 signal; explicit `scan` still wins)
+- [x] Add `searchForS3Inventory` (Internal); wire into question orchestrator
+- [x] `resolveQuestionDecision`: `s3_inventory` → `scan_s3`
+- [x] Guard: `"what is S3"` / `"what is a bucket"` do **not** become inventory
 
 ### Step 2 — Smoke (Atlas local test)
 
-- [ ] `what S3 buckets do I have` → starts `scan_s3` (asks region if needed)
-- [ ] `us-west-2` → `yes` → 5 mock buckets (aligned with org knowledge seed)
-- [ ] `scan s3` still works as Action
-- [ ] `hello` / `what is S3?` → not `scan_s3`
-- [ ] Org knowledge prompt still works when appropriate (separate path)
+- [x] `what S3 buckets do I have` → starts `scan_s3` (asks region if needed)
+- [x] `us-west-2` → `yes` → 5 mock buckets (aligned with org knowledge seed)
+- [x] `scan s3` still works as Action
+- [x] `hello` / `what is S3?` → not `scan_s3`
+- [x] Org knowledge prompt still works when appropriate (separate path)
 
 ### Step 3 — Docs + close
 
-- [ ] Update [chat_prompts.md](../../chat_prompts.md)
-- [ ] Acceptance table below → PASS
-- [ ] Move this doc to `finished/`; index in `finished.md` / `current_development.md`
+- [x] Update [chat_prompts.md](../../chat_prompts.md)
+- [x] Acceptance table below → PASS
+- [x] Move this doc to `finished/`; index in `finished.md` / `current_development.md`
 
 ---
 
@@ -169,12 +171,14 @@ Full recipe: [route_inventory_question_to_scan.md](../how_to/route_inventory_que
 
 | Check | Expected | Result |
 |-------|----------|--------|
-| `what S3 buckets do I have` | Routes to `scan_s3` request (not General Chat) | |
-| Completes scan (local Atlas) | Lists mock buckets + findings path works | |
-| `scan s3` | Still Action `scan_s3` | |
-| `what is S3?` | General Chat — no scan | |
-| Named org-knowledge ask | Still org path when applicable | |
-| No invented bucket list in Chat when Question/scan should own it | Pass | |
+| `what S3 buckets do I have` | Routes to `scan_s3` request (not General Chat) | PASS |
+| Completes scan (local Atlas) | Lists mock buckets + findings path works | PASS (5 buckets, 11 findings) |
+| `scan s3` | Still Action `scan_s3` | PASS |
+| `what is S3?` | General Chat — no scan | PASS |
+| Named org-knowledge ask | Still org path when applicable | PASS (`Tell me about my tutorial bucket.` → sam-youtube-demo) |
+| No invented bucket list in Chat when Question/scan should own it | Pass | PASS |
+
+Smoke: 2026-08-13, OpenAI forced off (Internal templates + Atlas test mock).
 
 ---
 
@@ -182,7 +186,6 @@ Full recipe: [route_inventory_question_to_scan.md](../how_to/route_inventory_que
 
 * Filling `inventory_aws` mock / “show all AWS resources”
 * Single-bucket drill-down advisor UX ([make_scans_useful](../future/make_scans_useful.md))
-* Renaming Atlas mock buckets to match org-knowledge seed
 * OpenAI Question classify (optional later; Internal is enough)
 * Changing org-knowledge tables or Search
 
@@ -190,4 +193,6 @@ Full recipe: [route_inventory_question_to_scan.md](../how_to/route_inventory_que
 
 ## Shipped
 
-_(empty until Step 3)_
+MVP closed 2026-08-13. Natural “what S3 buckets do I have?” is Question
+`s3_inventory` → existing `scan_s3`. Explicit `scan s3` unchanged. Chat never
+invents the bucket list.

@@ -50,9 +50,15 @@ Other useful tags from seed: `youtube`, `hello world`, `sam`, `assets`, `images`
 | `scan ec2` | `scan_ec2` |
 | `scan ec2 in us-west-2` | `scan_ec2` + region |
 | `scan s3` | `scan_s3` (explicit Action) |
-| `what S3 buckets do I have` / `show my s3 buckets` | **Planned** — Question `s3_inventory` → `scan_s3` ([feature_s3_inventory_ask](./development/current/feature_s3_inventory_ask.md)) |
+| `what S3 buckets do I have` / `show my s3 buckets` / `list my buckets` | Question `s3_inventory` → `scan_s3` |
+| `toggle ec2` / `switch ec2` | `toggle_ec2` |
+| `create ec2` / `create instance` | `create_ec2` |
+| `delete ec2` / `delete instance` | `delete_ec2` |
+| `pause ec2` / `stop instance` | `pause_ec2` |
+| `resume ec2` / `start instance` | `resume_ec2` |
+| `show me all my aws resources` | `inventory_aws` |
 
-**Local Atlas S3 mock** (`atlas/.../s3_scan_routes_test.py`) — same **5 buckets** as org knowledge seed. After `scan s3` → `us-west-2` → `yes`:
+**Local Atlas S3 mock** (`atlas/.../s3_scan_routes_test.py`) — same **5 buckets** as org knowledge seed. After `scan s3` (or inventory ask) → `us-west-2` → `yes`:
 
 | Bucket | Region | Encryption | Lifecycle | Public Block | Versioning | Logging |
 |--------|--------|------------|-----------|--------------|------------|---------|
@@ -61,12 +67,6 @@ Other useful tags from seed: `youtube`, `hello world`, `sam`, `assets`, `images`
 | `cloudpilot-user-uploads` | us-west-2 | enabled | yes | enabled | disabled | enabled |
 | `customer-uploads-demo` | us-west-2 | disabled | no | disabled | disabled | disabled |
 | `kite-app-assets` | us-west-2 | enabled | yes | enabled | enabled | enabled |
-| `toggle ec2` / `switch ec2` | `toggle_ec2` |
-| `create ec2` / `create instance` | `create_ec2` |
-| `delete ec2` / `delete instance` | `delete_ec2` |
-| `pause ec2` / `stop instance` | `pause_ec2` |
-| `resume ec2` / `start instance` | `resume_ec2` |
-| `show me all my aws resources` | `inventory_aws` |
 
 ---
 
