@@ -23,17 +23,10 @@ function buildS3ScanMessage(formattedAtlas) {
     }
 
     if (findingCount === 1) {
-        var finding = findings[0] || {};
-        var resourceName = finding.resourceName || finding.resourceID || "one bucket";
-        var title = finding.title || "an infrastructure finding";
-
-        return "I found 1 S3 finding in " + region + ". " + resourceName + " has " + String(title).toLowerCase() + ".";
+        return "I found 1 thing worth looking at in your S3 buckets (" + region + "). Open the Dashboard to see what's wrong and what you can do.";
     }
 
-    var firstFinding = findings[0] || {};
-    var firstFindingTitle = firstFinding.title || "infrastructure findings";
-
-    return "I found " + findingCount + " S3 findings in " + region + ", including " + String(firstFindingTitle).toLowerCase() + ".";
+    return "I found " + findingCount + " things worth looking at in your S3 buckets (" + region + "). Open the Dashboard to see what's wrong and what you can do.";
 }
 
 module.exports = {

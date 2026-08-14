@@ -1,5 +1,6 @@
 const { CHAT_TYPE } = require('../requests/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
+const BuildRequestSpeakFactsFunctions = require('./presentation/buildRequestSpeakFacts');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 
 /*
@@ -7,11 +8,13 @@ CloudPilotMessage — the product's voice.
 
 Select speaking strategy and package the outgoing chat message.
 GenAI thinking goes through CloudPilotIntelligence.chat().
+Request presentation (friendly request copy) goes through
+CloudPilotIntelligence.presentRequestMessage() — templates always build first.
 */
 
 //Function A1: General Conversation speak — voice wrapper around Intelligence chat()
 // Questions (open_requests, ai_spend, …) must never call this.
-// CLOUDPILOT_MESSAGE_RESPONSE=openai only applies to general chat — not Question facts.
+// CLOUDPILOT_MESSAGE_RESPONSE=openai applies to general chat and request presentation — not Question facts.
 async function speakGeneral(processMessageContext) {
     const chatResult = await CloudPilotIntelligence.chat(processMessageContext);
 
@@ -34,10 +37,24 @@ async function speakGeneral(processMessageContext) {
     });
 }
 
-//Function A2: Request Conversation speak — deterministic templates
+//Function A2: Request Conversation speak — templates first; optional OpenAI presentation
 async function speakRequest(payload, chatType) {
     const templateResult = await RequestTemplates.buildRequestTemplateMessage(payload);
-    const cloudPilotMessage = templateResult.cloudPilotMessage || templateResult.message || '';
+    const templateMessage = templateResult.cloudPilotMessage || templateResult.message || '';
+    let cloudPilotMessage = templateMessage;
+
+    const speakFacts = BuildRequestSpeakFactsFunctions.buildRequestSpeakFacts(
+        payload,
+        templateMessage
+    );
+
+    if (speakFacts) {
+        const presented = await CloudPilotIntelligence.presentRequestMessage(speakFacts);
+
+        if (presented && presented.success && presented.message) {
+            cloudPilotMessage = presented.message;
+        }
+    }
 
     return formatOutgoing({
         success: Boolean(templateResult.success && cloudPilotMessage),

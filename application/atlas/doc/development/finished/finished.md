@@ -1,10 +1,15 @@
 # Finished
 
-**Last reviewed:** 2026-08-13
+**Last reviewed:** 2026-08-14
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-14)
+
+- [x] **Feature Chat** — Friendly request presentation when OpenAI is on; templates stay Internal + fallback — [feature_chat.md](./feature_chat.md)
+- [x] **Friendly Dashboard** — S3 Findings-first Dashboard; Fix→Chat “coming soon”; original tables behind View original tables — [feature_friendly_dashboard.md](./feature_friendly_dashboard.md)
 
 ## Recently finished (2026-08-13)
 

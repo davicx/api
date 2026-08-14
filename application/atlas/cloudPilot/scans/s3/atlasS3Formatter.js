@@ -21,6 +21,8 @@ function formatAtlasS3Output(atlasResponse) {
     };
 
     const formattedBuckets = buckets.map((bucket) => {
+        const tags = formatBucketTags(bucket.tags);
+
         return {
             bucketName: bucket.bucket_name || bucket.name || null,
             name: bucket.name || bucket.bucket_name || null,
@@ -33,9 +35,8 @@ function formatAtlasS3Output(atlasResponse) {
             accessLoggingEnabled: bucket.access_logging_enabled === true,
             bucketPolicyMayAllowPublic: bucket.bucket_policy_may_allow_public === true,
             hasPublicAcl: bucket.has_public_acl === true,
-            tagsCount: bucket.tags && typeof bucket.tags === "object"
-                ? Object.keys(bucket.tags).length
-                : 0
+            tags: tags,
+            tagsCount: tags.length
         };
     });
 
@@ -93,6 +94,33 @@ function formatAtlasS3Output(atlasResponse) {
         buckets: formattedBuckets,
         findings: formattedFindings
     };
+}
+
+function formatBucketTags(tags) {
+    if (Array.isArray(tags)) {
+        return tags
+            .map((tag) => {
+                const key = tag && (tag.key != null ? tag.key : tag.Key);
+                const value = tag && (tag.value != null ? tag.value : tag.Value);
+                if (key == null || String(key).trim() === "") {
+                    return null;
+                }
+                return {
+                    key: String(key),
+                    value: value == null ? "" : String(value)
+                };
+            })
+            .filter(Boolean);
+    }
+
+    if (!tags || typeof tags !== "object") {
+        return [];
+    }
+
+    return Object.keys(tags).map((key) => ({
+        key: key,
+        value: tags[key] == null ? "" : String(tags[key])
+    }));
 }
 
 module.exports = {

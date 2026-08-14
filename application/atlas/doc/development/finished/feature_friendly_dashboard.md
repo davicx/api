@@ -12,15 +12,15 @@ Default dashboard answers:
 3. **What does it mean?**
 4. **What can I do about it?**
 
-**Status:** Future — deferred (MVP locked, not started)  
+**Status:** Finished — 2026-08-14. Steps 1–5 + 7 done. Step 6 moved to [S3 remediation modes](../future/feature_s3_remediation_modes.md).  
 **Codename:** `feature_friendly_dashboard`  
 **Aligned with:** User Cursor Plan — Friendly S3 Findings Dashboard (2026-08-12)
 
 **Related:**
 * [Current Development](../current/current_development.md)
-* [Future work](./future.md)
-* [Make scans useful](./make_scans_useful.md)
-* [Remediations](./remediations.md) — reuse Fix → Automatic / Instructions / CLI / PR
+* [S3 remediation modes](../future/feature_s3_remediation_modes.md) — former Step 6
+* [Make scans useful](../future/make_scans_useful.md)
+* [Remediations](../future/remediations.md)
 * [CloudPilot MVP](../current/feature_mvp.md)
 
 ---
@@ -322,7 +322,7 @@ Until Step 5: structure + copy with existing Bootstrap is OK.
 | Display map | Simple `recommendation` → `{ title, meaning, action }` — **Kite-only (1A)** |
 | Map location | **Kite frontend** — presentation language, not AWS truth; no shared infra yet |
 | Empty state | **No scan results yet** + **Scan AWS** CTA on Dashboard (2B) — works without Chat |
-| Findings UI | New **`FriendlyFindingsTable`** (3A); raw/technical view via **View technical details** (no feature flag) |
+| Findings UI | New **`FriendlyFindingsTable`** (3A); raw/technical view via **View technical details** (no feature flag). **Do not delete** existing Navigator / admin table components. |
 | Shell | **S3 / Findings section** on Dashboard (4B) — not whole `/dashboard` gated on S3 |
 | Fix automatically | **Not for S3 MVP** — do not build Automatic / Instructions / CLI / PR choices for S3 yet |
 | Fix button | **Show Fix** on every actionable finding; click → **Chat with finding selected** → simple “coming soon” for S3 |
@@ -396,56 +396,64 @@ capability or a dead-end four-mode panel.
 * Expose internal constants to normal users
 * Invent cards/tiles instead of the target table
 * Share/map infrastructure on the API for this MVP
+* **Delete or replace existing Kite components** (Navigator, admin findings table, Chat panels). Add new files beside them.
 
 ---
 
 ## Suggested steps (when coding)
 
-### Step 1 — Simple S3 finding display map (READY)
+### Step 1 — Simple S3 finding display map (DONE)
 
-**Goal:** Kite-only presentation map. Not a dashboard refactor.
+Kite-only presentation map in `kite/src/functions/findings/s3FindingDisplay.js`.
 
-* Add a small frontend map: `recommendation` → `{ title, meaning, action: 'Fix'|'Review' }`
-* Cover the eight target rows (+ any other S3 codes already emitted by the live scanner — discover from existing scan output, don’t invent new rules)
-* Keep raw finding intact underneath
-* **Do not** wire UI tables, scan CTA, Chat handoff, or CSS in this step
-* **Do not** move files around the Dashboard architecture
+* Maps live Atlas codes (`ENABLE_*` / `rule_id` / `issue.code`) → `{ title, meaning, action }`
+* Groups by bucket, High → Medium → Low
+* Does not change the scanner
 
-### Step 2 — Findings table (structure + copy)
+### Step 2 — Findings table (DONE)
 
-* New `FriendlyFindingsTable` in an **S3 / Findings** section
-* Group by bucket; sort High → Medium → Low within bucket
-* Hide recommendation codes from the UI
-* **Fix** / **Review** → open Chat with finding selected (no four-mode panel)
-* Link/access to existing technical/raw view (“View technical details”)
-* **No CSS redesign yet**
+* New `FriendlyFindingsTable` — existing `NavigatorDataRenderer` and admin table kept
+* S3 section on Dashboard; **View technical details** reveals the old Navigator / raw table
+* Fix / Review selects the finding and opens Chat (coming-soon copy is Step 3)
 
-### Step 3 — Environment summary + empty state + Fix→Chat stub
+### Step 3 — Environment summary + empty state + Fix→Chat stub (DONE)
 
 * Compact “Your AWS environment” when findings exist
-* Empty: **No scan results yet** + **Scan AWS** CTA (Dashboard-independent)
-* Chat handoff: selected finding + short **“coming soon”** S3 remediation message (honest stub only)
+* Empty: **No scan results yet** + **Scan AWS** CTA (same `scan s3` path as Chat)
+* Friendly table also reads Navigator `s3_findings` rows (so a scan shows up even if Chat context only has Navigator)
+* Chat scan preview uses friendly finding titles (not the admin buckets table)
+* Chat scan speak: “things worth looking at” + open Dashboard
+* Fix/Review → Chat shows honest **coming soon** copy for S3
 
-### Step 4 — Friendly S3 buckets table + View detail
+### Step 4 — Friendly S3 buckets table + View detail (DONE)
 
-* Health / findings count / View → config flags + category counts
+* New `FriendlyS3BucketsTable`: Bucket / Region / Health / Findings / View
+* View shows encryption, public access, versioning, logging, lifecycle + category counts
+* Original Navigator S3 Buckets + EC2 tables (including **Tags**) are unchanged — **View original tables**
+* EC2 scan uses the same friendly Findings table (new) so `scan ec2` is not admin-first
 
-### Step 5 — CSS pass to match mock
+### Step 5 — CSS pass to match mock (DONE)
 
-* Dedicated Findings styles only (see Visual / CSS plan)
+* Dedicated `friendlyDashboard.css` on new tables only
+* Original Navigator / Bootstrap admin tables unchanged
+* Thin horizontal dividers, no zebra, no vertical borders, calm padding
 
-### Step 6 — (Later, not this MVP) Real S3 remediation modes
+### Step 6 — Real S3 remediation modes
 
-* When an S3 action works end-to-end, then wire the same EC2-style choices:
-  Automatic · Instructions · CLI · Pull Request
-* Until then: keep Chat “coming soon”
+**Moved to future:** [feature_s3_remediation_modes.md](../future/feature_s3_remediation_modes.md)
+
+When an S3 action works end-to-end, wire Automatic · Instructions · CLI · Pull Request. Until then Chat stays “coming soon.”
 
 ### Step 7 — Acceptance (MVP success test)
 
-After `scan s3` (from Chat or Dashboard CTA), user immediately sees friendly
-grouped findings — not admin rows. Every actionable finding shows **Fix** or
-**Review**. Clicking Fix opens Chat with a clear coming-soon message — **not**
-a fake remediation menu.
+- [x] After `scan s3`, Dashboard shows friendly grouped findings — not admin rows by default
+- [x] Every mapped finding shows **Fix** or **Review** (no internal `ENABLE_*` titles)
+- [x] Fix/Review → Chat with finding selected + S3 “coming soon” copy
+- [x] No fake S3 four-mode remediation menu
+- [x] Original Navigator tables remain behind **View original tables**
+- [x] Empty Dashboard: **No scan results yet** + **Scan AWS**
+
+Verified 2026-08-14 from Kite (`FriendlyFindingsTable`, `s3FindingDisplay.js`, `DashboardPage`, `ChatPage`) + Atlas mock finding codes.
 
 **Live demo tip:** Don’t click Fix on S3; show scan + findings, gesture at
 buttons (“same remediation flow as EC2”), then demo **real EC2 Fix** separately.
@@ -465,6 +473,8 @@ Optional (Step 2–3):
 
 ## Next
 
-MVP calls locked: **1A, 2B, 3A, 4B, 5 (Fix→Chat coming soon), 6B.**
+_(none — archived)_
 
-Say **do Step 1** to add the Kite-only S3 display map (smallest clean change — no dashboard refactor, no CSS, no S3 remediation UI).
+MVP closed 2026-08-14. Friendly S3 Findings Dashboard is the default; original
+tables stay behind **View original tables**. S3 Fix is Chat “coming soon.”
+Real S3 remediation modes live in future.

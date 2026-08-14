@@ -62,6 +62,8 @@ function buildS3BucketsTable(buckets) {
 }
 
 function buildS3BucketRow(bucket) {
+    const tags = Array.isArray(bucket.tags) ? bucket.tags : [];
+
     return {
         row_id: buildS3RowID(bucket.bucketName, bucket.region),
         name: bucket.name || null,
@@ -70,7 +72,9 @@ function buildS3BucketRow(bucket) {
         lifecycle_configured: bucket.hasLifecycleRules === true ? "yes" : "no",
         public_access_block: bucket.publicAccessBlockConfigured === true ? "enabled" : "disabled",
         versioning_enabled: bucket.versioningEnabled === true ? "enabled" : "disabled",
-        access_logging_enabled: bucket.accessLoggingEnabled === true ? "enabled" : "disabled"
+        access_logging_enabled: bucket.accessLoggingEnabled === true ? "enabled" : "disabled",
+        tags: tags,
+        tags_count: tags.length
     };
 }
 

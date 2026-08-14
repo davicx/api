@@ -10,6 +10,7 @@ See: doc/development/finished/feature_intelligence_front_door.md
 
 FUNCTIONS A: Conversation
     1) Function A1: chat
+    2) Function A2: presentRequestMessage
 
 FUNCTIONS B: Understand (Gather Context)
     1) Function B1: understandMessage
@@ -33,6 +34,7 @@ Note: Legacy respond() kept as a placeholder export until callers are gone.
 */
 
 const ConversationChatFunctions = require('./conversation/chat');
+const PresentRequestMessageFunctions = require('./conversation/presentRequestMessage');
 const UnderstandMessageFunctions = require('./understand/understandMessage');
 const SearchMessageForRegionFunctions = require('./understand/search/values/searchMessageForRegion');
 const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
@@ -46,6 +48,12 @@ const SearchForOrganizationalKnowledgeFunctions = require('./understand/search/s
 async function chat(processMessageContext) {
     //STEP 1: Delegate to conversation chat implementation
     return ConversationChatFunctions.chat(processMessageContext);
+}
+
+//Function A2: Present request speak facts (wording only — templates stay Internal / fallback)
+async function presentRequestMessage(speakFacts) {
+    //STEP 1: Delegate to request presentation (shouldRun + Internal vs OpenAI)
+    return PresentRequestMessageFunctions.presentRequestMessage(speakFacts);
 }
 
 //FUNCTIONS B: Understand (Gather Context)
@@ -123,6 +131,7 @@ async function respond(context) {
 
 module.exports = {
     chat,
+    presentRequestMessage,
     understandMessage,
     understandRegion,
     understandAction,

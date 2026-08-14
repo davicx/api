@@ -23,6 +23,7 @@
 
 ```text
 General Chat          → CloudPilot Identity (includeIdentity: true)
+Request Presentation  → TASK prompt only (includeIdentity: false); facts JSON; no Knowledge
 Region / Open Requests / AI Spend Search
                       → TASK prompt only (includeIdentity: false)
                       → includeCurrentState: false

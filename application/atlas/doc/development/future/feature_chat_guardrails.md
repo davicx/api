@@ -10,10 +10,10 @@ Casual answers are fine. Becoming a worse general ChatGPT is not.
 
 **Future / backlog — do nothing for MVP demos.**
 
-Current off-topic answers (e.g. LOTR) are harmless and even useful as a smoke that general chat works. Prioritize scan behavior, AI usage, and [Feature Chat](../current/feature_chat.md) (friendlier request-field responses) before this.
+Current off-topic answers (e.g. LOTR) are harmless and even useful as a smoke that general chat works. Prioritize scan behavior, AI usage, and [Feature Chat](../finished/feature_chat.md) (friendlier request-field responses) before this.
 
 **Codename:** `feature_chat_guardrails`  
-**Related:** [Feature Chat](../current/feature_chat.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [Future work](./future.md) · [Current Development](../current/current_development.md)
+**Related:** [Feature Chat](../finished/feature_chat.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [Future work](./future.md) · [Current Development](../current/current_development.md)
 
 ---
 
@@ -149,5 +149,5 @@ Suggested order before this:
 
 1. Scan behavior  
 2. AI usage (live path)  
-3. Friendlier OpenAI request-field responses — [feature_chat](../current/feature_chat.md)  
+3. Friendlier OpenAI request-field responses — [feature_chat](../finished/feature_chat.md) (done)  
 4. **This** off-topic guardrail
