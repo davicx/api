@@ -2,61 +2,79 @@
 
 ## What this does
 
-Make CloudPilot readable six months from now: **one Turn is Message Processing then Response Building**, the words **request / speak / chat / present / write** mean different layers, and **small helpers are not top-level product folders**.
+Make CloudPilot readable six months from now: **one Turn is Message → Process Message → Prepare Reply → Reply**, confusing legacy words such as `speak`, `chat`, `present`, and `write` are inspected and simplified, and small helpers are not top-level product folders.
 
 This is naming, mental model, and folder honesty — **not** new product behavior. Do not change runtime code until a step is asked for.
 
 ## Current step
 
-**Plan locked** — awaiting **Step 1** (glossary / comments only).
+**Step 2 done** — awaiting review before **Step 3** (request reply names; behavior identical).
 
 ## Next
 
-Say **do Step 1** to write the vocabulary into a how-to. Do not start function renames or folder moves until that step (or a later numbered step) is asked for.
+Review the vocabulary how-to.  
+Then say **do Step 3** to rename request-reply functions to the names approved after Step 1. Do **not** start that rename pass until that review is accepted.
 
-**Status:** Active (awaiting Step 1)  
+**Status:** Active (Step 2 done — awaiting review before Step 3)  
 **Codename:** `feature_important_fixes`  
-**Came from:** Chat after [Feature Chat](../finished/feature_chat.md) — vocabulary confusion + `cloudPilot/pricing/` sitting next to big folders. Absorbs the former future spec [feature_code_reorganize](../future/feature_code_reorganize.md).  
-**Related:** [Current Development](./current_development.md) · [Useful Price](./feature_useful_price.md) · [Questions](../finished/feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
+**Came from:** Chat after [Feature Chat](../finished/feature_chat.md) — vocabulary confusion and reply-path naming overload. Absorbs the former future spec [feature_code_reorganize](../future/feature_code_reorganize.md).  
+**Related:** [Current Development](./current_development.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md) · [Useful Price](./feature_useful_price.md) · [Questions](../finished/feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
 
 ---
 
 ## Goal (one sentence)
 
-**Turn = A then B.** Names stay long and literal. Keep the word **Request** on the request-reply path. Helpers like pricing nest under a real product job, not as a peer of chat / requests / scans.
+This is a **terminology + responsibility cleanup, not an architecture refactor**:
+make it obvious which code is processing the Message, assembling Message Context,
+or preparing the Reply, while preserving existing behavior.
 
 ---
 
 ## The problems
 
-1. **Too many speaking verbs.** `chat`, `speak`, `present`, `write`, and `speakFacts` sound like five jobs. They are layers.
-2. **`processMessage` vs “Message Processing.”** The function is the whole turn (A + B). The term A is only the figuring-out half.
-3. **`pricing/` looks like a pillar.** It is two lookup files, not a conversation type or a workflow.
-4. **`questions/` may be the same kind of mismatch** — product idea is big; the folder is one fulfillment file. Not decided. Think through before any move.
+1. **Too many overloaded words.** `chat`, `speak`, `present`, `write`, `conversation`, and `navigator` make it harder to tell what layer a file belongs to.
+2. **`processMessage` vs “Message Processing.”** The function is the whole turn; the term “Message Processing” should mean only the processing half.
+3. **Conversation is doing too much semantic work.** It should mean the history/container of Message ↔ Reply turns, not a processing stage.
+4. **Prepare Reply vocabulary is still too “engineery.”** `speak`, `present`, `known`, and `chat` make the reply path harder to understand than it needs to be.
+5. **Some file names fight the mental model.** The system mostly works already; the confusion is terminology and responsibility more than architecture.
 
 ---
 
-## Locked vocabulary — A then B
+## Locked mental model
 
 ```text
-USER MESSAGE
-     ↓
-A. MESSAGE PROCESSING
-     ↓
-CloudPilot now knows what is happening / what to do
-     ↓
-B. RESPONSE BUILDING
-     ↓
-USER GETS MESSAGE
+ONE MESSAGE
+    ↓
+PROCESS MESSAGE
+    - understand
+    - search / gather
+    - decide
+    - execute
+    ↓
+PREPARE REPLY
+    ↓
+ONE REPLY
 ```
 
 | Term | Meaning |
 |------|---------|
-| **Turn** | One user message all the way to one CloudPilot reply. Today this is `processMessage()`. |
-| **A. Message Processing** | Figure out what the user means and what CloudPilot should do. |
-| **B. Response Building** | Take what CloudPilot already knows and prepare the message the user will receive. |
+| **Message** | One incoming user message. |
+| **Process Message** | Understand the message, determine what needs to happen, run searches/lookups/request processing as needed. |
+| **Search** | Retrieve information needed to process the message. |
+| **Message Context** | Information assembled for a particular Intelligence operation. Not a top-level stage. |
+| **Prepare Reply** | Build the one final response that will go back to the user. |
+| **Reply** | The final message returned to the user. |
+| **Conversation** | The history/container of Message ↔ Reply turns. **Not** a processing stage. |
+| **CloudPilotIntelligence** | CloudPilot's GenAI brain/front door. Both Process Message and Prepare Reply may ask it for help. |
+| **CloudPilotMessage** | CloudPilot's voice. It prepares the one final user-facing message. |
+| **Turn** | The whole flow from one Message to one Reply. |
 
-### A. Message Processing
+```text
+ONE TURN
+= Message → Process Message → Prepare Reply → Reply
+```
+
+### Process Message
 
 **Purpose:** Figure out what the user means and what CloudPilot should do.
 
@@ -67,9 +85,71 @@ Collect fields · Decide · Execute · Get results
 
 Some of this uses OpenAI. Some is Internal. That is okay.
 
-**Test:** Are we figuring something out, or doing something because of the user's message? → **A**
+**Test:** Are we figuring something out, or doing something because of the user's message? → **Process Message**
 
-### B. Response Building
+### Message Context
+
+**Purpose:** Assemble the information a particular Intelligence operation needs.
+
+Examples:
+
+```text
+CloudPilot identity
+Current user message
+Current request
+Known AWS facts
+Search instructions
+Org knowledge
+```
+
+Context is input to an Intelligence operation. It is **not** a stage in the Turn,
+it is **not** the final reply, and it is **not** itself a user Message.
+
+Different Intelligence operations can use different contexts during one Message.
+
+For example:
+
+```text
+Understand Context
+- user's message
+- available requests/actions
+- instructions for understanding
+
+Region Search Context
+- user's message
+- open request
+- known region
+- instructions for finding region
+
+General Reply Context
+- CloudPilot identity
+- user's message
+- conversation history
+- current state
+- knowledge
+
+Request Reply Context
+- internal/template response
+- known request values
+- wording instructions
+```
+
+Lock this vocabulary:
+
+```text
+Message = one thing the user sent CloudPilot
+Reply   = one thing CloudPilot sends the user
+```
+
+Everything in between should be described as:
+
+```text
+Intelligence operations that receive Message Context
+```
+
+not as more user Messages.
+
+### Prepare Reply
 
 **Purpose:** Take everything CloudPilot now knows and prepare the message the user will receive.
 
@@ -78,12 +158,57 @@ Known facts/results
       ↓
 Build internal/template response
       ↓
-Optionally use OpenAI for friendly wording
+Optionally ask Intelligence for friendly wording
       ↓
 Final CloudPilot message
 ```
 
-**Test:** Are we taking what we already know and turning it into the user's response? → **B**
+**Rule:** Prepare Reply may be deterministic, template-based, Intelligence-generated, or an Intelligence rewrite of an internal response. It must **not** perform new searches or determine request state.
+
+Inside Prepare Reply, the long-term vocabulary goal is mostly **Reply** /
+**Response Message** language, not `speak` / `present` / `chat` vocabulary.
+
+Helpful personification:
+
+```text
+CloudPilotIntelligence = the brain
+CloudPilotMessage      = the voice
+```
+
+**No new facade.** `CloudPilotIntelligence` already hides Internal / OpenAI / future provider.
+This plan's names should respect that facade, not expose the provider choice.
+
+```text
+prepare  = CloudPilotMessage gets the final Reply ready
+generate = CloudPilotIntelligence generates something
+build    = deterministic construction of data/text
+```
+
+```text
+Prepare  → voice
+Generate → brain
+Build    → construct something deterministically
+```
+
+CloudPilotIntelligence may use Internal, OpenAI, or a future provider **inside the brain**.
+That choice is not CloudPilotMessage's concern.
+
+The rest of CloudPilot should conceptually say:
+
+```text
+Intelligence, help me understand this.
+Intelligence, search this context for a region.
+Intelligence, generate friendly request wording.
+Intelligence, generate a general reply.
+```
+
+not:
+
+```text
+Send another Message.
+Call OpenAI directly from the mental model.
+Choose Internal vs OpenAI from Prepare Reply.
+```
 
 ```text
                 CLOUDPILOT
@@ -92,40 +217,49 @@ USER
   │
   ▼
 ┌──────────────────────────────┐
-│ A. MESSAGE PROCESSING        │
+│ PROCESS MESSAGE              │
 │ What does the user want?     │
 │ What do we know / need?      │
-│ What should we do? Do it.    │
+│ Search / gather / decide / do│
+│ Message Context →            │
+│ CloudPilotIntelligence       │
 └──────────────┬───────────────┘
                │
                ▼
 ┌──────────────────────────────┐
-│ B. RESPONSE BUILDING         │
+│ PREPARE REPLY                │
 │ What should we tell them?    │
-│ Internal or OpenAI wording?  │
-│ Build final response.        │
+│ CloudPilotMessage (voice)    │
+│ Ask Intelligence if needed   │
+│ Message Context →            │
+│ CloudPilotIntelligence       │
 └──────────────┬───────────────┘
                │
                ▼
               USER
 ```
 
-Region Search and Decide are both **A** (they process differently). Request templates and friendly OpenAI wording are both **B** (they build differently).
+Region Search and Decide are both **Process Message**. Request templates and friendly Intelligence wording are both **Prepare Reply**.
 
-Intelligence can stay the GenAI front door. It should not be the mental model. A vs B should.
+CloudPilotIntelligence can stay the GenAI front door. It should not be the mental model.
+
+```text
+ONE TURN
+= Message → Process Message → Prepare Reply → Reply
+```
 
 ---
 
-## Word map — request, speak, chat, present, write
+## Legacy implementation words under inspection
 
-These are **not** five equal jobs.
+These are **existing implementation words**, not terminology we are committed to preserve.
 
 | Word | Means in CloudPilot | Layer |
 |------|---------------------|-------|
-| **Request** | A job the user wants done (scan, create, missing region, confirm). Not a speaking verb. | A (the workflow) |
-| **Speak** | Build the message we send back (`CloudPilotMessage`: `speakGeneral` / `speakRequest` / `speakKnown`) | B front door |
-| **Chat** | General-conversation OpenAI reply (`CloudPilotIntelligence.chat()`). Not all messaging. Questions must never call this. | B (A leftover fused in) |
-| **Present** | Friendly rewrite of an already-built **request** template. Wording only. Fail → template. | B, inside `speakRequest` |
+| **Request** | A job the user wants done (scan, create, missing region, confirm). Not a speaking verb. | Process Message / workflow |
+| **Speak** | Build the message we send back (`CloudPilotMessage`: `speakGeneral` / `speakRequest` / `speakKnown`) | Prepare Reply front door |
+| **Chat** | General-conversation OpenAI reply (`CloudPilotIntelligence.chat()`). Not all messaging. Questions must never call this. | Prepare Reply (with some fused thinking) |
+| **Present** | Friendly rewrite of an already-built **request** template. Wording only. Fail → template. | Prepare Reply |
 | **Write** | Fill sections of the **system prompt** for `chat()` (`writeIdentity`, `writeCurrentState`, `writeKnowledge`). Does not talk to the user. | Prompt assembly for chat |
 
 ```text
@@ -142,8 +276,8 @@ USER MESSAGE
      ▼
 Is this a REQUEST (do something)?
      │
-     ├─ yes → process the request (A)
-     │         then speakRequest (B)
+     ├─ yes → process the request
+     │         then speakRequest
      │              template
      │              optional present (friendly wording)
      │
@@ -162,87 +296,130 @@ Is this a REQUEST (do something)?
 
 | Job | Name like | Example |
 |-----|-----------|---------|
-| A — learning or doing | verb of finding / deciding / executing | `searchRegion()`, `decideRequest()`, `executeRequest()` |
-| B — telling | verb of building / wording a reply | `buildRequestResponseMessage()`, `createFriendlyRequestResponse()` |
+| Process Message — learning or doing | verb of finding / deciding / executing | `searchRegion()`, `decideRequest()`, `executeRequest()` |
+| Prepare Reply — voice | `prepare...Reply()` | `prepareRequestReply()`, `prepareGeneralReply()`, `prepareKnownReply()` |
+| Intelligence — brain | `generate...()` | `generateFriendlyRequestReply()`, `generateGeneralReply()` |
+| Deterministic construction | `build...()` | `buildRequestKnownInfo()`, `buildRequestTemplateMessage()` |
 
-Keep **Request** on request-conversation B names. Do **not** collapse to `buildContext()` or `createResponse()`. Prefer longer, literal names. Test: *I can open this six months from now and immediately know what it does.*
+Keep **Request** on request-conversation reply names. Do **not** collapse to `buildContext()` or `createResponse()`. Prefer longer, literal names. Test: *I can open this six months from now and immediately know what it does.*
+
+Do **not** put Internal / OpenAI in CloudPilotMessage names. Those stay behind `CloudPilotIntelligence`.
 
 ### `processMessage` collision
 
-**`processMessage` in code is A + B, not A.**
+**`processMessage` in code is the whole turn, not just Process Message.**
 
 Lock this even if the function is not renamed:
 
-- **Turn** / handle user message = A then B (the function you already have)
-- **Message Processing** = A only
-- **Response Building** = B only
+- **Turn** / handle user message = Process Message then Prepare Reply (the function you already have)
+- **Message Processing** = Process Message only
+- **Response Building** / **Prepare Reply** = the reply-building half only
 
 Do not use “process message” for both.
 
 ### General Chat is fused
 
-- **Decide it is general chat** → A
-- **Write the general-chat reply** → B (today `chat()` still thinks a bit while it writes)
+- **Decide it is general chat** → Process Message
+- **Write the general-chat reply** → Prepare Reply (today `chat()` still thinks a bit while it writes)
 
-Request path splits A and B. Questions split too (search = A, `speakKnown` = B). General Chat does not. That is a real difference, not a naming bug.
+Request path splits processing and reply-building. Questions split too (search = Process Message, `speakKnown` = Prepare Reply). General Chat does not. That is a real difference, not a naming bug.
+
+### Reply-language direction (examples only — not preferred names yet)
+
+Within Prepare Reply, the system should get simpler, not more clever.
+
+These are **examples of possible directions**, not approved names.
+Step 1 already inspected the real functions. Do not treat this table as the rename list.
+
+| Today | Example direction only | Meaning |
+|------|------------------------|---------|
+| `speakRequest()` | `prepareRequestReply()` | CloudPilotMessage prepares the final Request Reply |
+| `speakKnown()` | `prepareKnownReply()` | CloudPilotMessage packages an already-known Reply |
+| `speakGeneral()` | `prepareGeneralReply()` | CloudPilotMessage prepares a general Reply |
+| `chat()` | `generateGeneralReply()` | CloudPilotIntelligence generates general reply wording |
+| `presentRequestMessage()` | `generateFriendlyRequestReply()` | CloudPilotIntelligence generates friendly request wording |
+| `buildRequestSpeakFacts()` | `buildRequestKnownInfo()` | Gather known request information. **Not** GenAI Message Context. |
+| `buildRequestTemplateMessage` | `buildRequestTemplateMessage()` | Deterministic request reply text |
 
 ---
 
-## Proposed request-path names (when a rename step is asked)
+## Possible request-reply rename direction (examples only — not preferred names yet)
 
-Feature Chat’s B path is correct. The names are the confusing part.
+Feature Chat’s request reply path may mostly be correct. The names are the confusing part.
+These examples show the kind of simplification we want. They are **not**
+approved names and **not** the Step 3 rename list.
 
-| Current | Suggested | Plain English |
-|---------|-----------|---------------|
-| `speakRequest()` | `buildRequestResponseMessage()` | Build the response we're sending for a request |
-| `buildRequestSpeakFacts()` | `buildRequestResponseContext()` | Gather the known info needed to write that response |
-| `speakFacts` | `requestResponseContext` | The known information for the response |
-| `presentRequestMessage()` | `createFriendlyRequestResponse()` | Try to create the friendly version of the response |
-| `presentRequestMessageOpenAI()` | `createFriendlyRequestResponseWithOpenAI()` | Have OpenAI create the friendly response |
-| `presentRequestMessageInternal()` | `useInternalRequestResponse()` | Don't use OpenAI; keep internal/template response |
-| `shouldPresentRequestMessage()` | `shouldCreateFriendlyRequestResponse()` | Decide whether friendly rewriting applies |
-| `buildRequestPresentationMessages()` | `buildOpenAIRequestResponsePrompt()` | Build what gets sent to OpenAI |
-| `presentedMessageKeepsFacts()` | `friendlyRequestResponseKeepsKnownValues()` | Make sure OpenAI didn't drop known values |
+Step 1 found `buildRequestSpeakFacts()` is **known request information**,
+not GenAI Message Context. Do not name it `...Context()`.
+
+| Current | Example direction only | Plain English |
+|---------|------------------------|---------------|
+| `speakRequest()` | `prepareRequestReply()` | Prepare the final Reply for a Request |
+| `buildRequestSpeakFacts()` | `buildRequestKnownInfo()` | Gather known request values/information |
+| `speakFacts` | `requestKnownInfo` | Known request information |
+| `presentRequestMessage()` | `generateFriendlyRequestReply()` | Ask Intelligence for friendly request wording |
+| `shouldPresentRequestMessage()` | `shouldGenerateFriendlyRequestReply()` | Decide whether friendly generation should be attempted |
+| `buildRequestPresentationMessages()` | `buildFriendlyRequestReplyMessageContext()` | Build Message Context for this Intelligence operation |
+| `presentedMessageKeepsFacts()` | `friendlyRequestReplyKeepsKnownValues()` | Verify generated wording retained required values |
+
+Leave these **out of the architectural naming discussion**. They can keep existing inside Intelligence:
 
 ```text
-CloudPilotMessage.js
-    ↓
-buildRequestResponseContext.js
-    ↓
-createFriendlyRequestResponse.js
+presentRequestMessageOpenAI()
+presentRequestMessageInternal()
 ```
 
-Leave `speakGeneral` and `speakKnown` in their own families. Do not pull them into this Request naming, or it will look like one presentation engine for everything.
+They are provider details behind:
+
+```text
+CloudPilotMessage.prepareRequestReply()
+        ↓
+CloudPilotIntelligence.generateFriendlyRequestReply()
+        ↓
+    Internal / OpenAI / future provider
+```
+
+Same for general chat. Do not make Internal/OpenAI names part of this refactor's mental model:
+
+```text
+CloudPilotMessage.prepareGeneralReply()
+        ↓
+CloudPilotIntelligence.generateGeneralReply()
+        ↓
+    Internal / OpenAI / future provider
+```
 
 **Tweaks to keep:**
 
-1. **`requestResponseContext` vs Intelligence “context.”** Better than `speakFacts`. If the collision hurts, use `requestResponseKnownInfo`. Never `buildContext()`.
-2. The fact-guard is not suggestions-only (mode 1–4, collected confirm values, acknowledged field, estimated cost). Prefer `friendlyRequestResponseKeepsKnownValues()`.
-3. Friendly create often does nothing (Internal no-op). Optional parent name: `tryCreateFriendlyRequestResponse()`.
+1. **Known info vs Intelligence “context.”** `buildRequestSpeakFacts()` is known request information. Never `buildContext()`. Only `buildRequestPresentationMessages()` is actually Message Context.
+2. The fact-guard is not suggestions-only (mode 1–4, collected confirm values, acknowledged field, estimated cost). Prefer `friendlyRequestReplyKeepsKnownValues()`.
+3. Friendly create often does nothing (Internal no-op). That fallback stays **inside** Intelligence. Optional outer name: `tryGenerateFriendlyRequestReply()`.
 
 Today’s map (do not rewrite yet):
 
 | Today | Job |
 |-------|-----|
-| `understandMessage`, region/action/question search | A |
-| `decideNextStep`, collect fields, execute | A |
-| `buildRequestTemplateMessage` | B |
-| `buildRequestSpeakFacts` | B — pack known info for the reply |
-| `presentRequestMessage` | B — optional friendly wording |
-| `speakKnown` | B, Internal only |
-| `speakGeneral` / `chat()` | B slot, A+B fused |
-| `CloudPilotIntelligence` | mixed A and B behind one GenAI door |
-| `processMessage()` | the **Turn** (A then B) |
+| `understandMessage`, region/action/question search | Process Message |
+| `decideNextStep`, collect fields, execute | Process Message |
+| `buildRequestTemplateMessage` | Prepare Reply |
+| `buildRequestSpeakFacts` | Prepare Reply — pack known info for the reply |
+| `presentRequestMessage` | Prepare Reply — optional friendly wording |
+| `speakKnown` | Prepare Reply — package already-known wording |
+| `speakGeneral` | Prepare Reply — voice asks Intelligence for a general Reply |
+| `chat()` | Intelligence generate-general-reply entry (provider choice stays inside) |
+| `CloudPilotIntelligence` | GenAI brain/front door used by both Process Message and Prepare Reply |
+| `CloudPilotMessage` | Voice / reply-preparation front door |
+| `processMessage()` | the **Turn** (one Message in, one Reply out) |
 
 ---
 
-## Folders — BIG vs small
+## Folders — keep stable unless truly misleading
 
-Top-level `cloudPilot/` folders should be **product jobs**:
+Top-level `cloudPilot/` folders should be left alone unless a name is truly misleading.
 
 | Folder | Job |
 |--------|-----|
-| `chat/` | Build the user-facing message |
+| `chat/` | Current home of user-facing reply code. Name may be revisited later. |
 | `requests/` | Track the open job |
 | `actions/` | Do the AWS work |
 | `scans/` | Read AWS / Atlas |
@@ -250,17 +427,14 @@ Top-level `cloudPilot/` folders should be **product jobs**:
 | `knowledge/` | Facts CloudPilot already stores |
 | `questions/` | **Open — see below.** Product “Question” vs this folder. |
 
-**`pricing/` is not a big CloudPilot responsibility.** It is two helper files (hourly lookup + daily/monthly estimate). Scan Cost column uses it. Create-EC2 speak uses it. That is a **shared lookup**, not a conversation type and not a workflow.
+**`pricing/` stays where it is.** It is two helper files (hourly lookup + daily/monthly estimate). Scan Cost column uses it. Create-EC2 speak uses it. It may be small, but it is not confusing enough to justify touching working code in this feature.
 
 It is **not** billing (`scans/billing/` = AWS bill) and **not** OpenAI token cost (`providers/openAI/usage/`).
 
 ```text
-BIG:     chat  requests  actions  scans  history  knowledge
-SMALL:   pricing  (rate lookup used by scan + create speak)
-UNSURE:  questions  (product idea is big; folder is thin — think through)
+KEEP:    pricing   (rate lookup used by scan + create speak)
+OPEN:    questions (product idea is big; folder is thin — think through)
 ```
-
-**Later nest (do not move while [Useful Price](./feature_useful_price.md) is still in current):** next to **knowledge**, not under `scans/ec2/` (create would depend on scans) and not only under `actions/createEC2/` (scan uses it too). Same pattern as org knowledge: CloudPilot DB owns the truth; do not invent; omit if missing.
 
 ### Open: `cloudPilot/questions/`
 
@@ -281,32 +455,110 @@ So the word **Question** is currently split across Intelligence search, this one
 ## Non-goals
 
 - New product behavior
+- A major architecture refactor
+- A new Intelligence facade (the existing `CloudPilotIntelligence` door is enough)
+- Exposing Internal / OpenAI names in CloudPilotMessage / Prepare Reply
 - A generic presentation engine for every conversation type
 - Merging request wording into general chat
-- Moving `pricing/` before Useful Price is finished
+- Moving `pricing/`
 - Moving `questions/` until the open note is decided
 - A giant context framework
 - Live OpenAI smokes just to prove a rename
+
+## Strong rule for planning and coding
+
+> If changing a name requires changing how the system behaves, stop and explain why.
+
+> Step 1 should describe architectural imperfections, not repair them.
+
+Prefer:
+
+- renaming over rewriting
+- moving a function over rewriting its implementation
+- preserving OpenAI ON/OFF behavior exactly
+- preserving deterministic fallbacks exactly
 
 ---
 
 ## Steps
 
-### Step 1 — Glossary / comments only
+### Step 1 — Inspect + map only (no code changes)
 
-- [ ] How-to (or short glossary) with Turn / A / B and the word map
-- [ ] Optionally note in comments that `processMessage` is the Turn
-- [ ] No function renames, no file moves
+- [x] Inspect existing message / request / response files against this mental model
+- [x] For each relevant file/function: say which concept it belongs to, what it does, whether it already matches, whether it only needs renaming, whether logic actually needs to move, and proposed old → new names
+- [x] Treat `speak`, `present`, `chat`, and `known` as existing implementation vocabulary, not terminology we are committed to preserve
+- [x] If a Prepare Reply function currently performs a search, makes a request decision, or changes workflow state, flag it as a responsibility leak. Do **not** fix it yet.
+- [x] Estimate the work: **SMALL / MEDIUM / LARGE**
+- [x] No function renames, no file moves, no behavior changes
 
-### Step 2 — Request B names (behavior identical)
+Expected Step 1 output for each confusing function:
 
-- [ ] Rename Feature Chat request-response functions and the two files to the table above
-- [ ] Keep templates, fact-guard, and fallback unchanged
+```text
+CURRENT NAME:
 
-### Step 3 — Nest `pricing/` (after Useful Price is finished)
+PLAIN ENGLISH:
+Exactly what does it do?
 
-- [ ] Move the two pricing files next to knowledge (or equivalent supporting home)
-- [ ] Fix requires only; no estimate-behavior change
+INPUT:
+What information does it receive?
+
+INTELLIGENCE:
+Does it call CloudPilotIntelligence?
+If yes, what Message Context does it assemble?
+
+OUTPUT:
+Does it return known information, an intermediate value,
+or the final user-facing Reply?
+
+LAYER:
+Process Message / Prepare Reply / supporting helper
+
+RENAME:
+Suggested only after the above is understood.
+
+LOGIC MOVE:
+None / possible responsibility leak
+```
+
+Step 1 result: **SMALL–MEDIUM**
+
+- **Mostly rename/import/doc work** on the reply side
+- **Likely 2 file renames + several function renames**
+- **Two responsibility leaks found** (describe, do not fix in this feature unless a later step explicitly asks)
+  1. `cloudPilotIntelligence/conversation/chat.js` performs org-knowledge search + DB resolve before generating the reply
+  2. `cloudPilot/chat/templates/requestTemplates.js` still contains `execution_requested` → `AtlasExecution.startNewAtlasExecution(payload)` inside a template builder
+
+#### Step 1 findings (inspection only — no renames yet)
+
+| CURRENT NAME | PLAIN ENGLISH | INPUT | INTELLIGENCE | OUTPUT | LAYER | RENAME DIRECTION | LOGIC MOVE |
+|--------------|---------------|-------|--------------|--------|-------|------------------|------------|
+| `processMessage()` | Full Turn orchestrator | raw user message, conversation ID, context | yes, via `CloudPilotIntelligence.understandMessage()` | final CloudPilot result with one Reply | **Turn** | eventual `handleTurn()` is plausible, not needed now | None |
+| `speakGeneral()` | Asks Intelligence for a general reply, then packages it | process-message context | yes, via `CloudPilotIntelligence.chat()` | final user-facing Reply | **Prepare Reply** | likely `prepareGeneralReply()` | None in this function |
+| `speakRequest()` | Builds deterministic request reply, optionally asks Intelligence to make it friendlier, then packages it | request payload + chat type | yes, via `CloudPilotIntelligence.presentRequestMessage()` | final user-facing Reply | **Prepare Reply** | likely `prepareRequestReply()` | None in this function |
+| `speakKnown()` | Takes already-known reply content and packages it | outcome object containing `cloudPilotMessage` | no | final user-facing Reply | **Prepare Reply** | maybe `prepareKnownReply()` | None |
+| `buildRequestSpeakFacts()` | Builds a payload of known request information for optional friendly rewriting | request payload + deterministic template text | no | intermediate known-info object, **not** final Reply | supporting helper for Prepare Reply | `buildRequestKnownInfo()` — **not** `...Context()` | None |
+| `presentRequestMessage()` | Decides whether to use Intelligence for friendly request wording; falls back to internal no-op | known-info payload | yes | intermediate friendly wording, not the packaged Reply | **Prepare Reply** | likely `generateFriendlyRequestReply()` | None in the orchestration |
+| `buildRequestPresentationMessages()` | Builds the AI prompt/messages for friendly request wording | request known-info payload | this **is** the Message Context builder for that operation | AI-operation payload (`systemMessage`, `messages`, summary) | **Message Context helper** | something like `buildFriendlyRequestReplyMessageContext()` | None |
+| `chat()` | Generates the general conversational reply | process-message context | this is the Intelligence implementation entry | generated general reply | **Prepare Reply**, with a leak | maybe `generateGeneralReply()` | **possible responsibility leak** |
+
+**Important Step 1 answer:** `buildRequestSpeakFacts()` is **known request information**, not GenAI Message Context.
+
+**Responsibility leaks** (describe only, do not fix yet):
+
+1. `cloudPilotIntelligence/conversation/chat.js` does org-knowledge search + DB resolve. That is Process Message work inside Prepare Reply.
+2. `cloudPilot/chat/templates/requestTemplates.js` `buildRequestTemplateMessage()` still contains `execution_requested` → `AtlasExecution.startNewAtlasExecution(payload)`. That is execution/process behavior inside a template builder.
+
+### Step 2 — Write the vocabulary down
+
+- [x] How-to (or short glossary) with Message / Process Message / Search / Message Context / Prepare Reply / Reply / Conversation — [CloudPilot Turn](../how_to/cloud_pilot_turn.md)
+- [x] Optionally note in comments that `processMessage` is the Turn
+- [x] No function renames, no file moves
+
+### Step 3 — Request reply names (behavior identical)
+
+- [ ] Rename Feature Chat request-response functions/files to the names **approved after Step 1 inspection**
+- [ ] The example tables above are possible directions only, not the approved rename list
+- [ ] Keep templates, fact-guard, fallback, and OpenAI ON/OFF behavior unchanged
 
 ### Step 4 — Optional later
 

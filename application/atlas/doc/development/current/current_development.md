@@ -30,7 +30,7 @@ This is the active-work dashboard. It contains only features we are working on n
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
-| [Important Fixes](./feature_important_fixes.md) | Clear Turn / A–B vocabulary; request vs speak vs chat vs present vs write; nest `pricing/` later; `questions/` TBD. | Plan locked — **awaiting Step 1** |
+| [Important Fixes](./feature_important_fixes.md) | Clear Turn / Message / Reply vocabulary; inspect confusing reply names before renaming. | **Step 2 done** — awaiting review before Step 3 renames |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
 
 ## Just finished

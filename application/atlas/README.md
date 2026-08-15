@@ -54,6 +54,8 @@ cloudPilot/
 ├── execution/
 ├── executionModes/
 ├── history/
+├── knowledge/
+├── pricing/
 ├── questions/
 ├── requests/
 └── scans/
@@ -67,10 +69,11 @@ cloudPilot/
 | `cloudPilot/execution/` | Step 6 execution orchestration and outcome handling |
 | `cloudPilot/executionModes/` | Delivery modes: automatic, CLI, instructions, PR |
 | `cloudPilot/history/` | History persistence, undo, and navigator shaping |
+| `cloudPilot/knowledge/` | Product-owned organizational knowledge helpers |
+| `cloudPilot/pricing/` | Pricing estimation and pricing-domain helpers |
 | `cloudPilot/questions/` | Grounded question fulfillment that must not go through general chat |
 | `cloudPilot/requests/` | Request loading, naming, state transitions, workflow, `decideNextStep` |
 | `cloudPilot/scans/` | Read-only handlers for EC2, S3, billing, inventory, AI usage |
-| `cloudPilot/spending/` | Spending guardrails and decisions for billable services |
 
 ### Notable files under `cloudPilot/`
 
@@ -78,11 +81,15 @@ cloudPilot/
 |------|------|
 | `cloudPilot/chat/cloudPilotMessageFunctions.js` | Runs the message pipeline |
 | `cloudPilot/chat/CloudPilotMessage.js` | Final speaking layer |
+| `cloudPilot/chat/presentation/buildRequestSpeakFacts.js` | Builds request facts used by speaking / presentation layers |
 | `cloudPilot/requests/decideNextStep.js` | Routes understanding into request / question / chat decisions |
 | `cloudPilot/requests/workflow.js` | Store + execute request workflow bridge |
 | `cloudPilot/execution/functions/executionFunctions.js` | Executes handlers and finishes request state |
 | `cloudPilot/questions/openRequests.js` | Grounded open-requests response |
-| `cloudPilot/spending/checkSpendingLimit.js` | Decides whether additional service spend is allowed |
+| `cloudPilot/actions/createEC2/createEC2Context.js` | Product knowledge for the friendly create-EC2 flow |
+| `cloudPilot/actions/createEC2/createEC2Guidance.js` | Stage-by-stage guidance for the friendly create-EC2 flow |
+| `cloudPilot/pricing/estimatePricing.js` | Pricing estimate entry point for CloudPilot flows |
+| `cloudPilot/knowledge/organizationKnowledgeFunctions.js` | Resolves organization knowledge for product explanations |
 
 ## `cloudPilotIntelligence/`
 
@@ -117,6 +124,7 @@ cloudPilotIntelligence/understand/
     ├── helpers/
     ├── questions/
     ├── values/
+    ├── searchForOrganizationalKnowledge.js
     ├── searchMessageForAction.js
     ├── searchMessageForConversation.js
     ├── searchMessageForQuestion.js
@@ -141,6 +149,7 @@ cloudPilotIntelligence/context/
 | `cloudPilotIntelligence/context/contextTypes/cloudPilotSituationContext.js` | Search / task situation blocks |
 | `cloudPilotIntelligence/context/contextTypes/currentQuestionContext.js` | Current user-message context |
 | `cloudPilotIntelligence/context/contextTypes/organizationKnowledgeContext.js` | Optional product / org knowledge |
+| `cloudPilotIntelligence/conversation/presentRequestMessage.js` | Presents request-oriented AI replies when Chat is involved |
 
 ## `providers/`
 
@@ -219,5 +228,14 @@ User message
 ## Notes
 
 - Docs live under `doc/`, but are intentionally excluded from this README.
+- Friendly create now uses action-local product files under `cloudPilot/actions/createEC2/`:
+
+```text
+createEC2Handler.js   # DO
+createEC2Context.js   # KNOW
+createEC2Guidance.js  # GUIDE
+```
+
+- `cloudPilotIntelligence/understand/search/` now contains both classic action/value detection and newer product-specific searches such as organizational knowledge and S3 inventory.
 - Keep this as the single Atlas runtime layout README.
 - If folders move again, update this file instead of adding more README files.

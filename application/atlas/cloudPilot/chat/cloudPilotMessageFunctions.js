@@ -11,6 +11,10 @@ const HistoryFunctions = require('../history/functions/historyFunctions');
 /*
 CloudPilot Message Pipeline (processMessage)
 
+ONE TURN = Message → Process Message → Prepare Reply → Reply
+processMessage() is the whole Turn, not only the Process Message half.
+See: doc/development/how_to/cloud_pilot_turn.md
+
 Design principle: Every user message is exactly one conversation.
 
 Glossary
