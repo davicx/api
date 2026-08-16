@@ -2,6 +2,9 @@ const OpenAIClient = require('../../../../providers/openAI/client/openAIClient')
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
+const {
+    getOpenRequestsSearchContext
+} = require('../../../context/operationContext/getOpenRequestsSearchContext');
 
 /*
 FUNCTIONS A: Open requests Question search
@@ -14,12 +17,9 @@ HELPERS
     1) Helper H1: parseOpenAIOpenRequestsResponse
     2) Helper H2: buildOpenRequestsOpenAIMessages
 
-Public entry — shouldRun + Internal | OpenAI.
+ONE operation context → same object to Internal and OpenAI.
+buildOpenRequestsOpenAIMessages = OpenAI adapter only (not the context).
 Returns { question: 'open_requests' } or {}.
-CloudPilot owns loading request rows and answering.
-
-Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
-Doc: feature_cloud_pilot_context.md Step C
 */
 
 //HELPERS
@@ -53,37 +53,34 @@ function parseOpenAIOpenRequestsResponse(raw) {
     }
 }
 
-//Helper H2: Build tiny Open Requests Search TASK messages
-function buildOpenRequestsOpenAIMessages(message) {
-    const userMessage = String(message || '');
+//Helper H2: OpenAI adapter — format OpenRequestsSearchContext into OpenAI messages
+function buildOpenRequestsOpenAIMessages(context) {
+    const searchContext = context && typeof context === 'object' ? context : {};
+    const userMessage = String(searchContext.userMessage || '');
+    const task = searchContext.task || {};
+    const purpose = String(task.purpose || '');
+    const examples = Array.isArray(task.examples) ? task.examples : [];
+    const outputFormat = String(task.outputFormat || '');
+
+    const exampleLines = [];
+
+    for (let i = 0; i < examples.length; i++) {
+        const example = examples[i] || {};
+        exampleLines.push('"' + String(example.input || '') + '"');
+        exampleLines.push(String(example.output || ''));
+        exampleLines.push('');
+    }
 
     const systemMessage = [
         'TASK',
         '',
-        'Determine whether the user is asking to see CloudPilot requests',
-        'that are currently open, pending, or waiting.',
-        '',
-        'Classify only. Do not answer. Do not invent requests.',
-        'Do not treat new action requests (scan, toggle, create) as open-requests questions.',
+        purpose,
         '',
         'EXAMPLES',
         '',
-        '"do I have any open requests"',
-        '{"open_requests":true}',
+        exampleLines.join('\n').trim(),
         '',
-        '"what am I waiting on"',
-        '{"open_requests":true}',
-        '',
-        '"scan ec2"',
-        '{}',
-        '',
-        '"what is a request?"',
-        '{}',
-        '',
-        'Return JSON only:',
-        '{"open_requests":true}',
-        'or',
-        '{}'
+        outputFormat
     ].join('\n');
 
     const messages = [
@@ -129,7 +126,10 @@ async function searchForOpenRequests(message) {
         return {};
     }
 
-    //STEP 2: How should I run? (Internal or OpenAI via config)
+    //STEP 2: One operation context for every provider
+    const openRequestsSearchContext = getOpenRequestsSearchContext(message);
+
+    //STEP 3: How should I run? (Internal or OpenAI via config)
     const openaiRequested = CLOUDPILOT_AI_CONFIG.openRequestsSearch === 'openai';
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
@@ -137,7 +137,7 @@ async function searchForOpenRequests(message) {
     let result;
 
     if (useOpenAI) {
-        const openAIOutcome = await searchForOpenRequestsOpenAI(userMessage);
+        const openAIOutcome = await searchForOpenRequestsOpenAI(openRequestsSearchContext);
         result = openAIOutcome.result || {};
         SearchLogs.recordSearch({
             name: 'Open Requests',
@@ -149,7 +149,7 @@ async function searchForOpenRequests(message) {
 
     // Preview when openai requested but master off
     if (openaiRequested && masterDisabled) {
-        const openAIRequest = buildOpenRequestsOpenAIMessages(userMessage);
+        const openAIRequest = buildOpenRequestsOpenAIMessages(openRequestsSearchContext);
         OpenAIClient.logOpenAI({
             capability: 'Open Requests Search',
             conversationHistoryEnabled: false,
@@ -160,7 +160,7 @@ async function searchForOpenRequests(message) {
         });
     }
 
-    result = searchForOpenRequestsInternal(userMessage);
+    result = searchForOpenRequestsInternal(openRequestsSearchContext);
     SearchLogs.recordSearch({
         name: 'Open Requests',
         method: 'Internal',
@@ -169,9 +169,13 @@ async function searchForOpenRequests(message) {
     return result;
 }
 
-//Function A3: Find open-requests Question using internal phrases
-function searchForOpenRequestsInternal(message) {
-    const text = String(message || '').toLowerCase().trim();
+//Function A3: Internal — receives same OpenRequestsSearchContext as OpenAI
+function searchForOpenRequestsInternal(context) {
+    const text = String(
+        context && context.userMessage ? context.userMessage : ''
+    )
+        .toLowerCase()
+        .trim();
 
     if (!text) {
         return {};
@@ -207,15 +211,14 @@ function searchForOpenRequestsInternal(message) {
     return {};
 }
 
-//Function A4: Find open-requests Question using OpenAI
-// Returns { result, billing, openAIResponse, fallback } for the gateway log.
-async function searchForOpenRequestsOpenAI(message) {
+//Function A4: OpenAI — receives same OpenRequestsSearchContext as Internal
+async function searchForOpenRequestsOpenAI(context) {
     try {
         const client = OpenAIClient.getOpenAIClient();
 
         if (!client) {
             return {
-                result: searchForOpenRequestsInternal(message),
+                result: searchForOpenRequestsInternal(context),
                 billing: false,
                 openAIResponse: null,
                 fallback: 'no API key / client'
@@ -224,7 +227,7 @@ async function searchForOpenRequestsOpenAI(message) {
 
         const config = CHAT_CONFIG.LOW;
         const maxTokens = CLOUDPILOT_AI_CONFIG.openRequestsTokenLimit;
-        const openAIRequest = buildOpenRequestsOpenAIMessages(message);
+        const openAIRequest = buildOpenRequestsOpenAIMessages(context);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
@@ -255,7 +258,7 @@ async function searchForOpenRequestsOpenAI(message) {
 
         if (!apiResult.success) {
             return {
-                result: searchForOpenRequestsInternal(message),
+                result: searchForOpenRequestsInternal(context),
                 billing: true,
                 openAIResponse: openAIResponse,
                 fallback: apiResult.message || apiResult.error || 'request failed'
@@ -272,7 +275,7 @@ async function searchForOpenRequestsOpenAI(message) {
         };
     } catch (error) {
         return {
-            result: searchForOpenRequestsInternal(message),
+            result: searchForOpenRequestsInternal(context),
             billing: false,
             openAIResponse: null,
             fallback: error && error.message ? error.message : String(error)

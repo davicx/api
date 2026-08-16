@@ -1,22 +1,22 @@
 const { CHAT_TYPE } = require('../requests/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
-const BuildRequestSpeakFactsFunctions = require('./presentation/buildRequestSpeakFacts');
+const GetRequestReplyFactsFunctions = require('./presentation/getRequestReplyFacts');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 
 /*
 CloudPilotMessage — the product's voice.
 
 Select speaking strategy and package the outgoing chat message.
-GenAI thinking goes through CloudPilotIntelligence.chat().
-Request presentation (friendly request copy) goes through
-CloudPilotIntelligence.presentRequestMessage() — templates always build first.
+GenAI thinking goes through CloudPilotIntelligence.generateGeneralReply().
+Friendly Request Reply wording goes through
+CloudPilotIntelligence.generateFriendlyReply() — templates always build first.
 */
 
-//Function A1: General Conversation speak — voice wrapper around Intelligence chat()
+//Function A1: General Conversation speak — voice wrapper around Intelligence generateGeneralReply()
 // Questions (open_requests, ai_spend, …) must never call this.
 // CLOUDPILOT_MESSAGE_RESPONSE=openai applies to general chat and request presentation — not Question facts.
 async function speakGeneral(processMessageContext) {
-    const chatResult = await CloudPilotIntelligence.chat(processMessageContext);
+    const chatResult = await CloudPilotIntelligence.generateGeneralReply(processMessageContext);
 
     if (!chatResult.success) {
         return formatOutgoing({
@@ -37,19 +37,19 @@ async function speakGeneral(processMessageContext) {
     });
 }
 
-//Function A2: Request Conversation speak — templates first; optional OpenAI presentation
+//Function A2: Request Conversation speak — templates first; optional friendly rewrite
 async function speakRequest(payload, chatType) {
     const templateResult = await RequestTemplates.buildRequestTemplateMessage(payload);
     const templateMessage = templateResult.cloudPilotMessage || templateResult.message || '';
     let cloudPilotMessage = templateMessage;
 
-    const speakFacts = BuildRequestSpeakFactsFunctions.buildRequestSpeakFacts(
+    const requestReplyFacts = GetRequestReplyFactsFunctions.getRequestReplyFacts(
         payload,
         templateMessage
     );
 
-    if (speakFacts) {
-        const presented = await CloudPilotIntelligence.presentRequestMessage(speakFacts);
+    if (requestReplyFacts) {
+        const presented = await CloudPilotIntelligence.generateFriendlyReply(requestReplyFacts);
 
         if (presented && presented.success && presented.message) {
             cloudPilotMessage = presented.message;

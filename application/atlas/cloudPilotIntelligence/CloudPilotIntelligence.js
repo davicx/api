@@ -9,8 +9,8 @@ CloudPilotIntelligence decides Internal vs OpenAI based on configuration.
 See: doc/development/finished/feature_intelligence_front_door.md
 
 FUNCTIONS A: Conversation
-    1) Function A1: chat
-    2) Function A2: presentRequestMessage
+    1) Function A1: generateGeneralReply
+    2) Function A2: generateFriendlyReply
 
 FUNCTIONS B: Understand (Gather Context)
     1) Function B1: understandMessage
@@ -33,8 +33,8 @@ FUNCTIONS E: Generate (placeholder)
 Note: Legacy respond() kept as a placeholder export until callers are gone.
 */
 
-const ConversationChatFunctions = require('./conversation/chat');
-const PresentRequestMessageFunctions = require('./conversation/presentRequestMessage');
+const GenerateGeneralReplyFunctions = require('./conversation/generateGeneralReply');
+const GenerateFriendlyReplyFunctions = require('./conversation/generateFriendlyReply');
 const UnderstandMessageFunctions = require('./understand/understandMessage');
 const SearchMessageForRegionFunctions = require('./understand/search/values/searchMessageForRegion');
 const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
@@ -44,16 +44,16 @@ const SearchForOpenRequestsFunctions = require('./understand/search/questions/se
 const SearchForOrganizationalKnowledgeFunctions = require('./understand/search/searchForOrganizationalKnowledge');
 
 //FUNCTIONS A: Conversation
-//Function A1: GenAI conversation front door
-async function chat(processMessageContext) {
-    //STEP 1: Delegate to conversation chat implementation
-    return ConversationChatFunctions.chat(processMessageContext);
+//Function A1: Generate General Reply front door
+async function generateGeneralReply(processMessageContext) {
+    //STEP 1: Delegate to conversation generateGeneralReply implementation
+    return GenerateGeneralReplyFunctions.generateGeneralReply(processMessageContext);
 }
 
-//Function A2: Present request speak facts (wording only — templates stay Internal / fallback)
-async function presentRequestMessage(speakFacts) {
-    //STEP 1: Delegate to request presentation (shouldRun + Internal vs OpenAI)
-    return PresentRequestMessageFunctions.presentRequestMessage(speakFacts);
+//Function A2: Optional friendlier Request Reply wording (templates stay Internal / fallback)
+async function generateFriendlyReply(speakFacts) {
+    //STEP 1: Delegate to friendly reply (shouldTry + Internal vs OpenAI)
+    return GenerateFriendlyReplyFunctions.generateFriendlyReply(speakFacts);
 }
 
 //FUNCTIONS B: Understand (Gather Context)
@@ -123,15 +123,15 @@ async function generate(context) {
     throw new Error('CloudPilotIntelligence.generate is not implemented yet.');
 }
 
-//Legacy placeholder — prefer chat() for GenAI conversation
+//Legacy placeholder — prefer generateGeneralReply() for GenAI conversation
 async function respond(context) {
     //STEP 1: Placeholder only
     throw new Error('CloudPilotIntelligence.respond is not implemented yet.');
 }
 
 module.exports = {
-    chat,
-    presentRequestMessage,
+    generateGeneralReply,
+    generateFriendlyReply,
     understandMessage,
     understandRegion,
     understandAction,

@@ -2,6 +2,9 @@ const OpenAIClient = require('../../../../providers/openAI/client/openAIClient')
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
+const {
+    getAiSpendSearchContext
+} = require('../../../context/operationContext/getAiSpendSearchContext');
 
 /*
 FUNCTIONS A: AI spend search
@@ -14,12 +17,9 @@ HELPERS
     1) Helper H1: parseOpenAIAiSpendResponse
     2) Helper H2: buildAiSpendOpenAIMessages
 
-Public entry — shouldRun + Internal | OpenAI.
+ONE operation context → same object to Internal and OpenAI.
+buildAiSpendOpenAIMessages = OpenAI adapter only (not the context).
 Returns { question: 'ai_spend' } or {}.
-CloudPilot owns loading cloud_pilot_ai_usage and answering.
-
-Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
-Same family as Region / Open Requests Search.
 */
 
 //HELPERS
@@ -50,39 +50,34 @@ function parseOpenAIAiSpendResponse(raw) {
     }
 }
 
-//Helper H2: Build tiny AI Spend Search TASK messages
-function buildAiSpendOpenAIMessages(message) {
-    const userMessage = String(message || '');
+//Helper H2: OpenAI adapter — format AiSpendSearchContext into OpenAI messages
+function buildAiSpendOpenAIMessages(context) {
+    const searchContext = context && typeof context === 'object' ? context : {};
+    const userMessage = String(searchContext.userMessage || '');
+    const task = searchContext.task || {};
+    const purpose = String(task.purpose || '');
+    const examples = Array.isArray(task.examples) ? task.examples : [];
+    const outputFormat = String(task.outputFormat || '');
+
+    const exampleLines = [];
+
+    for (let i = 0; i < examples.length; i++) {
+        const example = examples[i] || {};
+        exampleLines.push('"' + String(example.input || '') + '"');
+        exampleLines.push(String(example.output || ''));
+        exampleLines.push('');
+    }
 
     const systemMessage = [
         'TASK',
         '',
-        'Determine whether the user is asking about CloudPilot AI / OpenAI',
-        'usage or spend.',
-        '',
-        'Return a hit only when the user is clearly asking about AI or OpenAI',
-        'spend, cost, or usage.',
-        'Do not treat AWS billing or cloud infrastructure cost questions as AI spend.',
-        'Classify only — do not invent dollar amounts or usage totals.',
+        purpose,
         '',
         'EXAMPLES',
         '',
-        '"how much have I spent on openai"',
-        '{"ai_spend":true}',
+        exampleLines.join('\n').trim(),
         '',
-        '"show my ai spend"',
-        '{"ai_spend":true}',
-        '',
-        '"how much is my EC2 costing"',
-        '{}',
-        '',
-        '"scan ec2"',
-        '{}',
-        '',
-        'Return JSON only:',
-        '{"ai_spend":true}',
-        'or',
-        '{}'
+        outputFormat
     ].join('\n');
 
     const messages = [
@@ -126,7 +121,10 @@ async function searchForAiSpend(message) {
         return {};
     }
 
-    //STEP 2: How should I run? (Internal or OpenAI via config)
+    //STEP 2: One operation context for every provider
+    const aiSpendSearchContext = getAiSpendSearchContext(message);
+
+    //STEP 3: How should I run? (Internal or OpenAI via config)
     const openaiRequested = CLOUDPILOT_AI_CONFIG.aiSpendSearch === 'openai';
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
@@ -134,7 +132,7 @@ async function searchForAiSpend(message) {
     let result;
 
     if (useOpenAI) {
-        const openAIOutcome = await searchForAiSpendOpenAI(userMessage);
+        const openAIOutcome = await searchForAiSpendOpenAI(aiSpendSearchContext);
         result = openAIOutcome.result || {};
         SearchLogs.recordSearch({
             name: 'AI Spend',
@@ -146,7 +144,7 @@ async function searchForAiSpend(message) {
 
     // Preview when openai requested but master off
     if (openaiRequested && masterDisabled) {
-        const openAIRequest = buildAiSpendOpenAIMessages(userMessage);
+        const openAIRequest = buildAiSpendOpenAIMessages(aiSpendSearchContext);
         OpenAIClient.logOpenAI({
             capability: 'AI Spend Search',
             conversationHistoryEnabled: false,
@@ -157,7 +155,7 @@ async function searchForAiSpend(message) {
         });
     }
 
-    result = searchForAiSpendInternal(userMessage);
+    result = searchForAiSpendInternal(aiSpendSearchContext);
     SearchLogs.recordSearch({
         name: 'AI Spend',
         method: 'Internal',
@@ -166,9 +164,13 @@ async function searchForAiSpend(message) {
     return result;
 }
 
-//Function A3: Find AI spend intent using internal phrases
-function searchForAiSpendInternal(message) {
-    const text = String(message || '').toLowerCase().trim();
+//Function A3: Internal — receives same AiSpendSearchContext as OpenAI
+function searchForAiSpendInternal(context) {
+    const text = String(
+        context && context.userMessage ? context.userMessage : ''
+    )
+        .toLowerCase()
+        .trim();
 
     if (!text) {
         return {};
@@ -206,15 +208,14 @@ function searchForAiSpendInternal(message) {
     return {};
 }
 
-//Function A4: Find AI spend intent using OpenAI (+ shared context system)
-// Returns { result, billing, openAIResponse, fallback } for the gateway log.
-async function searchForAiSpendOpenAI(message) {
+//Function A4: OpenAI — receives same AiSpendSearchContext as Internal
+async function searchForAiSpendOpenAI(context) {
     try {
         const client = OpenAIClient.getOpenAIClient();
 
         if (!client) {
             return {
-                result: searchForAiSpendInternal(message),
+                result: searchForAiSpendInternal(context),
                 billing: false,
                 openAIResponse: null,
                 fallback: 'no API key / client'
@@ -223,7 +224,7 @@ async function searchForAiSpendOpenAI(message) {
 
         const config = CHAT_CONFIG.LOW;
         const maxTokens = CLOUDPILOT_AI_CONFIG.aiSpendTokenLimit;
-        const openAIRequest = buildAiSpendOpenAIMessages(message);
+        const openAIRequest = buildAiSpendOpenAIMessages(context);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
@@ -254,7 +255,7 @@ async function searchForAiSpendOpenAI(message) {
 
         if (!apiResult.success) {
             return {
-                result: searchForAiSpendInternal(message),
+                result: searchForAiSpendInternal(context),
                 billing: true,
                 openAIResponse: openAIResponse,
                 fallback: apiResult.message || apiResult.error || 'request failed'
@@ -271,7 +272,7 @@ async function searchForAiSpendOpenAI(message) {
         };
     } catch (error) {
         return {
-            result: searchForAiSpendInternal(message),
+            result: searchForAiSpendInternal(context),
             billing: false,
             openAIResponse: null,
             fallback: error && error.message ? error.message : String(error)

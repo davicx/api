@@ -81,7 +81,7 @@ cloudPilot/
 |------|------|
 | `cloudPilot/chat/cloudPilotMessageFunctions.js` | Runs the message pipeline |
 | `cloudPilot/chat/CloudPilotMessage.js` | Final speaking layer |
-| `cloudPilot/chat/presentation/buildRequestSpeakFacts.js` | Builds request facts used by speaking / presentation layers |
+| `cloudPilot/chat/presentation/getRequestReplyFacts.js` | Known facts the Request Reply must preserve |
 | `cloudPilot/requests/decideNextStep.js` | Routes understanding into request / question / chat decisions |
 | `cloudPilot/requests/workflow.js` | Store + execute request workflow bridge |
 | `cloudPilot/execution/functions/executionFunctions.js` | Executes handlers and finishes request state |
@@ -149,7 +149,8 @@ cloudPilotIntelligence/context/
 | `cloudPilotIntelligence/context/contextTypes/cloudPilotSituationContext.js` | Search / task situation blocks |
 | `cloudPilotIntelligence/context/contextTypes/currentQuestionContext.js` | Current user-message context |
 | `cloudPilotIntelligence/context/contextTypes/organizationKnowledgeContext.js` | Optional product / org knowledge |
-| `cloudPilotIntelligence/conversation/presentRequestMessage.js` | Presents request-oriented AI replies when Chat is involved |
+| `cloudPilotIntelligence/conversation/generateFriendlyReply.js` | Optional friendlier Request Reply wording (templates stay fallback) |
+| `cloudPilotIntelligence/conversation/generateGeneralReply.js` | General Reply from Intelligence context |
 
 ## `providers/`
 

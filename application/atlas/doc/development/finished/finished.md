@@ -6,6 +6,10 @@
 
 ---
 
+## Recently finished (2026-08-16)
+
+- [x] **Intelligence Provider** — Region Search: one operation context → Internal | OpenAI → same result; no provider framework — [feature_intelligence_provider.md](./feature_intelligence_provider.md) · [how-to](../how_to/intelligence_provider.md)
+
 ## Recently finished (2026-08-14)
 
 - [x] **Feature Chat** — Friendly request presentation when OpenAI is on; templates stay Internal + fallback — [feature_chat.md](./feature_chat.md)

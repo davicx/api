@@ -2,6 +2,9 @@ const OpenAIClient = require('../../../providers/openAI/client/openAIClient');
 const { CHAT_CONFIG } = require('../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 const SearchLogs = require('./helpers/searchLogs');
+const {
+    getOrganizationalKnowledgeSearchContext
+} = require('../../context/operationContext/getOrganizationalKnowledgeSearchContext');
 
 /*
 FUNCTIONS A: Organizational knowledge search (S3 MVP)
@@ -18,14 +21,9 @@ HELPERS
     5) Helper H5: messageUsesSelectedFinding
     6) Helper H6: extractInternalResourceReference
 
-Public entry — shouldRun + Internal | OpenAI.
+ONE operation context → same object to Internal and OpenAI.
+buildOrganizationalKnowledgeOpenAIMessages = OpenAI adapter only.
 Returns { knowledgeType: 's3', resourceReference } or {}.
-
-Detect / extract only. CloudPilot DB resolves the reference later.
-OpenAI must NOT return purpose, importance, recommendedAction, or AWS names as facts.
-
-Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
-Doc: feature_organizational_knowledge.md Step 2
 */
 
 //HELPERS
@@ -53,55 +51,35 @@ function parseOpenAIOrganizationalKnowledgeResponse(raw) {
     }
 }
 
-//Helper H2: Build tiny Organizational Knowledge Search TASK messages
-function buildOrganizationalKnowledgeOpenAIMessages(message, options) {
-    const userMessage = String(message || '');
-    const selectedResourceName = getSelectedResourceName(options);
+//Helper H2: OpenAI adapter — format OrganizationalKnowledgeSearchContext
+function buildOrganizationalKnowledgeOpenAIMessages(context) {
+    const searchContext = context && typeof context === 'object' ? context : {};
+    const userMessage = String(searchContext.userMessage || '');
+    const selectedResourceName = String(searchContext.selectedResourceName || '');
+    const task = searchContext.task || {};
+    const purpose = String(task.purpose || '');
+    const examples = Array.isArray(task.examples) ? task.examples : [];
+    const outputFormat = String(task.outputFormat || '');
+
+    const exampleLines = [];
+
+    for (let i = 0; i < examples.length; i++) {
+        const example = examples[i] || {};
+        exampleLines.push('"' + String(example.input || '') + '"');
+        exampleLines.push(String(example.output || ''));
+        exampleLines.push('');
+    }
 
     const systemParts = [
         'TASK',
         '',
-        'Determine whether the user is asking why an S3 bucket / storage resource',
-        'exists in their organization (purpose, importance, whether to delete, what',
-        'it is for) — not live AWS cost or a new scan action.',
+        purpose,
         '',
-        'If yes, extract how they referred to the resource as resourceReference.',
-        'resourceReference may be an AWS name, a friendly display phrase, or a tag',
-        'like "tutorial" or "website images".',
-        '',
-        'Classify / extract only. Do not invent purpose, importance, or recommended actions.',
-        'Do not map aliases to AWS names. Do not answer the question.',
-        '',
-        'Return JSON only in this exact shape:',
-        '{"knowledgeType":"s3","resourceReference":"<text>"}',
-        'or',
-        '{}',
-        '',
-        'Never return importance, purpose, notes, recommendedAction, or resourceName',
-        'as separate fields.',
+        outputFormat,
         '',
         'EXAMPLES',
         '',
-        '"What is this bucket for?"',
-        '{"knowledgeType":"s3","resourceReference":"this"}',
-        '',
-        '"Tell me about my tutorial bucket."',
-        '{"knowledgeType":"s3","resourceReference":"tutorial"}',
-        '',
-        '"What is the website images bucket?"',
-        '{"knowledgeType":"s3","resourceReference":"website images"}',
-        '',
-        '"Tell me about sam-youtube-demo"',
-        '{"knowledgeType":"s3","resourceReference":"sam-youtube-demo"}',
-        '',
-        '"how much does this bucket cost"',
-        '{}',
-        '',
-        '"scan s3"',
-        '{}',
-        '',
-        '"hello"',
-        '{}'
+        exampleLines.join('\n').trim()
     ];
 
     if (selectedResourceName) {
@@ -170,7 +148,7 @@ function normalizeOrganizationalKnowledgeHit(parsed) {
     };
 }
 
-//Helper H4: Optional selected finding name from options
+//Helper H4: Optional selected finding name from options (gate / callers)
 function getSelectedResourceName(options) {
     if (!options || typeof options !== 'object') {
         return '';
@@ -226,7 +204,6 @@ function extractInternalResourceReference(message) {
         return '';
     }
 
-    // Exact-ish AWS name patterns from demo + generic bucket-looking tokens
     const knownNames = [
         'sam-youtube-demo',
         'cloudpilot-assets',
@@ -239,7 +216,6 @@ function extractInternalResourceReference(message) {
         }
     }
 
-    // Display-ish phrases
     const displayPhrases = [
         'sam youtube demo',
         'cloudpilot assets',
@@ -253,7 +229,6 @@ function extractInternalResourceReference(message) {
         }
     }
 
-    // "my tutorial bucket" / "the website images bucket" / "about my tutorial bucket"
     const taggedBucket = text.match(
         /\b(?:my|the|our|about(?:\s+my|\s+the)?)\s+(.+?)\s+bucket\b/
     );
@@ -261,7 +236,6 @@ function extractInternalResourceReference(message) {
         return String(taggedBucket[1]).trim();
     }
 
-    // "tell me about my tutorial" (no "bucket")
     const aboutMine = text.match(/\b(?:tell me about|what about)\s+my\s+(.+)$/);
     if (aboutMine && aboutMine[1]) {
         return String(aboutMine[1])
@@ -316,7 +290,13 @@ async function searchForOrganizationalKnowledge(message, options) {
         return {};
     }
 
-    //STEP 2: How should I run? (Internal or OpenAI via config)
+    //STEP 2: One operation context for every provider
+    const orgKnowledgeSearchContext = getOrganizationalKnowledgeSearchContext(
+        message,
+        searchOptions
+    );
+
+    //STEP 3: How should I run? (Internal or OpenAI via config)
     const openaiRequested = CLOUDPILOT_AI_CONFIG.orgKnowledgeSearch === 'openai';
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
@@ -325,8 +305,7 @@ async function searchForOrganizationalKnowledge(message, options) {
 
     if (useOpenAI) {
         const openAIOutcome = await searchForOrganizationalKnowledgeOpenAI(
-            userMessage,
-            searchOptions
+            orgKnowledgeSearchContext
         );
         result = openAIOutcome.result || {};
         SearchLogs.recordSearch({
@@ -340,8 +319,7 @@ async function searchForOrganizationalKnowledge(message, options) {
     // Preview when openai requested but master off
     if (openaiRequested && masterDisabled) {
         const openAIRequest = buildOrganizationalKnowledgeOpenAIMessages(
-            userMessage,
-            searchOptions
+            orgKnowledgeSearchContext
         );
         OpenAIClient.logOpenAI({
             capability: 'Org Knowledge Search',
@@ -353,7 +331,7 @@ async function searchForOrganizationalKnowledge(message, options) {
         });
     }
 
-    result = searchForOrganizationalKnowledgeInternal(userMessage, searchOptions);
+    result = searchForOrganizationalKnowledgeInternal(orgKnowledgeSearchContext);
     SearchLogs.recordSearch({
         name: 'Org Knowledge',
         method: 'Internal',
@@ -362,11 +340,12 @@ async function searchForOrganizationalKnowledge(message, options) {
     return result;
 }
 
-//Function A3: Find org-knowledge intent + reference using internal rules
-function searchForOrganizationalKnowledgeInternal(message, options) {
-    const selectedResourceName = getSelectedResourceName(options);
+//Function A3: Internal — receives same OrganizationalKnowledgeSearchContext as OpenAI
+function searchForOrganizationalKnowledgeInternal(context) {
+    const searchContext = context && typeof context === 'object' ? context : {};
+    const message = String(searchContext.userMessage || '');
+    const selectedResourceName = String(searchContext.selectedResourceName || '');
 
-    // Selected finding + "this bucket" style question
     if (selectedResourceName && messageUsesSelectedFinding(message)) {
         return {
             knowledgeType: 's3',
@@ -377,12 +356,10 @@ function searchForOrganizationalKnowledgeInternal(message, options) {
     const resourceReference = extractInternalResourceReference(message);
 
     if (!resourceReference) {
-        // Selected finding alone does not force a hit without a knowledge-style ask
         return {};
     }
 
-    // Require a knowledge-style ask when we only extracted a name/tag from text
-    const text = String(message || '').toLowerCase();
+    const text = message.toLowerCase();
     const looksLikeKnowledgeAsk =
         /what is|what's|whats|tell me about|what about|purpose|important|delete|for\?|bucket for/.test(
             text
@@ -398,14 +375,14 @@ function searchForOrganizationalKnowledgeInternal(message, options) {
     };
 }
 
-//Function A4: Extract org-knowledge reference using OpenAI (+ shared context system)
-async function searchForOrganizationalKnowledgeOpenAI(message, options) {
+//Function A4: OpenAI — receives same OrganizationalKnowledgeSearchContext as Internal
+async function searchForOrganizationalKnowledgeOpenAI(context) {
     try {
         const client = OpenAIClient.getOpenAIClient();
 
         if (!client) {
             return {
-                result: searchForOrganizationalKnowledgeInternal(message, options),
+                result: searchForOrganizationalKnowledgeInternal(context),
                 billing: false,
                 openAIResponse: null,
                 fallback: 'no API key / client'
@@ -414,10 +391,7 @@ async function searchForOrganizationalKnowledgeOpenAI(message, options) {
 
         const config = CHAT_CONFIG.LOW;
         const maxTokens = CLOUDPILOT_AI_CONFIG.orgKnowledgeTokenLimit;
-        const openAIRequest = buildOrganizationalKnowledgeOpenAIMessages(
-            message,
-            options
-        );
+        const openAIRequest = buildOrganizationalKnowledgeOpenAIMessages(context);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
@@ -448,7 +422,7 @@ async function searchForOrganizationalKnowledgeOpenAI(message, options) {
 
         if (!apiResult.success) {
             return {
-                result: searchForOrganizationalKnowledgeInternal(message, options),
+                result: searchForOrganizationalKnowledgeInternal(context),
                 billing: true,
                 openAIResponse: openAIResponse,
                 fallback: apiResult.message || apiResult.error || 'request failed'
@@ -457,8 +431,9 @@ async function searchForOrganizationalKnowledgeOpenAI(message, options) {
 
         let hit = parseOpenAIOrganizationalKnowledgeResponse(apiResult.data);
 
-        // Resolve "this" / empty-ish selected references to the selected finding name
-        const selectedResourceName = getSelectedResourceName(options);
+        const selectedResourceName = String(
+            context && context.selectedResourceName ? context.selectedResourceName : ''
+        );
         if (
             hit.resourceReference &&
             selectedResourceName &&
@@ -478,7 +453,7 @@ async function searchForOrganizationalKnowledgeOpenAI(message, options) {
         };
     } catch (error) {
         return {
-            result: searchForOrganizationalKnowledgeInternal(message, options),
+            result: searchForOrganizationalKnowledgeInternal(context),
             billing: false,
             openAIResponse: null,
             fallback: error && error.message ? error.message : String(error)

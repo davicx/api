@@ -7,18 +7,18 @@ const SearchForOrganizationalKnowledgeFunctions = require('../understand/search/
 const OrganizationKnowledgeFunctions = require('../../cloudPilot/knowledge/organizationKnowledgeFunctions');
 
 /*
-CloudPilot Intelligence — Conversation chat()
+CloudPilot Intelligence — generateGeneralReply()
 
 GenAI conversation front door. Builds context, history, and Internal stub vs OpenAI.
 CloudPilotMessage.speakGeneral calls this, then formats the outgoing product message.
 
-Step 4 org knowledge: search → DB resolve → Knowledge context (and Internal speak when OpenAI chat off).
+Org knowledge: search → DB resolve → Knowledge context (and Internal speak when OpenAI chat off).
 */
 
 const CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
 
-//Function A1: Run GenAI conversation for a processMessage context
-async function chat(processMessageContext) {
+//Function A1: Generate General Reply for a processMessage context
+async function generateGeneralReply(processMessageContext) {
     let context = processMessageContext || {};
     const currentUserMessage = context.currentUserMessage || '';
     const conversationID = context.conversationID;
@@ -306,7 +306,7 @@ function logConversationHistory(conversationHistory, historyLimit) {
 }
 
 module.exports = {
-    chat,
+    generateGeneralReply,
     attachOrganizationKnowledgeToContext,
     buildInternalOrganizationKnowledgeMessage
 };

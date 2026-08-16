@@ -87,19 +87,20 @@ Sending / storing / returning it?
 
 ---
 
-## Current code still uses old words
+## Current code map
 
-`speak`, `chat`, `present`, `write`, `known` are implementation names, not the mental model.
-Do not rename from this guide.
+`speak*` and `processMessage` are still older Prepare / Turn names (optional later rename).
 
-| Today | Stage |
+| Today | Stage / role |
 |-------|--------|
 | `processMessage()` | **Turn** |
 | `understandMessage`, region/action/question search | Understand Message |
 | `decideNextStep`, collect fields, execute | Handle Request |
-| `speakRequest` / `speakGeneral` / `speakKnown` | Prepare Message Reply |
-| `buildRequestSpeakFacts` / `buildRequestPresentationMessages` | Maybe Context — inspect before naming |
-| `chat()` / `presentRequestMessage()` | Intelligence entries |
+| `speakRequest` / `speakGeneral` / `speakKnown` | Prepare Message Reply front doors |
+| `getRequestReplyFacts()` | Known facts for Request Reply |
+| `getFriendlyReplyContext()` | Context for friendly rewrite |
+| `generateFriendlyReply()` / `generateGeneralReply()` | Intelligence reply generators |
+| `shouldTryFriendlyReply()` / `replyContainsRequiredFacts()` | Friendly-reply gate + fact guard |
 
 ---
 

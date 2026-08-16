@@ -5,12 +5,18 @@ const { buildAIContext } = require('../../context/buildContext');
 const { buildAISystemMessage } = require('../../context/buildSystemMessage');
 const { CHAT_CONFIG } = require('../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
+const {
+    getActionSearchContext
+} = require('../../context/operationContext/getActionSearchContext');
 
 /*
 FUNCTIONS A: Action detection from user message
     1) Function A1: searchMessageForAction
     2) Function A2: searchMessageForActionInternal
     3) Function A3: searchMessageForActionOpenAI
+
+ONE operation context → same object to Internal and OpenAI.
+buildActionOpenAIMessages = OpenAI adapter only (not the context).
 
 Actions = do something (scan_ec2, toggle_ec2, …).
 AI spend is a Question (searchForAiSpend via searchMessageForQuestion) — not an action.
@@ -20,7 +26,10 @@ phrasing and may return only an action that exists in actionMap.
 
 //Function A1: Select Internal rules or optional OpenAI fallback
 async function searchMessageForAction(message) {
-    const internalOutcome = searchMessageForActionInternal(message);
+    //STEP 1: One operation context for every provider
+    const actionSearchContext = getActionSearchContext(message);
+
+    const internalOutcome = searchMessageForActionInternal(actionSearchContext);
     const hasInternalAction =
         internalOutcome.ambiguous ||
         (internalOutcome.action && internalOutcome.action !== 'general_chat');
@@ -32,11 +41,11 @@ async function searchMessageForAction(message) {
 
     // Deterministic matches always win; OpenAI handles only unknown phrasing.
     if (!hasInternalAction && useOpenAI) {
-        const openAIOutcome = await searchMessageForActionOpenAI(message);
+        const openAIOutcome = await searchMessageForActionOpenAI(actionSearchContext);
         outcome = openAIOutcome.result || internalOutcome;
         method = openAIOutcome.fallback ? 'Internal' : 'OpenAI';
     } else if (!hasInternalAction && openaiRequested && !CLOUDPILOT_AI_CONFIG.aiEnabled) {
-        const request = buildActionOpenAIMessages(message);
+        const request = buildActionOpenAIMessages(actionSearchContext);
         OpenAIClient.logOpenAI({
             capability: 'Action Search',
             conversationHistoryEnabled: false,
@@ -56,9 +65,13 @@ async function searchMessageForAction(message) {
     return outcome;
 }
 
-//Function A2: Find an action using actionMap rules
-function searchMessageForActionInternal(message) {
-    const normalizedMessage = String(message || '').toLowerCase().trim();
+//Function A2: Internal — receives same ActionSearchContext as OpenAI
+function searchMessageForActionInternal(context) {
+    const normalizedMessage = String(
+        context && context.userMessage ? context.userMessage : ''
+    )
+        .toLowerCase()
+        .trim();
     const matches = [];
 
     for (const action of Object.values(actionMap)) {
@@ -98,14 +111,14 @@ function searchMessageForActionInternal(message) {
     return outcome;
 }
 
-//Function A3: Ask OpenAI to map unknown phrasing to one approved action
-async function searchMessageForActionOpenAI(message) {
+//Function A3: OpenAI — receives same ActionSearchContext as Internal
+async function searchMessageForActionOpenAI(context) {
     try {
         const client = OpenAIClient.getOpenAIClient();
 
         if (!client) {
             return {
-                result: searchMessageForActionInternal(message),
+                result: searchMessageForActionInternal(context),
                 billing: false,
                 openAIResponse: null,
                 fallback: 'no API key / client'
@@ -113,7 +126,7 @@ async function searchMessageForActionOpenAI(message) {
         }
 
         const config = CHAT_CONFIG.LOW;
-        const request = buildActionOpenAIMessages(message);
+        const request = buildActionOpenAIMessages(context);
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
             messages: request.messages,
@@ -142,7 +155,7 @@ async function searchMessageForActionOpenAI(message) {
 
         if (!apiResult.success) {
             return {
-                result: searchMessageForActionInternal(message),
+                result: searchMessageForActionInternal(context),
                 billing: true,
                 openAIResponse: responseText,
                 fallback: apiResult.message || apiResult.error || 'request failed'
@@ -157,7 +170,7 @@ async function searchMessageForActionOpenAI(message) {
         };
     } catch (error) {
         return {
-            result: searchMessageForActionInternal(message),
+            result: searchMessageForActionInternal(context),
             billing: false,
             openAIResponse: null,
             fallback: error && error.message ? error.message : String(error)
@@ -165,9 +178,16 @@ async function searchMessageForActionOpenAI(message) {
     }
 }
 
-function buildActionOpenAIMessages(message) {
+//Helper: OpenAI adapter — format ActionSearchContext into OpenAI messages
+// Keeps prior message shape (system via Current Question; user = catalog + rules).
+function buildActionOpenAIMessages(context) {
+    const searchContext = context && typeof context === 'object' ? context : {};
+    const userMessage = String(searchContext.userMessage || '');
+    const task = searchContext.task || {};
+    const catalog = Array.isArray(task.catalog) ? task.catalog : [];
+
     const processMessageContext = {
-        currentUserMessage: String(message || '')
+        currentUserMessage: userMessage
     };
     const aiContext = buildAIContext(processMessageContext, {
         includeKnowledge: false,
@@ -175,7 +195,6 @@ function buildActionOpenAIMessages(message) {
         includeCurrentState: false
     });
     const systemMessage = buildAISystemMessage(aiContext);
-    const catalog = buildActionCatalog();
 
     return {
         aiContext: aiContext,
@@ -195,31 +214,6 @@ function buildActionOpenAIMessages(message) {
             }
         ]
     };
-}
-
-function buildActionCatalog() {
-    const catalog = [];
-
-    for (const definition of Object.values(actionMap)) {
-        if (!definition || typeof definition !== 'object') {
-            continue;
-        }
-
-        if (!definition.type || definition.type === 'general_chat') {
-            continue;
-        }
-
-        catalog.push({
-            action: definition.type,
-            label: definition.actionLabel || definition.type,
-            description:
-                definition.capability && definition.capability.description
-                    ? definition.capability.description
-                    : ''
-        });
-    }
-
-    return catalog;
 }
 
 function parseOpenAIActionResponse(raw) {

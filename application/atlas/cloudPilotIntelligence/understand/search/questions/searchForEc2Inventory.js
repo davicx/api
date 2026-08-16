@@ -1,5 +1,8 @@
 const actionMap = require('../../../../cloudPilot/actionMap');
 const SearchLogs = require('../helpers/searchLogs');
+const {
+    getEc2InventorySearchContext
+} = require('../../../context/operationContext/getEc2InventorySearchContext');
 
 /*
 FUNCTIONS A: EC2 inventory Question search
@@ -10,14 +13,9 @@ FUNCTIONS A: EC2 inventory Question search
 HELPERS
     1) Helper H1: isExplicitScanCommand
 
-Public entry — shouldRun + Internal classify only (MVP).
+ONE operation context → Internal (MVP has no OpenAI path yet).
+Same Search TASK shape as Region / Action / Questions.
 Returns { question: 'ec2_inventory' } or {}.
-
-Semantic distinction (feature_cloud_pilot_context Step E):
-  "scan my EC2"              → Action scan_ec2 (operation)
-  "how many EC2 are running?" → Question ec2_inventory (needs AWS truth)
-
-Fulfillment reuses scan_ec2 / Atlas plumbing — CloudPilot owns facts.
 */
 
 //HELPERS
@@ -43,7 +41,6 @@ function shouldRunEc2InventorySearch(message) {
         return false;
     }
 
-    // General knowledge stays General Chat
     if (/\bwhat\s+is\s+(an?\s+)?ec2\b/.test(text)) {
         return false;
     }
@@ -72,8 +69,9 @@ async function searchForEc2Inventory(message) {
         return {};
     }
 
-    //STEP 2: Internal classify only (MVP — no OpenAI smoke / optional later)
-    const result = searchForEc2InventoryInternal(userMessage);
+    //STEP 2: One operation context (Internal-only MVP)
+    const ec2InventorySearchContext = getEc2InventorySearchContext(message);
+    const result = searchForEc2InventoryInternal(ec2InventorySearchContext);
 
     SearchLogs.recordSearch({
         name: 'EC2 Inventory',
@@ -84,15 +82,16 @@ async function searchForEc2Inventory(message) {
     return result;
 }
 
-//Function A3: Inventory-style EC2 data question (not explicit scan, not "what is EC2")
-function searchForEc2InventoryInternal(message) {
-    const text = String(message || '').toLowerCase().trim();
+//Function A3: Internal — receives Ec2InventorySearchContext
+function searchForEc2InventoryInternal(context) {
+    const text = String(context && context.userMessage ? context.userMessage : '')
+        .toLowerCase()
+        .trim();
 
     if (!text || isExplicitScanCommand(text)) {
         return {};
     }
 
-    // Reuse Be Cool Man EC2-data matcher; exclude operation "scan"
     if (typeof actionMap.matchesScanEC2Intent === 'function') {
         if (actionMap.matchesScanEC2Intent(text)) {
             return { question: 'ec2_inventory' };

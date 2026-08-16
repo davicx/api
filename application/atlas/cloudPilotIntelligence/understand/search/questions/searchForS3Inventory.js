@@ -1,5 +1,8 @@
 const actionMap = require('../../../../cloudPilot/actionMap');
 const SearchLogs = require('../helpers/searchLogs');
+const {
+    getS3InventorySearchContext
+} = require('../../../context/operationContext/getS3InventorySearchContext');
 
 /*
 FUNCTIONS A: S3 inventory Question search
@@ -10,14 +13,9 @@ FUNCTIONS A: S3 inventory Question search
 HELPERS
     1) Helper H1: isExplicitScanCommand
 
-Public entry — shouldRun + Internal classify only (MVP).
+ONE operation context → Internal (MVP has no OpenAI path yet).
+Same Search TASK shape as Region / Action / Questions.
 Returns { question: 's3_inventory' } or {}.
-
-Semantic distinction (feature_s3_inventory_ask):
-  "scan s3"                     → Action scan_s3 (operation)
-  "what S3 buckets do I have?"  → Question s3_inventory (needs AWS truth)
-
-Fulfillment reuses scan_s3 / Atlas plumbing — CloudPilot owns facts.
 */
 
 //HELPERS
@@ -43,7 +41,6 @@ function shouldRunS3InventorySearch(message) {
         return false;
     }
 
-    // General knowledge stays General Chat
     if (
         /\bwhat\s+is\s+(an?\s+)?s3\b/.test(text) ||
         /\bwhat\s+is\s+(an?\s+)?s3\s+bucket\b/.test(text) ||
@@ -76,8 +73,9 @@ async function searchForS3Inventory(message) {
         return {};
     }
 
-    //STEP 2: Internal classify only (MVP — no OpenAI smoke / optional later)
-    const result = searchForS3InventoryInternal(userMessage);
+    //STEP 2: One operation context (Internal-only MVP)
+    const s3InventorySearchContext = getS3InventorySearchContext(message);
+    const result = searchForS3InventoryInternal(s3InventorySearchContext);
 
     SearchLogs.recordSearch({
         name: 'S3 Inventory',
@@ -88,9 +86,11 @@ async function searchForS3Inventory(message) {
     return result;
 }
 
-//Function A3: Inventory-style S3 data question (not explicit scan, not "what is S3")
-function searchForS3InventoryInternal(message) {
-    const text = String(message || '').toLowerCase().trim();
+//Function A3: Internal — receives S3InventorySearchContext
+function searchForS3InventoryInternal(context) {
+    const text = String(context && context.userMessage ? context.userMessage : '')
+        .toLowerCase()
+        .trim();
 
     if (!text || isExplicitScanCommand(text)) {
         return {};

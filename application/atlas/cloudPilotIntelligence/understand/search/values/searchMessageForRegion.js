@@ -2,6 +2,7 @@ const OpenAIClient = require('../../../../providers/openAI/client/openAIClient')
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
+const { getRegionSearchContext } = require('../../../context/operationContext/getRegionSearchContext');
 
 /*
 FUNCTIONS A: Region search
@@ -16,8 +17,9 @@ HELPERS
     3) Helper H3: logRegionSearch
     4) Helper H4: buildRegionOpenAIMessages
 
-Search OpenAI = tiny TASK only (no Chat Identity / Knowledge / history).
-Doc: feature_cloud_pilot_context.md Step B
+ONE operation context → same object to Internal and OpenAI.
+buildRegionOpenAIMessages = OpenAI adapter only (not the context).
+Doc: feature_intelligence_provider.md
 */
 
 //HELPERS
@@ -87,56 +89,34 @@ function logRegionSearchVerbose(details) {
     console.log('==================================================');
 }
 
-//Helper H4: Build tiny Region Search TASK messages (no Identity / Situation stack)
-function buildRegionOpenAIMessages(message) {
-    const userMessage = String(message || '');
+//Helper H4: OpenAI adapter — format RegionSearchContext into OpenAI messages
+function buildRegionOpenAIMessages(context) {
+    const regionContext = context && typeof context === 'object' ? context : {};
+    const userMessage = String(regionContext.userMessage || '');
+    const task = regionContext.task || {};
+    const purpose = String(task.purpose || '');
+    const examples = Array.isArray(task.examples) ? task.examples : [];
+    const outputFormat = String(task.outputFormat || '');
+
+    const exampleLines = [];
+
+    for (let i = 0; i < examples.length; i++) {
+        const example = examples[i] || {};
+        exampleLines.push('"' + String(example.input || '') + '"');
+        exampleLines.push(String(example.output || ''));
+        exampleLines.push('');
+    }
 
     const systemMessage = [
         'TASK',
         '',
-        'Determine whether the user is PROVIDING an AWS region',
-        'to be used for the current request.',
-        '',
-        'Return the normalized AWS region if provided.',
-        '',
-        'Do not return a region when the user is:',
-        '- asking about a region',
-        '- mentioning a region as an example',
-        '- rejecting a region',
-        '- discussing regions generally',
-        '',
-        'Interpret obvious natural-language names and minor spelling mistakes.',
+        purpose,
         '',
         'EXAMPLES',
         '',
-        '"I want to use US West 2"',
-        '{"region":"us-west-2"}',
+        exampleLines.join('\n').trim(),
         '',
-        '"use USA West 2"',
-        '{"region":"us-west-2"}',
-        '',
-        '"I want to use USA Weste 2"',
-        '{"region":"us-west-2"}',
-        '',
-        '"Let\'s do this in Oregon"',
-        '{"region":"us-west-2"}',
-        '',
-        '"What is US West 2?"',
-        '{}',
-        '',
-        '"Why do you want a region like US West 2?"',
-        '{}',
-        '',
-        '"I don\'t want to use US West 2"',
-        '{}',
-        '',
-        '"Which region should I use?"',
-        '{}',
-        '',
-        'Return JSON only:',
-        '{"region":"us-west-2"}',
-        'or',
-        '{}'
+        outputFormat
     ].join('\n');
 
     const messages = [
@@ -229,7 +209,10 @@ async function searchMessageForRegion(message, requestState) {
         return {};
     }
 
-    //STEP 2: How should I run? (Internal or OpenAI via config)
+    //STEP 2: One operation context for every provider
+    const regionSearchContext = getRegionSearchContext(message);
+
+    //STEP 3: How should I run? (Internal or OpenAI via config)
     const openaiRequested = CLOUDPILOT_AI_CONFIG.regionSearch === 'openai';
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
@@ -242,13 +225,13 @@ async function searchMessageForRegion(message, requestState) {
 
     if (useOpenAI) {
         mode = 'OPENAI';
-        const openAIOutcome = await searchMessageForRegionOpenAI(message);
+        const openAIOutcome = await searchMessageForRegionOpenAI(regionSearchContext);
         result = openAIOutcome.result;
         billing = openAIOutcome.billing;
         openAIResponse = openAIOutcome.openAIResponse;
         fallback = openAIOutcome.fallback;
     } else {
-        const openAIRequest = buildRegionOpenAIMessages(message);
+        const openAIRequest = buildRegionOpenAIMessages(regionSearchContext);
         OpenAIClient.logOpenAI({
             capability: 'Region Search',
             conversationHistoryEnabled: false,
@@ -257,7 +240,7 @@ async function searchMessageForRegion(message, requestState) {
             messages: openAIRequest.messages,
             previewOnly: true
         });
-        result = searchMessageForRegionInternal(message);
+        result = searchMessageForRegionInternal(regionSearchContext);
     }
 
     logRegionSearch({
@@ -280,9 +263,9 @@ async function searchMessageForRegion(message, requestState) {
     return result;
 }
 
-//Function A3: Find an AWS region using internal regex logic
-function searchMessageForRegionInternal(message) {
-    const text = String(message || '');
+//Function A3: Internal implementation — receives same RegionSearchContext as OpenAI
+function searchMessageForRegionInternal(context) {
+    const text = String(context && context.userMessage ? context.userMessage : '');
     const match = text.match(/\b((?:us|eu|ap|sa|ca|me|af)-(?:gov-)?[a-z]+-\d)\b/i);
 
     if (!match) {
@@ -292,15 +275,15 @@ function searchMessageForRegionInternal(message) {
     return { region: String(match[1]).toLowerCase() };
 }
 
-//Function A4: Find an AWS region using OpenAI (+ shared context system)
+//Function A4: OpenAI implementation — receives same RegionSearchContext as Internal
 // Returns { result, billing, openAIResponse, fallback } for the gateway log.
-async function searchMessageForRegionOpenAI(message) {
+async function searchMessageForRegionOpenAI(context) {
     try {
         const client = OpenAIClient.getOpenAIClient();
 
         if (!client) {
             return {
-                result: searchMessageForRegionInternal(message),
+                result: searchMessageForRegionInternal(context),
                 billing: false,
                 openAIResponse: null,
                 fallback: 'no API key / client'
@@ -309,7 +292,7 @@ async function searchMessageForRegionOpenAI(message) {
 
         const config = CHAT_CONFIG.LOW;
         const regionMaxTokens = CLOUDPILOT_AI_CONFIG.regionTokenLimit;
-        const openAIRequest = buildRegionOpenAIMessages(message);
+        const openAIRequest = buildRegionOpenAIMessages(context);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
@@ -341,7 +324,7 @@ async function searchMessageForRegionOpenAI(message) {
 
         if (!apiResult.success) {
             return {
-                result: searchMessageForRegionInternal(message),
+                result: searchMessageForRegionInternal(context),
                 billing: true,
                 openAIResponse: openAIResponse,
                 fallback: apiResult.message || apiResult.error || 'request failed'
@@ -369,7 +352,7 @@ async function searchMessageForRegionOpenAI(message) {
         };
     } catch (error) {
         return {
-            result: searchMessageForRegionInternal(message),
+            result: searchMessageForRegionInternal(context),
             billing: false,
             openAIResponse: null,
             fallback: error && error.message ? error.message : String(error)

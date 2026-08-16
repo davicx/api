@@ -30,14 +30,14 @@ This is the active-work dashboard. It contains only features we are working on n
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
-| [Intelligence Provider](./feature_intelligence_provider.md) | One CloudPilot operation; Internal and OpenAI are interchangeable implementations. Prove with Region Search first. | Plan locked — **awaiting Step 1** |
-| [Important Fixes](./feature_important_fixes.md) | Clear Turn stages; lock getFacts / getContext / generateReply names. | **Frozen** — resume Step 4 after Intelligence Provider |
+| [Important Fixes](./feature_important_fixes.md) | Clear Turn stages; lock getFacts / getContext / generateReply names. | **Step 4 done** — optional Step 5 later |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
 
 ## Just finished
 
 | Feature | What shipped |
 |---------|----------------|
+| [Intelligence Provider](../finished/feature_intelligence_provider.md) | Search TASK family: one context object → Internal \| OpenAI → same result; [how-to](../how_to/intelligence_provider.md) |
 | [Feature Chat](../finished/feature_chat.md) | Friendly request presentation when OpenAI is on; templates stay Internal + fallback |
 | [Friendly Dashboard](../finished/feature_friendly_dashboard.md) | S3 findings-first Dashboard; Fix→Chat coming soon; original tables behind View original tables |
 | [S3 inventory ask](../finished/feature_s3_inventory_ask.md) | Natural “what S3 buckets do I have?” → Question `s3_inventory` → `scan_s3` |
@@ -45,7 +45,7 @@ This is the active-work dashboard. It contains only features we are working on n
 
 ## Useful References
 
-- [How-to guides](../how_to/how_to_guides.md) — including [CloudPilot Context](../how_to/cloud_pilot_context.md) and [inventory question → scan](../how_to/route_inventory_question_to_scan.md)
+- [How-to guides](../how_to/how_to_guides.md) — including [CloudPilot Context](../how_to/cloud_pilot_context.md), [Intelligence Provider](../how_to/intelligence_provider.md), and [inventory question → scan](../how_to/route_inventory_question_to_scan.md)
 - [Architecture](../architecture/)
 - [Finished work](../finished/finished.md)
 - [Future ideas](../future/future.md) — including [GitHub Pull Requests](../future/feature_github_pull_requests.md) and [S3 remediation modes](../future/feature_s3_remediation_modes.md)

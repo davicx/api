@@ -3,15 +3,15 @@ const { CHAT_CONFIG } = require('../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 
 /*
-FUNCTIONS A: Request message presentation (wording only)
-    1) Function A1: shouldPresentRequestMessage
-    2) Function A2: presentRequestMessage
+FUNCTIONS A: Friendly Request Reply (wording only)
+    1) Function A1: shouldTryFriendlyReply
+    2) Function A2: generateFriendlyReply
     3) Function A3: presentRequestMessageInternal
     4) Function A4: presentRequestMessageOpenAI
 
 HELPERS
-    1) Helper H1: buildRequestPresentationMessages
-    2) Helper H2: presentedMessageKeepsFacts
+    1) Helper H1: getFriendlyReplyContext
+    2) Helper H2: replyContainsRequiredFacts
     3) Helper H3: buildPresentationRules
     4) Helper H4: messageContainsValue
     5) Helper H5: collectRequiredFactValues
@@ -19,6 +19,7 @@ HELPERS
 
 CloudPilot owns missing fields / suggestions / mode options. OpenAI only rephrases.
 Internal = skip (caller keeps the template). OpenAI fail → same.
+Provider Internal / OpenAI helpers stay behind this door (not architectural names).
 */
 
 const PRESENTATION_MAX_TOKENS = 360;
@@ -157,8 +158,8 @@ function collectRequiredFactValues(speakFacts) {
     return requiredValues;
 }
 
-//Helper H1: Tiny TASK prompt — no Chat Identity / Knowledge / history
-function buildRequestPresentationMessages(speakFacts) {
+//Helper H1: Tiny TASK context — no Chat Identity / Knowledge / history
+function getFriendlyReplyContext(speakFacts) {
     const factsJson = JSON.stringify(speakFacts || {}, null, 2);
     const templateMessage =
         speakFacts && speakFacts.templateMessage
@@ -202,8 +203,8 @@ function buildRequestPresentationMessages(speakFacts) {
     };
 }
 
-//Helper H2: Required fact values must still appear in the presented wording
-function presentedMessageKeepsFacts(presentedMessage, speakFacts) {
+//Helper H2: Required fact values must still appear in the generated wording
+function replyContainsRequiredFacts(presentedMessage, speakFacts) {
     const message = String(presentedMessage || '');
 
     if (!message.trim()) {
@@ -221,9 +222,9 @@ function presentedMessageKeepsFacts(presentedMessage, speakFacts) {
     return true;
 }
 
-//FUNCTIONS A: Request message presentation
-//Function A1: Cheap gate — skip when there is nothing to present
-function shouldPresentRequestMessage(speakFacts) {
+//FUNCTIONS A: Friendly Request Reply
+//Function A1: Cheap gate — should we bother asking Intelligence to make this reply friendlier?
+function shouldTryFriendlyReply(speakFacts) {
     if (!speakFacts || typeof speakFacts !== 'object') {
         return false;
     }
@@ -256,10 +257,10 @@ function shouldPresentRequestMessage(speakFacts) {
     return actionEvent === 'awaiting_confirmation';
 }
 
-//Function A2: Select Internal skip vs OpenAI presentation
-async function presentRequestMessage(speakFacts) {
+//Function A2: Select Internal skip vs OpenAI friendly wording
+async function generateFriendlyReply(speakFacts) {
     //STEP 1: Should I run?
-    if (!shouldPresentRequestMessage(speakFacts)) {
+    if (!shouldTryFriendlyReply(speakFacts)) {
         return presentRequestMessageInternal();
     }
 
@@ -279,7 +280,7 @@ async function presentRequestMessage(speakFacts) {
     }
 
     if (openaiRequested && masterDisabled) {
-        const openAIRequest = buildRequestPresentationMessages(speakFacts);
+        const openAIRequest = getFriendlyReplyContext(speakFacts);
         OpenAIClient.logOpenAI({
             capability: 'Request Presentation',
             conversationHistoryEnabled: false,
@@ -323,7 +324,7 @@ async function presentRequestMessageOpenAI(speakFacts) {
             CLOUDPILOT_AI_CONFIG.messageTokenLimit || PRESENTATION_MAX_TOKENS,
             PRESENTATION_MAX_TOKENS
         );
-        const openAIRequest = buildRequestPresentationMessages(speakFacts);
+        const openAIRequest = getFriendlyReplyContext(speakFacts);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
@@ -361,7 +362,7 @@ async function presentRequestMessageOpenAI(speakFacts) {
             };
         }
 
-        if (!presentedMessageKeepsFacts(openAIResponse, speakFacts)) {
+        if (!replyContainsRequiredFacts(openAIResponse, speakFacts)) {
             return {
                 success: false,
                 message: '',
@@ -387,9 +388,9 @@ async function presentRequestMessageOpenAI(speakFacts) {
 }
 
 module.exports = {
-    shouldPresentRequestMessage,
-    presentRequestMessage,
+    shouldTryFriendlyReply,
+    generateFriendlyReply,
     presentRequestMessageInternal,
     presentRequestMessageOpenAI,
-    presentedMessageKeepsFacts
+    replyContainsRequiredFacts
 };
