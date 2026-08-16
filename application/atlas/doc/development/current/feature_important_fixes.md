@@ -10,8 +10,8 @@ This is naming, mental model, and folder honesty — **not** new product behavio
 
 ## Current step
 
-**One-at-a-time reply-path naming in the doc** (after Step 4).  
-Code stays until you explicitly ask to apply a rename.
+**One-at-a-time reply-path naming — locked in this doc.**  
+Code unchanged until you say apply.
 
 **Locked (not applied yet):**
 
@@ -24,9 +24,15 @@ generateFriendlyReply()           → generateRequestMessageReply()
 replyContainsRequiredFacts()      → openAIResponseContainsRequiredValues()
 presentRequestMessageInternal()   → generateRequestMessageReplyInternal()
 presentRequestMessageOpenAI()     → generateRequestMessageReplyOpenAI()
+
+speakGeneral()                    → prepareGeneralMessageReply()
+speakRequest()                    → prepareRequestMessageReply()
+speakKnown()                      → prepareKnownMessageReply()
 ```
 
-*(Preferred names updated to `messageReply` vocabulary; code unchanged until you say apply.)*
+*(Preferred names; code unchanged until you say apply.)*
+
+**Confirmed OK:** `processMessage()` · `generateGeneralMessageReply()` (General Intelligence name)
 
 **Sacred vocabulary (Step 5) — lock this first; rename functions one at a time:**
 
@@ -62,18 +68,25 @@ Request Message Reply
 User
 ```
 
-Say **apply …** only when you want code changed. Do not touch General Chat in this pass (later: `generateGeneralMessageReply()`).
+Say **apply …** only when you want code changed.
 
-**Next (optional end of this path):** `speakRequest` packaging door — or stop Request Message Reply naming here.
+```text
+prepare*  = package outgoing Message Reply (does NOT send)
+generate* = Intelligence produces wording
+```
 
 [Intelligence Provider](../finished/feature_intelligence_provider.md) Search TASK family is finished. It is **not** part of this naming pass.
 
 ## Next
 
-Lock names one at a time in this doc. Apply to code only when asked.  
-Optional later: `speak*` / `processMessage` / `questions/` folder — or move this feature to finished when naming feels done.
+**Step 5 naming is locked.** Say **apply Step 5** (or **apply the locked renames**) when you want code changed.
 
-**Status:** Active (Step 5 — lock names in doc; code on request)  
+Not in this apply unless you ask separately:
+- Structural: Internal AI returns success + Message Reply (not `success: false` no-op)
+- `generateGeneralReply()` → `generateGeneralMessageReply()` (name OK; not on the locked apply list above)
+- `questions/` folder · responsibility leaks
+
+**Status:** Active (Step 5 naming ready — awaiting apply)  
 **Codename:** `feature_important_fixes`  
 **Came from:** Chat after [Feature Chat](../finished/feature_chat.md) — vocabulary confusion and reply-path naming overload. Absorbs the former future spec [feature_code_reorganize](../future/feature_code_reorganize.md).  
 **Related:** [Intelligence Provider](../finished/feature_intelligence_provider.md) · [Intelligence Provider how-to](../how_to/intelligence_provider.md) · [Current Development](./current_development.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md) · [Useful Price](./feature_useful_price.md) · [Questions](../finished/feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
@@ -524,7 +537,7 @@ Today’s map:
 | `presentRequestMessageOpenAI` | `generateRequestMessageReplyOpenAI` | OpenAI provider — context IN → Message Reply OUT |
 | `replyContainsRequiredFacts` | `openAIResponseContainsRequiredValues` | Guard: did the OpenAI Response still include required values? |
 | `generateGeneralReply` | later: `generateGeneralMessageReply` | General Message Reply from scratch |
-| `speakKnown` / `speakGeneral` / `speakRequest` | later | Prepare Message Reply front doors |
+| `speakGeneral` / `speakRequest` / `speakKnown` | `prepareGeneralMessageReply` / `prepareRequestMessageReply` / `prepareKnownMessageReply` | Package outgoing Message Reply (does not send) |
 | `processMessage()` | later | the **Turn** |
 
 
@@ -740,17 +753,33 @@ Provider helpers `presentRequestMessageInternal` / `presentRequestMessageOpenAI`
 - [x] Locked: `replyContainsRequiredFacts()` → `openAIResponseContainsRequiredValues()` *(code not changed yet)*
 - [x] Locked: `presentRequestMessageInternal()` → `generateRequestMessageReplyInternal()` *(code not changed yet)*
 - [x] Locked: `presentRequestMessageOpenAI()` → `generateRequestMessageReplyOpenAI()` *(code not changed yet)*
-- [ ] Optional: `speakRequest` packaging door
-- [ ] Later: `generateGeneralReply` → `generateGeneralMessageReply` (General Chat — not this pass)
+- [x] Locked: `speakGeneral()` → `prepareGeneralMessageReply()` *(code not changed yet)*
+- [x] Locked: `speakRequest()` → `prepareRequestMessageReply()` *(code not changed yet)*
+- [x] Locked: `speakKnown()` → `prepareKnownMessageReply()` *(code not changed yet)*
+- [x] **OK:** `processMessage()` · `generateGeneralMessageReply()`
+- [ ] Apply locked Step 5 renames to code (when asked)
 
-**Request Message Reply naming progress:** 8 locked (+ 1 remove). Path mostly done — optional `speakRequest` next, or stop and apply later.
+**Step 5 naming:** 11 locked (+ 1 remove). Ready to apply when asked. `prepare*` does not send — Reply Message stage does.
 
-Still optional later (not started):
+### `speak*` → `prepare*MessageReply()` (locked)
 
-- [ ] `speakGeneral` / `speakKnown` / `speakRequest` names
-- [ ] Whether `processMessage` should become `handleUserTurn` or similar
-- [ ] Think through `cloudPilot/questions/` (product Question vs thin folder) — no move until decided
-- [ ] Apply locked Step 5 renames to code (batch or one-by-one when asked)
+| Today | Preferred | Job |
+|-------|-----------|-----|
+| `speakGeneral` | `prepareGeneralMessageReply` | Get General wording + package Message Reply |
+| `speakRequest` | `prepareRequestMessageReply` | Get Request wording + package Message Reply |
+| `speakKnown` | `prepareKnownMessageReply` | Words already known + package Message Reply |
+
+```text
+prepare*  = CloudPilotMessage prepares the outgoing Message Reply (does NOT send)
+generate* = Intelligence produces wording
+```
+
+**Does not send.** These return a packaged outcome (`cloudPilotMessage`, `chatType`, …).  
+**Reply Message** stage (inside/`after` `processMessage`) is what sends/stores to the user.
+
+**Known** = already-known wording (Question / scan / execution / error / cancel / change-strategy) — specific here; keep.
+
+**Keep:** `processMessage()` · `generateGeneralMessageReply()`.
 
 **Not Step 5:** Search same-context Internal | OpenAI — already finished in [Intelligence Provider](../finished/feature_intelligence_provider.md).  
 **Not Step 5:** Fixing the two responsibility leaks above — only if a later feature asks.
