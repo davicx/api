@@ -4,21 +4,76 @@
 
 Make CloudPilot readable six months from now: **one Turn is User Message → Understand Message → Handle Request → Prepare Message Reply → Reply Message**. Context is a shared `get…Context()` utility, not a stage.
 
-Six reply-path names are **already renamed** (Step 4). Remaining older words such as `speak*` / `processMessage` are optional Step 5 only.
+Six reply-path names are **already renamed** (Step 4). Step 5 locks further preferred names **in this doc first**; code only when you ask to apply.
 
 This is naming, mental model, and folder honesty — **not** new product behavior.
 
 ## Current step
 
-**Step 4 done** — six locked renames applied (behavior identical).  
-[Intelligence Provider](../finished/feature_intelligence_provider.md) Search TASK family is also finished (same context → Internal | OpenAI). It is **not** part of this feature’s remaining work.
+**One-at-a-time reply-path naming in the doc** (after Step 4).  
+Code stays until you explicitly ask to apply a rename.
+
+**Locked (not applied yet):**
+
+```text
+buildRequestTemplateMessage()     → getRequestMessageReply()
+getRequestReplyFacts()            → getRequestMessageReplyContext()
+shouldTryFriendlyReply()          → REMOVE (redundant; do not rename)
+getFriendlyReplyContext()         → prepareFinalRequestMessageReplyForOpenAI()
+generateFriendlyReply()           → generateRequestMessageReply()
+replyContainsRequiredFacts()      → openAIResponseContainsRequiredValues()
+presentRequestMessageInternal()   → generateRequestMessageReplyInternal()
+presentRequestMessageOpenAI()     → generateRequestMessageReplyOpenAI()
+```
+
+*(Preferred names updated to `messageReply` vocabulary; code unchanged until you say apply.)*
+
+**Sacred vocabulary (Step 5) — lock this first; rename functions one at a time:**
+
+```text
+Message        = FROM the user → CloudPilot
+Response       = FROM a provider (OpenAI / Internal AI) → CloudPilot
+Message Reply  = FROM CloudPilot → the user
+```
+
+Never use bare **reply** for the user-facing output. Use **messageReply** / **Message Reply**.
+
+```text
+User Message
+     ↓
+CloudPilot
+     ↓
+Request Message Reply
+     ↓
+User
+```
+
+```text
+RequestMessageReplyContext
+        ↓
+OpenAI
+        ↓
+OpenAI Response
+        ↓
+openAIResponseContainsRequiredValues()
+        ↓
+Request Message Reply
+        ↓
+User
+```
+
+Say **apply …** only when you want code changed. Do not touch General Chat in this pass (later: `generateGeneralMessageReply()`).
+
+**Next (optional end of this path):** `speakRequest` packaging door — or stop Request Message Reply naming here.
+
+[Intelligence Provider](../finished/feature_intelligence_provider.md) Search TASK family is finished. It is **not** part of this naming pass.
 
 ## Next
 
-- Say **do Step 5** only if you want optional later renames (`speak*` / `processMessage` / `questions/` folder thinking).
-- Or **move this feature to finished** if Step 5 is not needed now.
+Lock names one at a time in this doc. Apply to code only when asked.  
+Optional later: `speak*` / `processMessage` / `questions/` folder — or move this feature to finished when naming feels done.
 
-**Status:** Active (Step 4 done — optional Step 5, or finish)  
+**Status:** Active (Step 5 — lock names in doc; code on request)  
 **Codename:** `feature_important_fixes`  
 **Came from:** Chat after [Feature Chat](../finished/feature_chat.md) — vocabulary confusion and reply-path naming overload. Absorbs the former future spec [feature_code_reorganize](../future/feature_code_reorganize.md).  
 **Related:** [Intelligence Provider](../finished/feature_intelligence_provider.md) · [Intelligence Provider how-to](../how_to/intelligence_provider.md) · [Current Development](./current_development.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md) · [Useful Price](./feature_useful_price.md) · [Questions](../finished/feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
@@ -80,11 +135,15 @@ ONE TURN
 = User Message → Understand Message → Handle Request → Prepare Message Reply → Reply Message
 ```
 
-Keep these two words sacred:
+Keep these words sacred:
 
 ```text
-User Message  = one thing the user sent CloudPilot
-Reply Message = one thing CloudPilot sends the user
+Message        = FROM the user → CloudPilot
+Response       = FROM a provider → CloudPilot
+Message Reply  = FROM CloudPilot → the user
+
+Never: bare “reply” for the user-facing output — use messageReply / Message Reply.
+Never: call an OpenAI return value a Message Reply — that is a Response until accepted.
 ```
 
 Calls into Intelligence are **not** more user messages. They are: get context, then ask Intelligence.
@@ -242,20 +301,52 @@ Is this a REQUEST (do something)?
 | Handle Request           | `scan…`, `create…`, `execute…`       |
 | Prepare Message Reply    | prepare the one reply to send        |
 | Reply Message            | return / store the final message     |
-| Context for Intelligence | `get…Context()`                      |
+| Operation Context        | `get…Context()` — what the operation knows / needs for Internal \| OpenAI |
 
 
-If a function assembles information to send to OpenAI / Intelligence, it belongs conceptually under `context`. Prefer `get` **over** `build`.
+Prefer `get` **over** `build` for context assemblers.
 
-Locked naming rule:
+Locked naming rule (aligned with [Intelligence Provider](../finished/feature_intelligence_provider.md)):
 
 ```text
-get...Facts()      → returns known facts
-get...Context()    → returns Intelligence context
-generate...Reply() → generates reply wording
+Context
+= what the operation knows / needs
+= the object passed to Internal AI | OpenAI
+
+OpenAI messages
+= provider-specific formatting of that context (adapter — not named Context)
+
+generate...Reply() → generates reply wording (provider-agnostic door)
 ```
 
-Long literal names are fine (`getSearchRegionContext`). Do **not** stack leftover jargon (`buildChatSpeakProcessConversation`).
+### Internal AI vs OpenAI (mental model)
+
+Do **not** think:
+
+```text
+OpenAI = AI
+Internal = template / fallback
+```
+
+Think:
+
+```text
+CloudPilot Intelligence
+        ↓
+   choose provider
+   ┌──────┴──────┐
+Internal AI    OpenAI
+```
+
+Internal AI’s **current** implementation may be deterministic copy / parsing. That is an implementation detail. Tomorrow it can change without renaming the operation.
+
+Avoid **template** in architecture / new names unless you mean “today’s Internal AI implementation.” Prefer **Request Reply** / **operation result**.
+
+`shouldTryFriendlyReply()` belongs to the old worldview (“fancy AI vs template”). Its concept goes away — **REMOVE**, do not rename.
+
+Do **not** call the OpenAI `{ systemMessage, messages }` package `…Context()`.
+Do **not** use `Context` for unrelated helpers.
+Long literal names are fine (`getRegionSearchContext`). Do **not** stack leftover jargon (`buildChatSpeakProcessConversation`).
 Do **not** put Internal / OpenAI in Prepare Message Reply names. Those stay behind `CloudPilotIntelligence`.
 Do **not** make every folder match a Turn stage.
 
@@ -312,20 +403,55 @@ chat()
 ```
 
 ```text
-REQUEST REPLY
+REQUEST MESSAGE REPLY — target mental model
 
-getRequestReplyFacts()
+getRequestMessageReplyContext()
         ↓
-shouldTryFriendlyReply()
-        ↓ YES
-getFriendlyReplyContext()
+CloudPilot Intelligence
         ↓
-generateFriendlyReply()
-        ↓
-replyContainsRequiredFacts()
-        ↓
-Reply Message
+   choose provider
+   ┌──────┴──────┐
+Internal AI    OpenAI
+      ↓            ↓
+      SAME REQUEST MESSAGE REPLY
 ```
+
+```text
+REQUEST MESSAGE REPLY — today (honest gap; naming toward the target)
+
+getRequestMessageReply()          preferred ← today: buildRequestTemplateMessage()
+  (deterministic copy still built OUTSIDE the provider door)
+        ↓
+getRequestMessageReplyContext()   preferred ← today: getRequestReplyFacts()
+        ↓
+context null? → keep that Message Reply (never enter optional path)
+context set?  → generateRequestMessageReply(context)   preferred ← generateFriendlyReply()
+                   ↓
+              choose provider
+              ┌──────┴──────┐
+         Internal AI*    OpenAI
+         (*target: success + deterministic Message Reply; today still no-op)
+                              ↓
+              prepareFinalRequestMessageReplyForOpenAI()  preferred ← getFriendlyReplyContext()
+                              ↓
+                         send to OpenAI
+                              ↓
+              OpenAI Response
+                              ↓
+              openAIResponseContainsRequiredValues()  preferred ← replyContainsRequiredFacts()
+                              ↓
+              Request Message Reply (to user)
+
+REMOVED: shouldTryFriendlyReply()
+  Old worldview: “try fancy AI or keep template?”
+  Goes away with Internal AI | OpenAI as two providers of one operation.
+```
+
+`shouldTryFriendlyReply()` — **resolved: REMOVE, do not rename.** Even more clearly wrong under Internal AI | OpenAI. Only caller is `speakRequest` after non-null context; same question twice; concept from “template vs AI.”
+
+`openAIResponseContainsRequiredValues()` (today `replyContainsRequiredFacts()`): did the **OpenAI Response** still include required values? Fail → keep Internal result as the Reply.
+
+**Later (not this rename pass):** move deterministic Request Reply production *behind* Internal AI so the target diagram matches code. Until then, prefer names that don’t cement “template vs AI.”
 
 ```text
 GENERAL REPLY
@@ -337,31 +463,69 @@ generateGeneralReply()
 Reply Message
 ```
 
-`shouldTryFriendlyReply()` asks: should we bother asking Intelligence to make this reply friendlier? It is **not** “do facts exist?” and **not** “is OpenAI on?”
-
-`replyContainsRequiredFacts()` asks: did the generated wording still include required values (region, `1–4` modes, cost)? Fail → keep the template.
-
 `getFullMessageContext()` is the General-path context name in this diagram. `buildAIContext()` is not in the locked rename list.
 
 `speakKnown` / `speakGeneral` / `speakRequest` / `processMessage()` stay optional Step 5.
-Provider Internal / OpenAI functions stay **inside** Intelligence.
+Provider Internal AI / OpenAI functions stay **inside** Intelligence.
+
+### `generateFriendlyReply()` → `generateRequestMessageReply()` (locked)
+
+**Preferred name:** `generateRequestMessageReply()`
+
+One operation door for Request Message Reply. Matches Internal AI | OpenAI. Drops “Friendly.” Uses **messageReply** vocabulary.
+
+**Target (structural, when applying):** always return the Request Message Reply — Internal AI succeeds with deterministic text; OpenAI succeeds with reword (or falls back to Internal result). Not `success: false` + caller keeps a side copy.
+
+**Today:** still the optional OpenAI-reword / Internal-no-op door. Rename first; structure later if asked.
+
+### `presentRequestMessageInternal()` → `generateRequestMessageReplyInternal()` (locked)
+
+**Preferred name:** `generateRequestMessageReplyInternal()`
+
+Internal AI implementation of Request Message Reply. Same door family as `generateRequestMessageReply()`.
+
+```text
+generateRequestMessageReply()
+        ↓
+choose provider
+   ┌────┴────┐
+generateRequestMessageReplyInternal(context)
+generateRequestMessageReplyOpenAI(context)    preferred ← presentRequestMessageOpenAI()
+```
+
+**Contract (target):** Request Message Reply context IN → Message Reply result OUT (same as OpenAI).
+
+**Today:** still a no-op `{ success: false }`. Structural fix when applying code later.
+
+### `presentRequestMessageOpenAI()` → `generateRequestMessageReplyOpenAI()` (locked)
+
+**Preferred name:** `generateRequestMessageReplyOpenAI()`
+
+OpenAI provider for Request Message Reply — same naming family as Internal.
+
+**What it does:** prepare package → call OpenAI → validate Response → return Message Reply text or failure.
+
 
 **Related (done elsewhere):** Search TASK operations now use `get…SearchContext()` → same object → Internal | OpenAI — see [Intelligence Provider](../finished/feature_intelligence_provider.md). That work is finished and is **not** Step 5 of this feature.
 
 Today’s map:
 
 
-| Today | Job |
-|-------|-----|
-| `understandMessage`, region/action/question search | Understand Message |
-| `decideNextStep`, collect fields, execute | Handle Request |
-| `buildRequestTemplateMessage` | Prepare Message Reply — deterministic template |
-| `getRequestReplyFacts` | Get facts the Request Reply must preserve |
-| `getFriendlyReplyContext` | Get context for the friendly rewrite |
-| `generateFriendlyReply` | Generate optional friendlier Request Reply |
-| `generateGeneralReply` | Generate General Reply from scratch |
-| `speakKnown` / `speakGeneral` / `speakRequest` | Prepare Message Reply front doors (current names) |
-| `processMessage()` | the **Turn** |
+| Today | Preferred (Step 5) | Job |
+|-------|--------------------|-----|
+| `understandMessage`, region/action/question search | — | Understand Message |
+| `decideNextStep`, collect fields, execute | — | Handle Request |
+| `buildRequestTemplateMessage` | `getRequestMessageReply` | Deterministic Request Message Reply (today outside provider door) |
+| `getRequestReplyFacts` | `getRequestMessageReplyContext` | Operation context for Request Message Reply (Internal AI \| OpenAI) |
+| `shouldTryFriendlyReply` | **REMOVE** | Old “fancy AI vs template” gate; redundant; concept going away |
+| `getFriendlyReplyContext` | `prepareFinalRequestMessageReplyForOpenAI` | OpenAI-only adapter: package context → messages for OpenAI |
+| `generateFriendlyReply` | `generateRequestMessageReply` | One Request Message Reply operation door (Internal AI \| OpenAI) |
+| `presentRequestMessageInternal` | `generateRequestMessageReplyInternal` | Internal AI provider — context IN → Message Reply OUT |
+| `presentRequestMessageOpenAI` | `generateRequestMessageReplyOpenAI` | OpenAI provider — context IN → Message Reply OUT |
+| `replyContainsRequiredFacts` | `openAIResponseContainsRequiredValues` | Guard: did the OpenAI Response still include required values? |
+| `generateGeneralReply` | later: `generateGeneralMessageReply` | General Message Reply from scratch |
+| `speakKnown` / `speakGeneral` / `speakRequest` | later | Prepare Message Reply front doors |
+| `processMessage()` | later | the **Turn** |
 
 
 ---
@@ -494,7 +658,7 @@ Step 1 result: **SMALL–MEDIUM**
 - **Likely 2 file renames + several function renames**
 - **Two responsibility leaks found** (describe, do not fix in this feature unless a later step explicitly asks)
   1. `cloudPilotIntelligence/conversation/generateGeneralReply.js` performs org-knowledge search + DB resolve before generating the reply
-  2. `cloudPilot/chat/templates/requestTemplates.js` still contains `execution_requested` → `AtlasExecution.startNewAtlasExecution(payload)` inside a template builder
+  2. `cloudPilot/chat/templates/requestTemplates.js` still contains `execution_requested` → `AtlasExecution.startNewAtlasExecution(payload)` inside `buildRequestTemplateMessage()`
 
 
 
@@ -520,7 +684,7 @@ The **RENAME DIRECTION** column is **not approved**. Step 3 locked the six names
 **Responsibility leaks** (describe only, do not fix yet):
 
 1. `cloudPilotIntelligence/conversation/generateGeneralReply.js` does org-knowledge search + DB resolve. That is Process Message work inside Prepare Reply.
-2. `cloudPilot/chat/templates/requestTemplates.js` `buildRequestTemplateMessage()` still contains `execution_requested` → `AtlasExecution.startNewAtlasExecution(payload)`. That is execution/process behavior inside a template builder.
+2. `cloudPilot/chat/templates/requestTemplates.js` `buildRequestTemplateMessage()` still contains `execution_requested` → `AtlasExecution.startNewAtlasExecution(payload)`. That is execution/process behavior inside a reply-message builder.
 
 
 
@@ -563,11 +727,30 @@ Provider helpers `presentRequestMessageInternal` / `presentRequestMessageOpenAI`
 
 
 
-### Step 5 — Optional later
+### Step 5 — One-at-a-time reply-path names (lock in doc first)
+
+**Rule:** Lock names here one at a time. **Do not change code** until you explicitly say apply.
+
+- [x] Locked vocabulary: **Message** / **Response** / **Message Reply** (`messageReply` in code names)
+- [x] Locked: `buildRequestTemplateMessage()` → `getRequestMessageReply()` *(code not changed yet)*
+- [x] Locked: `getRequestReplyFacts()` → `getRequestMessageReplyContext()` *(code not changed yet)*
+- [x] Locked: `shouldTryFriendlyReply()` → **REMOVE** *(code not changed yet)*
+- [x] Locked: `getFriendlyReplyContext()` → `prepareFinalRequestMessageReplyForOpenAI()` *(code not changed yet)*
+- [x] Locked: `generateFriendlyReply()` → `generateRequestMessageReply()` *(code not changed yet)*
+- [x] Locked: `replyContainsRequiredFacts()` → `openAIResponseContainsRequiredValues()` *(code not changed yet)*
+- [x] Locked: `presentRequestMessageInternal()` → `generateRequestMessageReplyInternal()` *(code not changed yet)*
+- [x] Locked: `presentRequestMessageOpenAI()` → `generateRequestMessageReplyOpenAI()` *(code not changed yet)*
+- [ ] Optional: `speakRequest` packaging door
+- [ ] Later: `generateGeneralReply` → `generateGeneralMessageReply` (General Chat — not this pass)
+
+**Request Message Reply naming progress:** 8 locked (+ 1 remove). Path mostly done — optional `speakRequest` next, or stop and apply later.
+
+Still optional later (not started):
 
 - [ ] `speakGeneral` / `speakKnown` / `speakRequest` names
 - [ ] Whether `processMessage` should become `handleUserTurn` or similar
 - [ ] Think through `cloudPilot/questions/` (product Question vs thin folder) — no move until decided
+- [ ] Apply locked Step 5 renames to code (batch or one-by-one when asked)
 
 **Not Step 5:** Search same-context Internal | OpenAI — already finished in [Intelligence Provider](../finished/feature_intelligence_provider.md).  
 **Not Step 5:** Fixing the two responsibility leaks above — only if a later feature asks.
