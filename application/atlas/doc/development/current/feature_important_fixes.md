@@ -86,7 +86,7 @@ Not in this apply unless you ask separately:
 - `generateGeneralReply()` → `generateGeneralMessageReply()` (name OK; not on the locked apply list above)
 - `questions/` folder · responsibility leaks
 
-**Status:** Active (Step 5 naming ready — awaiting apply)  
+**Status:** Active (Step 5 naming + doc vocab cleanup done — awaiting apply)  
 **Codename:** `feature_important_fixes`  
 **Came from:** Chat after [Feature Chat](../finished/feature_chat.md) — vocabulary confusion and reply-path naming overload. Absorbs the former future spec [feature_code_reorganize](../future/feature_code_reorganize.md).  
 **Related:** [Intelligence Provider](../finished/feature_intelligence_provider.md) · [Intelligence Provider how-to](../how_to/intelligence_provider.md) · [Current Development](./current_development.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md) · [Useful Price](./feature_useful_price.md) · [Questions](../finished/feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
@@ -190,7 +190,7 @@ run deterministic logic
 
 ### Prepare Message Reply
 
-Take everything we now know and create the **one message we're going to send back**.
+Take everything we now know and create the **one Message Reply** (Prepare stage — packaging; Reply Message stage sends/stores).
 
 ```text
 internal result
@@ -204,30 +204,43 @@ Must **not** perform new searches or determine request state.
 
 ### Reply Message
 
-Send / store / return the final message.
+Send / store / return the **Message Reply** to the user.
 
 ### Context (utility, not a stage)
 
-Anytime a stage needs Intelligence, **get context** for that operation.
+Anytime a stage needs Intelligence, **get operation Context** for that operation — then pass it to Internal AI | OpenAI.
 
 ```text
-context.getSearchRegionContext()
-context.getFullMessageContext()
-context.getFriendlyReplyContext()
-context.getCreateEC2Context()
+Operation Context
+= what the operation knows / needs
+= get…Context()
+= object passed to Internal AI | OpenAI
+
+Provider adapter
+= translates operation Context into provider-specific input
+= NOT called Context
+  (example: prepareFinalRequestMessageReplyForOpenAI)
 ```
 
-Or whatever specific contexts actually exist.
-
-**Naming test:** If a function's job is assembling information to send to OpenAI / Intelligence, it belongs conceptually under `context`, and the caller should `get…Context()`.
-
-Prefer `get` **over** `build`. The caller does not care whether context is built, loaded, merged, or calculated:
-
-```js
-const context = getFullMessageContext(...)
+```text
+getRequestMessageReplyContext()
+getRegionSearchContext()
+getFullMessageContext()          (General — today still buildAIContext)
 ```
 
-There may be many Intelligence operations in one Turn. Each can `get` its own context. Long names are fine if they say what they get. Do not stack leftover jargon (`buildChatSpeakProcessConversation`).
+```text
+getRequestMessageReplyContext()
+        ↓
+RequestMessageReplyContext
+        ↓
+CloudPilotIntelligence
+   ┌─────────┴─────────┐
+Internal AI          OpenAI
+                       ↓
+prepareFinalRequestMessageReplyForOpenAI()
+```
+
+Prefer `get` **over** `build` for operation Context. Long names are fine. Do not stack leftover jargon (`buildChatSpeakProcessConversation`).
 
 Do **not** make every folder match a Turn stage.
 
@@ -267,18 +280,18 @@ These were **existing implementation words**. Step 4 renamed the reply-path ones
 | Word        | Means in current code                                                       | Stage today           | Status |
 | ----------- | --------------------------------------------------------------------------- | --------------------- | ------ |
 | **Request** | A job the user wants done (scan, create, missing region, confirm).          | Handle Request        | keep   |
-| **Speak**   | Package the outgoing reply (`speakGeneral` / `speakRequest` / `speakKnown`) | Prepare Message Reply | Step 5 optional |
+| **Speak**   | Was packaging door — now `prepare*MessageReply()`                         | Prepare Message Reply | **locked Step 5** |
 | **Chat**    | Was `chat()` — now `generateGeneralReply()`                                 | Prepare Message Reply | **renamed Step 4** |
 | **Present** | Was `presentRequestMessage()` — now `generateFriendlyReply()`               | Prepare Message Reply | **renamed Step 4** |
 | **Write**   | Fill sections of a system prompt. Does not talk to the user.                | Context utility       | keep   |
 
 
 ```text
-write                 →  text inside the OpenAI system prompt
-generateGeneralReply  →  OpenAI / Internal answers general conversation
-generateFriendlyReply →  OpenAI rephrases a request template (optional)
-speak*                →  package whatever we got and send it to the user
-request               →  the job, not the sentence
+write                          →  text inside the OpenAI system prompt
+generateGeneralMessageReply    →  Intelligence General Message Reply wording
+generateRequestMessageReply    →  Intelligence Request Message Reply wording
+prepare*MessageReply           →  package outgoing Message Reply (does NOT send)
+request                        →  the job, not the sentence
 ```
 
 ```text
@@ -287,16 +300,14 @@ USER MESSAGE
      ▼
 Is this a REQUEST (do something)?
      │
-     ├─ yes → process the request
-     │         then speakRequest
-     │              template
-     │              optional generateFriendlyReply
+     ├─ yes → Handle Request
+     │         then prepareRequestMessageReply()
+     │              getRequestMessageReply / generateRequestMessageReply
      │
      └─ no  → Question / scan result / execution outcome?
-               ├─ yes → speakKnown (already have the words)
-               └─ no  → speakGeneral → generateGeneralReply()
-                            writeIdentity / writeCurrentState / …
-                            then OpenAI answers
+               ├─ yes → prepareKnownMessageReply()
+               └─ no  → prepareGeneralMessageReply()
+                            → generateGeneralMessageReply()
 ```
 
 `speakFacts` felt wrong because it mixed **Request** (the job) with **Speak** (the reply). That payload is: *what we already know for this request reply.*
@@ -312,9 +323,10 @@ Is this a REQUEST (do something)?
 | ------------------------ | ------------------------------------ |
 | Understand Message       | `understand…`, `search…`, `extract…` |
 | Handle Request           | `scan…`, `create…`, `execute…`       |
-| Prepare Message Reply    | prepare the one reply to send        |
-| Reply Message            | return / store the final message     |
-| Operation Context        | `get…Context()` — what the operation knows / needs for Internal \| OpenAI |
+| Prepare Message Reply    | prepare the one Message Reply (does not send) |
+| Reply Message            | send / store / return the Message Reply |
+| Operation Context        | `get…Context()` — what the operation knows / needs for Internal AI \| OpenAI |
+| Provider adapter         | NOT `…Context()` — e.g. `prepareFinal…ForOpenAI()` |
 
 
 Prefer `get` **over** `build` for context assemblers.
@@ -329,7 +341,7 @@ Context
 OpenAI messages
 = provider-specific formatting of that context (adapter — not named Context)
 
-generate...Reply() → generates reply wording (provider-agnostic door)
+generate...MessageReply() → Intelligence produces Message Reply wording (provider-agnostic door)
 ```
 
 ### Internal AI vs OpenAI (mental model)
@@ -462,23 +474,23 @@ REMOVED: shouldTryFriendlyReply()
 
 `shouldTryFriendlyReply()` — **resolved: REMOVE, do not rename.** Even more clearly wrong under Internal AI | OpenAI. Only caller is `speakRequest` after non-null context; same question twice; concept from “template vs AI.”
 
-`openAIResponseContainsRequiredValues()` (today `replyContainsRequiredFacts()`): did the **OpenAI Response** still include required values? Fail → keep Internal result as the Reply.
+`openAIResponseContainsRequiredValues()` (today `replyContainsRequiredFacts()`): did the **OpenAI Response** still include required values? Fail → keep Internal result as the Message Reply.
 
-**Later (not this rename pass):** move deterministic Request Reply production *behind* Internal AI so the target diagram matches code. Until then, prefer names that don’t cement “template vs AI.”
+**Later (not this rename pass):** move deterministic Request Message Reply production *behind* Internal AI so the target diagram matches code. Until then, prefer names that don’t cement “template vs AI.”
 
 ```text
-GENERAL REPLY
+GENERAL MESSAGE REPLY
 
-getFullMessageContext()          today still: buildAIContext()
+getFullMessageContext()          today still: buildAIContext() — name TBD
         ↓
-generateGeneralReply()
+generateGeneralMessageReply()    preferred ← today: generateGeneralReply()
         ↓
-Reply Message
+Message Reply
 ```
 
-`getFullMessageContext()` is the General-path context name in this diagram. `buildAIContext()` is not in the locked rename list.
+`getFullMessageContext()` / `buildAIContext()` not fully renamed yet — leave unresolved until inspected.
 
-`speakKnown` / `speakGeneral` / `speakRequest` / `processMessage()` stay optional Step 5.
+`prepareGeneralMessageReply()` (today `speakGeneral`) packages that Message Reply — does not send.
 Provider Internal AI / OpenAI functions stay **inside** Intelligence.
 
 ### `generateFriendlyReply()` → `generateRequestMessageReply()` (locked)
@@ -676,6 +688,8 @@ Step 1 result: **SMALL–MEDIUM**
 
 
 #### Step 1 findings (inspection only — layer names below used the older model)
+
+> **Historical table** — uses older bare “Reply” / Prepare Reply wording. Current/target vocabulary is **Message Reply**. Do not treat this table as the locked naming map.
 
 The **RENAME DIRECTION** column is **not approved**. Step 3 locked the six names; **Step 4 applied them**. Rows below keep the **pre-Step-4** names for history.
 
