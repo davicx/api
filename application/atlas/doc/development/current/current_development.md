@@ -1,6 +1,6 @@
 # Current Development — What We Are Working On
 
-**Last updated:** 2026-08-14  
+**Last updated:** 2026-08-16  
 
 This is the active-work dashboard. It contains only features we are working on now.
 
@@ -30,7 +30,8 @@ This is the active-work dashboard. It contains only features we are working on n
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
-| [Important Fixes](./feature_important_fixes.md) | Clear Turn / Message / Reply vocabulary; inspect confusing reply names before renaming. | **Step 2 done** — awaiting review before Step 3 renames |
+| [Intelligence Provider](./feature_intelligence_provider.md) | One CloudPilot operation; Internal and OpenAI are interchangeable implementations. Prove with Region Search first. | Plan locked — **awaiting Step 1** |
+| [Important Fixes](./feature_important_fixes.md) | Clear Turn stages; lock getFacts / getContext / generateReply names. | **Frozen** — resume Step 4 after Intelligence Provider |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
 
 ## Just finished

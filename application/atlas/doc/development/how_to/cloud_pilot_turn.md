@@ -1,7 +1,7 @@
-# CloudPilot Turn — Message, Process, Reply
+# CloudPilot Turn — User Message to Reply Message
 
 **Status:** Development guide  
-**Use when:** Reading or changing CloudPilot messaging code and you need to know which layer you are in.
+**Use when:** Reading or changing CloudPilot messaging code and you need to know which stage you are in.
 
 **Related:** [Important Fixes](../current/feature_important_fixes.md) · [CloudPilot Context](./cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md)
 
@@ -9,14 +9,21 @@
 
 ## One-sentence rule
 
-> **One Turn is one user Message in, one CloudPilot Reply out.**
+> **One Turn is one User Message in, one Reply Message out.**
 
 ```text
-ONE TURN
-= Message → Process Message → Prepare Reply → Reply
+USER MESSAGE
+    ↓
+UNDERSTAND MESSAGE
+    ↓
+HANDLE REQUEST
+    ↓
+PREPARE MESSAGE REPLY
+    ↓
+REPLY MESSAGE
 ```
 
-`processMessage()` in `cloudPilot/chat/cloudPilotMessageFunctions.js` is the **whole Turn**, not only the Process Message half.
+`processMessage()` in `cloudPilot/chat/cloudPilotMessageFunctions.js` is the **whole Turn**, not one of those stages.
 
 ---
 
@@ -24,92 +31,81 @@ ONE TURN
 
 | Term | Meaning |
 |------|---------|
-| **Message** | One incoming user message. |
-| **Process Message** | Understand, search/gather, decide, execute. |
-| **Search** | Retrieve information needed to process the message. Part of Process Message. |
-| **Message Context** | Information assembled for one Intelligence operation. Not a Turn stage. |
-| **Prepare Reply** | Build the one final response the user will receive. |
-| **Reply** | The final message returned to the user. |
-| **Conversation** | History/container of Message ↔ Reply turns. **Not** a processing stage. |
-| **CloudPilotIntelligence** | The brain. GenAI front door. Internal / OpenAI / future provider stay inside it. |
-| **CloudPilotMessage** | The voice. Prepares the one user-facing Reply. |
-| **Request** | A job the user wants done. Not a speaking verb. |
+| **User Message** | One incoming message from the user. |
+| **Understand Message** | Figure out what the user means. |
+| **Handle Request** | Do the CloudPilot work. Skip if there is no request. |
+| **Prepare Message Reply** | Create the one message to send back. |
+| **Reply Message** | Send / store / return that final message. |
+| **Context** | Shared utility: `get…Context()` for one Intelligence / OpenAI call. **Not a stage.** |
+| **Request** | A job the user wants done (`create_ec2`, `scan_ec2`). |
+| **Conversation** | History of User Message ↔ Reply Message turns. **Not a stage.** |
+| **Turn** | The whole flow. |
 
 Keep these two words sacred:
 
 ```text
-Message = one thing the user sent CloudPilot
-Reply   = one thing CloudPilot sends the user
+User Message  = one thing the user sent CloudPilot
+Reply Message = one thing CloudPilot sends the user
 ```
-
-Calls into Intelligence are **not** more user Messages. They are Intelligence operations that receive Message Context.
 
 ---
 
-## Who does what
+## Context is not a stage
 
-```text
-Prepare  → CloudPilotMessage (voice) gets the final Reply ready
-Generate → CloudPilotIntelligence (brain) generates wording
-Build    → construct data/text deterministically
+Anytime a stage needs Intelligence:
+
+```js
+const context = getFullMessageContext(...)
+const context = getSearchRegionContext(...)
+const context = getFriendlyReplyContext(...)
 ```
 
-From Prepare Reply, ask the brain. Do not choose Internal vs OpenAI by name:
+Prefer **`get` over `build`**. If a function assembles information for OpenAI, it belongs conceptually under `context`.
 
-```text
-CloudPilotMessage.prepareRequestReply()
-        ↓
-CloudPilotIntelligence.generateFriendlyRequestReply()
-
-CloudPilotMessage.prepareGeneralReply()
-        ↓
-CloudPilotIntelligence.generateGeneralReply()
-```
-
-Those `prepare` / `generate` names are the **direction**. Current code still says `speakRequest`, `speakGeneral`, `presentRequestMessage`, `chat()`. Do not rename until a later step is asked for.
+Folders do not have to match stages. `context/`, `search/`, `requests/` can live underneath the Turn.
 
 ---
 
 ## Diagnostic
 
-When lost in the tree, ask:
-
 ```text
-Is this understanding, searching, deciding, or doing?
-  → Process Message
+Figuring out what the user means?
+  → Understand Message
 
-Is this assembling input for one Intelligence call?
-  → Message Context
+Doing CloudPilot work (scan, create, lookup)?
+  → Handle Request
 
-Is this getting the words the user will see?
-  → Prepare Reply
+Assembling information for OpenAI / Intelligence?
+  → Context (get … Context)
 
-Is this history of previous turns?
-  → Conversation
+Creating the one message to send back?
+  → Prepare Message Reply
+
+Sending / storing / returning it?
+  → Reply Message
 ```
 
 ---
 
-## Current code map (names not changed yet)
+## Current code still uses old words
 
-| Today | Layer |
+`speak`, `chat`, `present`, `write`, `known` are implementation names, not the mental model.
+Do not rename from this guide.
+
+| Today | Stage |
 |-------|--------|
 | `processMessage()` | **Turn** |
-| `understandMessage`, region/action/question search | Process Message |
-| `decideNextStep`, collect fields, execute | Process Message |
-| `buildRequestSpeakFacts()` | Prepare Reply helper — known request info, **not** Message Context |
-| `buildRequestPresentationMessages()` | Message Context for friendly request wording |
-| `speakRequest` / `speakGeneral` / `speakKnown` | Prepare Reply (voice) |
-| `chat()` / `presentRequestMessage()` | Intelligence generate entries |
-| `presentRequestMessageOpenAI()` / `presentRequestMessageInternal()` | Provider details **inside** Intelligence. Not architectural names. |
-
-Legacy words still in code: `speak`, `chat`, `present`, `write`, `known`. Treat them as current implementation names, not the mental model.
+| `understandMessage`, region/action/question search | Understand Message |
+| `decideNextStep`, collect fields, execute | Handle Request |
+| `speakRequest` / `speakGeneral` / `speakKnown` | Prepare Message Reply |
+| `buildRequestSpeakFacts` / `buildRequestPresentationMessages` | Maybe Context — inspect before naming |
+| `chat()` / `presentRequestMessage()` | Intelligence entries |
 
 ---
 
 ## Do not
 
 - Rename functions or move folders from this guide
+- Treat Context or Conversation as Turn stages
 - Call OpenAI directly from the mental model; go through CloudPilotIntelligence
-- Treat Conversation as a processing stage
 - Invent AWS / request facts in General Chat — see [CloudPilot Context](./cloud_pilot_context.md)
