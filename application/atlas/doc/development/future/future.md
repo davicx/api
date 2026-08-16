@@ -4,7 +4,7 @@
 
 > **Active plans:** [scans.md](./scans.md) · [billing.md](./billing.md) · [history.md](../finished/history.md) · **Shipped:** [finished.md](../finished/finished.md) · **Platform:** [To_do.md](./to_do.md)  
 > **Chat backlog:** [feature_chat_guardrails.md](./feature_chat_guardrails.md) (after [feature_chat](../finished/feature_chat.md))  
-> **Naming / folders (now current):** [feature_important_fixes.md](../current/feature_important_fixes.md)  
+> **Naming / folders (finished):** [feature_important_fixes.md](../finished/feature_important_fixes.md) · leftovers: [feature_message_reply_followups.md](./feature_message_reply_followups.md)  
 > **PR demo (deferred):** [feature_github_pull_requests.md](./feature_github_pull_requests.md)  
 > **S3 remediations (later):** [feature_s3_remediation_modes.md](./feature_s3_remediation_modes.md)
 

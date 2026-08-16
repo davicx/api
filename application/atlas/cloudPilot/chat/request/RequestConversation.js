@@ -37,7 +37,7 @@ async function conversation(decision, context) {
             });
         }
 
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: Boolean(executionOutcome.success),
             cloudPilotMessage: cloudPilotMessage,
             chatType: decision.chatType,
@@ -53,7 +53,7 @@ async function conversation(decision, context) {
     const requestSeedErrorMessage = buildRequestSeedErrorMessage(requestOutcome);
 
     if (requestSeedErrorMessage) {
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: false,
             cloudPilotMessage: requestSeedErrorMessage,
             chatType: decision.chatType,
@@ -65,7 +65,7 @@ async function conversation(decision, context) {
     if (responseType === RESPONSE_TYPE.LIST_HISTORY) {
         const historyResponse = await HistoryFunctions.buildHistoryResponse(context.conversationID);
 
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: historyResponse.success,
             cloudPilotMessage: historyResponse.cloudPilotMessage,
             chatType: decision.chatType,
@@ -79,7 +79,7 @@ async function conversation(decision, context) {
             requestState
         );
 
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: openRequestsResponse.success,
             cloudPilotMessage: openRequestsResponse.cloudPilotMessage,
             chatType: decision.chatType,
@@ -93,7 +93,7 @@ async function conversation(decision, context) {
         const region = String(collected.region || '').trim() || 'that region';
         const instanceId = String(collected.instance_id || '').trim() || 'that instance';
 
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: true,
             cloudPilotMessage:
                 'I couldn\'t find EC2 instance ' + instanceId + ' in ' + region + '.\n\n' +
@@ -107,7 +107,7 @@ async function conversation(decision, context) {
     }
 
     if (responseType === RESPONSE_TYPE.RESOURCE_SCAN_DECLINED) {
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: true,
             cloudPilotMessage: 'Okay — I will not scan EC2 for that request.',
             chatType: decision.chatType,
@@ -124,7 +124,7 @@ async function conversation(decision, context) {
             (verification && verification.message) ||
             'Could not verify that EC2 instance with Atlas.';
 
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: false,
             cloudPilotMessage: errorMessage,
             chatType: decision.chatType,
@@ -142,7 +142,7 @@ async function conversation(decision, context) {
     );
 
     if (changeStrategyResponse) {
-        return CloudPilotMessage.speakKnown(changeStrategyResponse);
+        return CloudPilotMessage.prepareKnownMessageReply(changeStrategyResponse);
     }
 
     const actionEvent = mapResponseTypeToActionEvent(responseType, requestOutcome);
@@ -150,7 +150,7 @@ async function conversation(decision, context) {
     const actionDefinition = actionMap[activeRequestAction] || null;
 
     if (!actionDefinition) {
-        return CloudPilotMessage.speakKnown({
+        return CloudPilotMessage.prepareKnownMessageReply({
             success: false,
             cloudPilotMessage: '',
             chatType: decision.chatType,
@@ -167,7 +167,7 @@ async function conversation(decision, context) {
         requestState: requestState
     });
 
-    return CloudPilotMessage.speakRequest(chatPayload, decision.chatType);
+    return CloudPilotMessage.prepareRequestMessageReply(chatPayload, decision.chatType);
 }
 
 //Function B1: TEMPORARY — map decision.response.type to template actionEvent

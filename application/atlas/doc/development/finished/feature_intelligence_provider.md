@@ -14,13 +14,13 @@ Not a giant provider framework. Not friendly reply. Not the Important Fixes rena
 
 ## Next
 
-[Important Fixes](../current/feature_important_fixes.md) Step 4 rename is already applied. Optional Step 5 later.  
-Do **not** expand this pattern to Friendly Reply / General Chat unless a new feature asks.
+[Important Fixes](./feature_important_fixes.md) is finished. Leftovers: [Message Reply Follow-ups](../future/feature_message_reply_followups.md).  
+Do **not** expand this pattern to Request Message Reply / General Chat unless a new feature asks.
 
 **Status:** Finished — 2026-08-16 (Search family follow-through)  
 **Codename:** `feature_intelligence_provider`  
-**Came from:** Mid-[Important Fixes](../current/feature_important_fixes.md) — naming felt stuck because Internal vs OpenAI looked like two flows.  
-**Related:** [How-to](../how_to/intelligence_provider.md) · [Important Fixes](../current/feature_important_fixes.md) · [Intelligence front door](./feature_intelligence_front_door.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md)
+**Came from:** Mid-[Important Fixes](./feature_important_fixes.md) — naming felt stuck because Internal vs OpenAI looked like two flows.  
+**Related:** [How-to](../how_to/intelligence_provider.md) · [Important Fixes](./feature_important_fixes.md) · [Message Reply Follow-ups](../future/feature_message_reply_followups.md) · [Intelligence front door](./feature_intelligence_front_door.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md)
 
 ---
 
@@ -238,7 +238,7 @@ It is the cleanest place to prove the principle without touching friendly reply,
 - Generic `OperationContext` / `OperationResult` types
 - Renaming every Intelligence capability at once
 - Creating `getRegionSearchContext.js` just because the plan drew it
-- Resuming [Important Fixes](../current/feature_important_fixes.md) Step 4
+- Resuming [Important Fixes](./feature_important_fixes.md) Step 4
 - Live OpenAI smokes just to prove structure (OpenAI off / preview-only when verifying)
 
 ---

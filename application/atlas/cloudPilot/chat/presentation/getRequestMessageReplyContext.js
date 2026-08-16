@@ -1,8 +1,8 @@
 const FieldPromptExamples = require('../templates/fieldPromptExamples');
 
 /*
-FUNCTIONS A: Request reply facts (CloudPilot owns truth)
-    1) Function A1: getRequestReplyFacts
+FUNCTIONS A: Request Message Reply context (CloudPilot owns truth)
+    1) Function A1: getRequestMessageReplyContext
 
 HELPERS
     1) Helper H1: isRequestPresentationEvent
@@ -14,7 +14,7 @@ HELPERS
 
 Phase 1: missing-field asks + optional request name.
 Phase 2: field acknowledgement, execution-mode tone, confirmation polish.
-OpenAI may only rephrase these facts — never invent fields or values.
+OpenAI may only rephrase these values — never invent fields or values.
 Mode option labels stay CloudPilot-owned (1–4 must not be rewritten).
 */
 
@@ -121,9 +121,9 @@ function buildConfirmOrCancelLine(actionType) {
     return 'Confirm to run now, or cancel.';
 }
 
-//FUNCTIONS A: Request reply facts
-//Function A1: Known facts the Request Reply must preserve
-function getRequestReplyFacts(payload, templateMessage) {
+//FUNCTIONS A: Request Message Reply context
+//Function A1: Operation context for Request Message Reply (Internal AI | OpenAI)
+function getRequestMessageReplyContext(payload, templateMessage) {
     const requestPayload = payload || {};
     const actionEvent = String(requestPayload.actionEvent || '');
     const actionDefinition = requestPayload.actionDefinition || {};
@@ -215,7 +215,7 @@ function getRequestReplyFacts(payload, templateMessage) {
 }
 
 module.exports = {
-    getRequestReplyFacts,
+    getRequestMessageReplyContext,
     isRequestPresentationEvent,
     isPhase1PresentationEvent
 };

@@ -33,14 +33,45 @@ Fell through to general chat → OpenAI invented AWS-console advice.
 ## Locked classification
 
 ```text
-Action       → “Do something”
-Value        → “What information did the user provide?”
-Question     → “What known information is the user requesting?”
-Conversation → “Talk with me”
-Reply        → “Confirm / cancel / select”
+UNDERSTANDING — LOCKED
+
+Action
+→ I want CloudPilot to DO something.
+
+Value
+→ I'm TELLING CloudPilot something.
+
+Question
+→ I want CloudPilot to TELL ME something it knows or can retrieve.
+
+Conversation
+→ I want to TALK.
 ```
 
-Open Requests and AI Spend are **Questions**, not Values and not Actions.
+Also in understanding output (not one of the four primary concepts above): **Reply** → confirm / cancel / select.
+
+Open Requests, AI Spend, inventory asks, and org-knowledge asks are **Questions**, not Values and not Actions.
+
+### Question types
+
+Organizational Knowledge Questions are a **type of Question**, not a replacement for Question.
+
+```text
+Question
+├── Organizational Knowledge Question
+│   → "Which S3 bucket stores user uploads?"
+│
+├── CloudPilot State Question
+│   → "What open requests do I have?"
+│
+├── AWS State Question
+│   → "What EC2 instances do I have?"
+│
+└── Usage Question
+    → "How much have I spent on AI?"
+```
+
+Product pillar for Question fulfillment: **keep** `cloudPilot/questions/` (see that folder’s README).
 
 ---
 
@@ -59,7 +90,7 @@ question = open_requests
 decideNextStep → LIST_OPEN_REQUESTS   # never GENERAL_CHAT
       │
       ▼
-questions/openRequests.js → speakKnown()   # Internal facts
+questions/openRequests.js → prepareKnownMessageReply()   # Internal facts
 ```
 
 ```dotenv
@@ -75,7 +106,7 @@ Intelligence  →  “Are they asking about open requests?”
 CloudPilot    →  “Load open requests and answer.”
 ```
 
-Even with `CLOUDPILOT_MESSAGE_RESPONSE=openai`, Question answers stay on `speakKnown` / handlers — never `CloudPilotIntelligence.chat()`.
+Even with `CLOUDPILOT_MESSAGE_RESPONSE=openai`, Question answers stay on `prepareKnownMessageReply` / handlers — never `generateGeneralMessageReply()`.
 
 ---
 

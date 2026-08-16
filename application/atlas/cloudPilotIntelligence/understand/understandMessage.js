@@ -9,12 +9,35 @@ const SearchLogs = require('./search/helpers/searchLogs');
 What this file answers:
 
 * What does the user want?
-* What action was detected?
-* What values, reply, conversation, or question signals were found?
+* What action, values, reply, conversation, or question signals were found?
 
 Outputs: action, values, reply, conversation, question, ambiguous, candidates
 
 This is the WHAT layer (STEP 3).
+
+UNDERSTANDING — LOCKED
+
+    Action
+    → I want CloudPilot to DO something.
+
+    Value
+    → I'm TELLING CloudPilot something.
+
+    Question
+    → I want CloudPilot to TELL ME something it knows or can retrieve.
+
+    Conversation
+    → I want to TALK.
+
+Understanding Conversation ≠ Turn Conversation (message history).
+
+Question subtypes (Organizational Knowledge is a type of Question — not a rename of Question):
+
+    Organizational Knowledge Question  — "Which S3 bucket stores user uploads?"
+    CloudPilot State Question          — "What open requests do I have?"
+    AWS State Question                 — "What EC2 instances do I have?"
+    Usage Question                     — "How much have I spent on AI?"
+
 Actions: actionMap via searchMessageForAction (scan_ec2, toggle_ec2, …).
 Values: searchMessageForValues (region, ids, name, …).
 Questions: searchMessageForQuestion (open_requests, ai_spend, ec2_inventory, s3_inventory, …).

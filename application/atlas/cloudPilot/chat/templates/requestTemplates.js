@@ -7,11 +7,11 @@ const {
 } = require('./fieldPromptExamples');
 
 /*
-Request template copy — deterministic workflow UX (missing fields, modes, confirmation, status).
-Called by CloudPilotMessage for Request Conversation speak.
+Request Message Reply — deterministic workflow UX (missing fields, modes, confirmation, status).
+Called by CloudPilotMessage for Request Conversation.
 */
 
-async function buildRequestTemplateMessage(payload) {
+async function getRequestMessageReply(payload) {
     console.log(' ');
     console.log('CLOUD_PILOT MESSAGE — request templates');
     console.log(JSON.stringify(payload, null, 2));
@@ -371,5 +371,5 @@ async function buildCreateEc2EstimatedCostSpeak(collectedFields) {
 }
 
 module.exports = {
-    buildRequestTemplateMessage
+    getRequestMessageReply
 };

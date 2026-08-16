@@ -218,7 +218,7 @@ CLOUDPILOT_AI_SPEND_SEARCH
 Internal   OpenAI     # classify only
         │
         ▼
-CloudPilot            # load ai_usage summary → speakKnown
+CloudPilot            # load ai_usage summary → prepareKnownMessageReply
 ```
 
 See [AI Spending](../finished/feature_ai_spending.md).

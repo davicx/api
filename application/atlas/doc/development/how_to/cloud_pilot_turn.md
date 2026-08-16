@@ -3,7 +3,7 @@
 **Status:** Development guide  
 **Use when:** Reading or changing CloudPilot messaging code and you need to know which stage you are in.
 
-**Related:** [Important Fixes](../current/feature_important_fixes.md) · [CloudPilot Context](./cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md)
+**Related:** [Important Fixes](../finished/feature_important_fixes.md) · [CloudPilot Context](./cloud_pilot_context.md) · [Intelligence front door](../finished/feature_intelligence_front_door.md)
 
 ---
 
@@ -50,6 +50,49 @@ Reply Message = one thing CloudPilot sends the user
 
 ---
 
+## Understanding vocabulary — LOCKED
+
+Used by `understandMessage` (what the user wants this turn). Separate from Turn stages above.
+
+```text
+Action
+→ I want CloudPilot to DO something.
+
+Value
+→ I'm TELLING CloudPilot something.
+
+Question
+→ I want CloudPilot to TELL ME something it knows or can retrieve.
+
+Conversation
+→ I want to TALK.
+```
+
+**Understanding Conversation** (“I want to talk”) is **not** Turn **Conversation** (message history).
+
+### Question types
+
+Organizational Knowledge Questions are a **type of Question**, not a replacement name for Question.
+
+```text
+Question
+├── Organizational Knowledge Question
+│   → "Which S3 bucket stores user uploads?"
+│
+├── CloudPilot State Question
+│   → "What open requests do I have?"
+│
+├── AWS State Question
+│   → "What EC2 instances do I have?"
+│
+└── Usage Question
+    → "How much have I spent on AI?"
+```
+
+Fulfillment home: keep `cloudPilot/questions/` as the product pillar (see that folder’s README). Classification stays in Intelligence `understand/search/questions/`.
+
+---
+
 ## Context is not a stage
 
 Anytime a stage needs Intelligence:
@@ -57,7 +100,7 @@ Anytime a stage needs Intelligence:
 ```js
 const context = getFullMessageContext(...)
 const context = getSearchRegionContext(...)
-const context = getFriendlyReplyContext(...)
+const context = getRequestMessageReplyContext(...)
 ```
 
 Prefer **`get` over `build`**. If a function assembles information for OpenAI, it belongs conceptually under `context`.
@@ -89,18 +132,16 @@ Sending / storing / returning it?
 
 ## Current code map
 
-`speak*` and `processMessage` are still older Prepare / Turn names (optional later rename).
-
 | Today | Stage / role |
 |-------|--------|
 | `processMessage()` | **Turn** |
 | `understandMessage`, region/action/question search | Understand Message |
 | `decideNextStep`, collect fields, execute | Handle Request |
-| `speakRequest` / `speakGeneral` / `speakKnown` | Prepare Message Reply front doors |
-| `getRequestReplyFacts()` | Known facts for Request Reply |
-| `getFriendlyReplyContext()` | Context for friendly rewrite |
-| `generateFriendlyReply()` / `generateGeneralReply()` | Intelligence reply generators |
-| `shouldTryFriendlyReply()` / `replyContainsRequiredFacts()` | Friendly-reply gate + fact guard |
+| `prepareRequestMessageReply` / `prepareGeneralMessageReply` / `prepareKnownMessageReply` | Prepare Message Reply front doors |
+| `getRequestMessageReply()` | Deterministic Request Message Reply (templates) |
+| `getRequestMessageReplyContext()` | Context / known values for Request Message Reply |
+| `generateRequestMessageReply()` / `generateGeneralMessageReply()` | Intelligence wording generators |
+| `prepareFinalRequestMessageReplyForOpenAI()` / `openAIResponseContainsRequiredValues()` | OpenAI adapter + Response value guard |
 
 ---
 

@@ -8,6 +8,7 @@
 
 ## Recently finished (2026-08-16)
 
+- [x] **Important Fixes** — Turn vocabulary; Message / Response / Message Reply; prepare* / generate* naming — [feature_important_fixes.md](./feature_important_fixes.md) · leftovers: [Message Reply Follow-ups](../future/feature_message_reply_followups.md)
 - [x] **Intelligence Provider** — Region Search: one operation context → Internal | OpenAI → same result; no provider framework — [feature_intelligence_provider.md](./feature_intelligence_provider.md) · [how-to](../how_to/intelligence_provider.md)
 
 ## Recently finished (2026-08-14)

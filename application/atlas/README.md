@@ -71,7 +71,7 @@ cloudPilot/
 | `cloudPilot/history/` | History persistence, undo, and navigator shaping |
 | `cloudPilot/knowledge/` | Product-owned organizational knowledge helpers |
 | `cloudPilot/pricing/` | Pricing estimation and pricing-domain helpers |
-| `cloudPilot/questions/` | Grounded question fulfillment that must not go through general chat |
+| `cloudPilot/questions/` | Question fulfillment pillar (Understanding Question types; see `questions/README.md`) |
 | `cloudPilot/requests/` | Request loading, naming, state transitions, workflow, `decideNextStep` |
 | `cloudPilot/scans/` | Read-only handlers for EC2, S3, billing, inventory, AI usage |
 
@@ -80,12 +80,12 @@ cloudPilot/
 | File | Role |
 |------|------|
 | `cloudPilot/chat/cloudPilotMessageFunctions.js` | Runs the message pipeline |
-| `cloudPilot/chat/CloudPilotMessage.js` | Final speaking layer |
-| `cloudPilot/chat/presentation/getRequestReplyFacts.js` | Known facts the Request Reply must preserve |
+| `cloudPilot/chat/CloudPilotMessage.js` | Prepare Message Reply front doors (`prepare*MessageReply`) |
+| `cloudPilot/chat/presentation/getRequestMessageReplyContext.js` | Context / known values for Request Message Reply |
 | `cloudPilot/requests/decideNextStep.js` | Routes understanding into request / question / chat decisions |
 | `cloudPilot/requests/workflow.js` | Store + execute request workflow bridge |
 | `cloudPilot/execution/functions/executionFunctions.js` | Executes handlers and finishes request state |
-| `cloudPilot/questions/openRequests.js` | Grounded open-requests response |
+| `cloudPilot/questions/openRequests.js` | CloudPilot State Question Message Reply (`buildOpenRequestsResponse`) |
 | `cloudPilot/actions/createEC2/createEC2Context.js` | Product knowledge for the friendly create-EC2 flow |
 | `cloudPilot/actions/createEC2/createEC2Guidance.js` | Stage-by-stage guidance for the friendly create-EC2 flow |
 | `cloudPilot/pricing/estimatePricing.js` | Pricing estimate entry point for CloudPilot flows |
@@ -149,8 +149,8 @@ cloudPilotIntelligence/context/
 | `cloudPilotIntelligence/context/contextTypes/cloudPilotSituationContext.js` | Search / task situation blocks |
 | `cloudPilotIntelligence/context/contextTypes/currentQuestionContext.js` | Current user-message context |
 | `cloudPilotIntelligence/context/contextTypes/organizationKnowledgeContext.js` | Optional product / org knowledge |
-| `cloudPilotIntelligence/conversation/generateFriendlyReply.js` | Optional friendlier Request Reply wording (templates stay fallback) |
-| `cloudPilotIntelligence/conversation/generateGeneralReply.js` | General Reply from Intelligence context |
+| `cloudPilotIntelligence/conversation/generateRequestMessageReply.js` | Request Message Reply wording (Internal AI \| OpenAI; templates stay fallback) |
+| `cloudPilotIntelligence/conversation/generateGeneralMessageReply.js` | General Message Reply from Intelligence context |
 
 ## `providers/`
 

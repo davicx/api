@@ -9,7 +9,7 @@ Receives processMessageContext (currentUserMessage, selectedFinding, …).
 
 //Function A1: General Conversation entry
 async function conversation(processMessageContext) {
-    return CloudPilotMessage.speakGeneral(processMessageContext);
+    return CloudPilotMessage.prepareGeneralMessageReply(processMessageContext);
 }
 
 //Function B1: True when STEP 4 routed to General Conversation

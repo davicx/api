@@ -1,22 +1,21 @@
 const { CHAT_TYPE } = require('../requests/decisionTypes');
 const RequestTemplates = require('./templates/requestTemplates');
-const GetRequestReplyFactsFunctions = require('./presentation/getRequestReplyFacts');
+const GetRequestMessageReplyContextFunctions = require('./presentation/getRequestMessageReplyContext');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 
 /*
-CloudPilotMessage — the product's voice.
+CloudPilotMessage — prepare outgoing Message Reply (does NOT send).
 
-Select speaking strategy and package the outgoing chat message.
-GenAI thinking goes through CloudPilotIntelligence.generateGeneralReply().
-Friendly Request Reply wording goes through
-CloudPilotIntelligence.generateFriendlyReply() — templates always build first.
+prepare* packages the Message Reply for the user.
+GenAI wording goes through CloudPilotIntelligence.generateGeneralMessageReply()
+and generateRequestMessageReply().
 */
 
-//Function A1: General Conversation speak — voice wrapper around Intelligence generateGeneralReply()
+//Function A1: Prepare General Message Reply — package Intelligence general wording
 // Questions (open_requests, ai_spend, …) must never call this.
 // CLOUDPILOT_MESSAGE_RESPONSE=openai applies to general chat and request presentation — not Question facts.
-async function speakGeneral(processMessageContext) {
-    const chatResult = await CloudPilotIntelligence.generateGeneralReply(processMessageContext);
+async function prepareGeneralMessageReply(processMessageContext) {
+    const chatResult = await CloudPilotIntelligence.generateGeneralMessageReply(processMessageContext);
 
     if (!chatResult.success) {
         return formatOutgoing({
@@ -37,19 +36,22 @@ async function speakGeneral(processMessageContext) {
     });
 }
 
-//Function A2: Request Conversation speak — templates first; optional friendly rewrite
-async function speakRequest(payload, chatType) {
-    const templateResult = await RequestTemplates.buildRequestTemplateMessage(payload);
+//Function A2: Prepare Request Message Reply — deterministic first; optional Intelligence wording
+async function prepareRequestMessageReply(payload, chatType) {
+    const templateResult = await RequestTemplates.getRequestMessageReply(payload);
     const templateMessage = templateResult.cloudPilotMessage || templateResult.message || '';
     let cloudPilotMessage = templateMessage;
 
-    const requestReplyFacts = GetRequestReplyFactsFunctions.getRequestReplyFacts(
-        payload,
-        templateMessage
-    );
+    const requestMessageReplyContext =
+        GetRequestMessageReplyContextFunctions.getRequestMessageReplyContext(
+            payload,
+            templateMessage
+        );
 
-    if (requestReplyFacts) {
-        const presented = await CloudPilotIntelligence.generateFriendlyReply(requestReplyFacts);
+    if (requestMessageReplyContext) {
+        const presented = await CloudPilotIntelligence.generateRequestMessageReply(
+            requestMessageReplyContext
+        );
 
         if (presented && presented.success && presented.message) {
             cloudPilotMessage = presented.message;
@@ -65,12 +67,12 @@ async function speakRequest(payload, chatType) {
     });
 }
 
-//Function A3: Known message — passthrough, execution outcome, change strategy
-function speakKnown(outcome) {
+//Function A3: Prepare Known Message Reply — words already known; package only
+function prepareKnownMessageReply(outcome) {
     return formatOutgoing(outcome);
 }
 
-//Function B1: Normalize outgoing speak shape
+//Function B1: Normalize outgoing Message Reply shape
 function formatOutgoing(outcome) {
     return {
         success: Boolean(outcome.success),
@@ -82,8 +84,8 @@ function formatOutgoing(outcome) {
 }
 
 module.exports = {
-    speakGeneral,
-    speakRequest,
-    speakKnown,
+    prepareGeneralMessageReply,
+    prepareRequestMessageReply,
+    prepareKnownMessageReply,
     formatOutgoing
 };

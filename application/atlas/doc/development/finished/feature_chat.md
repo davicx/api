@@ -12,11 +12,11 @@ CloudPilot still decides what’s missing and which values to suggest. OpenAI on
 
 ## Next
 
-_(none — archived)_ Naming / folder cleanup: [Important Fixes](../current/feature_important_fixes.md). Off-topic chat later: [feature_chat_guardrails](../future/feature_chat_guardrails.md).
+_(none — archived)_ Naming / folder cleanup: [Important Fixes](./feature_important_fixes.md). Message Reply leftovers: [feature_message_reply_followups](../future/feature_message_reply_followups.md). Off-topic chat later: [feature_chat_guardrails](../future/feature_chat_guardrails.md).
 
 **Status:** Finished  
 **Codename:** `feature_chat`  
-**Related:** [Current Development](../current/current_development.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [Chat Message UI](./feature_chat_message_ui.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [AI Control Plane](./cloud_pilot_ai_control_plane.md) · **Later:** [Off-topic chat guardrails](../future/feature_chat_guardrails.md) · [Important Fixes](../current/feature_important_fixes.md)
+**Related:** [Current Development](../current/current_development.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [Chat Message UI](./feature_chat_message_ui.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [AI Control Plane](./cloud_pilot_ai_control_plane.md) · **Later:** [Off-topic chat guardrails](../future/feature_chat_guardrails.md) · [Important Fixes](./feature_important_fixes.md) · [Message Reply Follow-ups](../future/feature_message_reply_followups.md)
 
 ---
 

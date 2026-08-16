@@ -2,7 +2,7 @@
 
 **Mimic Region Search exactly.**  
 Reference implementation: `cloudPilotIntelligence/understand/search/values/searchMessageForRegion.js`
-Chat target: `CloudPilotMessage.speakGeneral` → `CloudPilotIntelligence.generateGeneralReply()`
+Chat target: `CloudPilotMessage.prepareGeneralMessageReply` → `CloudPilotIntelligence.generateGeneralMessageReply()`
 
 **Related:** [Environment example](../../sample_env.md) · [Current Development](../current/current_development.md) · `config/cloudPilotAIConfig.js`
 
@@ -24,7 +24,7 @@ Master ON + feature openai → live OpenAI
 | Env logs | `CLOUDPILOT_REGION_LOGS` | `CLOUDPILOT_MESSAGE_LOGS` |
 | Env tokens | `CLOUDPILOT_REGION_TOKEN_LIMIT` | `CLOUDPILOT_MESSAGE_TOKEN_LIMIT` |
 | When | STEP 3 understand | STEP 7 general speak |
-| Gateway file | `searchMessageForRegion.js` | `speakGeneral` → `CloudPilotIntelligence.generateGeneralReply()` |
+| Gateway file | `searchMessageForRegion.js` | `prepareGeneralMessageReply` → `CloudPilotIntelligence.generateGeneralMessageReply()` |
 | Internal | Regex → `{ region }` or `{}` | Stub: `Open AI will respond when Live` |
 | OpenAI | `createOpenAiChatCompletion` | `sendGeneralChat` |
 | Public contract | `{ region }` or `{}` | `{ success, cloudPilotMessage, chatType, … }` |
@@ -155,8 +155,8 @@ if (useOpenAIMessageResponse) {
 
 | Piece | Path |
 |-------|------|
-| Voice wrapper | `cloudPilot/chat/CloudPilotMessage.js` → `speakGeneral` |
-| GenAI front door | `CloudPilotIntelligence.generateGeneralReply()` → `cloudPilotIntelligence/conversation/generateGeneralReply.js` |
+| Voice wrapper | `cloudPilot/chat/CloudPilotMessage.js` → `prepareGeneralMessageReply` |
+| GenAI front door | `CloudPilotIntelligence.generateGeneralMessageReply()` → `cloudPilotIntelligence/conversation/generateGeneralMessageReply.js` |
 | Called from | General Conversation after STEP 4 |
 | Context | `buildAIContext(context)` (default; no region situationTypes) |
 | System message | `buildAISystemMessage(aiContext)` |

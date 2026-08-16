@@ -115,7 +115,7 @@ If the user asks for **account truth** (counts, spend, open requests):
 ```text
 Classify (Question Search)
   → CloudPilot loads / runs Atlas / reads DB
-  → speakKnown or Action/scan path
+  → prepareKnownMessageReply or Action/scan path
   → never General Chat inventing facts
 ```
 

@@ -1,12 +1,17 @@
 const actionMap = require('../actionMap');
 
 /*
-FUNCTIONS A: Open Requests Question fulfillment
+FUNCTIONS A: CloudPilot State Question — open requests
     1) Function A1: buildOpenRequestsResponse
+
+Question subtype: CloudPilot State Question
+  ("What open requests do I have?")
 
 Grounded answer from already-loaded request state (requests/ owns the data).
 Does not invent rows. Does not create / update / close requests.
 Always Internal — never uses CLOUDPILOT_MESSAGE_RESPONSE / general OpenAI chat.
+
+See questions/README.md for locked Understanding vocabulary + Question types.
 */
 
 //Function A1: Build chat reply for LIST_OPEN_REQUESTS

@@ -56,7 +56,7 @@ function normalizeMessageHistoryCount(messageHistoryCount) {
     return Math.floor(parsed);
 }
 
-// User message is saved before speakGeneral — drop that trailing row so current turn is not duplicated
+// User message is saved before prepareGeneralMessageReply — drop that trailing row so current turn is not duplicated
 function dropCurrentUserMessage(messages, currentUserMessage) {
     if (!currentUserMessage || !messages.length) {
         return messages;

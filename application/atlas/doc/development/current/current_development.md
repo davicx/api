@@ -30,13 +30,13 @@ This is the active-work dashboard. It contains only features we are working on n
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
-| [Important Fixes](./feature_important_fixes.md) | Message / Response / Message Reply; prepare* vs generate*. | **Step 5 naming ready** — say apply when you want code |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
 
 ## Just finished
 
 | Feature | What shipped |
 |---------|----------------|
+| [Important Fixes](../finished/feature_important_fixes.md) | Turn + Message / Response / Message Reply vocabulary; speak/present/friendly renames — [follow-ups](../future/feature_message_reply_followups.md) |
 | [Intelligence Provider](../finished/feature_intelligence_provider.md) | Search TASK family: one context object → Internal \| OpenAI → same result; [how-to](../how_to/intelligence_provider.md) |
 | [Feature Chat](../finished/feature_chat.md) | Friendly request presentation when OpenAI is on; templates stay Internal + fallback |
 | [Friendly Dashboard](../finished/feature_friendly_dashboard.md) | S3 findings-first Dashboard; Fix→Chat coming soon; original tables behind View original tables |

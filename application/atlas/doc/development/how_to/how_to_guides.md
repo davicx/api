@@ -5,7 +5,7 @@ These are **not** active feature plans — active work lives in `../current/`.
 
 | Guide | Use it when you want to… |
 |-------|--------------------------|
-| [CloudPilot Turn](./cloud_pilot_turn.md) | Remember User Message → Understand → Handle Request → Prepare Message Reply → Reply Message |
+| [CloudPilot Turn](./cloud_pilot_turn.md) | Remember User Message → Understand → Handle Request → Prepare Message Reply → Reply Message; **Understanding** Action / Value / Question / Conversation |
 | [Intelligence Provider](./intelligence_provider.md) | One operation → same context → Internal \| OpenAI; Region Search is the proof |
 | [CloudPilot Context](./cloud_pilot_context.md) | Keep Chat rich and Search/Question tiny; route AWS facts through CloudPilot |
 | [Add an Intelligence Capability](./add_intelligence_capability.md) | Add `searchForThing` with Internal \| OpenAI behind one public entry |

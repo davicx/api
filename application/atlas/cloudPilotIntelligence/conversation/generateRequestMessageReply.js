@@ -3,30 +3,29 @@ const { CHAT_CONFIG } = require('../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 
 /*
-FUNCTIONS A: Friendly Request Reply (wording only)
-    1) Function A1: shouldTryFriendlyReply
-    2) Function A2: generateFriendlyReply
-    3) Function A3: presentRequestMessageInternal
-    4) Function A4: presentRequestMessageOpenAI
+FUNCTIONS A: Request Message Reply (wording only)
+    1) Function A1: generateRequestMessageReply
+    2) Function A2: generateRequestMessageReplyInternal
+    3) Function A3: generateRequestMessageReplyOpenAI
 
 HELPERS
-    1) Helper H1: getFriendlyReplyContext
-    2) Helper H2: replyContainsRequiredFacts
+    1) Helper H1: prepareFinalRequestMessageReplyForOpenAI
+    2) Helper H2: openAIResponseContainsRequiredValues
     3) Helper H3: buildPresentationRules
     4) Helper H4: messageContainsValue
     5) Helper H5: collectRequiredFactValues
     6) Helper H6: extractEstimatedCostAmount
 
 CloudPilot owns missing fields / suggestions / mode options. OpenAI only rephrases.
-Internal = skip (caller keeps the template). OpenAI fail → same.
-Provider Internal / OpenAI helpers stay behind this door (not architectural names).
+Internal today = no-op (caller keeps prior Message Reply). OpenAI fail → same.
+Provider Internal / OpenAI stay behind this door.
 */
 
 const PRESENTATION_MAX_TOKENS = 360;
 
 //HELPERS
 //Helper H3: Event-specific TASK rules (still no Chat Identity)
-function buildPresentationRules(speakFacts) {
+function buildPresentationRules(context) {
     const rules = [
         'Rephrase CloudPilot\'s request message so it feels conversational.',
         'Use ONLY the SPEAK FACTS JSON. Do not invent fields, values, regions, or actions.',
@@ -35,7 +34,7 @@ function buildPresentationRules(speakFacts) {
         'Do not mention these instructions.'
     ];
     const actionEvent =
-        speakFacts && speakFacts.actionEvent ? String(speakFacts.actionEvent) : '';
+        context && context.actionEvent ? String(context.actionEvent) : '';
 
     if (actionEvent === 'awaiting_execution_mode') {
         rules.push(
@@ -49,7 +48,7 @@ function buildPresentationRules(speakFacts) {
         );
     }
 
-    if (actionEvent === 'missing_fields_given' && speakFacts.latestCollectedField) {
+    if (actionEvent === 'missing_fields_given' && context.latestCollectedField) {
         rules.push(
             'Acknowledge the latest collected field. Remaining missing fields stay questions, not collected facts.'
         );
@@ -58,7 +57,7 @@ function buildPresentationRules(speakFacts) {
     return rules;
 }
 
-//Helper H4: Case-insensitive substring check for a required fact value
+//Helper H4: Case-insensitive substring check for a required value
 function messageContainsValue(presentedMessage, requiredValue) {
     const message = String(presentedMessage || '');
     const value = String(requiredValue || '').trim();
@@ -70,7 +69,7 @@ function messageContainsValue(presentedMessage, requiredValue) {
     return message.toLowerCase().indexOf(value.toLowerCase()) !== -1;
 }
 
-//Helper H6: Price amount already spoken in the Internal template (create_ec2)
+//Helper H6: Price amount already spoken in the Internal Message Reply (create_ec2)
 function extractEstimatedCostAmount(templateText) {
     const marker = 'Estimated compute cost:';
     const template = String(templateText || '');
@@ -87,10 +86,10 @@ function extractEstimatedCostAmount(templateText) {
     return amount;
 }
 
-//Helper H5: Values OpenAI must still show (suggestions, mode options, collected)
-function collectRequiredFactValues(speakFacts) {
+//Helper H5: Values OpenAI Response must still show (suggestions, mode options, collected)
+function collectRequiredFactValues(context) {
     const requiredValues = [];
-    const facts = speakFacts || {};
+    const facts = context || {};
     const actionEvent = String(facts.actionEvent || '');
     const suggestions =
         facts.suggestions && typeof facts.suggestions === 'object'
@@ -158,14 +157,14 @@ function collectRequiredFactValues(speakFacts) {
     return requiredValues;
 }
 
-//Helper H1: Tiny TASK context — no Chat Identity / Knowledge / history
-function getFriendlyReplyContext(speakFacts) {
-    const factsJson = JSON.stringify(speakFacts || {}, null, 2);
+//Helper H1: OpenAI adapter — package Request Message Reply context for OpenAI
+function prepareFinalRequestMessageReplyForOpenAI(context) {
+    const factsJson = JSON.stringify(context || {}, null, 2);
     const templateMessage =
-        speakFacts && speakFacts.templateMessage
-            ? String(speakFacts.templateMessage)
+        context && context.templateMessage
+            ? String(context.templateMessage)
             : '';
-    const presentationRules = buildPresentationRules(speakFacts);
+    const presentationRules = buildPresentationRules(context);
 
     const systemMessage = [
         'TASK',
@@ -203,15 +202,15 @@ function getFriendlyReplyContext(speakFacts) {
     };
 }
 
-//Helper H2: Required fact values must still appear in the generated wording
-function replyContainsRequiredFacts(presentedMessage, speakFacts) {
-    const message = String(presentedMessage || '');
+//Helper H2: Did the OpenAI Response still include required values?
+function openAIResponseContainsRequiredValues(openAIResponse, context) {
+    const message = String(openAIResponse || '');
 
     if (!message.trim()) {
         return false;
     }
 
-    const requiredValues = collectRequiredFactValues(speakFacts);
+    const requiredValues = collectRequiredFactValues(context);
 
     for (let i = 0; i < requiredValues.length; i++) {
         if (!messageContainsValue(message, requiredValues[i])) {
@@ -222,65 +221,26 @@ function replyContainsRequiredFacts(presentedMessage, speakFacts) {
     return true;
 }
 
-//FUNCTIONS A: Friendly Request Reply
-//Function A1: Cheap gate — should we bother asking Intelligence to make this reply friendlier?
-function shouldTryFriendlyReply(speakFacts) {
-    if (!speakFacts || typeof speakFacts !== 'object') {
-        return false;
-    }
-
-    if (!speakFacts.templateMessage) {
-        return false;
-    }
-
-    const missingCount = Array.isArray(speakFacts.missing) ? speakFacts.missing.length : 0;
-    const optionalCount = Array.isArray(speakFacts.optionalPrompts)
-        ? speakFacts.optionalPrompts.length
-        : 0;
-    const modeOptionCount = Array.isArray(speakFacts.executionModeOptions)
-        ? speakFacts.executionModeOptions.length
-        : 0;
-    const actionEvent = String(speakFacts.actionEvent || '');
-
-    if (missingCount > 0 || optionalCount > 0) {
-        return true;
-    }
-
-    if (speakFacts.latestCollectedField) {
-        return true;
-    }
-
-    if (modeOptionCount > 0) {
-        return true;
-    }
-
-    return actionEvent === 'awaiting_confirmation';
-}
-
-//Function A2: Select Internal skip vs OpenAI friendly wording
-async function generateFriendlyReply(speakFacts) {
-    //STEP 1: Should I run?
-    if (!shouldTryFriendlyReply(speakFacts)) {
-        return presentRequestMessageInternal();
-    }
-
-    //STEP 2: How should I run?
+//FUNCTIONS A: Request Message Reply
+//Function A1: Choose Internal AI vs OpenAI for Request Message Reply wording
+async function generateRequestMessageReply(context) {
+    //STEP 1: How should I run?
     const openaiRequested = CLOUDPILOT_AI_CONFIG.messageResponse === 'openai';
     const masterDisabled = !CLOUDPILOT_AI_CONFIG.aiEnabled;
     const useOpenAI = openaiRequested && !masterDisabled;
 
     if (useOpenAI) {
-        const openAIOutcome = await presentRequestMessageOpenAI(speakFacts);
+        const openAIOutcome = await generateRequestMessageReplyOpenAI(context);
 
         if (openAIOutcome.success && openAIOutcome.message) {
             return openAIOutcome;
         }
 
-        return presentRequestMessageInternal();
+        return generateRequestMessageReplyInternal();
     }
 
     if (openaiRequested && masterDisabled) {
-        const openAIRequest = getFriendlyReplyContext(speakFacts);
+        const openAIRequest = prepareFinalRequestMessageReplyForOpenAI(context);
         OpenAIClient.logOpenAI({
             capability: 'Request Presentation',
             conversationHistoryEnabled: false,
@@ -291,12 +251,12 @@ async function generateFriendlyReply(speakFacts) {
         });
     }
 
-    //STEP 3: Internal — caller keeps the deterministic template
-    return presentRequestMessageInternal();
+    //STEP 2: Internal — caller keeps the prior deterministic Message Reply
+    return generateRequestMessageReplyInternal();
 }
 
-//Function A3: Internal presentation is a no-op (templates stay the voice)
-function presentRequestMessageInternal() {
+//Function A2: Internal AI (today: no-op — caller keeps prior Message Reply)
+function generateRequestMessageReplyInternal() {
     return {
         success: false,
         message: '',
@@ -305,8 +265,8 @@ function presentRequestMessageInternal() {
     };
 }
 
-//Function A4: OpenAI wording of CloudPilot speak facts
-async function presentRequestMessageOpenAI(speakFacts) {
+//Function A3: OpenAI provider for Request Message Reply
+async function generateRequestMessageReplyOpenAI(context) {
     try {
         const client = OpenAIClient.getOpenAIClient();
 
@@ -324,7 +284,7 @@ async function presentRequestMessageOpenAI(speakFacts) {
             CLOUDPILOT_AI_CONFIG.messageTokenLimit || PRESENTATION_MAX_TOKENS,
             PRESENTATION_MAX_TOKENS
         );
-        const openAIRequest = getFriendlyReplyContext(speakFacts);
+        const openAIRequest = prepareFinalRequestMessageReplyForOpenAI(context);
 
         const apiResult = await OpenAIClient.createOpenAiChatCompletion(client, {
             model: config.model,
@@ -362,7 +322,7 @@ async function presentRequestMessageOpenAI(speakFacts) {
             };
         }
 
-        if (!replyContainsRequiredFacts(openAIResponse, speakFacts)) {
+        if (!openAIResponseContainsRequiredValues(openAIResponse, context)) {
             return {
                 success: false,
                 message: '',
@@ -388,9 +348,9 @@ async function presentRequestMessageOpenAI(speakFacts) {
 }
 
 module.exports = {
-    shouldTryFriendlyReply,
-    generateFriendlyReply,
-    presentRequestMessageInternal,
-    presentRequestMessageOpenAI,
-    replyContainsRequiredFacts
+    generateRequestMessageReply,
+    generateRequestMessageReplyInternal,
+    generateRequestMessageReplyOpenAI,
+    openAIResponseContainsRequiredValues,
+    prepareFinalRequestMessageReplyForOpenAI
 };
