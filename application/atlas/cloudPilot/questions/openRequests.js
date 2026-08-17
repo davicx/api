@@ -28,6 +28,7 @@ function buildOpenRequestsResponse(requestState) {
         };
     }
 
+    
     const actionDefinition = actionMap[pendingAction] || null;
     const actionLabel =
         actionDefinition && actionDefinition.actionLabel
