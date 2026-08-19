@@ -33,7 +33,9 @@ Say **do Step 1** when ready to create the safety table and the first OpenAI row
 
 **Status:** Active  
 **Codename:** `cloudPilotSafety`  
-**Related:** [Current Development](./current_development.md) · [AI Spending](../finished/feature_ai_spending.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
+**Related:** [Spending Hard Limit](./feature_spending_hard_limit.md) (umbrella — AWS + OpenAI) · [Current Development](./current_development.md) · [AI Spending](../finished/feature_ai_spending.md) · [CloudPilot Context](../finished/feature_cloud_pilot_context.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md)
+
+> **Note:** This doc is **Phase 1** of [Spending Hard Limit](./feature_spending_hard_limit.md). OpenAI gate ships here; unified AWS + total cap follows in Phases 2–3.
 
 ---
 

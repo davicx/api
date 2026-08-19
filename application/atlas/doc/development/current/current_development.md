@@ -30,7 +30,8 @@ This is the active-work dashboard. It contains only features we are working on n
 |---------|--------------|--------------|
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
 | [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
-| [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Spending guardrails before OpenAI calls; OpenAI is the first service. | Plan locked — **awaiting Step 1** |
+| [Spending Hard Limit](./feature_spending_hard_limit.md) | Monthly **hard cap** on AWS (Cost Explorer) + OpenAI; block paid actions at limit. | Plan locked — **Phase 1 = Safety (OpenAI) awaiting Step 1** |
+| [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Phase 1 detail: OpenAI gate only (`cloud_pilot_safety` + `checkSpendingLimit`). | Plan locked — **awaiting Step 1** |
 
 ## Just finished
 
