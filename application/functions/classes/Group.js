@@ -2,6 +2,13 @@ const db = require('./../conn');
 const functions = require('./../functions');
 const groupFunctions = require('./../groupFunctions');
 
+const DEFAULT_GROUP_DESCRIPTION = "this is my new group so cool";
+
+function resolveGroupDescription(groupDescription) {
+    const text = String(groupDescription == null ? "" : groupDescription).trim();
+    return text || DEFAULT_GROUP_DESCRIPTION;
+}
+
 /*
 METHODS A: Group RELATED
     1) Method A1: Create a Group
@@ -20,14 +27,16 @@ class Group {
     }
 
     //Method A1: Create a Group
-    static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupImage)  {
+    static async createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupDescription)  {
         const connection = db.getConnection(); 
         var groupID = 0;
-        var groupImage = "the_shire_default_group_image.jpg"; 
+        var groupImage = "the_shire_default_group_image.jpg";
+        const resolvedGroupDescription = resolveGroupDescription(groupDescription);
     
         var groupOutcome = {
             outcome: 0,
             groupID: groupID,
+            groupDescription: resolvedGroupDescription,
             errors: []
         }
     
@@ -38,6 +47,7 @@ class Group {
                         group_type,
                         created_by,
                         group_name,
+                        group_description,
                         group_image,
                         group_private,
                         file_name,
@@ -46,13 +56,14 @@ class Group {
                         cloud_key,
                         storage_type
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `;
     
                 connection.query(queryString, [
                     groupType,
                     currentUser,
                     groupName,
+                    resolvedGroupDescription,
                     uploadFile.fileURL || groupImage,  // fallback for group_image
                     groupPrivate,
                     uploadFile.originalname || "",
@@ -409,7 +420,7 @@ class Group {
     static async getGroupInformation(groupID) {
         console.log("CLASS GROUP: getting Group Information for " + groupID);
         const connection = db.getConnection(); 
-        const queryString = "SELECT group_id, group_type, group_image, group_name, created_by FROM shareshare.groups WHERE group_id = ?";
+        const queryString = "SELECT group_id, group_type, group_image, group_name, group_description, created_by FROM shareshare.groups WHERE group_id = ?";
         
         var groupInfoResponse = {
             status: 500,
@@ -417,6 +428,7 @@ class Group {
             groupType: "",
             groupImage: "",
             groupName: "",
+            groupDescription: "",
             createdBy: "",
             errors: [],
         };
@@ -432,6 +444,7 @@ class Group {
                         groupInfoResponse.groupImage = row.group_image;
                         groupInfoResponse.groupCreatedBy = row.created_by;
                         groupInfoResponse.groupName = row.group_name;
+                        groupInfoResponse.groupDescription = row.group_description || DEFAULT_GROUP_DESCRIPTION;
                     } else {
                         console.log("Error retrieving group information or group not found");
                         groupInfoResponse.errors.push(err || "Group not found");
@@ -447,7 +460,7 @@ class Group {
     }
         
     //Method A9: Update Group Information
-    static async updateGroup(groupID, groupName, groupType, groupPrivate, groupImage) {
+    static async updateGroup(groupID, groupName, groupType, groupPrivate, groupImage, groupDescription) {
         const connection = db.getConnection();
         var updateOutcome = {
             status: 500,
@@ -456,8 +469,14 @@ class Group {
         };
         return new Promise(async function(resolve, reject) {
             try {
-                const queryString = "UPDATE shareshare.groups SET group_name = ?, group_type = ?, group_private = ?, group_image = ? WHERE group_id = ?";
-                connection.query(queryString, [groupName, groupType, groupPrivate, groupImage, groupID], (err, results) => {
+                const resolvedGroupDescription = String(groupDescription == null ? "" : groupDescription).trim();
+                const queryString = resolvedGroupDescription
+                    ? "UPDATE shareshare.groups SET group_name = ?, group_type = ?, group_private = ?, group_image = ?, group_description = ? WHERE group_id = ?"
+                    : "UPDATE shareshare.groups SET group_name = ?, group_type = ?, group_private = ?, group_image = ? WHERE group_id = ?";
+                const queryValues = resolvedGroupDescription
+                    ? [groupName, groupType, groupPrivate, groupImage, resolvedGroupDescription, groupID]
+                    : [groupName, groupType, groupPrivate, groupImage, groupID];
+                connection.query(queryString, queryValues, (err, results) => {
                     if (!err) {
                         updateOutcome.status = 200;
                     } else {

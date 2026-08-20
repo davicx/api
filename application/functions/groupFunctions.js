@@ -205,8 +205,8 @@ function processGroupUsers(req) {
 }
 
 //Function A6: Create Group and Add Users
-async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers) {
-	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+async function createGroupAndUsers(currentUser, uploadFile, groupName, groupType, groupPrivate, groupUsers, groupDescription) {
+	const groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupDescription);
 	if (groupOutcome.outcome !== 1) {
 		return {
 			success: false,

@@ -45,6 +45,7 @@ async function createGroup(req, res) {
 		var uploadSuccess = false
 		var currentUser = req.body.currentUser; 
 		var groupName = req.body.groupName
+		var groupDescription = req.body.groupDescription || req.body.group_description;
 		var groupType = req.body.groupType; 
 		var groupPrivate = req.body.groupPrivate;
 		var newGroupUsers = groupFunctions.processGroupUsers(req);
@@ -100,7 +101,7 @@ async function createGroup(req, res) {
 		try { 
 
 			//STEP 4: Create the Group
-			groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+			groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupDescription);
 
 			if(groupOutcome.outcome == 1) {
 				console.log("STEP 4: You succesfully created a new group with Group ID " + groupOutcome.groupID);
@@ -166,6 +167,7 @@ async function createGroup(req, res) {
 		newGroupOutcome.statusCode = 200;
 		newGroupOutcome.data = {
 			groupName: groupName, 
+			groupDescription: groupOutcome.groupDescription,
 			groupType: groupType,
 			groupImage: uploadFile.fileURL,
 			groupID: groupOutcome.groupID, 
@@ -188,6 +190,7 @@ async function createGroupLocalAWS(req, res) {
 	uploadFunctions.uploadGroupPhotoLocal(req, res, async function (err) {	
 		var currentUser = req.body.currentUser; 
 		var groupName = req.body.groupName
+		var groupDescription = req.body.groupDescription || req.body.group_description;
 		var groupType = req.body.groupType; 
 		var groupPrivate = req.body.groupPrivate;
 		var signedURL = "posts/groupImage-1750463560634-658785013-group_image.jpg";
@@ -274,7 +277,7 @@ async function createGroupLocalAWS(req, res) {
 
 
 			//STEP 4: Create the Group
-			groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate);
+			groupOutcome = await Group.createGroup(currentUser, uploadFile, groupName, groupType, groupPrivate, groupDescription);
 
 
 			if(groupOutcome.outcome == 1) {
@@ -340,6 +343,7 @@ async function createGroupLocalAWS(req, res) {
 		newGroupOutcome.statusCode = 200;
 		newGroupOutcome.data = {
 			groupName: groupName, 
+			groupDescription: groupOutcome.groupDescription,
 			groupType: groupType,
 			groupImage: signedURL,
 			groupID: groupOutcome.groupID, 
@@ -384,6 +388,7 @@ async function getGroups(req, res) {
 			groupID: "",
 			groupType: "",
 			groupName: "",
+			groupDescription: "",
 			groupImage: "",
 			createdBy: "",
 			activeGroupMembers: [""],
@@ -404,6 +409,7 @@ async function getGroups(req, res) {
 		currentGroup.groupID = groupID
 		currentGroup.groupType = currentGroupInformation.groupType
 		currentGroup.groupName = currentGroupInformation.groupName
+		currentGroup.groupDescription = currentGroupInformation.groupDescription
 		currentGroup.groupImage = currentGroupInformation.groupImage
 		currentGroup.createdBy = currentGroupInformation.groupCreatedBy
 		currentGroup.activeGroupMembers = currentGroupUsers.groupUsers
@@ -672,6 +678,7 @@ async function getGroupUsers(req, res) {
 async function updateGroup(req, res) {
     const groupID = req.body.groupID;
     const groupName = req.body.groupName;
+    const groupDescription = req.body.groupDescription || req.body.group_description;
     const groupType = req.body.groupType;
     const groupPrivate = req.body.groupPrivate;
     const groupImage = req.body.groupImage;
@@ -684,7 +691,7 @@ async function updateGroup(req, res) {
     };
 
     try {
-        const result = await Group.updateGroup(groupID, groupName, groupType, groupPrivate, groupImage);
+        const result = await Group.updateGroup(groupID, groupName, groupType, groupPrivate, groupImage, groupDescription);
         if (result.status === 200) {
             updateOutcome.success = true;
             updateOutcome.statusCode = 200;
