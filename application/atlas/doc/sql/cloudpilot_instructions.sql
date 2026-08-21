@@ -163,6 +163,17 @@ INNER JOIN cloud_pilot_images AS image_row
 SET instruction_row.image_id = image_row.image_id
 WHERE instruction_row.instruction_for = 'create_ec2';
 
+-- Link pause_ec2 / resume_ec2 steps (temp placeholders until real screenshots)
+UPDATE cloudpilot_instructions AS instruction_row
+INNER JOIN cloud_pilot_images AS image_row
+    ON image_row.image_key COLLATE utf8mb4_unicode_ci = CONCAT(
+        instruction_row.instruction_for,
+        '_step_',
+        instruction_row.step_number
+    ) COLLATE utf8mb4_unicode_ci
+SET instruction_row.image_id = image_row.image_id
+WHERE instruction_row.instruction_for IN ('pause_ec2', 'resume_ec2');
+
 -- -----------------------------------------------------------------------------
 -- Seed: pause_ec2 / resume_ec2
 -- Full copy also in doc/sql/seed/seed_pause_resume_ec2_instructions.sql

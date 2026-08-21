@@ -7,8 +7,6 @@ const secretAccessKey = process.env.AWS_SECRET_KEY
 const s3 = new S3({ region, accessKeyId, secretAccessKey })
 const fs = require('fs') 
 const multer = require('multer')
-//const upload = multer({ dest: './uploads' })
-const upload = multer({ dest: './kite-posts-us-west-two' })
 const awsStorage = require('../functions/aws/awsStorage');
 
 //Upload imports

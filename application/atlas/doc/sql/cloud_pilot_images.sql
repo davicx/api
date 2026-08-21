@@ -111,6 +111,76 @@ VALUES
         'instructions/create_ec2/create_ec2_image_8.png',
         'Launch Instance',
         'Create EC2 walkthrough step 8 — launch the instance'
+    ),
+    (
+        'pause_ec2_step_1',
+        'Open EC2',
+        'instructions/pause_ec2/pause_ec2_image_1.jpg',
+        'Open EC2',
+        'Pause EC2 walkthrough step 1 — temp placeholder'
+    ),
+    (
+        'pause_ec2_step_2',
+        'Select the Instance',
+        'instructions/pause_ec2/pause_ec2_image_2.jpg',
+        'Select the Instance',
+        'Pause EC2 walkthrough step 2 — temp placeholder'
+    ),
+    (
+        'pause_ec2_step_3',
+        'Choose Stop Instance',
+        'instructions/pause_ec2/pause_ec2_image_3.jpg',
+        'Choose Stop Instance',
+        'Pause EC2 walkthrough step 3 — temp placeholder'
+    ),
+    (
+        'pause_ec2_step_4',
+        'Confirm Stop',
+        'instructions/pause_ec2/pause_ec2_image_4.jpg',
+        'Confirm Stop',
+        'Pause EC2 walkthrough step 4 — temp placeholder'
+    ),
+    (
+        'pause_ec2_step_5',
+        'Wait for Stopped',
+        'instructions/pause_ec2/pause_ec2_image_5.jpg',
+        'Wait for Stopped',
+        'Pause EC2 walkthrough step 5 — temp placeholder'
+    ),
+    (
+        'resume_ec2_step_1',
+        'Open EC2',
+        'instructions/resume_ec2/resume_ec2_image_1.jpg',
+        'Open EC2',
+        'Resume EC2 walkthrough step 1 — temp placeholder'
+    ),
+    (
+        'resume_ec2_step_2',
+        'Select the Instance',
+        'instructions/resume_ec2/resume_ec2_image_2.jpg',
+        'Select the Instance',
+        'Resume EC2 walkthrough step 2 — temp placeholder'
+    ),
+    (
+        'resume_ec2_step_3',
+        'Choose Start Instance',
+        'instructions/resume_ec2/resume_ec2_image_3.jpg',
+        'Choose Start Instance',
+        'Resume EC2 walkthrough step 3 — temp placeholder'
+    ),
+    (
+        'resume_ec2_step_4',
+        'Confirm Start',
+        'instructions/resume_ec2/resume_ec2_image_4.jpg',
+        'Confirm Start',
+        'Resume EC2 walkthrough step 4 — temp placeholder'
+    ),
+    (
+        'resume_ec2_step_5',
+        'Wait for Running',
+        'instructions/resume_ec2/resume_ec2_image_5.jpg',
+        'Wait for Running',
+        'Resume EC2 walkthrough step 5 — temp placeholder'
     )
 ON DUPLICATE KEY UPDATE
     image_name = VALUES(image_name),
@@ -154,6 +224,17 @@ INNER JOIN cloud_pilot_images AS image_row
 SET instruction_row.image_id = image_row.image_id
 WHERE instruction_row.instruction_for = 'create_ec2';
 
+-- Link pause_ec2 / resume_ec2 steps to catalog keys {action}_step_N
+UPDATE cloudpilot_instructions AS instruction_row
+INNER JOIN cloud_pilot_images AS image_row
+    ON image_row.image_key COLLATE utf8mb4_unicode_ci = CONCAT(
+        instruction_row.instruction_for,
+        '_step_',
+        instruction_row.step_number
+    ) COLLATE utf8mb4_unicode_ci
+SET instruction_row.image_id = image_row.image_id
+WHERE instruction_row.instruction_for IN ('pause_ec2', 'resume_ec2');
+
 
 -- -----------------------------------------------------------------------------
 -- E) VERIFY (read-only)
@@ -180,7 +261,7 @@ WHERE instruction_row.instruction_for = 'create_ec2';
 -- WHERE instruction_row.instruction_for = 'create_ec2'
 -- ORDER BY instruction_row.step_number;
 
--- Pause/resume should still have NULL image_id:
+-- Pause/resume should have image_id linked (temp placeholders until real screenshots):
 -- SELECT instruction_for, step_number, image_id
 -- FROM cloudpilot_instructions
 -- WHERE instruction_for IN ('pause_ec2', 'resume_ec2')

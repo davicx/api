@@ -121,10 +121,13 @@ async function buildImageUrl(relativeImagePath) {
     const publicFileBaseUrl = (process.env.PUBLIC_FILE_BASE_URL || '').replace(/\/+$/, '');
     const fileLocation = process.env.FILE_LOCATION || 'local';
 
-    // Avoid double-prefix if a caller already included the bucket folder
-    const alreadyPrefixed = bucketName !== ''
+    // Avoid double-prefix if object key OR PUBLIC_FILE_BASE_URL already has the bucket
+    const objectKeyHasBucket = bucketName !== ''
         && (objectKey === bucketName || objectKey.indexOf(bucketName + '/') === 0);
-    const localStaticPath = alreadyPrefixed || bucketName === ''
+    const baseUrlHasBucket = bucketName !== ''
+        && (publicFileBaseUrl === bucketName
+            || publicFileBaseUrl.endsWith('/' + bucketName));
+    const localStaticPath = objectKeyHasBucket || baseUrlHasBucket || bucketName === ''
         ? objectKey
         : bucketName + '/' + objectKey;
 
