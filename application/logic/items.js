@@ -389,6 +389,43 @@ async function getAllGroupItems(req, res) {
 
 }
 
+//Function B2: Get All Items (global Home feed — newest 12)
+//http://localhost:3003/items
+async function getAllItems(req, res) {
+	const currentUser = req.currentUser
+
+	var headerMessage = "HEADER: Get All Items (Home feed, limit 12)"
+	Functions.addHeader(headerMessage)
+
+	//STEP 1: Get All Item Posts
+	var postsOutcome = await Post.getAllItems()
+	var postsRaw = postsOutcome.posts;
+
+	//STEP 2: Get All Comments for these Posts
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
+
+	//STEP 3: Get all Likes for these Posts
+	var postsLikes = await PostFunctions.addPostLikes(currentUser, postsComments)
+
+	//STEP 4: Get Image URL
+	var posts = await PostFunctions.addSignedURLPostsArray(postsLikes);
+
+	//STEP 5: Add purchased_viewers to each item (always include, empty array if none)
+	posts = await itemFunctions.addPurchaseViewersToItems(posts);
+
+	var postsResponse = {
+		data: posts,
+		message: "Need to add error and stuff in this always works!",
+		success: true,
+		statusCode: 200,
+		errors: [],
+		currentUser: currentUser
+	}
+
+	Functions.addFooter()
+	res.json(postsResponse)
+}
+
 
 //FUNCTIONS C: All Functions Related to Item Actions
 //Function C1: Purchase an Item
@@ -564,5 +601,5 @@ async function removePurchase(req, res) {
 	res.json(removePurchaseResponse);
 }
 
-module.exports = { postItemLocal, postItemLocalAWS, getAllGroupItems, purchaseItem, removePurchase };
+module.exports = { postItemLocal, postItemLocalAWS, getAllGroupItems, getAllItems, purchaseItem, removePurchase };
 

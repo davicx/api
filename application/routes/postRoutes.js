@@ -20,6 +20,8 @@ FUNCTIONS B: All Routes Related to getting Posts
 	2) Function B2: Get all User Posts 
 	3) Function B3: Get Single Post by ID 
 	4) Function B4: Get All Posts
+	5) Function B5: Get Home Feed Posts for a User
+	6) Function B6: Get Home Feed Items for a User
 
 FUNCTIONS C: All Routes Related to Post Actions
 	1) Function C1: Like a Post

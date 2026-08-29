@@ -850,6 +850,130 @@ class Post {
         })
     }
 
+    //Method B7: Get All Items (global, newest 12 — Home feed MVP)
+    static async getAllItems()  {
+        const connection = db.getConnection(); 
+        const fileFunctions = require('../fileFunctions');
+
+        const queryString = `
+            SELECT p.*, 
+                   i.item_id, i.item_name, i.item_price, i.item_description, 
+                   i.item_category, i.item_link, i.purchased, i.purchased_by, 
+                   i.store, i.multiple_stores,
+                   shareshare.groups.group_name,
+                   shareshare.groups.group_image,
+                   user_profile.storage_location,
+                   user_profile.image_url,
+                   user_profile.cloud_key as user_cloud_key
+            FROM posts p
+            LEFT JOIN items i ON p.post_id = i.post_id
+            JOIN shareshare.groups ON p.group_id = shareshare.groups.group_id
+            LEFT JOIN user_profile ON p.post_from = user_profile.user_name
+            WHERE p.post_status = 1 AND p.post_type = 'item'
+            ORDER BY p.post_id DESC
+            LIMIT 12
+        `;
+        var postsOutcome = {
+            success: false,
+            posts: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                connection.query(queryString, (err, rows) => {
+                    if (!err) {
+                        console.log("getAllItems: Found " + rows.length + " posts");
+                        
+                        Promise.all(rows.map(async (row) => {
+                            let postTimeData = {}
+                            let date = dayjs(row.created).format('MM/DD/YYYY')      
+                            let minutes = dayjs(row.created).minute()
+                            let hour = dayjs(row.created).hour()
+                        
+                            if(hour > 12) {
+                                hour = hour - 12
+                            }
+
+                            let time = hour + ":0" + minutes + " pm";
+                            let timeMessage = dayjs(row.created).fromNow()
+                        
+                            postTimeData.date = date
+                            postTimeData.time = time
+                            postTimeData.timeMessage = timeMessage
+
+                            let userImage = null;
+                            if (row.storage_location && row.image_url) {
+                                try {
+                                    userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.user_cloud_key);
+                                } catch (error) {
+                                    console.log("Error getting user image for " + row.post_from + ": " + error);
+                                    userImage = null;
+                                }
+                            }
+
+                            let itemData = null;
+                            if (row.item_id) {
+                                itemData = {
+                                    item_id: row.item_id,
+                                    item_name: row.item_name,
+                                    item_price: row.item_price,
+                                    item_description: row.item_description,
+                                    item_category: row.item_category,
+                                    item_link: row.item_link,
+                                    purchased: row.purchased,
+                                    purchased_by: row.purchased_by,
+                                    store: row.store,
+                                    multiple_stores: row.multiple_stores,
+                                    purchased_viewers: []
+                                };
+                            }
+
+                            return {
+                                postID: row.post_id,
+                                postType: row.post_type,
+                                groupID: row.group_id,
+                                groupName: row.group_name,
+                                groupImage: row.group_image,
+                                listID: row.list_id,
+                                postFrom: row.post_from,
+                                postFromImage: userImage,
+                                postTo: row.post_to,
+                                postCaption: row.post_caption,
+                                fileName: row.file_name,
+                                fileNameServer: row.file_name_server,
+                                fileURL: row.file_url,
+                                cloudBucket: row.cloud_bucket,
+                                cloudKey: row.cloud_key,
+                                storageType: row.storage_type,
+                                videoURL: row.video_url,
+                                videoCode: row.video_code,
+                                postDate: postTimeData.date,
+                                postTime: postTimeData.time,
+                                timeMessage: postTimeData.timeMessage,
+                                created: row.created,
+                                item: itemData
+                            }
+                        })).then(posts => {
+                            postsOutcome.posts = posts;
+                            postsOutcome.success = true;
+                            resolve(postsOutcome)
+                        }).catch(error => {
+                            console.log("Error processing posts: " + error);
+                            reject(postsOutcome);
+                        });
+            
+                    } else {
+                        console.log("Failed to Select All Items" + err)
+                        reject(postsOutcome);
+                    }
+            })
+                
+            } catch(err) { 
+                reject(postsOutcome);
+            } 
+        })
+    }
+
     //METHODS C: UPDATING POST
     static async updatePostCaption(postID, newPostCaption, currentUser)  {
         const connection = db.getConnection(); 

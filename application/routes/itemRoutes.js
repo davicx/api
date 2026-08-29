@@ -12,7 +12,12 @@ const db = require('../functions/conn');
 /*
 FUNCTIONS A: All Routes Related to Items
 	1) Function A1: Post Item
+
+FUNCTIONS B: All Routes Related to getting Items
+	1) Function B1: Get all Group Items
+	2) Function B2: Get All Items (Home feed)
 */
+
 
 //Route A1: Post Item 
 itemRouter.post('/post/item', async function(req, res) {
@@ -41,9 +46,14 @@ itemRouter.post('/post/item', async function(req, res) {
 	}
 })
 
+//Function B1: Get all Group Items
 itemRouter.get("/items/group/:group_id", middlewares.verifyUser, (req, res) => {
-//postRouter.get("/posts/group/:group_id", (req, res) => {
 	items.getAllGroupItems(req, res);
+})
+
+//Function B2: Get All Items (global Home feed — newest 12)
+itemRouter.get("/items", middlewares.verifyUser, (req, res) => {
+	items.getAllItems(req, res);
 })
 
 //FUNCTIONS C: All Routes Related to Item Actions
