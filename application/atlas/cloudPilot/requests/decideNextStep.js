@@ -532,6 +532,17 @@ function resolveQuestionDecision(requestState, question, understanding) {
         };
     }
 
+    if (question === 'ec2_compute_cost') {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: buildRequestFromState(state),
+            response: {
+                type: RESPONSE_TYPE.EC2_COMPUTE_COST,
+                values: u.values && typeof u.values === 'object' ? u.values : {}
+            }
+        };
+    }
+
     // Question conceptually — reuse scan_ec2 / Atlas for truth (not General Chat)
     if (question === 'ec2_inventory') {
         return buildNewRequestDecision({

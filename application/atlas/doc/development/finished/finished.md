@@ -1,10 +1,14 @@
 # Finished
 
-**Last reviewed:** 2026-08-14
+**Last reviewed:** 2026-08-29
 
 > **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
 
 ---
+
+## Recently finished (2026-08-29)
+
+- [x] **Useful Price** — Stored EC2 hourly rates → create/scan/pause speak + “what am I paying?” Question — [feature_useful_price.md](./feature_useful_price.md)
 
 ## Recently finished (2026-08-16)
 

@@ -36,7 +36,7 @@ Detail: [Message Reply Follow-ups](../future/feature_message_reply_followups.md)
 
 **Codename:** `feature_important_fixes`  
 **Came from:** Chat after [Feature Chat](./feature_chat.md) — vocabulary confusion and reply-path naming overload. Absorbs the former future spec [feature_code_reorganize](../future/feature_code_reorganize.md).  
-**Related:** [Message Reply Follow-ups](../future/feature_message_reply_followups.md) · [Intelligence Provider](./feature_intelligence_provider.md) · [Intelligence Provider how-to](../how_to/intelligence_provider.md) · [Current Development](../current/current_development.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md) · [Useful Price](../current/feature_useful_price.md) · [Questions](./feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](./feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
+**Related:** [Message Reply Follow-ups](../future/feature_message_reply_followups.md) · [Intelligence Provider](./feature_intelligence_provider.md) · [Intelligence Provider how-to](../how_to/intelligence_provider.md) · [Current Development](../current/current_development.md) · [CloudPilot Turn](../how_to/cloud_pilot_turn.md) · [Useful Price](./feature_useful_price.md) · [Questions](./feature_questions.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Intelligence front door](./feature_intelligence_front_door.md) · [Code cleanup](../architecture/code_cleanup.md)
 
 ---
 

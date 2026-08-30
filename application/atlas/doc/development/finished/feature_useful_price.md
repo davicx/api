@@ -15,17 +15,16 @@ daily / monthly **estimates**. Never invent prices when no row exists.
 
 ## Current step
 
-**Steps 1–3 done** — SQL applied, lookup/estimates live, create speak + scan
-**Cost** column (after Name) wired. Pause savings / “what am I paying?” still optional.
+**Finished** — 2026-08-29. Steps 1–5 done.
 
 ## Next
 
-Say **do Step 4** for pause savings / “what am I paying?”, or **do Step 5** acceptance
-and move to finished.
+_(none — archived)_ Nest `pricing/` under a supporting home later:
+[Important Fixes follow-ups](../future/feature_message_reply_followups.md) / folder notes in Important Fixes history.
 
-**Status:** Active (Steps 1–3 done)  
+**Status:** Finished  
 **Codename:** `feature_useful_price`  
-**Related:** [Current Development](./current_development.md) · [CloudPilot MVP](./feature_mvp.md) · [Friendly Create EC2](../finished/feature_friendly_create_instance.md) · [Pause / Resume](../finished/feature_pause_instance.md) · [Important Fixes](../finished/feature_important_fixes.md) (`pricing/` is a helper, not a pillar) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [CloudPilot MVP](../current/feature_mvp.md) · [Friendly Create EC2](./feature_friendly_create_instance.md) · [Pause / Resume](./feature_pause_instance.md) · [Important Fixes](./feature_important_fixes.md) (`pricing/` is a helper, not a pillar) · [Coding Style](../how_to/coding_style.md)
 
 **SQL:**
 * [cloud_service_pricing.sql](../../sql/cloud_service_pricing.sql) — table
@@ -34,10 +33,12 @@ and move to finished.
 
 **Code:**
 * `cloudPilot/pricing/CloudServicePricing.js` — DB lookup
-* `cloudPilot/pricing/estimatePricing.js` — ×24 / ×730 + speak formatting
+* `cloudPilot/pricing/estimatePricing.js` — ×24 / ×730 + pause savings + speak formatting
 * `cloudPilot/scans/ec2/enrichEC2InstancesWithPricing.js` — attach estimates to scan instances
 * Scan table Cost column in `atlasEC2ScanNavigatorAdapter.js` (after Name)
 * Create READY / CONFIRM / SUCCESS cost lines when rate known
+* Pause confirm / success savings line when verify supplies `instance_type`
+* Question `ec2_compute_cost` (“what am I paying?”) → stored-rate estimate speak
 
 ---
 
@@ -60,8 +61,8 @@ and move to finished.
 | Pricing API | **Out** — no live AWS Price List API yet; curated seed rows |
 | Spot / RI / Savings Plans | **Out** for MVP |
 | EBS / transfer / tax | **Out** — say compute On-Demand estimate only when speaking |
-| Pause savings | **Later** (Step 4 optional) — `hours × hourly`; not required for Step 1–3 |
-| Atlas | **Unchanged** — pricing lives in CloudPilot DB, not Atlas mocks |
+| Pause savings | **Default ~24h** — `hours × hourly`; omit when type/rate unknown |
+| Atlas | Verify returns `instance_type` when known; pricing still lives in CloudPilot DB |
 
 ---
 
@@ -129,6 +130,7 @@ aws | ec2 | us-west-2 | instance | t3.micro | 0.010400 | hour | on_demand | linu
 hourly  = stored price          (unit = hour)
 daily   = hourly × 24
 monthly = hourly × 730
+pause   = hourly × hours        (MVP default hours = 24)
 ```
 
 Friendly speak examples (estimates only):
@@ -137,7 +139,7 @@ Friendly speak examples (estimates only):
 This EC2 instance costs about $0.25/day ($7.59/month)
 at the stored On-Demand Linux rate for us-west-2.
 
-(Later) Pausing it for ~3 days could save about $0.75
+Pausing for about 24 hours could save about $0.25
 in compute On-Demand cost.
 ```
 
@@ -155,10 +157,10 @@ cloud_service_pricing (DB)
 CloudPilot pricing lookup  →  hourly row or null
         │
         ▼
-estimate helpers           →  { hourly, daily, monthly, currency, … }
+estimate helpers           →  { hourly, daily, monthly, … } / pause savings
         │
         ▼
-speak hooks (create / pause / inventory)  — only when rate known
+speak hooks (create / pause / scan / “what am I paying?”)  — only when rate known
 ```
 
 No pricing framework. No Atlas Price List client. One table, one lookup helper,
@@ -166,37 +168,18 @@ thin speak wiring.
 
 ---
 
-## Where it shows up (product answer)
+## Where it shows up (shipped)
 
-All three surfaces are valid — different timing:
-
-| Surface | When | MVP? |
-|---------|------|------|
-| **End of create EC2** (READY / CONFIRM / SUCCESS) | As soon as Step 2–3 land — type + region known → estimate line | **Yes — first** |
-| **Scan / findings table** | Column or cell like Est. $/mo when `instance_type` + region have a row | **Yes — strong demo** (Step 3) |
-| **“What am I paying?”** chat | Question path: need a target instance (selected finding / open context / scan result) → lookup rate → speak estimate | **Later** (after create + scan; like AI spend Question pattern) |
-
-**Recommended MVP order:** create speak first (instant money after approve), then Scan table column, then a dedicated “what am I paying” Question.
-
-Still always: **estimate / compute On-Demand only** — never invent when no row.
+| Surface | What |
+|---------|------|
+| Create READY / CONFIRM / SUCCESS | Estimated compute cost when type + region have a row |
+| Scan / findings table | Cost column (Est. monthly) after Name |
+| Pause confirm / success | ~24h compute savings when verify stashed `instance_type` |
+| “What am I paying?” Question | `ec2_compute_cost` — estimate from message values or open-request collected |
 
 ---
 
-## Where it shows up (MVP speak order)
-
-| Priority | Surface | What to say |
-|----------|---------|-------------|
-| 1 | Create READY / CONFIRM / SUCCESS | Estimated compute cost when type + region have a row |
-| 2 | Scan / findings table | Est. daily or monthly for known types |
-| 3 | Pause SUCCESS / confirm | Optional savings line |
-| Later | “What am I paying?” Question | Estimate for selected / named instance |
-
-Friendly Create already forbids inventing cost — this feature is the **honest
-data source** that unlocks those lines.
-
----
-
-## Implementation steps (after approval)
+## Implementation steps
 
 ### Step 1 — SQL + seed
 
@@ -215,26 +198,30 @@ data source** that unlocks those lines.
 
 - [x] Wire create guidance cost line when estimate known (READY / CONFIRM / SUCCESS)
 - [x] Scan / findings table **Cost** column after Name (Est. monthly USD when type known)
-- [ ] Optionally pause one-liners
-- [ ] Smoke OpenAI off + Atlas Test create/pause using `t3.micro` (manual chat pass)
 
-### Step 4 — Optional: pause savings + “what am I paying?”
+### Step 4 — Pause savings + “what am I paying?”
 
-- [ ] `hours × hourly` savings estimate on pause confirm/success
-- [ ] Label as estimate / compute only
-- [ ] Optional Question: “what am I paying?” for selected instance
+- [x] Atlas verify returns `instance_type` (live + test mock)
+- [x] Stash type onto open request collected after verify `found`
+- [x] `hours × hourly` savings estimate on pause confirm/success (default 24h)
+- [x] Label as estimate / compute On-Demand only; omit when no rate
+- [x] Question `ec2_compute_cost` (Internal classify) → grounded estimate speak
 
 ### Step 5 — Acceptance
 
-| Check | Expected |
-|-------|----------|
-| Only hourly stored | Daily/monthly calculated in app |
-| Unknown type/region | No cost claim |
-| Language | “about / approximately / estimate” |
-| Two rows work | `t3.nano` + `t3.micro` in `us-west-2` |
-| Generic table | Same schema usable later for S3 (`gb_month`, etc.) |
-| No Price List API | Seeded DB only |
-| Friendly Create | Cost line appears only when estimate known |
+| Check | Expected | Proven |
+|-------|----------|--------|
+| Only hourly stored | Daily/monthly calculated in app | Offline helpers |
+| Unknown type/region | No cost claim | `m5.xlarge` → null / honest refuse |
+| Language | “about / approximately / estimate” | Speak formatters |
+| Two rows work | `t3.nano` + `t3.micro` in `us-west-2` | Offline estimate |
+| Generic table | Same schema usable later for S3 | Table shape unchanged |
+| No Price List API | Seeded DB only | No API client |
+| Friendly Create | Cost line appears only when estimate known | Steps 1–3 |
+| Pause savings | Only when type + rate known | Helpers + confirm/success wire |
+| Paying Question | Estimate or ask for region/type; never invent | Offline Question smoke |
+
+**How Step 5 was proven (2026-08-29):** offline, no live OpenAI. Estimate + pause savings + Question classify/speak checks passed.
 
 ---
 
@@ -246,6 +233,7 @@ data source** that unlocks those lines.
 - “Total AWS bill” claims
 - Kite pricing admin UI
 - Replacing AWS Cost Explorer / billing summary
+- OpenAI classify for `ec2_compute_cost` (Internal phrases for MVP)
 
 ---
 
@@ -255,4 +243,4 @@ data source** that unlocks those lines.
 stored hourly truth → CloudPilot estimates → money in the demo
 ```
 
-Two rows. One table. Honest language. Big demo upgrade.
+Two rows. One table. Honest language. Create + scan + pause + paying Question.

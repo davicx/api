@@ -4,14 +4,17 @@ FUNCTIONS A: Pricing estimate helpers (hourly truth → daily / monthly)
     2) Function A2: formatEstimateSpeakLine
     3) Function A3: formatEstimateShortLabel
     4) Function A4: estimateEc2OnDemand
+    5) Function A5: estimatePauseSavings
+    6) Function A6: formatPauseSavingsSpeakLine
 
-Doc: doc/development/current/feature_useful_price.md
+Doc: doc/development/finished/feature_useful_price.md
 */
 
 const CloudServicePricing = require('./CloudServicePricing');
 
 const HOURS_PER_DAY = 24;
 const HOURS_PER_MONTH = 730;
+const DEFAULT_PAUSE_SAVINGS_HOURS = HOURS_PER_DAY;
 
 //Function A1: Daily / monthly from a stored hourly rate row
 function estimateFromHourly(hourlyRow) {
@@ -76,6 +79,57 @@ async function estimateEc2OnDemand(region, instanceType) {
     return estimateFromHourly(hourlyRow);
 }
 
+//Function A5: Pause savings for N hours (default ~24h) from an estimate
+function estimatePauseSavings(estimate, hours) {
+    if (!estimate || estimate.hourly == null) {
+        return null;
+    }
+
+    const hoursCount =
+        hours == null || hours === ''
+            ? DEFAULT_PAUSE_SAVINGS_HOURS
+            : Number(hours);
+
+    if (!Number.isFinite(hoursCount) || hoursCount <= 0) {
+        return null;
+    }
+
+    const hourly = Number(estimate.hourly);
+
+    if (!Number.isFinite(hourly) || hourly < 0) {
+        return null;
+    }
+
+    return {
+        hours: hoursCount,
+        amount: roundMoney(hourly * hoursCount),
+        currency: estimate.currency || 'USD',
+        resourceName: estimate.resourceName || null,
+        region: estimate.region || null,
+        isEstimate: true
+    };
+}
+
+//Function A6: Pause savings speak — estimate / compute On-Demand only
+function formatPauseSavingsSpeakLine(savings) {
+    if (!savings || savings.amount == null) {
+        return null;
+    }
+
+    const hoursLabel =
+        Number(savings.hours) === HOURS_PER_DAY
+            ? 'about 24 hours'
+            : 'about ' + String(savings.hours) + ' hours';
+
+    return (
+        'Pausing for ' +
+        hoursLabel +
+        ' could save about $' +
+        formatMoney(savings.amount) +
+        ' in compute On-Demand cost.'
+    );
+}
+
 function roundMoney(value) {
     const n = Number(value);
 
@@ -103,8 +157,11 @@ function formatMoney(value) {
 module.exports = {
     HOURS_PER_DAY,
     HOURS_PER_MONTH,
+    DEFAULT_PAUSE_SAVINGS_HOURS,
     estimateFromHourly,
     formatEstimateSpeakLine,
     formatEstimateShortLabel,
-    estimateEc2OnDemand
+    estimateEc2OnDemand,
+    estimatePauseSavings,
+    formatPauseSavingsSpeakLine
 };

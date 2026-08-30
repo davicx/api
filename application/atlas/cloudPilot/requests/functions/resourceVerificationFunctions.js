@@ -11,6 +11,9 @@ FUNCTIONS A: Existing-resource preflight (Atlas truth — not Intelligence)
     1) Function A1: runVerifyResourcePreflight
     2) Function A2: verifyActionResource
 
+HELPERS
+    1) Helper H1: stashVerifiedInstanceType
+
 Doc: doc/development/finished/feature_verify_request.md (Steps 2–3)
 */
 
@@ -58,6 +61,15 @@ async function runVerifyResourcePreflight(decision, requestState) {
     outcome.verification = verification;
 
     if (verification.outcome === 'found') {
+        const enrichedState = await stashVerifiedInstanceType(
+            requestState,
+            verification
+        );
+
+        if (enrichedState) {
+            outcome.requestState = enrichedState;
+        }
+
         return outcome;
     }
 
@@ -206,6 +218,42 @@ async function verifyActionResource(actionDefinition, collectedFields) {
         message: 'EC2 instance was found.',
         atlasResponse: lastAtlasResponse
     };
+}
+
+//Helper H1: Persist Atlas instance_type onto the open request (for pause cost speak)
+async function stashVerifiedInstanceType(requestState, verification) {
+    const atlasData =
+        verification &&
+        verification.atlasResponse &&
+        verification.atlasResponse.data
+            ? verification.atlasResponse.data
+            : null;
+    const instanceType =
+        atlasData && atlasData.instance_type != null
+            ? String(atlasData.instance_type).trim()
+            : '';
+
+    if (!instanceType || !requestState || !requestState.workflowId) {
+        return null;
+    }
+
+    const collected = Object.assign({}, requestState.collected || {});
+
+    if (String(collected.instance_type || '').trim() === instanceType) {
+        return null;
+    }
+
+    collected.instance_type = instanceType;
+
+    const updateOutcome = await Request.updateAction(requestState.workflowId, {
+        collected: collected
+    });
+
+    if (!updateOutcome.success || !updateOutcome.action) {
+        return Object.assign({}, requestState, { collected: collected });
+    }
+
+    return RequestStateFunctions.mapActionToState(updateOutcome.action);
 }
 
 module.exports = {

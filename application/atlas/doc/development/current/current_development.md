@@ -1,17 +1,15 @@
 # Current Development — What We Are Working On
 
-**Last updated:** 2026-08-16  
+**Last updated:** 2026-08-29  
 
 This is the active-work dashboard. It contains only features we are working on now.
 
-## End-of-day handoff — 2026-08-14
+## End-of-day handoff — 2026-08-29
 
-[Feature Chat](../finished/feature_chat.md) shipped
-(friendly request presentation; templates stay Internal + fallback).
-[Friendly Dashboard](../finished/feature_friendly_dashboard.md) shipped
-(S3 findings-first UI; Fix→Chat coming soon). Step 6 (real S3 remediations) moved to
-[future](../future/feature_s3_remediation_modes.md). MVP boundary remains in
-[CloudPilot MVP](./feature_mvp.md). Finished work lives in
+[Useful Price](../finished/feature_useful_price.md) shipped
+(create/scan cost speak, pause ~24h savings, `ec2_compute_cost` Question).
+Earlier: [Feature Chat](../finished/feature_chat.md), [Friendly Dashboard](../finished/feature_friendly_dashboard.md).
+MVP boundary remains in [CloudPilot MVP](./feature_mvp.md). Finished work lives in
 [finished/](../finished/finished.md).
 
 ## How to use these docs
@@ -28,8 +26,8 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
+| [Feature Conversation](./feature_conversation.md) | Better conversation now (Phase 1); tools / broader AWS / memory / remediations later (Phases 2–6). | Plan locked — **Phase 1 awaiting start** |
 | [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
-| [Useful Price](./feature_useful_price.md) | Stored EC2 hourly rates → daily/monthly **estimates** in speak + scan **Cost** column (`t3.nano` / `t3.micro` us-west-2). | Steps 1–3 done — **next: Step 4 optional or Step 5 acceptance** |
 | [Spending Hard Limit](./feature_spending_hard_limit.md) | Monthly **hard cap** on AWS (Cost Explorer) + OpenAI; block paid actions at limit. | Plan locked — **Phase 1 = Safety (OpenAI) awaiting Step 1** |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Phase 1 detail: OpenAI gate only (`cloud_pilot_safety` + `checkSpendingLimit`). | Plan locked — **awaiting Step 1** |
 
@@ -37,6 +35,7 @@ This is the active-work dashboard. It contains only features we are working on n
 
 | Feature | What shipped |
 |---------|----------------|
+| [Useful Price](../finished/feature_useful_price.md) | Hourly rates → create/scan/pause estimates + “what am I paying?” Question |
 | [Important Fixes](../finished/feature_important_fixes.md) | Turn + Message / Response / Message Reply vocabulary; speak/present/friendly renames — [follow-ups](../future/feature_message_reply_followups.md) |
 | [Intelligence Provider](../finished/feature_intelligence_provider.md) | Search TASK family: one context object → Internal \| OpenAI → same result; [how-to](../how_to/intelligence_provider.md) |
 | [Feature Chat](../finished/feature_chat.md) | Friendly request presentation when OpenAI is on; templates stay Internal + fallback |

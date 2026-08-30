@@ -19,7 +19,7 @@
 --       doc/development/finished/feature_ai_spending.md (cloud_pilot_ai_usage)
 --       doc/development/finished/feature_organizational_knowledge.md
 --       doc/development/finished/feature_images.md
---       doc/development/current/feature_useful_price.md
+--       doc/development/finished/feature_useful_price.md
 --
 -- Usage:
 --   mysql -u USER -p DATABASE_NAME < doc/sql/master_sql.sql
@@ -493,7 +493,7 @@ ON DUPLICATE KEY UPDATE
 
 -- -----------------------------------------------------------------------------
 -- 7. cloud_service_pricing (curated unit rates — MVP EC2 hourly)
---     See doc/development/current/feature_useful_price.md
+--     See doc/development/finished/feature_useful_price.md
 --     Full copy also in:
 --       doc/sql/cloud_service_pricing.sql
 --       doc/sql/seed/seed_cloud_service_pricing.sql

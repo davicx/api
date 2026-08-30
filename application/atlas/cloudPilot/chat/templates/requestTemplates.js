@@ -191,6 +191,13 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
             executionMode: executionMode,
             estimatedComputeCost: estimatedComputeCost
         });
+    } else if (actionDefinition && actionDefinition.type === 'pause_ec2') {
+        message = await buildPauseEc2ConfirmMessage({
+            readyMessage: readyMessage,
+            executionMode: executionMode,
+            collectedFields: collectedFields,
+            actionType: actionType
+        });
     } else if (executionMode) {
         message =
             readyMessage +
@@ -368,6 +375,46 @@ async function buildCreateEc2EstimatedCostSpeak(collectedFields) {
     const estimate = await EstimatePricingFunctions.estimateEc2OnDemand(region, instanceType);
 
     return EstimatePricingFunctions.formatEstimateSpeakLine(estimate);
+}
+
+async function buildPauseEc2SavingsSpeak(collectedFields) {
+    const collected = collectedFields || {};
+    const region = String(collected.region || '').trim();
+    const instanceType = String(collected.instance_type || '').trim();
+
+    if (!region || !instanceType) {
+        return null;
+    }
+
+    const estimate = await EstimatePricingFunctions.estimateEc2OnDemand(region, instanceType);
+    const savings = EstimatePricingFunctions.estimatePauseSavings(estimate);
+
+    return EstimatePricingFunctions.formatPauseSavingsSpeakLine(savings);
+}
+
+async function buildPauseEc2ConfirmMessage(options) {
+    const settings = options || {};
+    const readyMessage =
+        settings.readyMessage || 'Everything is ready to pause the EC2 instance.';
+    const executionMode = settings.executionMode
+        ? String(settings.executionMode).trim()
+        : '';
+    const actionType = settings.actionType || 'pause_ec2';
+    const savingsLine = await buildPauseEc2SavingsSpeak(settings.collectedFields || {});
+
+    let message = readyMessage;
+
+    if (executionMode) {
+        message += '\n\nExecution mode: ' + executionMode;
+    }
+
+    if (savingsLine) {
+        message += '\n\n' + savingsLine;
+    }
+
+    message += '\n\n' + buildConfirmOrCancelLine(actionType);
+
+    return message;
 }
 
 module.exports = {

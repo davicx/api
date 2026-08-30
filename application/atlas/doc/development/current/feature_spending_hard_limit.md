@@ -25,7 +25,7 @@ This is **not** AWS Budgets or account-wide shutdown. Charges from outside Cloud
 Say **do Step 1** to create the safety table and seed OpenAI limits (same as [CloudPilot Safety](./feature_cloud_pilot_safety.md) Step 1).
 
 **Codename:** `spendingHardLimit`  
-**Related:** [CloudPilot Safety](./feature_cloud_pilot_safety.md) (Phase 1 — OpenAI) · [AI Spending](../finished/feature_ai_spending.md) · [Billing](../future/billing.md) · [Useful Price](./feature_useful_price.md) · [Current Development](./current_development.md)
+**Related:** [CloudPilot Safety](./feature_cloud_pilot_safety.md) (Phase 1 — OpenAI) · [AI Spending](../finished/feature_ai_spending.md) · [Billing](../future/billing.md) · [Useful Price](../finished/feature_useful_price.md) · [Current Development](./current_development.md)
 
 ---
 

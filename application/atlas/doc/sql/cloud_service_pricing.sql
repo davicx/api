@@ -2,7 +2,7 @@
 -- cloud_service_pricing
 -- =============================================================================
 --
--- Doc: doc/development/current/feature_useful_price.md
+-- Doc: doc/development/finished/feature_useful_price.md
 --
 -- Curated cloud resource unit prices (MVP: EC2 On-Demand hourly rates).
 -- Store the unit rate only — CloudPilot calculates daily (×24) / monthly (×730)

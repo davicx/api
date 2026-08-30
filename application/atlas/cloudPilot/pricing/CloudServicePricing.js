@@ -5,7 +5,7 @@ METHODS A: cloud_service_pricing lookup
     1) Method A1: findHourlyRate
     2) Method A2: findHourlyRatesForNames
 
-Doc: doc/development/current/feature_useful_price.md
+Doc: doc/development/finished/feature_useful_price.md
 */
 
 class CloudServicePricing {

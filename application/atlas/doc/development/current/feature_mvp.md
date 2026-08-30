@@ -30,7 +30,7 @@ Work the five items below toward `works` + `passed`. Primary product work that
 feeds this checklist:
 
 - [Friendly Create EC2](../finished/feature_friendly_create_instance.md) — create polish
-- [Useful Price](./feature_useful_price.md) — honest compute cost estimates in speak
+- [Useful Price](../finished/feature_useful_price.md) — honest compute cost estimates in speak
 - [GitHub Pull Requests](../future/feature_github_pull_requests.md) — PR demo concept (deferred)
 - Pause / Resume already shipped — [feature_pause_instance](../finished/feature_pause_instance.md)
 - Verify / scan recovery shipped — [feature_verify_request](../finished/feature_verify_request.md)

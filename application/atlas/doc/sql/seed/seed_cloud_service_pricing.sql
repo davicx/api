@@ -2,7 +2,7 @@
 -- Seed cloud_service_pricing (MVP: t3.nano + t3.micro, us-west-2)
 -- =============================================================================
 --
--- Doc: doc/development/current/feature_useful_price.md
+-- Doc: doc/development/finished/feature_useful_price.md
 -- Requires: doc/sql/cloud_service_pricing.sql already applied
 --
 -- Usage:

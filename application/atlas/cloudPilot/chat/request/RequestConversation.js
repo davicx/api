@@ -2,6 +2,7 @@ const actionMap = require('../../actionMap');
 const CloudPilotMessage = require('../CloudPilotMessage');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const OpenRequestsFunctions = require('../../questions/openRequests');
+const Ec2ComputeCostFunctions = require('../../questions/ec2ComputeCost');
 const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 const InstructionsStrategy = require('../../executionModes/instructions/InstructionsLogic');
 const CliStrategy = require('../../executionModes/cli/CliLogic');
@@ -35,6 +36,21 @@ async function conversation(decision, context) {
                 collectedFields: collectedFields,
                 estimatedComputeCost: estimatedComputeCost
             });
+        }
+
+        if (
+            executionOutcome.success === true &&
+            requestState.pendingAction === 'pause_ec2' &&
+            !(executionOutcome.atlasResponse && executionOutcome.atlasResponse.noop === true)
+        ) {
+            const pauseSavingsLine = await buildPauseEc2SavingsSpeak(
+                requestState.collected || {}
+            );
+
+            if (pauseSavingsLine) {
+                cloudPilotMessage =
+                    String(cloudPilotMessage || '').trim() + '\n\n' + pauseSavingsLine;
+            }
         }
 
         return CloudPilotMessage.prepareKnownMessageReply({
@@ -85,6 +101,24 @@ async function conversation(decision, context) {
             chatType: decision.chatType,
             atlasResponse: openRequestsResponse.atlasResponse || null,
             error: openRequestsResponse.error || null
+        });
+    }
+
+    if (responseType === RESPONSE_TYPE.EC2_COMPUTE_COST) {
+        const computeCostResponse = await Ec2ComputeCostFunctions.buildEc2ComputeCostResponse({
+            values:
+                decision.response && decision.response.values
+                    ? decision.response.values
+                    : {},
+            collected: requestState.collected || {}
+        });
+
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: computeCostResponse.success,
+            cloudPilotMessage: computeCostResponse.cloudPilotMessage,
+            chatType: decision.chatType,
+            atlasResponse: computeCostResponse.atlasResponse || null,
+            error: computeCostResponse.error || null
         });
     }
 
@@ -380,6 +414,21 @@ async function buildCreateEc2EstimatedCostSpeak(collectedFields) {
     const estimate = await EstimatePricingFunctions.estimateEc2OnDemand(region, instanceType);
 
     return EstimatePricingFunctions.formatEstimateSpeakLine(estimate);
+}
+
+async function buildPauseEc2SavingsSpeak(collectedFields) {
+    const collected = collectedFields || {};
+    const region = String(collected.region || '').trim();
+    const instanceType = String(collected.instance_type || '').trim();
+
+    if (!region || !instanceType) {
+        return null;
+    }
+
+    const estimate = await EstimatePricingFunctions.estimateEc2OnDemand(region, instanceType);
+    const savings = EstimatePricingFunctions.estimatePauseSavings(estimate);
+
+    return EstimatePricingFunctions.formatPauseSavingsSpeakLine(savings);
 }
 
 module.exports = {
