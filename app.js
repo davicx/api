@@ -37,6 +37,7 @@ const todos = require('./application/routes/todoRoutes.js');
 const instructions = require('./application/atlas/routes/instructionRoutes.js');
 const aiUsage = require('./application/atlas/routes/aiUsageRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');
+const openAI = require('./application/routes/openAI/openAIRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -55,6 +56,7 @@ app.use(todos);
 app.use(instructions);
 app.use(aiUsage);
 app.use(conversations);
+app.use(openAI);
 
 //Moved to doc backup
 //const uploadLearning = require('./application/upload_temp/uploadRoutes.js');
