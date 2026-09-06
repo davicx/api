@@ -198,13 +198,20 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
             collectedFields: collectedFields,
             actionType: actionType
         });
-    } else if (executionMode) {
-        message =
-            readyMessage +
-            '\n\nExecution mode: ' +
-            executionMode +
-            '\n\n' +
-            buildConfirmOrCancelLine(actionType);
+    } else {
+        message = readyMessage;
+
+        const collectedSummary = buildCollectedFieldsConfirmSummary(collectedFields);
+
+        if (collectedSummary) {
+            message += '\n\n' + collectedSummary;
+        }
+
+        if (executionMode) {
+            message += '\n\nExecution mode: ' + executionMode;
+        }
+
+        message += '\n\n' + buildConfirmOrCancelLine(actionType);
     }
 
     return {
@@ -256,9 +263,11 @@ async function cloudPilotRespondWorkflowRunning(payload) {
     return {
         success: true,
         message:
-            'Your ' +
+            'This ' +
             actionLabel +
-            ' action is already running. I will let you know when it finishes.',
+            ' request is marked running from an earlier turn. ' +
+            'CloudPilot does not send a later update when work finishes. ' +
+            'Say cancel to clear it, then start again.',
         atlasResponse: null,
         error: null
     };
@@ -319,37 +328,78 @@ async function cloudPilotRespondRequestStatus(payload) {
 }
 
 async function cloudPilotRespondExecutionStarted(payload) {
-    const actionDefinition = payload.actionDefinition;
-    const actionLabel = actionDefinition.actionLabel || actionDefinition.type || 'action';
-    const collectedFields =
-        payload.actionState && payload.actionState.collectedFields
-            ? payload.actionState.collectedFields
-            : {};
-    let regionText = '';
+    // Fallback only — normal sync path returns STEP 6 findings/error instead of this template.
+    return {
+        success: false,
+        message:
+            'I could not complete that action in this turn. Please try again, or say cancel and start over.',
+        atlasResponse: null,
+        error: 'execution_started_without_result'
+    };
+}
 
-    if (collectedFields.region) {
-        regionText = ' in ' + String(collectedFields.region);
+function buildCollectedFieldsConfirmSummary(collectedFields) {
+    const collected = collectedFields && typeof collectedFields === 'object' ? collectedFields : {};
+    const fieldLabels = {
+        region: 'Region',
+        request_name: 'Name',
+        instance_id: 'Instance ID',
+        instance_type: 'Instance type',
+        primary_instance_id: 'Primary instance ID',
+        secondary_instance_id: 'Secondary instance ID'
+    };
+    const preferredOrder = [
+        'region',
+        'request_name',
+        'instance_id',
+        'instance_type',
+        'primary_instance_id',
+        'secondary_instance_id'
+    ];
+    const lines = [];
+    const seen = {};
+
+    for (let i = 0; i < preferredOrder.length; i++) {
+        const fieldName = preferredOrder[i];
+        const value = collected[fieldName];
+
+        if (value == null || String(value).trim() === '') {
+            continue;
+        }
+
+        lines.push(fieldLabels[fieldName] + ': ' + String(value).trim());
+        seen[fieldName] = true;
     }
 
-    return {
-        success: true,
-        message:
-            'Starting your ' +
-            actionLabel +
-            regionText +
-            '. I will update you when it finishes.',
-        atlasResponse: null,
-        error: null
-    };
+    const fieldNames = Object.keys(collected);
+
+    for (let i = 0; i < fieldNames.length; i++) {
+        const fieldName = fieldNames[i];
+
+        if (seen[fieldName]) {
+            continue;
+        }
+
+        const value = collected[fieldName];
+
+        if (value == null || typeof value === 'object' || String(value).trim() === '') {
+            continue;
+        }
+
+        const label = fieldLabels[fieldName] || fieldName;
+        lines.push(label + ': ' + String(value).trim());
+    }
+
+    return lines.join('\n');
 }
 
 function buildConfirmOrCancelLine(actionType) {
     if (actionType === 'scan_ec2') {
-        return 'Confirm to run now, or cancel the scan.';
+        return 'Confirm to run the scan now, or cancel.';
     }
 
     if (actionType === 'scan_s3') {
-        return 'Confirm to run now, or cancel the scan.';
+        return 'Confirm to run the scan now, or cancel.';
     }
 
     return 'Confirm to run now, or cancel.';

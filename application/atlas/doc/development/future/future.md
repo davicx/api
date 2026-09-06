@@ -6,7 +6,8 @@
 > **Chat backlog:** [feature_chat_guardrails.md](./feature_chat_guardrails.md) (after [feature_chat](../finished/feature_chat.md))  
 > **Naming / folders (finished):** [feature_important_fixes.md](../finished/feature_important_fixes.md) · leftovers: [feature_message_reply_followups.md](./feature_message_reply_followups.md)  
 > **PR demo (deferred):** [feature_github_pull_requests.md](./feature_github_pull_requests.md)  
-> **S3 remediations (later):** [feature_s3_remediation_modes.md](./feature_s3_remediation_modes.md)
+> **S3 remediations (later):** [feature_s3_remediation_modes.md](./feature_s3_remediation_modes.md)  
+> **Integrations (post-MVP):** [future_services.md](./future_services.md)
 
 ## History & undo
 

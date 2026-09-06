@@ -115,7 +115,7 @@ function buildExecutionModeOptions(actionDefinition) {
 //Helper H6: Confirm/cancel line (must match requestTemplates)
 function buildConfirmOrCancelLine(actionType) {
     if (actionType === 'scan_ec2' || actionType === 'scan_s3') {
-        return 'Confirm to run now, or cancel the scan.';
+        return 'Confirm to run the scan now, or cancel.';
     }
 
     return 'Confirm to run now, or cancel.';

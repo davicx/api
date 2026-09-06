@@ -1,3 +1,16 @@
+# CloudPilot MVP — EC2 Operating Boundary (ARCHIVED)
+
+**Status:** Archived — superseded  
+**Archived:** 2026-09-05  
+**Superseded by:** [CloudPilot MVP — Canonical Scope](../feature_mvp.md)
+
+This document defined the previous MVP boundary: **EC2 operate** (create, delete,
+pause/resume, history/undo, real Terraform PR). It is kept for history only.
+
+Do **not** use this checklist to drive MVP development.
+
+---
+
 # CloudPilot MVP — EC2 Operating Boundary
 
 ## What this does
@@ -31,14 +44,14 @@ feeds this checklist:
 
 - [Friendly Create EC2](../finished/feature_friendly_create_instance.md) — create polish
 - [Useful Price](../finished/feature_useful_price.md) — honest compute cost estimates in speak
-- [GitHub Pull Requests](../future/feature_github_pull_requests.md) — PR demo concept (deferred)
+- [GitHub Pull Requests](./feature_github_pull_requests.md) — PR demo concept (deferred)
 - Pause / Resume already shipped — [feature_pause_instance](../finished/feature_pause_instance.md)
 - Verify / scan recovery shipped — [feature_verify_request](../finished/feature_verify_request.md)
 - History backend shipped — [history](../finished/history.md); UI polish still open
 
-**Status:** Active (MVP dashboard)  
-**Codename:** `feature_mvp`  
-**Related:** [Current Development](./current_development.md)
+**Status:** Archived  
+**Codename:** `feature_mvp` (old)  
+**Related:** [Current Development](../current/current_development.md)
 
 ---
 
@@ -248,7 +261,7 @@ CloudPilot). Keep a demo branch where CloudPilot can show a realistic change.
 - [ ] works
 - [ ] passed
 
-**Primary feature:** [GitHub Pull Requests](../future/feature_github_pull_requests.md)
+**Primary feature:** [GitHub Pull Requests](./feature_github_pull_requests.md)
 
 Preferred demo prompt:
 

@@ -21,7 +21,7 @@ Then the **existing** request / action flow runs unchanged.
 **Finished** — Steps 0–4 + acceptance against Atlas **Test** (OpenAI off templates primary; create context attached to Chat CURRENT STATE when `create_ec2` is open). Step 5 Kite Create · Cancel deferred (chat confirm OK).
 
 **Codename:** `feature_friendly_create_instance`  
-**Related:** [Current Development](../current/current_development.md) · [Finished index](./finished.md) · [CloudPilot MVP](../current/feature_mvp.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [CloudPilot Images](./feature_images.md) · [Pause / Resume](./feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md) · [CloudPilot Context how-to](../how_to/cloud_pilot_context.md)
+**Related:** [Current Development](../current/current_development.md) · [Finished index](./finished.md) · [CloudPilot MVP](../feature_mvp.md) · [CloudPilot Context](./feature_cloud_pilot_context.md) · [CloudPilot Images](./feature_images.md) · [Pause / Resume](./feature_pause_instance.md) · [Coding Style](../how_to/coding_style.md) · [CloudPilot Context how-to](../how_to/cloud_pilot_context.md)
 
 ---
 

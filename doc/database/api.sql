@@ -7,8 +7,27 @@
 #########
 
 
-#UPDATE shareshare.groups SET group_name = "A weekend in Sunriver" WHERE group_id = 70;
+-- Group 70 → Kite (owned by davey)
+
 SELECT * FROM shareshare.groups;
+#SELECT * FROM posts;
+#SELECT * FROM messages;
+
+
+UPDATE shareshare.groups SET group_description = "We spent a winter weekend in Sunriver!" WHERE group_id = 70;
+#DELETE FROM shareshare.groups WHERE group_id > 722;
+
+
+
+
+
+-- 3) Clear membership / invites if those tables exist (skip if not)
+-- DELETE FROM group_users WHERE group_id IN (723, 724);
+-- DELETE FROM group_members WHERE group_id IN (723, 724);
+-- DELETE FROM group_invites WHERE group_id IN (723, 724);
+
+-- 4) Delete the groups
+
 
 #SELECT * FROM cloudpilot_workflows;
 

@@ -9,8 +9,9 @@ This is the active-work dashboard. It contains only features we are working on n
 [Useful Price](../finished/feature_useful_price.md) shipped
 (create/scan cost speak, pause ~24h savings, `ec2_compute_cost` Question).
 Earlier: [Feature Chat](../finished/feature_chat.md), [Friendly Dashboard](../finished/feature_friendly_dashboard.md).
-MVP boundary remains in [CloudPilot MVP](./feature_mvp.md). Finished work lives in
-[finished/](../finished/finished.md).
+MVP boundary remains in [CloudPilot MVP](../feature_mvp.md)
+([archived EC2 operate MVP](../future/feature_mvp_ec2_operating_boundary.md)).
+Finished work lives in [finished/](../finished/finished.md).
 
 ## How to use these docs
 
@@ -27,7 +28,7 @@ MVP boundary remains in [CloudPilot MVP](./feature_mvp.md). Finished work lives 
 | Feature | What it does | Current step |
 |---------|--------------|--------------|
 | [Feature Conversation](./feature_conversation.md) | Better conversation now (Phase 1); tools / broader AWS / memory / remediations later (Phases 2–6). | Plan locked — **Phase 1 awaiting start** |
-| [CloudPilot MVP](./feature_mvp.md) | EC2 operating boundary: create, delete, pause/resume, history UI, PR concept. | Plan locked — track **works / passed** |
+| [CloudPilot MVP](../feature_mvp.md) | Canonical: Find → Understand → Explain → Act → Verify (EC2 + S3); Terraform resize PR preview only. | Active — track **works / passed** |
 | [Spending Hard Limit](./feature_spending_hard_limit.md) | Monthly **hard cap** on AWS (Cost Explorer) + OpenAI; block paid actions at limit. | Plan locked — **Phase 1 = Safety (OpenAI) awaiting Step 1** |
 | [CloudPilot Safety](./feature_cloud_pilot_safety.md) | Phase 1 detail: OpenAI gate only (`cloud_pilot_safety` + `checkSpendingLimit`). | Plan locked — **awaiting Step 1** |
 

@@ -19,10 +19,16 @@ Orchestrates speak routing. CloudPilotMessage produces outgoing words.
 //Function A1: Request Conversation speak entry
 async function conversation(decision, context) {
     const executionOutcome = context.executionOutcome || null;
+    const responseTypeEarly =
+        decision.response && decision.response.type ? decision.response.type : '';
+    const executionMessage =
+        executionOutcome && executionOutcome.cloudPilotMessage
+            ? String(executionOutcome.cloudPilotMessage).trim()
+            : '';
 
-    if (executionOutcome && executionOutcome.ran && executionOutcome.cloudPilotMessage) {
+    if (executionOutcome && executionOutcome.ran && executionMessage) {
         const requestState = getRequestStateFromContext(context);
-        let cloudPilotMessage = executionOutcome.cloudPilotMessage;
+        let cloudPilotMessage = executionMessage;
 
         if (
             executionOutcome.success === true &&
@@ -62,9 +68,27 @@ async function conversation(decision, context) {
         });
     }
 
+    // EXECUTION_STARTED is internal permission for STEP 6 — never an intermediate chat beat.
+    // Sync path: confirm → store running → execute → findings/error in this same HTTP response.
+    if (responseTypeEarly === RESPONSE_TYPE.EXECUTION_STARTED) {
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: false,
+            cloudPilotMessage:
+                'I could not complete that action in this turn. Please try again, or say cancel and start over.',
+            chatType: decision.chatType,
+            atlasResponse:
+                executionOutcome && executionOutcome.atlasResponse
+                    ? executionOutcome.atlasResponse
+                    : null,
+            error:
+                (executionOutcome && executionOutcome.error) ||
+                'execution_started_without_result'
+        });
+    }
+
     const requestState = getRequestStateFromContext(context);
     const requestOutcome = context.requestOutcome || {};
-    const responseType = decision.response && decision.response.type ? decision.response.type : '';
+    const responseType = responseTypeEarly;
 
     const requestSeedErrorMessage = buildRequestSeedErrorMessage(requestOutcome);
 

@@ -24,7 +24,7 @@ _(none — archived)_ Nest `pricing/` under a supporting home later:
 
 **Status:** Finished  
 **Codename:** `feature_useful_price`  
-**Related:** [Current Development](../current/current_development.md) · [CloudPilot MVP](../current/feature_mvp.md) · [Friendly Create EC2](./feature_friendly_create_instance.md) · [Pause / Resume](./feature_pause_instance.md) · [Important Fixes](./feature_important_fixes.md) (`pricing/` is a helper, not a pillar) · [Coding Style](../how_to/coding_style.md)
+**Related:** [Current Development](../current/current_development.md) · [CloudPilot MVP](../feature_mvp.md) · [Friendly Create EC2](./feature_friendly_create_instance.md) · [Pause / Resume](./feature_pause_instance.md) · [Important Fixes](./feature_important_fixes.md) (`pricing/` is a helper, not a pillar) · [Coding Style](../how_to/coding_style.md)
 
 **SQL:**
 * [cloud_service_pricing.sql](../../sql/cloud_service_pricing.sql) — table

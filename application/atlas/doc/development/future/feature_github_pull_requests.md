@@ -16,7 +16,7 @@ When picked up again: complete **Step 7** pass checklist (chat → real PR → l
 no AWS from PR path), then archive to `finished/`.
 
 **Status:** Future — deferred Step 7 E2E  
-**Related:** [Current Development](../current/current_development.md) · [CloudPilot MVP](../current/feature_mvp.md) · [MVP plan](./mvp.md) · [Remediations](./remediations.md) · [Future work](./future.md)
+**Related:** [Current Development](../current/current_development.md) · [CloudPilot MVP](../feature_mvp.md) · [Archived EC2 operate MVP](./feature_mvp_ec2_operating_boundary.md) · [MVP plan](./mvp.md) · [Remediations](./remediations.md) · [Future work](./future.md)
 
 ---
 

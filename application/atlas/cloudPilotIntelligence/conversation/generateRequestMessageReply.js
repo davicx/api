@@ -46,6 +46,15 @@ function buildPresentationRules(context) {
         rules.push(
             'Polish the confirmation. Keep collected values and the execution mode visible. Do not add fields.'
         );
+        rules.push(
+            'Keep confirmOrCancelLine from SPEAK FACTS exactly as given. The user must still be asked to confirm or cancel before any work runs.'
+        );
+        rules.push(
+            'Do NOT imply execution has begun. Forbidden language includes: starting, started, running, in progress, please wait, hold on, I will update you, I will let you know, or similar.'
+        );
+        rules.push(
+            'CloudPilot runs work in the same HTTP turn after the user confirms. Do not describe background jobs, later callbacks, or async updates.'
+        );
     }
 
     if (actionEvent === 'missing_fields_given' && context.latestCollectedField) {
@@ -140,6 +149,10 @@ function collectRequiredFactValues(context) {
         }
     }
 
+    if (actionEvent === 'awaiting_confirmation' && facts.confirmOrCancelLine) {
+        requiredValues.push(facts.confirmOrCancelLine);
+    }
+
     if (facts.executionMode) {
         requiredValues.push(facts.executionMode);
     }
@@ -202,11 +215,54 @@ function prepareFinalRequestMessageReplyForOpenAI(context) {
     };
 }
 
+//Helper H2b: Confirmation polish must not invent async / already-started language
+function openAIResponseImpliesExecutionStarted(openAIResponse) {
+    const message = String(openAIResponse || '').toLowerCase();
+    const forbiddenPhrases = [
+        'starting the',
+        'starting your',
+        'starting now',
+        'please hold',
+        'hold on',
+        'in progress',
+        'please wait',
+        "i'll let you know",
+        'i will let you know',
+        "i'll update you",
+        'i will update you',
+        'already running',
+        'is running',
+        'running now',
+        'began scanning',
+        'began the scan',
+        'scan has started',
+        'scan started'
+    ];
+
+    for (let i = 0; i < forbiddenPhrases.length; i++) {
+        if (message.indexOf(forbiddenPhrases[i]) !== -1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 //Helper H2: Did the OpenAI Response still include required values?
 function openAIResponseContainsRequiredValues(openAIResponse, context) {
     const message = String(openAIResponse || '');
 
     if (!message.trim()) {
+        return false;
+    }
+
+    const actionEvent =
+        context && context.actionEvent ? String(context.actionEvent) : '';
+
+    if (
+        actionEvent === 'awaiting_confirmation' &&
+        openAIResponseImpliesExecutionStarted(message)
+    ) {
         return false;
     }
 
@@ -352,5 +408,6 @@ module.exports = {
     generateRequestMessageReplyInternal,
     generateRequestMessageReplyOpenAI,
     openAIResponseContainsRequiredValues,
+    openAIResponseImpliesExecutionStarted,
     prepareFinalRequestMessageReplyForOpenAI
 };

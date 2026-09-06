@@ -21,7 +21,7 @@ Default dashboard answers:
 * [S3 remediation modes](../future/feature_s3_remediation_modes.md) — former Step 6
 * [Make scans useful](../future/make_scans_useful.md)
 * [Remediations](../future/remediations.md)
-* [CloudPilot MVP](../current/feature_mvp.md)
+* [CloudPilot MVP](../feature_mvp.md)
 
 ---
 
