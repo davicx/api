@@ -102,31 +102,79 @@ function writeIdentity(cloudPilotContext) {
 // Friendly Create Step 4: optional create_ec2 knowledge facts when that request is open
 function writeCurrentState(currentStateContext) {
     const data = currentStateContext && currentStateContext.data;
+    const hasOpenRequestFlag = data && data.hasOpenRequest === true;
     const openRequest = data && data.openRequest;
     const createEc2 = data && data.createEc2;
 
-    const hasOpenRequest = openRequest && typeof openRequest === 'object';
+    const hasOpenRequest =
+        hasOpenRequestFlag || (openRequest && typeof openRequest === 'object');
     const hasCreateEc2 = createEc2 && typeof createEc2 === 'object';
 
-    if (!hasOpenRequest && !hasCreateEc2) {
+    if (!hasOpenRequest && !hasCreateEc2 && data && data.hasOpenRequest !== false) {
         return '';
     }
 
     const lines = ['CURRENT CLOUDPILOT STATE', ''];
 
-    if (hasOpenRequest) {
+    if (data && Object.prototype.hasOwnProperty.call(data, 'hasOpenRequest')) {
+        lines.push('HAS OPEN REQUEST: ' + (hasOpenRequest ? 'YES' : 'NO'));
+        lines.push('');
+    }
+
+    if (hasOpenRequest && openRequest && typeof openRequest === 'object') {
         const label = openRequest.label ? String(openRequest.label).trim() : '';
+        const action = openRequest.action ? String(openRequest.action).trim() : '';
+        const status = openRequest.status ? String(openRequest.status).trim() : '';
+
+        lines.push('Open request:');
 
         if (label) {
-            lines.push('Open request:');
-            lines.push(label);
-
-            if (Array.isArray(openRequest.waitingFor) && openRequest.waitingFor.length > 0) {
-                lines.push('Waiting for: ' + openRequest.waitingFor.join(', '));
-            }
-
-            lines.push('');
+            lines.push('Action: ' + label + (action && action !== label ? ' (' + action + ')' : ''));
+        } else if (action) {
+            lines.push('Action: ' + action);
         }
+
+        if (status) {
+            lines.push('Status: ' + status);
+        }
+
+        if (openRequest.executionMode) {
+            lines.push('Execution mode: ' + String(openRequest.executionMode));
+        }
+
+        const collected =
+            openRequest.collected && typeof openRequest.collected === 'object'
+                ? openRequest.collected
+                : {};
+        const collectedNames = Object.keys(collected);
+
+        if (collectedNames.length > 0) {
+            lines.push('Collected:');
+            for (let i = 0; i < collectedNames.length; i++) {
+                const fieldName = collectedNames[i];
+                const value = collected[fieldName];
+
+                if (value == null || typeof value === 'object') {
+                    continue;
+                }
+
+                lines.push('- ' + fieldName + ': ' + String(value));
+            }
+        }
+
+        const missing = Array.isArray(openRequest.missing)
+            ? openRequest.missing
+            : Array.isArray(openRequest.waitingFor)
+              ? openRequest.waitingFor
+              : [];
+
+        if (missing.length > 0) {
+            lines.push('Missing: ' + missing.join(', '));
+        } else if (hasOpenRequest) {
+            lines.push('Missing: none');
+        }
+
+        lines.push('');
     }
 
     if (hasCreateEc2) {

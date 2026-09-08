@@ -7,14 +7,16 @@
 #########
 
 
--- Group 70 → Kite (owned by davey)
 
 SELECT * FROM shareshare.groups;
 #SELECT * FROM posts;
 #SELECT * FROM messages;
+SELECT * FROM user_profile;
 
+UPDATE cloudpilot_requests SET is_open = 0 WHERE id = 69;
 
-UPDATE shareshare.groups SET group_description = "We spent a winter weekend in Sunriver!" WHERE group_id = 70;
+SELECT * FROM cloudpilot_requests;
+
 #DELETE FROM shareshare.groups WHERE group_id > 722;
 
 

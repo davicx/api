@@ -1,22 +1,173 @@
 # Feature Conversation
 
-## Current step
-
-**Plan locked** — Phase 1 (Better Conversation) awaiting start.
-
-## Next
-
-Say **do Phase 1** when you want to start.
-
 **Status:** Active  
 **Codename:** `feature_conversation`  
-**Related:** [Current Development](./current_development.md) · [Feature Chat](../finished/feature_chat.md) · [CloudPilot Context](../how_to/cloud_pilot_context.md) · [Use OpenAI Chat](../how_to/use_openai_chat.md) · [Organizational Knowledge](../finished/feature_organizational_knowledge.md) · [Chat guardrails](../future/feature_chat_guardrails.md)
+**Last updated:** 2026-09-06  
+
+**Related:** [Current Development](./current_development.md) · [contextTemp](../../contextTemp.md) · [CloudPilot Context how-to](../how_to/cloud_pilot_context.md) · [Feature Chat](../finished/feature_chat.md) · [MVP](../feature_mvp.md)
 
 ---
 
-Yes. Given your goal, I would make **Phase 1 much more about “make the conversation noticeably better now”** and deliberately push the more ambitious infrastructure-agent architecture later.
+## Current step
 
-## Phase 1 — MVP: Better Conversation
+**Step 2 done — Current State carries open-request DB facts.**  
+**Next on other machine: Step 3 — does this message affect the open request?** (do not start until Step 2 is re-verified with the temp flag)
+
+| Step | Goal | Status |
+|------|------|--------|
+| **1** | Prove open request exists? YES / NO | Done (temp test) |
+| **2** | If YES: prove Current State has the useful DB facts | **Done** |
+| **3** | If YES: does this message affect the open request? | Not started |
+| **4** | Branch B / normal conversation when no open request | Not started |
+
+Temp debug: `CLOUDPILOT_CURRENT_STATE_TEST=1` (early return after STEP 2; read-only).  
+Unset / not `1` = normal CloudPilot pipeline.
+
+---
+
+## Architectural model (locked for this work)
+
+**One conversation pipeline.** An open request runs *alongside* the conversation — not a separate restrictive “request mode.”
+
+```text
+                         USER MESSAGE
+                              ↓
+                    LOAD DATABASE STATE
+                              ↓
+                       OPEN REQUEST?
+                              ↓
+                   BUILD CURRENT CONTEXT
+                              ↓
+                 UNDERSTAND CURRENT MESSAGE
+                              ↓
+              Can answer questions / retrieve facts /
+              start new work / normal conversation
+                              +
+                    IF OPEN REQUEST = YES
+                              ↓
+                 Does THIS message affect
+                 the open request?
+                              ↓
+             information | confirm | cancel | leave alone
+```
+
+Unrelated questions must **not** cancel or advance the open request.  
+Confirm-like language only advances when Current State says the request is ready for that.
+
+Later interpretation (Step 3) needs trustworthy facts — that is why Step 2 exists.
+
+---
+
+## What changed (Step 2)
+
+### Files
+
+| File | Change |
+|------|--------|
+| `cloudPilotIntelligence/context/contextTypes/cloudPilotCurrentStateContext.js` | Explicit `hasOpenRequest`; richer `openRequest` |
+| `cloudPilotIntelligence/context/buildSystemMessage.js` | `writeCurrentState` renders action, status, collected, missing |
+| `cloudPilot/chat/cloudPilotMessageFunctions.js` | Temp test builds Current State and returns a readable snapshot |
+
+### Current State shape (now)
+
+**Open request:**
+
+```js
+{
+  hasOpenRequest: true,
+  openRequest: {
+    id: 69,                          // workflowId when present
+    action: 'scan_ec2',
+    label: 'Scan EC2',
+    status: 'waiting_on_confirmation',
+    collected: { region: 'us-west-2', request_name: 'MVP Prep' },
+    missing: []
+    // executionMode when set
+    // waitingFor: alias of missing when non-empty (compat)
+  }
+}
+```
+
+**No open request:**
+
+```js
+{
+  hasOpenRequest: false,
+  openRequest: null
+}
+```
+
+Source of truth remains DB / STEP 2: `getUsersActionState` → `Boolean(pendingAction)`.  
+Still **not** OpenAI.
+
+### System message excerpt (General Chat)
+
+When Current State is included, OpenAI can see:
+
+```text
+CURRENT CLOUDPILOT STATE
+
+HAS OPEN REQUEST: YES
+
+Open request:
+Action: Scan EC2 (scan_ec2)
+Status: waiting_on_confirmation
+Collected:
+- region: us-west-2
+Missing: none
+```
+
+### Temp test reply (`CLOUDPILOT_CURRENT_STATE_TEST=1`)
+
+After STEP 2 only (no understand / decide / execute):
+
+```text
+Open request: YES
+
+Type: scan_ec2
+Action: Scan EC2
+Status: waiting_on_confirmation
+Collected:
+- region: us-west-2
+Missing: none
+```
+
+or:
+
+```text
+Open request: NO
+```
+
+---
+
+## Manual checks
+
+With `CLOUDPILOT_CURRENT_STATE_TEST=1` and API restarted:
+
+1. **No open request** → send `hello` → `Open request: NO`
+2. **Open Scan EC2**, region filled, waiting on confirm → send `hello` → YES + status + collected region + Missing: none
+
+Unset the env (or anything other than `1`) to restore the normal pipeline.
+
+---
+
+## Explicitly not done yet
+
+- Interpreting `"lets do that"` / `"yes"` against the open request  
+- Leaving open request untouched during unrelated Q&A (needs Step 3)  
+- Redesigning General vs Request Conversation split  
+- Identity / Situation / Knowledge / Current Question changes  
+- Removing the temp early-return flag  
+
+---
+
+## Longer roadmap (Phases 1–6)
+
+The original “better conversation → tools → broader AWS → memory → safe actions → production” phases remain below for later. **Do not start Phase 2 tools work until the Current State → interpretation steps above are solid.**
+
+---
+
+# Phase 1 — MVP: Better Conversation (later / parallel polish)
 
 **Goal:** Make CloudPilot feel much more natural, useful, and coherent with the infrastructure knowledge it already has.
 
@@ -46,6 +197,7 @@ Yes. Given your goal, I would make **Phase 1 much more about “make the convers
 
 ### Existing context
 
+* [x] Enrich Current State with open-request DB facts (`hasOpenRequest`, status, collected, missing)
 * [ ] Continue supplying known AWS facts from the existing CloudPilot system
 * [ ] Preserve the current grounding rules: don't invent resources, findings, costs, or state
 * [ ] Preserve existing organization-knowledge behavior
@@ -74,40 +226,11 @@ Yes. Given your goal, I would make **Phase 1 much more about “make the convers
 
 **Goal:** Stop requiring CloudPilot to predict every possible infrastructure question beforehand.
 
-This is where the major architectural improvement from the review happens.
-
 * [ ] Add model tool/function calling
 * [ ] Start with EC2 only
-* [ ] Add a very small read-only tool set, perhaps:
-
-  * [ ] `search_resources`
-  * [ ] `get_resource_details`
-  * [ ] `get_cost_data`
-  * [ ] `get_findings`
-* [ ] Allow multiple tool calls during one conversation turn
-* [ ] Return structured AWS data rather than giant text dumps
-* [ ] Include timestamps / freshness with results
-* [ ] Include account and region scope
-* [ ] Clearly indicate partial or unavailable data
-* [ ] Keep tools strictly read-only
-
-Then CloudPilot can handle:
-
-```text
-"What EC2 instances do I have?"
-
-"What about the stopped ones?"
-
-"Which costs the most?"
-
-"Why?"
-
-"Is it oversized?"
-
-"Anything else wrong with it?"
-```
-
-without you creating six separate regex/question handlers.
+* [ ] Small read-only tool set (`search_resources`, `get_resource_details`, `get_cost_data`, `get_findings`, …)
+* [ ] Multiple tool calls per turn; structured AWS data; freshness / scope
+* [ ] Tools strictly read-only
 
 **Phase 2 success = the AI can decide what infrastructure information it needs and retrieve it itself.**
 
@@ -115,179 +238,41 @@ without you creating six separate regex/question handlers.
 
 # Phase 3 — Broader Infrastructure Understanding
 
-**Goal:** Expand the successful EC2 pattern across AWS.
-
-* [ ] S3
-* [ ] RDS
-* [ ] Lambda
-* [ ] ECS / containers
-* [ ] Load balancers
-* [ ] VPC / networking
-* [ ] IAM/security information
-* [ ] CloudWatch metrics
-* [ ] Cost/billing information
-* [ ] CloudTrail / recent changes
-* [ ] CloudPilot findings
-* [ ] Resource relationships/dependencies
-
-Add richer tools when actually needed:
-
-* [ ] `get_resource_relationships`
-* [ ] `get_metrics`
-* [ ] `get_recent_changes`
-* [ ] `search_organization_knowledge`
-
-This is where questions like these become realistic:
-
-> “Why did production get slow yesterday?”
-
-> “What changed before this started happening?”
-
-> “What depends on this database?”
-
-> “Why did our AWS bill increase?”
-
-**Phase 3 success = CloudPilot can investigate across AWS instead of simply describing individual resources.**
+**Goal:** Expand the successful EC2 pattern across AWS (S3, RDS, Lambda, networking, billing, findings, relationships, …).
 
 ---
 
 # Phase 4 — Better Memory & Organizational Knowledge
 
-**Goal:** CloudPilot understands the ongoing conversation **and** how the customer's organization works.
-
-### Conversation memory
-
-* [ ] Current topic/resource
-* [ ] Active goal
-* [ ] References such as “that instance” / “those buckets”
-* [ ] Unresolved questions
-* [ ] Useful conversation summaries
-* [ ] Long-running conversation compaction
-
-### Infrastructure truth
-
-Keep this separate from conversation memory:
-
-* [ ] Revalidate current AWS state
-* [ ] Store evidence/source
-* [ ] Store `observedAt`
-* [ ] Track data freshness
-* [ ] Never assume something remains true merely because CloudPilot said it earlier
-
-### Organization knowledge
-
-* [ ] Expand beyond S3 knowledge
-* [ ] Architecture documentation
-* [ ] Team/service ownership
-* [ ] Jira
-* [ ] Slack
-* [ ] GitHub
-* [ ] Runbooks
-* [ ] Internal documentation
-
-Then something like:
-
-> “Why is this service configured this way?”
-
-could potentially combine **AWS reality + company knowledge**.
-
-**Phase 4 success = CloudPilot understands both the cloud and the organizational context around it.**
+**Goal:** Ongoing conversation subject + separate infrastructure truth + richer org knowledge.
 
 ---
 
 # Phase 5 — From Answers → Safe Actions
 
-**Goal:** Connect the conversational intelligence to the remediation system you're already building.
-
-Your remediation work already emphasizes getting a small AWS action working clearly before layering abstractions around it.  I'd preserve that philosophy here.
-
-* [ ] AI identifies a problem
-* [ ] AI explains the evidence
-* [ ] AI proposes a remediation
-* [ ] User chooses whether to act
-* [ ] Route actions through CloudPilot's existing controlled remediation system
-* [ ] Automatic remediation
-* [ ] CLI instructions
-* [ ] Infrastructure PR
-* [ ] Manual instructions
-* [ ] Verification
-* [ ] Undo where supported
-* [ ] Permission checking
-* [ ] Confirmation for meaningful/destructive changes
-
-Keep the boundary very clear:
+**Goal:** Connect conversational intelligence to existing controlled remediation (confirm / modes / verify / undo).
 
 ```text
-AI READ
-→ fairly autonomous
-
-AI CHANGE
-→ CloudPilot authorization + safety controls
+AI READ → fairly autonomous
+AI CHANGE → CloudPilot authorization + safety controls
 ```
-
-**Phase 5 success = CloudPilot doesn't just find and explain problems; it can safely help resolve them.**
 
 ---
 
 # Phase 6 — Production Quality / Scale
 
-**Goal:** Make all of this measurable, secure, reliable, and economical.
-
-* [ ] Full conversation evaluation suite
-* [ ] Groundedness tests
-* [ ] Tool-selection tests
-* [ ] Multi-turn tests
-* [ ] Stale-data tests
-* [ ] Prompt-injection tests
-* [ ] Destructive-action safety tests
-* [ ] Model comparisons
-* [ ] Cost/latency benchmarks
-* [ ] Prompt caching
-* [ ] Model routing based on complexity
-* [ ] Disable raw prompt logging by default
-* [ ] Redact infrastructure identifiers where appropriate
-* [ ] Formal retention/access policies
-* [ ] Tool-call telemetry
-* [ ] Groundedness/quality monitoring
-* [ ] Failure/fallback handling
+**Goal:** Eval suite, groundedness, cost/latency, security, telemetry.
 
 ---
 
-## The roadmap I'd actually follow
+## Roadmap order
 
 ```text
-PHASE 1 — NOW
-Better conversation
-Stronger model
-Responses API
-Better history/context
-Prompt cleanup
-10–20 test conversations
-
+NOW — Context rebuild (existence → facts → interpretation → action)
         ↓
-
-PHASE 2
-AI can retrieve EC2 information itself
-
+PHASE 1 polish — model / prompt / history quality
         ↓
-
-PHASE 3
-AI can investigate AWS broadly
-
+PHASE 2 — AI retrieves EC2 itself
         ↓
-
-PHASE 4
-Memory + organizational knowledge
-
-        ↓
-
-PHASE 5
-Conversation → safe remediation
-
-        ↓
-
-PHASE 6
-Production hardening + evaluation
+PHASE 3–6 — broader AWS, memory, safe actions, production
 ```
-
-I especially like this split for CloudPilot because **Phase 1 doesn't turn into another giant infrastructure project**. You can improve what you originally cared about—the conversation—while the more ambitious “AI teammate that can investigate my entire AWS environment” becomes a deliberate evolution rather than an MVP requirement.

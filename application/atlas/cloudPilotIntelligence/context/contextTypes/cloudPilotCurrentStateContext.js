@@ -6,10 +6,11 @@ const CreateEC2Context = require('../../../cloudPilot/actions/createEC2/createEC
 TYPE — CURRENT STATE (General Chat only)
 
 Factual CloudPilot truth for this turn — not instructions, not personality.
-Step D: tiny open-request block when one request is open.
+Step D: open-request block when one request is open (existence + key DB facts).
 Friendly Create Step 4: when open request is create_ec2, attach createEC2Context facts.
 
 Doc: feature_cloud_pilot_context.md · feature_friendly_create_instance.md
+     doc/development/current/feature_conversation.md (context rebuild)
 
 Used by: buildAIContext → buildAISystemMessage → General Chat
 */
@@ -19,12 +20,12 @@ function buildCurrentStateContext(processMessageContext) {
     const context = processMessageContext || {};
     const requestState = context.requestState;
     const openRequest = slimOpenRequestState(requestState);
+    const hasOpenRequest = openRequest != null;
 
-    const data = {};
-
-    if (openRequest) {
-        data.openRequest = openRequest;
-    }
+    const data = {
+        hasOpenRequest: hasOpenRequest,
+        openRequest: openRequest
+    };
 
     const createEc2Knowledge = slimCreateEc2Knowledge(requestState);
 
@@ -33,7 +34,7 @@ function buildCurrentStateContext(processMessageContext) {
     }
 
     const currentState = {
-        loaded: Boolean(openRequest || createEc2Knowledge),
+        loaded: true,
         type: 'current_state',
         data: data
     };
@@ -46,7 +47,7 @@ function buildCurrentStateContext(processMessageContext) {
     return currentState;
 }
 
-// Keep only boring facts for Chat Situation MVP
+// Keep request-row facts CloudPilot already loaded — no OpenAI, no interpretation
 function slimOpenRequestState(requestState) {
     if (!requestState || typeof requestState !== 'object' || Array.isArray(requestState)) {
         return null;
@@ -65,14 +66,35 @@ function slimOpenRequestState(requestState) {
             ? String(actionDefinition.actionLabel)
             : actionKey;
 
+    const collected =
+        requestState.collected && typeof requestState.collected === 'object'
+            ? { ...requestState.collected }
+            : {};
+    const missing = Array.isArray(requestState.missing)
+        ? requestState.missing.map(function (field) {
+              return String(field);
+          })
+        : [];
+
     const slim = {
-        label: label
+        action: actionKey,
+        label: label,
+        status: requestState.status ? String(requestState.status) : null,
+        collected: collected,
+        missing: missing
     };
 
-    if (Array.isArray(requestState.missing) && requestState.missing.length > 0) {
-        slim.waitingFor = requestState.missing.map(function (field) {
-            return String(field);
-        });
+    if (requestState.workflowId != null && String(requestState.workflowId).trim() !== '') {
+        slim.id = requestState.workflowId;
+    }
+
+    if (requestState.executionMode != null && String(requestState.executionMode).trim() !== '') {
+        slim.executionMode = String(requestState.executionMode);
+    }
+
+    // Backward-compatible alias used by older writeCurrentState callers
+    if (missing.length > 0) {
+        slim.waitingFor = missing.slice();
     }
 
     return slim;

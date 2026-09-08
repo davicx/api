@@ -7,6 +7,9 @@ const RequestWorkflow = require('../requests/workflow');
 const GeneralConversation = require('./general/GeneralConversation');
 const RequestConversation = require('./request/RequestConversation');
 const HistoryFunctions = require('../history/functions/historyFunctions');
+const {
+    buildCurrentStateContext
+} = require('../../cloudPilotIntelligence/context/contextTypes/cloudPilotCurrentStateContext');
 
 /*
 CloudPilot Message Pipeline (processMessage)
@@ -113,6 +116,55 @@ async function processMessage(rawUserMessage, conversationID, context) {
     console.log("STEP 2: Initial State");
     await RequestStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
 
+    // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST
+    // Read-only early return: prove open-request existence + Current State facts after STEP 2.
+    // When unset / not "1", processMessage continues unchanged below.
+    if (String(process.env.CLOUDPILOT_CURRENT_STATE_TEST || '').trim() === '1') {
+        const currentState = buildCurrentStateContext({
+            requestState: currentRequestState
+        });
+        const stateData = currentState && currentState.data ? currentState.data : {};
+        const hasOpenRequest = stateData.hasOpenRequest === true;
+        const openRequest = stateData.openRequest || null;
+
+        console.log('[CLOUDPILOT CURRENT STATE TEST]');
+        console.log('hasOpenRequest: ' + hasOpenRequest);
+
+        if (hasOpenRequest && openRequest) {
+            console.log('pendingAction: ' + String(openRequest.action || ''));
+            console.log('status: ' + String(openRequest.status || ''));
+            console.log(
+                'collected: ' + JSON.stringify(openRequest.collected || {})
+            );
+            console.log('missing: ' + JSON.stringify(openRequest.missing || []));
+        }
+
+        const cloudPilotMessage = formatCurrentStateTestMessage(stateData);
+
+        processMessageOutcome.success = true;
+        processMessageOutcome.cloudPilotMessage = cloudPilotMessage;
+        processMessageOutcome.logFinalResponse = buildShortResponseOutcome({
+            success: true,
+            cloudPilotMessage: cloudPilotMessage,
+            error: null
+        });
+
+        return await attachUndoAvailable(
+            applyConversationToProcessMessageOutcome(
+                processMessageOutcome,
+                {
+                    success: true,
+                    cloudPilotMessage: cloudPilotMessage,
+                    atlasResponse: null,
+                    error: null
+                },
+                currentRequestState,
+                activeRequestAction
+            ),
+            conversationID
+        );
+    }
+    // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST (end)
 
     // Understand (region search logs as STEP 3 inside searchMessageForRegion)
     const messageUnderstanding = await CloudPilotIntelligence.understandMessage(
@@ -357,6 +409,60 @@ function normalizeProcessMessageContext(context) {
         requestedByUserName: String(raw.requestedByUserName || raw.messageFrom || '').trim(),
         selectedFinding: raw.selectedFinding || null
     };
+}
+
+// TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST — readable reply for Current State proof
+function formatCurrentStateTestMessage(stateData) {
+    const data = stateData || {};
+    const hasOpenRequest = data.hasOpenRequest === true;
+    const openRequest = data.openRequest;
+
+    if (!hasOpenRequest || !openRequest) {
+        return 'Open request: NO';
+    }
+
+    const lines = [
+        'Open request: YES',
+        '',
+        'Action: ' + String(openRequest.label || openRequest.action || ''),
+        'Status: ' + String(openRequest.status || ''),
+    ];
+
+    if (openRequest.action) {
+        lines.splice(2, 0, 'Type: ' + String(openRequest.action));
+    }
+
+    const collected =
+        openRequest.collected && typeof openRequest.collected === 'object'
+            ? openRequest.collected
+            : {};
+    const collectedNames = Object.keys(collected);
+
+    if (collectedNames.length > 0) {
+        lines.push('Collected:');
+        for (let i = 0; i < collectedNames.length; i++) {
+            const fieldName = collectedNames[i];
+            const value = collected[fieldName];
+
+            if (value == null || typeof value === 'object') {
+                continue;
+            }
+
+            lines.push('- ' + fieldName + ': ' + String(value));
+        }
+    } else {
+        lines.push('Collected: (none)');
+    }
+
+    const missing = Array.isArray(openRequest.missing) ? openRequest.missing : [];
+
+    if (missing.length > 0) {
+        lines.push('Missing: ' + missing.join(', '));
+    } else {
+        lines.push('Missing: none');
+    }
+
+    return lines.join('\n');
 }
 
 //Function B5: Short STEP 7 log — top-level fields + atlasResponse.summary only
