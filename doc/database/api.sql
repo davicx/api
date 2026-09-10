@@ -12,6 +12,7 @@ SELECT * FROM shareshare.groups;
 #SELECT * FROM posts;
 #SELECT * FROM messages;
 SELECT * FROM user_profile;
+#SELECT * FROM user_preference;
 
 UPDATE cloudpilot_requests SET is_open = 0 WHERE id = 69;
 

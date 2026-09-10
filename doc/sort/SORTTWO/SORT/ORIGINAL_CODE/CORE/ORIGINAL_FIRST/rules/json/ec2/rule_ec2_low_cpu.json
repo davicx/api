@@ -1,0 +1,20 @@
+{
+  "rule_id": "ec2_low_cpu",
+  "version": "1.0",
+  "description": "Detect underutilized EC2 instances",
+  "required_metrics": ["avg_cpu"],
+  "conditions": {
+    "avg_cpu_less_than": 10,
+    "duration_days": 7
+  },
+  "recommendation": {
+    "type": "resize_instance",
+    "logic": "downgrade_instance_type"
+  },
+  "actions": [
+    "explain",
+    "cli",
+    "auto_remediate",
+    "create_pr"
+  ]
+}

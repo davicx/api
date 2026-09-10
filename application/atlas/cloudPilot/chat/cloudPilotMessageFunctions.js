@@ -3,6 +3,7 @@ const RequestStateFunctions = require('../requests/functions/requestLoadFunction
 const ResourceVerificationFunctions = require('../requests/functions/resourceVerificationFunctions');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
 const DecisionFunctions = require('../requests/decideNextStep');
+const OpenRequestEffectFunctions = require('../requests/interpretOpenRequestEffect');
 const RequestWorkflow = require('../requests/workflow');
 const GeneralConversation = require('./general/GeneralConversation');
 const RequestConversation = require('./request/RequestConversation');
@@ -172,6 +173,18 @@ async function processMessage(rawUserMessage, conversationID, context) {
         currentRequestState
     );
 
+    // Step 3: does any part of this message affect the open request? (interpretation only)
+    messageUnderstanding.rawMessage = currentUserMessage;
+    const openRequestEffectResult = OpenRequestEffectFunctions.interpretOpenRequestEffect(
+        messageUnderstanding,
+        currentRequestState,
+        currentUserMessage
+    );
+    messageUnderstanding.openRequestEffectResult = openRequestEffectResult;
+    messageUnderstanding.affectsOpenRequest = openRequestEffectResult.affectsOpenRequest;
+    messageUnderstanding.openRequestEffect = openRequestEffectResult.openRequestEffect;
+    OpenRequestEffectFunctions.logOpenRequestEffect(openRequestEffectResult);
+
     console.log("STEP 4: Message Understanding");
     console.log(JSON.stringify(messageUnderstanding, null, 2));
     console.log(" ");
@@ -202,6 +215,38 @@ async function processMessage(rawUserMessage, conversationID, context) {
                 messageUnderstanding
             );
         }
+    }
+
+    // Step 3 mixed / leave-alone with information: apply open-request field updates
+    // without forcing the whole turn into RequestConversation speech.
+    const effectBody = messageUnderstanding.openRequestEffect || {};
+
+    // Apply information merge when continuing normal conversation (mixed message)
+    // or when decide routed to general/question while values were extracted.
+    if (
+        messageUnderstanding.affectsOpenRequest === true &&
+        effectBody.type === 'information' &&
+        effectBody.values &&
+        Object.keys(effectBody.values).length > 0 &&
+        (effectBody.continueNormalConversation || messageUnderstanding.question) &&
+        (GeneralConversation.isGeneralConversation(decision) || messageUnderstanding.question)
+    ) {
+        console.log('STEP 5b: Apply open-request information (continue normal conversation)');
+        const mergeDecision = DecisionFunctions.buildFieldsMergedDecision(
+            currentRequestState,
+            effectBody.values
+        );
+        const mergeOutcome = await RequestWorkflow.store(mergeDecision, {
+            conversationID: conversationID,
+            context: processMessageContext,
+            requestState: currentRequestState
+        });
+        if (mergeOutcome && mergeOutcome.request) {
+            currentRequestState = mergeOutcome.request;
+            activeRequestAction = currentRequestState.pendingAction;
+        }
+        console.log(JSON.stringify(mergeOutcome, null, 2));
+        console.log(' ');
     }
 
     if (GeneralConversation.isGeneralConversation(decision)) {

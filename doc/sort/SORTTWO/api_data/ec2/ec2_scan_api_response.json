@@ -1,0 +1,107 @@
+{
+  "data": {
+    "resourcesScanned": 2,
+    "findingCount": 1,
+
+    "scanType": "team",
+    "team": "cloud-pilot",
+    "region": "us-west-2",
+
+    "instances": [
+      {
+        "instance_id": "i-0abc123def4567890",
+        "name": "cloudpilot-primary",
+        "state": "running",
+        "instance_type": "t3.medium",
+        "avg_cpu": 0.7,
+        "tags": {
+          "Name": "cloudpilot-primary",
+          "team": "cloud-pilot",
+          "cloudpilot-role": "primary"
+        }
+      },
+      {
+        "instance_id": "i-0xyz987uvw6543210",
+        "name": "cloudpilot-secondary",
+        "state": "stopped",
+        "instance_type": "t3.small",
+        "avg_cpu": 0.1,
+        "tags": {
+          "Name": "cloudpilot-secondary",
+          "team": "cloud-pilot",
+          "cloudpilot-role": "secondary"
+        }
+      }
+    ],
+
+    "findings": [
+      {
+        "id": "ec2-lowcpu-i-0abc123def4567890",
+        "provider": "aws",
+        "service": "ec2",
+        "region": "us-west-2",
+        "status": "active",
+        "priority": 2,
+
+        "resource": {
+          "id": "i-0abc123def4567890",
+          "name": "cloudpilot-primary",
+          "region": "us-west-2",
+          "instance_type": "t3.medium",
+          "tags": {
+            "Name": "cloudpilot-primary",
+            "team": "cloud-pilot",
+            "cloudpilot-role": "primary"
+          }
+        },
+
+        "issue": {
+          "code": "LOW_CPU_UTILIZATION",
+          "title": "Low CPU utilization",
+          "description": "Average CPU is below the configured threshold; instance may be oversized.",
+          "severity": "low",
+          "confidence": 0.9,
+          "category": "cost"
+        },
+
+        "metrics": {
+          "avg_cpu": 0.7
+        },
+
+        "recommendation": {
+          "action": "RIGHTSIZE",
+          "description": "Consider downsizing to t3.small",
+          "risk": "low"
+        },
+
+        "remediation": {
+          "available": true,
+          "actions": [
+            {
+              "type": "auto",
+              "name": "ec2_toggle",
+              "description": "Switch traffic to secondary instance"
+            }
+          ]
+        },
+
+        "cost": {
+          "estimated_monthly_savings": 12.5,
+          "currency": "USD"
+        },
+
+        "summary": "cloudpilot-primary is underutilized (low CPU).",
+
+        "metadata": {
+          "rule_id": "ec2_low_cpu"
+        }
+      }
+    ]
+  },
+
+  "success": true,
+  "message": "EC2 team scan completed",
+  "statusCode": 200,
+  "errors": [],
+  "currentUser": "davey"
+}

@@ -1,0 +1,6 @@
+{
+    "scan_type": "team",
+    "region": "us-west-2",
+    "team": "cloud-pilot",
+    "rules": ["ec2_low_cpu"]
+  }

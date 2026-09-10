@@ -1,6 +1,7 @@
 const actionMap = require('../actionMap');
 const ActionStatusFunctions = require('./functions/requestStatusFunctions');
 const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
+const OpenRequestEffectFunctions = require('./interpretOpenRequestEffect');
 
 /*
 What this file answers:
@@ -45,14 +46,17 @@ FUNCTIONS B: Helpers
 function decideNextStep({ understanding, requestState }) {
     const state = normalizeRequestState(requestState);
     const u = understanding || {};
+    const openEffect = u.openRequestEffectResult || OpenRequestEffectFunctions.interpretOpenRequestEffect(
+        u,
+        state,
+        u.rawMessage || ''
+    );
+    const effectBody = openEffect.openRequestEffect || {};
+    const affectsOpen = Boolean(openEffect.affectsOpenRequest);
+    const effectType = effectBody.type || null;
 
     if (u.ambiguous) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.AMBIGUOUS_ACTION);
-    }
-
-    // Questions before Conversation — known-fact asks never use general OpenAI chat
-    if (u.question) {
-        return resolveQuestionDecision(state, u.question, u);
     }
 
     // Legacy conversation signal (phrases moved to questions/searchForOpenRequests)
@@ -88,7 +92,8 @@ function decideNextStep({ understanding, requestState }) {
         return resolveResourceScanOfferReply(state, u);
     }
 
-    if (u.reply === 'cancel' && state.pendingAction) {
+    // Step 3: cancel only when interpretation says cancel (not soft text while leave-alone)
+    if (effectType === 'cancel' && state.pendingAction) {
         return {
             chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
             request: null,
@@ -100,7 +105,7 @@ function decideNextStep({ understanding, requestState }) {
     if (
         state.pendingAction &&
         state.status === ActionStatusFunctions.STATUS.FAILED &&
-        u.reply === 'confirm'
+        effectType === 'confirm'
     ) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.REQUEST_FAILED);
     }
@@ -109,7 +114,8 @@ function decideNextStep({ understanding, requestState }) {
         return handleExecutionModeSelection(state, u.reply);
     }
 
-    if (shouldStartExecutionOnConfirm(state, u.reply)) {
+    // Step 3: confirm only when interpretation says confirm (requires waiting_on_confirmation)
+    if (effectType === 'confirm' && shouldStartExecutionOnConfirm(state, 'confirm')) {
         return buildExecutionStartedDecision(state);
     }
 
@@ -124,12 +130,39 @@ function decideNextStep({ understanding, requestState }) {
         };
     }
 
+    // Step 3: information for open request (may ALSO continue normal conversation)
+    if (state.pendingAction && effectType === 'information' && hasApplicableValues(state, effectBody.values || u.values)) {
+        const mergeValues = effectBody.values && Object.keys(effectBody.values).length > 0
+            ? effectBody.values
+            : u.values;
+
+        if (effectBody.continueNormalConversation || u.question) {
+            // Mixed: do not swallow the whole turn into request-only speech.
+            // processMessage applies the field merge, then question/general continues.
+            if (u.question) {
+                return resolveQuestionDecision(state, u.question, u);
+            }
+            return buildGeneralChatDecision();
+        }
+
+        return buildFieldsMergedDecision(state, mergeValues);
+    }
+
+    // Questions — after open-request information so mixed "region + ask" can merge first via processMessage
+    if (u.question) {
+        return resolveQuestionDecision(state, u.question, u);
+    }
+
     if (u.action && u.action !== 'general_chat') {
         if (!shouldStartNewRequest(state, u.action)) {
             // Same open action rematched (e.g. soft-fill text contains "EC2" + "scan").
-            // Still apply field values from this message — do not ignore the paste.
             if (state.pendingAction && hasApplicableValues(state, u.values)) {
                 return buildFieldsMergedDecision(state, u.values);
+            }
+
+            // Step 3: leave alone — do NOT re-enter request chat and block normal conversation
+            if (!affectsOpen) {
+                return buildGeneralChatDecision();
             }
 
             return resolveRequestChat(state);
@@ -140,11 +173,6 @@ function decideNextStep({ understanding, requestState }) {
 
     if (state.pendingAction && hasApplicableValues(state, u.values)) {
         return buildFieldsMergedDecision(state, u.values);
-    }
-
-    // Guardrail: any Question signal must never reach general OpenAI chat
-    if (u.question) {
-        return resolveQuestionDecision(state, u.question, u);
     }
 
     return buildGeneralChatDecision();
@@ -629,4 +657,8 @@ function cloudpilotDecision(request, responseType) {
     };
 }
 
-module.exports = { decideNextStep, resolveQuestionDecision };
+module.exports = {
+    decideNextStep,
+    resolveQuestionDecision,
+    buildFieldsMergedDecision
+};
