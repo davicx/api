@@ -57,8 +57,7 @@ function flushSearchLog() {
         return;
     }
 
-    console.log('SEARCH');
-    console.log('--------------------------------------------------');
+    console.log('MASTER STEP 2A: SEARCH RESULTS');
     console.log('');
 
     for (let i = 0; i < rows.length; i++) {
@@ -68,9 +67,6 @@ function flushSearchLog() {
         console.log('Result: ' + row.result);
         console.log('');
     }
-
-    console.log('--------------------------------------------------');
-    console.log('');
 }
 
 function formatMethod(method) {

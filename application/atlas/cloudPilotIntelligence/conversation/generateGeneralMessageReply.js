@@ -3,7 +3,7 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 const { buildAIContext } = require('../context/buildContext');
 const { buildAISystemMessage } = require('../context/buildSystemMessage');
 const ConversationHistoryContext = require('../context/classes/ConversationHistoryContext');
-const masterFinalResponseContext = require('../masterContext/masterFinalResponseContext');
+const masterFinalResponseContext = require('../context/masterContext/masterFinalResponseContext');
 const SearchForOrganizationalKnowledgeFunctions = require('../understand/search/searchForOrganizationalKnowledge');
 const OrganizationKnowledgeFunctions = require('../../cloudPilot/knowledge/organizationKnowledgeFunctions');
 
@@ -13,7 +13,7 @@ CloudPilot Intelligence — generateGeneralMessageReply()
 GenAI conversation front door. Builds context, history, and Internal stub vs OpenAI.
 CloudPilotMessage.prepareGeneralMessageReply calls this, then formats the outgoing product message.
 
-Recipe: masterContext/masterFinalResponseContext.js (which ingredients for this AI call).
+Recipe: context/masterContext/masterFinalResponseContext.js (which ingredients for this AI call).
 Org knowledge: only when recipe.includeKnowledge (MVP Final Response = OFF).
 */
 

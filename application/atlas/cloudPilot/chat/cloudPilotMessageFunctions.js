@@ -2,7 +2,7 @@ const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const RequestStateFunctions = require('../requests/functions/requestLoadFunctions');
 const ResourceVerificationFunctions = require('../requests/functions/resourceVerificationFunctions');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
-const DecisionFunctions = require('../requests/decideNextStep');
+const MasterDecision = require('../decide/masterDecision');
 const OpenRequestEffectFunctions = require('../requests/interpretOpenRequestEffect');
 const RequestWorkflow = require('../requests/workflow');
 const GeneralConversation = require('./general/GeneralConversation');
@@ -11,6 +11,7 @@ const HistoryFunctions = require('../history/functions/historyFunctions');
 const {
     buildCurrentStateContext
 } = require('../../cloudPilotIntelligence/context/contextTypes/cloudPilotCurrentStateContext');
+const MasterLogging = require('../logging/masterLogging');
 
 /*
 CloudPilot Message Pipeline (processMessage)
@@ -99,54 +100,60 @@ async function processMessage(rawUserMessage, conversationID, context) {
         error: null 
     };
 
-    //STEP 1: Normalize user message
-    const currentUserMessageOutcome = getCurrentUserMessage(rawUserMessage);
+    try {
+        //STEP 1: Normalize user message
+        const currentUserMessageOutcome = getCurrentUserMessage(rawUserMessage);
 
-    if (!currentUserMessageOutcome.success) {
-        processMessageOutcome.success = false;
-        processMessageOutcome.error = currentUserMessageOutcome.error;
-        return processMessageOutcome;         
-    }
-
-    currentUserMessage = currentUserMessageOutcome.currentUserMessage;
-
-    //STEP 2: Load active request / initial state
-    currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
-    activeRequestAction = currentRequestState.pendingAction;
-
-    console.log("STEP 2: Initial State");
-    await RequestStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
-
-    // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST
-    // Read-only early return: prove open-request existence + Current State facts after STEP 2.
-    // When unset / not "1", processMessage continues unchanged below.
-    if (String(process.env.CLOUDPILOT_CURRENT_STATE_TEST || '').trim() === '1') {
-        const currentState = buildCurrentStateContext({
-            requestState: currentRequestState
-        });
-        const stateData = currentState && currentState.data ? currentState.data : {};
-        const hasOpenRequest = stateData.hasOpenRequest === true;
-        const openRequest = stateData.openRequest || null;
-
-        console.log('[CLOUDPILOT CURRENT STATE TEST]');
-        console.log('hasOpenRequest: ' + hasOpenRequest);
-
-        if (hasOpenRequest && openRequest) {
-            console.log('pendingAction: ' + String(openRequest.action || ''));
-            console.log('status: ' + String(openRequest.status || ''));
-            console.log(
-                'collected: ' + JSON.stringify(openRequest.collected || {})
-            );
-            console.log('missing: ' + JSON.stringify(openRequest.missing || []));
+        if (!currentUserMessageOutcome.success) {
+            processMessageOutcome.success = false;
+            processMessageOutcome.error = currentUserMessageOutcome.error;
+            return processMessageOutcome;         
         }
 
-        const cloudPilotMessage = formatCurrentStateTestMessage(stateData);
+        currentUserMessage = currentUserMessageOutcome.currentUserMessage;
+
+        // MASTER STEP 1: OPEN REQUEST
+        currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
+        activeRequestAction = currentRequestState.pendingAction;
+
+        const hasOpenRequest = Boolean(
+            currentRequestState && currentRequestState.pendingAction
+        );
+
+        MasterLogging.logOpenRequest(hasOpenRequest, currentRequestState);
+
+        // MASTER STEP 2: UNDERSTAND — one Intelligence call; searches stay inside understandMessage
+        MasterLogging.logUnderstandStart();
+        const messageUnderstanding = await CloudPilotIntelligence.understandMessage(
+            currentUserMessage,
+            currentRequestState
+        );
+
+        MasterLogging.logUnderstandingResult(messageUnderstanding);
+
+        // MASTER STEP 3: DECIDE — pure decision only (no apply / fulfill / respond)
+        // rawMessage lets Master Decision interpret open-request effects internally when needed.
+        messageUnderstanding.rawMessage = currentUserMessage;
+        let decision = MasterDecision.decideNextStep({
+            understanding: messageUnderstanding,
+            requestState: currentRequestState
+        });
+
+        MasterLogging.logDecision(decision);
+        MasterLogging.logTemporaryCheckpoint(
+            'TEMPORARY CHECKPOINT: Stopping after Decide.'
+        );
+
+        // TEMPORARY CHAT REBUILD CHECKPOINT:
+        // Stop after Decide.
+        // Fulfill → Respond will be re-enabled one stage at a time.
+        const checkpointMessage = buildDecideCheckpointMessage(decision);
 
         processMessageOutcome.success = true;
-        processMessageOutcome.cloudPilotMessage = cloudPilotMessage;
+        processMessageOutcome.cloudPilotMessage = checkpointMessage;
         processMessageOutcome.logFinalResponse = buildShortResponseOutcome({
             success: true,
-            cloudPilotMessage: cloudPilotMessage,
+            cloudPilotMessage: checkpointMessage,
             error: null
         });
 
@@ -155,7 +162,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
                 processMessageOutcome,
                 {
                     success: true,
-                    cloudPilotMessage: cloudPilotMessage,
+                    cloudPilotMessage: checkpointMessage,
                     atlasResponse: null,
                     error: null
                 },
@@ -164,37 +171,86 @@ async function processMessage(rawUserMessage, conversationID, context) {
             ),
             conversationID
         );
-    }
-    // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST (end)
 
-    // Understand (region search logs as STEP 3 inside searchMessageForRegion)
-    const messageUnderstanding = await CloudPilotIntelligence.understandMessage(
-        currentUserMessage,
-        currentRequestState
-    );
+        // --- code below kept for later rebuild stages (unreachable while checkpoint is on) ---
 
-    // Step 3: does any part of this message affect the open request? (interpretation only)
-    messageUnderstanding.rawMessage = currentUserMessage;
-    const openRequestEffectResult = OpenRequestEffectFunctions.interpretOpenRequestEffect(
-        messageUnderstanding,
-        currentRequestState,
-        currentUserMessage
-    );
-    messageUnderstanding.openRequestEffectResult = openRequestEffectResult;
-    messageUnderstanding.affectsOpenRequest = openRequestEffectResult.affectsOpenRequest;
-    messageUnderstanding.openRequestEffect = openRequestEffectResult.openRequestEffect;
-    OpenRequestEffectFunctions.logOpenRequestEffect(openRequestEffectResult);
+        console.log("STEP 2: Initial State");
+        await RequestStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
 
-    console.log("STEP 4: Message Understanding");
-    console.log(JSON.stringify(messageUnderstanding, null, 2));
-    console.log(" ");
+        // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST
+        // Read-only early return: prove open-request existence + Current State facts after STEP 2.
+        // When unset / not "1", processMessage continues unchanged below.
+        if (String(process.env.CLOUDPILOT_CURRENT_STATE_TEST || '').trim() === '1') {
+            const currentState = buildCurrentStateContext({
+                requestState: currentRequestState
+            });
+            const stateData = currentState && currentState.data ? currentState.data : {};
+            const hasOpenRequest = stateData.hasOpenRequest === true;
+            const openRequest = stateData.openRequest || null;
+
+            console.log('[CLOUDPILOT CURRENT STATE TEST]');
+            console.log('hasOpenRequest: ' + hasOpenRequest);
+
+            if (hasOpenRequest && openRequest) {
+                console.log('pendingAction: ' + String(openRequest.action || ''));
+                console.log('status: ' + String(openRequest.status || ''));
+                console.log(
+                    'collected: ' + JSON.stringify(openRequest.collected || {})
+                );
+                console.log('missing: ' + JSON.stringify(openRequest.missing || []));
+            }
+
+            const cloudPilotMessage = formatCurrentStateTestMessage(stateData);
+
+            processMessageOutcome.success = true;
+            processMessageOutcome.cloudPilotMessage = cloudPilotMessage;
+            processMessageOutcome.logFinalResponse = buildShortResponseOutcome({
+                success: true,
+                cloudPilotMessage: cloudPilotMessage,
+                error: null
+            });
+
+            return await attachUndoAvailable(
+                applyConversationToProcessMessageOutcome(
+                    processMessageOutcome,
+                    {
+                        success: true,
+                        cloudPilotMessage: cloudPilotMessage,
+                        atlasResponse: null,
+                        error: null
+                    },
+                    currentRequestState,
+                    activeRequestAction
+                ),
+                conversationID
+            );
+        }
+        // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST (end)
+
+        // Decision already computed in MASTER STEP 3 above (rebuild checkpoint).
+        // When Fulfill is re-enabled, continue from decision / messageUnderstanding.
+
+        // Step 3: does any part of this message affect the open request? (interpretation only)
+        const openRequestEffectResult = OpenRequestEffectFunctions.interpretOpenRequestEffect(
+            messageUnderstanding,
+            currentRequestState,
+            currentUserMessage
+        );
+        messageUnderstanding.openRequestEffectResult = openRequestEffectResult;
+        messageUnderstanding.affectsOpenRequest = openRequestEffectResult.affectsOpenRequest;
+        messageUnderstanding.openRequestEffect = openRequestEffectResult.openRequestEffect;
+        OpenRequestEffectFunctions.logOpenRequestEffect(openRequestEffectResult);
+
+        console.log("STEP 4: Message Understanding");
+        console.log(JSON.stringify(messageUnderstanding, null, 2));
+        console.log(" ");
 
 
-    //STEP 5: Decide — which conversation is this?
-    let decision = DecisionFunctions.decideNextStep({
-        understanding: messageUnderstanding,
-        requestState: currentRequestState
-    });
+        //STEP 5: Decide — which conversation is this?
+        decision = MasterDecision.decideNextStep({
+            understanding: messageUnderstanding,
+            requestState: currentRequestState
+        });
 
     console.log("STEP 5: Decision");
     console.log(JSON.stringify(decision, null, 2));
@@ -209,7 +265,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
                     messageUnderstanding.question +
                     ' was routed to general chat; correcting to CloudPilot Question path'
             );
-            decision = DecisionFunctions.resolveQuestionDecision(
+            decision = MasterDecision.resolveQuestionDecision(
                 currentRequestState,
                 messageUnderstanding.question,
                 messageUnderstanding
@@ -232,7 +288,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
         (GeneralConversation.isGeneralConversation(decision) || messageUnderstanding.question)
     ) {
         console.log('STEP 5b: Apply open-request information (continue normal conversation)');
-        const mergeDecision = DecisionFunctions.buildFieldsMergedDecision(
+        const mergeDecision = MasterDecision.buildFieldsMergedDecision(
             currentRequestState,
             effectBody.values
         );
@@ -360,6 +416,20 @@ async function processMessage(rawUserMessage, conversationID, context) {
         conversationID
     );
 
+    } finally {
+        // One footer owner for the whole processMessage turn (runs after early returns).
+        if (MasterLogging.logOpenAIDetailOn) {
+            openAIFunctions.flushOpenAILogs();
+        } else {
+            openAIFunctions.discardOpenAILogs();
+        }
+
+        if (MasterLogging.logOpenAICostTotalOn) {
+            openAIFunctions.logOpenAIMessageFooter();
+        }
+
+        MasterLogging.logFooter();
+    }
 }
 
 
@@ -508,6 +578,28 @@ function formatCurrentStateTestMessage(stateData) {
     }
 
     return lines.join('\n');
+}
+
+// Helper: Short deterministic checkpoint reply after Decide (no conversational wording)
+function buildDecideCheckpointMessage(decision) {
+    const result = decision || {};
+    const request = result.request;
+    const requestAction =
+        request && typeof request === 'object'
+            ? request.action || request.pendingAction || null
+            : null;
+    const responseType =
+        result.response && result.response.type ? result.response.type : null;
+
+    if (requestAction) {
+        return 'Checkpoint: Decide complete. Request action: ' + String(requestAction) + '.';
+    }
+
+    if (responseType) {
+        return 'Checkpoint: Decide complete. Response type: ' + String(responseType) + '.';
+    }
+
+    return 'Checkpoint: Decide complete.';
 }
 
 //Function B5: Short STEP 7 log — top-level fields + atlasResponse.summary only

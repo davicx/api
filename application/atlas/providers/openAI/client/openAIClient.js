@@ -179,14 +179,17 @@ function logOpenAI(options) {
 
 /** Print all buffered OPENAI blocks (Story 2 — after CloudPilot pipeline). */
 function flushOpenAILogs() {
-    if (!CLOUDPILOT_AI_CONFIG.openAILogs) {
-        return;
+    if (CLOUDPILOT_AI_CONFIG.openAILogs) {
+        for (let i = 0; i < openAILogBuffer.length; i++) {
+            console.log(openAILogBuffer[i]);
+        }
     }
 
-    for (let i = 0; i < openAILogBuffer.length; i++) {
-        console.log(openAILogBuffer[i]);
-    }
+    openAILogBuffer = [];
+}
 
+/** Clear buffered OPENAI detail blocks without printing. */
+function discardOpenAILogs() {
     openAILogBuffer = [];
 }
 
@@ -661,6 +664,7 @@ module.exports = {
     resetOpenAIRequestCounter,
     logOpenAI,
     flushOpenAILogs,
+    discardOpenAILogs,
     logOpenAIMessageFooter,
     summarizeAIContext,
     summarizeSearchTaskContext,

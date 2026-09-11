@@ -117,13 +117,13 @@ const CLOUDPILOT_AI_CONFIG = {
      * searchLogs → SEARCH block (understand layer)
      * openAILogs → per-capability OPENAI: <Capability> (Request N) blocks
      */
-    searchLogs: readEnvBoolean('CLOUDPILOT_SEARCH_LOGS', false),
+    searchLogs: readEnvBoolean('CLOUDPILOT_SEARCH_LOGS', true),
     messageLogs: readEnvBoolean('CLOUDPILOT_MESSAGE_LOGS', false),
     regionLogs: readEnvBoolean('CLOUDPILOT_REGION_LOGS', false),
     actionLogs: readEnvBoolean('CLOUDPILOT_ACTION_LOGS', false),
     actionStateLogs: readEnvBoolean('CLOUDPILOT_ACTION_STATE_LOGS', false),
     contextLogs: readEnvBoolean('CLOUDPILOT_CONTEXT_LOGS', false),
-    openAILogs: readEnvBoolean('CLOUDPILOT_OPENAI_LOGS', true),
+    openAILogs: readEnvBoolean('CLOUDPILOT_OPENAI_LOGS', false),
 
     /**
      * Max completion tokens per feature (OpenAI max_tokens).
