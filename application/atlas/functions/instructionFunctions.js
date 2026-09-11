@@ -1,7 +1,7 @@
 const Instruction = require('./classes/Instruction');
 const fileFunctions = require('../../functions/fileFunctions');
 const Functions = require('../../functions/functions');
-const actionMap = require('../cloudPilot/actionMap');
+const actionMap = require('../cloudPilot/masterCloudPilotCapabilities');
 
 /*
 

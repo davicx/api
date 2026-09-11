@@ -1,4 +1,4 @@
-const actionMap = require('../../../../cloudPilot/actionMap');
+const actionMap = require('../../../../cloudPilot/masterCloudPilotCapabilities');
 const SearchLogs = require('../helpers/searchLogs');
 const {
     getEc2InventorySearchContext

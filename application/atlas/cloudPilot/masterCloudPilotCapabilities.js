@@ -14,13 +14,17 @@ const showCapabilitiesHandler = require('./capabilities/showCapabilitiesHandler'
 /*
 What this file answers:
 
-* What actions exist?
+* What actions exist? (MASTER APPLICATION SOURCE OF TRUTH)
 * How are actions detected? (match rules — used by cloudPilotIntelligence/understand/search/searchMessageForAction.js)
 * What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
+* What facts can CloudPilot claim after a capability runs? (capability.cloudPilotCanAnswer — model projection)
+
+File: masterCloudPilotCapabilities.js (formerly actionMap.js)
 
 Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, pause_ec2, resume_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, show_capabilities, general_chat
 
-See doc/development/architecture/action_map.md.
+Model-facing projection: cloudPilotIntelligence/context/contextTypes/cloudPilotCapabilitiesContext.js
+Do not dump match / executionFunction / messages into model context.
 */
 
 /*
@@ -321,9 +325,20 @@ const actionMap = {
         executionFunction: scanEC2Handler,
 
         //Capability discovery (optional presentation for show_capabilities)
+        // cloudPilotCanAnswer = truthful facts after AWS → Atlas → formatter → conversation
         capability: {
             section: 'Explore AWS',
-            description: 'Scan EC2 instances for issues'
+            description: 'Scan EC2 instances for issues',
+            cloudPilotCanAnswer: [
+                'instance identity and name',
+                'instance state',
+                'instance type',
+                'tags',
+                'region',
+                'average CPU utilization',
+                'estimated On-Demand compute cost when a stored rate exists'
+            ],
+            scope: 'Regional. Default MVP region: us-west-2.'
         },
 
         //User-Facing System Messages
@@ -367,9 +382,21 @@ const actionMap = {
         executionFunction: scanS3Handler,
 
         //Capability discovery (optional presentation for show_capabilities)
+        // cloudPilotCanAnswer = truthful facts after AWS → Atlas → formatter → conversation
         capability: {
             section: 'Explore AWS',
-            description: 'Scan S3 buckets'
+            description: 'Scan S3 buckets',
+            cloudPilotCanAnswer: [
+                'bucket names',
+                'tags',
+                'bucket region',
+                'default encryption',
+                'versioning',
+                'public access signals',
+                'lifecycle rules',
+                'access logging'
+            ],
+            scope: 'Account-wide bucket inventory.'
         },
 
         //User-Facing System Messages

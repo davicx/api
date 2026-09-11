@@ -8,7 +8,7 @@ FUNCTIONS A: Automatic Execution
     1) Function A1: runAutomaticStrategy
 */
 
-const actionMap = require('../../actionMap');
+const actionMap = require('../../masterCloudPilotCapabilities');
 const RunActionFunctions = require('../../execution/functions/runAction');
 
 const NON_AUTOMATIC_STRATEGIES = ['instructions', 'cli', 'pr'];

@@ -19,6 +19,9 @@ FUNCTIONS B: OpenAI logging
     2) Function B2: logOpenAIMessageContext (legacy wrapper — keep)
     3) Function B3: logOpenAIResponse (legacy wrapper — keep)
     4) Function B4: logOpenAICost (legacy wrapper — keep)
+
+HELPERS (logging)
+    1) Helper H1: formatOpenAIMessagesForLog — readable console dump (real newlines)
 */
 
 let openaiClient = null;
@@ -126,6 +129,7 @@ function logOpenAI(options) {
         push(formatContextLine('Knowledge', context.knowledge));
     } else {
         push(formatContextLine('Identity', context.identity));
+        push(formatContextLine('Capabilities', context.capabilities));
         push(formatContextLine('Situation', context.situation));
         push(formatContextLine('Current State', context.currentState));
         push(formatContextLine('Current Question', context.currentQuestion));
@@ -134,7 +138,7 @@ function logOpenAI(options) {
     push(' ');
     push('Messages');
     push('----------------------------------');
-    push(JSON.stringify(messages, null, 2));
+    push(formatOpenAIMessagesForLog(messages));
     push(' ');
     push('Response');
     push('----------------------------------');
@@ -215,6 +219,36 @@ function formatTotalOpenAICost(totalDollars) {
     return '$' + dollars + '.' + centsText;
 }
 
+//Helper H1: Pretty-print OpenAI messages for console — real newlines, not "\n" escapes
+// Log-only. Does not change what is sent to OpenAI.
+function formatOpenAIMessagesForLog(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return '(none)';
+    }
+
+    const blocks = [];
+
+    for (let i = 0; i < messages.length; i++) {
+        const message = messages[i] && typeof messages[i] === 'object' ? messages[i] : {};
+        const role = String(message.role || '');
+        const content =
+            message.content === undefined || message.content === null
+                ? ''
+                : String(message.content);
+
+        blocks.push(
+            [
+                '--- message ' + (i + 1) + ' ---',
+                'role: ' + role,
+                'content:',
+                content
+            ].join('\n')
+        );
+    }
+
+    return blocks.join('\n\n');
+}
+
 function formatContextLine(label, value) {
     if (value === true || value === 'loaded' || value === 'Loaded') {
         return '✓ ' + label;
@@ -232,6 +266,7 @@ function summarizeAIContext(aiContext) {
 
     return {
         identity: Boolean(context.cloudPilot && context.cloudPilot.loaded),
+        capabilities: Boolean(context.capabilities && context.capabilities.loaded),
         situation: Boolean(context.situation && context.situation.loaded),
         currentState: Boolean(context.currentState && context.currentState.loaded),
         currentQuestion: Boolean(context.currentQuestion && context.currentQuestion.loaded),

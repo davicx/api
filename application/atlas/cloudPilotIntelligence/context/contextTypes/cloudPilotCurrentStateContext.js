@@ -1,5 +1,5 @@
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
-const actionMap = require('../../../cloudPilot/actionMap');
+const actionMap = require('../../../cloudPilot/masterCloudPilotCapabilities');
 const CreateEC2Context = require('../../../cloudPilot/actions/createEC2/createEC2Context');
 
 /*

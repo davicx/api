@@ -1,4 +1,4 @@
-const actionMap = require('../../actionMap');
+const actionMap = require('../../masterCloudPilotCapabilities');
 const Request = require('../classes/Request');
 const RequestStateFunctions = require('./requestLoadFunctions');
 const { RESPONSE_TYPE } = require('../decisionTypes');

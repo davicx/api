@@ -1,4 +1,4 @@
-const actionMap = require('../actionMap');
+const actionMap = require('../masterCloudPilotCapabilities');
 
 /*
 FUNCTIONS A: CloudPilot State Question — open requests

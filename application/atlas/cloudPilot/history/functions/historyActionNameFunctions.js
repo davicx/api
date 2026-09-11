@@ -1,4 +1,4 @@
-const actionMap = require('../../actionMap');
+const actionMap = require('../../masterCloudPilotCapabilities');
 const AtlasTimeFunctions = require('../../../functions/atlasTimeFunctions');
 
 /*

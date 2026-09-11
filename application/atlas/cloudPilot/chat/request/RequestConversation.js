@@ -1,4 +1,4 @@
-const actionMap = require('../../actionMap');
+const actionMap = require('../../masterCloudPilotCapabilities');
 const CloudPilotMessage = require('../CloudPilotMessage');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const OpenRequestsFunctions = require('../../questions/openRequests');

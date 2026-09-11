@@ -1,4 +1,4 @@
-const actionMap = require('../../actionMap');
+const actionMap = require('../../masterCloudPilotCapabilities');
 const ChangeEC2Functions = require('../../../providers/atlas/ec2/changeEC2');
 const Request = require('../classes/Request');
 const RequestFunctions = require('./requestFunctions');

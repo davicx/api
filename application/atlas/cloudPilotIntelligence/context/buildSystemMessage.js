@@ -4,8 +4,9 @@ Turn CloudPilot context into the English system message for the AI.
 Keep this file dumb: no AWS logic, no business rules.
 Intelligence lives in contextTypes/ builders and services/knowledge/.
 
-Conceptual sections:
+Conceptual sections (render order locked):
   IDENTITY         — Who is CloudPilot?              (cloudPilotContext)
+  CAPABILITIES     — What can I do / retrieve?       (cloudPilotCapabilitiesContext)
   SITUATION        — What should AI look for / do?   (cloudPilotSituationContext)
   CURRENT STATE    — Factual open request (Chat)     (cloudPilotCurrentStateContext)
   CURRENT QUESTION — What did the user say?          (currentQuestionContext)
@@ -16,10 +17,11 @@ FUNCTIONS A: Build AI system message
 
 FUNCTIONS B: Write each part of the message
     1) Function B1: writeIdentity
-    2) Function B1b: writeCurrentState
-    3) Function B2: writeSituation
-    4) Function B3: writeCurrentQuestion
-    5) Function B4: writeKnowledge
+    2) Function B1a: writeCapabilities
+    3) Function B1b: writeCurrentState
+    4) Function B2: writeSituation
+    5) Function B3: writeCurrentQuestion
+    6) Function B4: writeKnowledge
 
 FUNCTIONS C: Small helpers
     1) Function C1: writeBulletList
@@ -95,6 +97,55 @@ function writeIdentity(cloudPilotContext) {
     }
 
     return sections.join('\n\n');
+}
+
+//Function B1a: Write Capabilities (what CloudPilot can do / retrieve)
+function writeCapabilities(capabilitiesContext) {
+    const data = capabilitiesContext && capabilitiesContext.data;
+
+    if (!data || !Array.isArray(data.capabilities) || data.capabilities.length === 0) {
+        return '';
+    }
+
+    const lines = ['AVAILABLE CLOUDPILOT CAPABILITIES', ''];
+    const capabilities = data.capabilities;
+
+    for (let i = 0; i < capabilities.length; i++) {
+        const entry = capabilities[i] || {};
+        const label = entry.label ? String(entry.label).trim() : '';
+        const action = entry.action ? String(entry.action).trim() : '';
+        const description = entry.description ? String(entry.description).trim() : '';
+
+        if (label && description && description !== label) {
+            lines.push(label + ' — ' + description);
+        } else if (label) {
+            lines.push(label);
+        } else if (action) {
+            lines.push(action);
+        } else {
+            continue;
+        }
+
+        if (Array.isArray(entry.canAnswer) && entry.canAnswer.length > 0) {
+            lines.push('Can answer:');
+            for (let j = 0; j < entry.canAnswer.length; j++) {
+                lines.push('- ' + String(entry.canAnswer[j]));
+            }
+        }
+
+        if (entry.scope) {
+            lines.push('Scope:');
+            lines.push(String(entry.scope).trim());
+        }
+
+        lines.push('');
+    }
+
+    if (data.groundingRule) {
+        lines.push(String(data.groundingRule).trim());
+    }
+
+    return lines.join('\n').trim();
 }
 
 //Function B1b: Write Current State (factual open request — Chat Situation MVP)
@@ -370,6 +421,7 @@ function writeKnowledge(knowledgeContext) {
 
 //FUNCTIONS A: Build AI system message
 //Function A1: Build AI system message from collected context
+// Order: Identity → Capabilities → Situation → Current State → Current Question → Knowledge
 function buildAISystemMessage(aiContext) {
     const sections = [];
 
@@ -378,14 +430,14 @@ function buildAISystemMessage(aiContext) {
         sections.push(identityText);
     }
 
+    const capabilitiesText = writeCapabilities(aiContext && aiContext.capabilities);
+    if (capabilitiesText) {
+        sections.push(capabilitiesText);
+    }
+
     const situationText = writeSituation(aiContext && aiContext.situation);
     if (situationText) {
         sections.push(situationText);
-    }
-
-    const knowledgeText = writeKnowledge(aiContext && aiContext.knowledge);
-    if (knowledgeText) {
-        sections.push(knowledgeText);
     }
 
     const currentStateText = writeCurrentState(aiContext && aiContext.currentState);
@@ -396,6 +448,11 @@ function buildAISystemMessage(aiContext) {
     const currentQuestionText = writeCurrentQuestion(aiContext && aiContext.currentQuestion);
     if (currentQuestionText) {
         sections.push(currentQuestionText);
+    }
+
+    const knowledgeText = writeKnowledge(aiContext && aiContext.knowledge);
+    if (knowledgeText) {
+        sections.push(knowledgeText);
     }
 
     return sections.join('\n\n');

@@ -3,6 +3,7 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 const { buildAIContext } = require('../context/buildContext');
 const { buildAISystemMessage } = require('../context/buildSystemMessage');
 const ConversationHistoryContext = require('../context/classes/ConversationHistoryContext');
+const masterFinalResponseContext = require('../masterContext/masterFinalResponseContext');
 const SearchForOrganizationalKnowledgeFunctions = require('../understand/search/searchForOrganizationalKnowledge');
 const OrganizationKnowledgeFunctions = require('../../cloudPilot/knowledge/organizationKnowledgeFunctions');
 
@@ -12,7 +13,8 @@ CloudPilot Intelligence — generateGeneralMessageReply()
 GenAI conversation front door. Builds context, history, and Internal stub vs OpenAI.
 CloudPilotMessage.prepareGeneralMessageReply calls this, then formats the outgoing product message.
 
-Org knowledge: search → DB resolve → Knowledge context (and Internal speak when OpenAI chat off).
+Recipe: masterContext/masterFinalResponseContext.js (which ingredients for this AI call).
+Org knowledge: only when recipe.includeKnowledge (MVP Final Response = OFF).
 */
 
 const CHAT_STUB_MESSAGE = 'Open AI will respond when Live';
@@ -22,11 +24,22 @@ async function generateGeneralMessageReply(processMessageContext) {
     let context = processMessageContext || {};
     const currentUserMessage = context.currentUserMessage || '';
     const conversationID = context.conversationID;
+    const recipe = masterFinalResponseContext;
 
-    //STEP 0: Resolve organization knowledge for this turn (detect → DB → context block)
-    context = await attachOrganizationKnowledgeToContext(context);
+    //STEP 0: Resolve organization knowledge only when this recipe includes Knowledge
+    if (recipe.includeKnowledge) {
+        context = await attachOrganizationKnowledgeToContext(context);
+    }
 
-    const aiContext = buildAIContext(context);
+    const aiContext = buildAIContext(context, {
+        includeIdentity: recipe.includeIdentity,
+        includeCapabilities: recipe.includeCapabilities,
+        includeCurrentState: recipe.includeCurrentState,
+        includeKnowledge: recipe.includeKnowledge,
+        situationTypes: Array.isArray(recipe.situationTypes)
+            ? recipe.situationTypes
+            : []
+    });
     const systemMessage = buildAISystemMessage(aiContext);
     const useOpenAIMessageResponse =
         CLOUDPILOT_AI_CONFIG.aiEnabled &&
@@ -58,7 +71,7 @@ async function generateGeneralMessageReply(processMessageContext) {
     }
 
     //STEP 2b: Internal grounded answer from org knowledge when MESSAGE_RESPONSE is Internal
-    if (!useOpenAIMessageResponse) {
+    if (!useOpenAIMessageResponse && recipe.includeKnowledge) {
         const internalKnowledgeMessage = buildInternalOrganizationKnowledgeMessage(
             context.organizationKnowledge
         );
@@ -85,11 +98,15 @@ async function generateGeneralMessageReply(processMessageContext) {
         }
     }
 
-    //STEP 3: Conversation history
-    const historyLimit = CLOUDPILOT_AI_CONFIG.conversationHistoryLimit;
+    //STEP 3: Conversation history (recipe owns include + limit for this call)
+    const historyRecipe =
+        recipe.conversationHistory && typeof recipe.conversationHistory === 'object'
+            ? recipe.conversationHistory
+            : {};
+    const historyLimit = Number(historyRecipe.limit) > 0 ? Number(historyRecipe.limit) : 6;
     let conversationHistory = [];
     const historyEnabled =
-        CLOUDPILOT_AI_CONFIG.sendConversationHistory && Boolean(conversationID);
+        historyRecipe.include === true && Boolean(conversationID);
 
     if (historyEnabled) {
         const historyContext = new ConversationHistoryContext(conversationID, {

@@ -22,7 +22,7 @@ const EXECUTION_MODE_LABELS = {
 };
 
 function getActionMap() {
-    return require('../actionMap');
+    return require('../masterCloudPilotCapabilities');
 }
 
 //Function A1: Eligible user-facing actions from the live actionMap

@@ -1,4 +1,4 @@
-const actionMap = require('../../../cloudPilot/actionMap');
+const actionMap = require('../../../cloudPilot/masterCloudPilotCapabilities');
 const SearchLogs = require('./helpers/searchLogs');
 const OpenAIClient = require('../../../providers/openAI/client/openAIClient');
 const { buildAIContext } = require('../../context/buildContext');

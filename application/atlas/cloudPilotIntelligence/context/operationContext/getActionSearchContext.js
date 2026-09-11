@@ -10,7 +10,7 @@ Provider adapters (e.g. buildActionOpenAIMessages) format this for OpenAI only.
 Doc: feature_intelligence_provider.md / how_to/intelligence_provider.md
 */
 
-const actionMap = require('../../../cloudPilot/actionMap');
+const actionMap = require('../../../cloudPilot/masterCloudPilotCapabilities');
 
 function buildActionCatalog() {
     const catalog = [];
