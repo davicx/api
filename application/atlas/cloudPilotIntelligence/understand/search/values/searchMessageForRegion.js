@@ -32,23 +32,12 @@ function formatRegionFound(result) {
     return 'none';
 }
 
-//Helper H3: Compact region result in the pipeline (gated by CLOUDPILOT_REGION_LOGS)
-// Verbose REGION SEARCH block kept below as logRegionSearchVerbose — not used (OPENAI REQUEST owns detail).
+//Helper H3: Compact region result in the pipeline
+// Disabled: Region already appears under MASTER STEP 2A: SEARCH RESULTS.
+// Verbose REGION SEARCH block kept below as logRegionSearchVerbose — not used.
 function logRegionSearch(details) {
-    if (!CLOUDPILOT_AI_CONFIG.regionLogs) {
-        return;
-    }
-
-    console.log('STEP 3: Region Search');
-
-    if (details.mode === 'SKIPPED') {
-        console.log('Skipped (not collecting a region)');
-    } else {
-        console.log('Mode: ' + details.mode);
-        console.log('Region Found: ' + formatRegionFound(details.result));
-    }
-
-    console.log(' ');
+    void details;
+    return;
 }
 
 // Legacy verbose REGION SEARCH story — kept, not called (detail lives in OPENAI block)

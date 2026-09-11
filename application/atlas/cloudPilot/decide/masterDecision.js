@@ -1,7 +1,24 @@
 const actionMap = require('../masterCloudPilotCapabilities');
-const ActionStatusFunctions = require('./functions/requestStatusFunctions');
-const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('./decisionTypes');
-const OpenRequestEffectFunctions = require('./interpretOpenRequestEffect');
+const ActionStatusFunctions = require('../requests/functions/requestStatusFunctions');
+const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('../requests/decisionTypes');
+const OpenRequestEffectFunctions = require('../requests/interpretOpenRequestEffect');
+
+/*
+MASTER DECISION
+
+Receives:
+- the structured Understanding result
+- the current open-request state, when one exists
+
+Returns one decision describing what CloudPilot should do next.
+
+This file decides only.
+It does not:
+- write request state
+- run scans or actions
+- call AWS
+- generate the final user-facing response
+*/
 
 /*
 What this file answers:

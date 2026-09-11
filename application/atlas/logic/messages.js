@@ -7,6 +7,7 @@ const cloudPilotMessageFunctions = require('../cloudPilot/chat/cloudPilotMessage
 const Functions = require('../../functions/functions');
 const openAIFunctions = require('../providers/openAI/client/openAIClient');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../config/chatGPTconfig');
+const MasterLogging = require('../cloudPilot/logging/masterLogging');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
@@ -36,7 +37,7 @@ async function postMessage(req, res) {
     const storageType = req.body.storageType || 'local';
     
     var headerMessage = "New Message";
-    Functions.addHeader(headerMessage);
+    MasterLogging.logHeader(headerMessage);
 
     const speakerName = formatMessageSpeakerName(messageFrom);
     const spokenCaption = String(messageCaption || '').trim();
@@ -54,8 +55,10 @@ async function postMessage(req, res) {
 
     //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    console.log("STEP 1: Build Message");
-    console.log(currentUserMessage)
+    if (MasterLogging.logMessageBuildOn) {
+        console.log("STEP 1: Build Message");
+        console.log(currentUserMessage);
+    }
 
     //STEP 2: Send user message to be stored in the database
     //console.log("STEP 2: Send user message to be stored in the database");
@@ -91,7 +94,9 @@ async function postMessage(req, res) {
     }
 
     //STEP 7: Save CloudPilot message to database
-    console.log("STEP 7: Save CloudPilot Message");
+    if (MasterLogging.logSaveCloudPilotMessageOn) {
+        console.log("STEP 7: Save CloudPilot Message");
+    }
 
     var cloudPilotMessageOutcome = null;
     const cloudPilotReplyText = cloudPilotResult && cloudPilotResult.cloudPilotMessage ? String(cloudPilotResult.cloudPilotMessage).trim() : '';
@@ -100,15 +105,20 @@ async function postMessage(req, res) {
         var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotReplyText);
         cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
-        if (cloudPilotMessageOutcome.outcome == 200) {
-            console.log("SUCCESS");
-        } else {
-            console.log("FAILED: Could not save CloudPilot message");
+        if (MasterLogging.logSaveCloudPilotMessageOn) {
+            if (cloudPilotMessageOutcome.outcome == 200) {
+                console.log("SUCCESS");
+            } else {
+                console.log("FAILED: Could not save CloudPilot message");
+            }
         }
-    } else {
+    } else if (MasterLogging.logSaveCloudPilotMessageOn) {
         console.log("Skipped (no CloudPilot reply text)");
     }
-    console.log(" ");
+
+    if (MasterLogging.logSaveCloudPilotMessageOn) {
+        console.log(" ");
+    }
     
     //Step 6A: Add CloudPilot message to JSON output when saved
     if (cloudPilotMessageOutcome && cloudPilotMessageOutcome.newMessage) {
@@ -136,19 +146,21 @@ async function postMessage(req, res) {
     }
 
     //STEP 8: Final Response (CloudPilot pipeline story ends here)
-    console.log("STEP 8: Final Response");
-    if (cloudPilotResult && cloudPilotResult.logFinalResponse) {
-        console.log(JSON.stringify(cloudPilotResult.logFinalResponse, null, 2));
-    } else if (cloudPilotResult) {
-        console.log(JSON.stringify({
-            success: cloudPilotResult.success,
-            cloudPilotMessage: cloudPilotResult.cloudPilotMessage,
-            error: cloudPilotResult.error || null
-        }, null, 2));
-    } else {
-        console.log("(none)");
+    if (MasterLogging.logFinalResponseOn) {
+        console.log("STEP 8: Final Response");
+        if (cloudPilotResult && cloudPilotResult.logFinalResponse) {
+            console.log(JSON.stringify(cloudPilotResult.logFinalResponse, null, 2));
+        } else if (cloudPilotResult) {
+            console.log(JSON.stringify({
+                success: cloudPilotResult.success,
+                cloudPilotMessage: cloudPilotResult.cloudPilotMessage,
+                error: cloudPilotResult.error || null
+            }, null, 2));
+        } else {
+            console.log("(none)");
+        }
+        console.log(" ");
     }
-    console.log(" ");
 
     //Step 6E: HTTP success when user message saved and CloudPilot chat turn completed
     const userMessageSaved = currentUserMessageOutcome.outcome == 200;
@@ -174,10 +186,7 @@ async function postMessage(req, res) {
         }
     }
 
-    // Story 2 — OpenAI activity (after pipeline), then Total, then HTTP FOOTER
-    openAIFunctions.flushOpenAILogs();
-    openAIFunctions.logOpenAIMessageFooter();
-    Functions.addFooter();
+    // OpenAI detail + FOOTER are owned by processMessage (try/finally).
     res.json(messageOutcome);
 }
 

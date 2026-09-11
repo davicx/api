@@ -1059,7 +1059,7 @@ logic/messages.js
 
 | | |
 | --- | --- |
-| Control | `CloudPilotIntelligence.understandMessage` → `understand/understandMessage.js` |
+| Control | `CloudPilotIntelligence.understandMessage` → `understand/masterUnderstanding.js` |
 | In | message string + requestState |
 | Calls | values, reply, conversation, question, action searches |
 | Intelligence | Yes — this is the UNDERSTAND service |

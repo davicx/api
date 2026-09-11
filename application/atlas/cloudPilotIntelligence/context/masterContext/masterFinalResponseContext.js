@@ -2,7 +2,7 @@
 masterFinalResponseContext — recipe for General Chat / final user-facing reply
 
 contextTypes/   = WHAT each ingredient contains
-masterContext/  = WHICH ingredients this AI call receives
+masterContext/  = WHICH ingredients this AI call receives (under context/)
 operationContext/ = specialized task payloads (not used here)
 
 Configuration only. No handlers, OpenAI calls, or prompt prose.

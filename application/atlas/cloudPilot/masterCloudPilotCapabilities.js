@@ -12,44 +12,77 @@ const showAiUsageHandler = require('./scans/aiUsage/showAiUsageHandler');
 const showCapabilitiesHandler = require('./capabilities/showCapabilitiesHandler');
 
 /*
-What this file answers:
-
-* What actions exist? (MASTER APPLICATION SOURCE OF TRUTH)
-* How are actions detected? (match rules — used by cloudPilotIntelligence/understand/search/searchMessageForAction.js)
-* What handler runs when an action executes? (executionFunction — called via executions/functions/runAction.js)
-* What facts can CloudPilot claim after a capability runs? (capability.cloudPilotCanAnswer — model projection)
+===============================================================================
+MASTER CLOUDPILOT CAPABILITY CATALOG
+===============================================================================
 
 File: masterCloudPilotCapabilities.js (formerly actionMap.js)
 
-Examples: scan_ec2, toggle_ec2, create_ec2, delete_ec2, pause_ec2, resume_ec2, inventory_aws, show_billing, show_ai_usage, scan_s3, show_capabilities, general_chat
+CURRENT USER CAPABILITIES
 
-Model-facing projection: cloudPilotIntelligence/context/contextTypes/cloudPilotCapabilitiesContext.js
-Do not dump match / executionFunction / messages into model context.
-*/
+Chat
+- general_chat: Respond without fulfilling a CloudPilot operation.
+- show_capabilities: Explain what CloudPilot currently supports.
 
-/*
-===============================================================================
-CANONICAL STATIC ACTION DEFINITIONS
-===============================================================================
+Explore AWS
+- inventory_aws: Inventory AWS resources.
+- show_billing: Review AWS billing.
+- scan_ec2: Scan EC2 instances and answer questions using current EC2 data.
+  (Regional. Default MVP region: us-west-2.)
+- scan_s3: Scan S3 buckets and answer questions using current S3 data.
+  (Account-wide bucket inventory.)
 
-This file is the central action map for CloudPilot action definitions.
+CloudPilot
+- show_ai_usage: Review CloudPilot's OpenAI usage.
 
-Each action definition describes static orchestration metadata:
-- identity
-- policy
-- actionTier (general_chat | informational | destructive)
-- intent detection
-- workflow requirements
-- executionModes (destructive actions only)
-- execution handler
-- defaults
-- user-facing system messages
+Manage EC2
+- create_ec2: Create an instance.
+- delete_ec2: Terminate an instance.
+- pause_ec2: Stop an instance.
+- resume_ec2: Start an instance.
+- toggle_ec2: Switch primary and secondary instances.
+- update_ec2_tag: Update an instance tag.
 
-This is NOT runtime workflow state.
-This is NOT Atlas execution output.
+WHAT THIS FILE CONTROLS
 
-All actions should follow the same stable structure so orchestration, prompts,
-and frontend-safe action payloads can rely on consistent naming.
+- Which capabilities exist and whether each one is allowed.
+- How a user message is matched to a capability.
+- What fields must be collected before a request is ready.
+- Which execution modes are available for a change.
+- Which handler fulfills the capability.
+- Which standard status messages can be shown to the user.
+- Which verified facts Intelligence may use after CloudPilot has
+  collected/retrieved real data for that capability.
+
+CAPABILITY DEFINITION SHAPE
+
+Each capability can contain:
+
+- Identity: type and actionLabel
+- Policy: allowed
+- Orchestration: actionTier, requiresWorkflow, and requiresExecution
+- Intent detection: match
+- Request data: requiredFields and defaults
+- Change strategy: executionModes, when applicable
+- Fulfillment: executionFunction
+- Intelligence context: capability
+- Response copy: messages
+
+IMPORTANT BOUNDARIES
+
+- This is the source of truth for static CloudPilot capability definitions.
+- This is not runtime request or workflow state.
+- This is not Atlas scan or execution output.
+- general_chat produces a response but does not require fulfillment.
+- capability.cloudPilotCanAnswer lists facts available after real data has
+  been collected. It does not allow Intelligence to invent those facts.
+- Model context is created in:
+  cloudPilotIntelligence/context/contextTypes/cloudPilotCapabilitiesContext.js
+- Do not send match functions, execution handlers, or system messages to the
+  model as capability context.
+
+Keep every definition in the same stable shape so orchestration, prompts, and
+frontend-safe payloads can rely on consistent names.
 */
 
 const actionMap = {

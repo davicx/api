@@ -35,7 +35,7 @@ Note: Legacy respond() kept as a placeholder export until callers are gone.
 
 const GenerateGeneralMessageReplyFunctions = require('./conversation/generateGeneralMessageReply');
 const GenerateRequestMessageReplyFunctions = require('./conversation/generateRequestMessageReply');
-const UnderstandMessageFunctions = require('./understand/understandMessage');
+const MasterUnderstanding = require('./understand/masterUnderstanding');
 const SearchMessageForRegionFunctions = require('./understand/search/values/searchMessageForRegion');
 const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
 const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
@@ -59,8 +59,7 @@ async function generateRequestMessageReply(context) {
 //FUNCTIONS B: Understand (Gather Context)
 //Function B1: Understand full user message
 async function understandMessage(message, requestState) {
-    //STEP 1: Delegate to understand orchestrator (Internal/OpenAI decided inside extractors)
-    return UnderstandMessageFunctions.understandMessage(message, requestState);
+    return MasterUnderstanding.understandMessage(message, requestState);
 }
 
 //Function B2: Understand region from message
