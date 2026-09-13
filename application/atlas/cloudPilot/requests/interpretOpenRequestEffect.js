@@ -13,6 +13,23 @@ MVP default AWS region (when a quiet read later needs one): us-west-2
 
 const MVP_DEFAULT_AWS_REGION = 'us-west-2';
 
+// Stored on asked JSON — eligible only until a non-request turn clears it.
+const SOFT_ACCEPT_OFFER_KEY = '__softAcceptOffer';
+
+const SOFT_ACCEPT_PHRASES = [
+    'ok',
+    'okay',
+    'yes',
+    'yep',
+    'yup',
+    'sure',
+    'sounds good',
+    'that works',
+    'go ahead',
+    'perfect',
+    'fine'
+];
+
 function emptyEffect() {
     return {
         affectsOpenRequest: false,
@@ -31,7 +48,78 @@ function normalizeState(requestState) {
         status: state.status || null,
         executionMode: state.executionMode || null,
         missing: Array.isArray(state.missing) ? state.missing.slice() : [],
-        collected: { ...(state.collected || {}) }
+        collected: { ...(state.collected || {}) },
+        asked: { ...(state.asked || {}) }
+    };
+}
+
+function normalizeSoftAcceptMessage(message) {
+    return String(message || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[.!?]+$/g, '');
+}
+
+function isSoftAcceptPhrase(message) {
+    const normalized = normalizeSoftAcceptMessage(message);
+
+    if (!normalized) {
+        return false;
+    }
+
+    return SOFT_ACCEPT_PHRASES.indexOf(normalized) !== -1;
+}
+
+function readSoftAcceptOffer(asked) {
+    const offer = asked && asked[SOFT_ACCEPT_OFFER_KEY];
+
+    if (!offer || typeof offer !== 'object') {
+        return null;
+    }
+
+    const fieldName = offer.field != null ? String(offer.field).trim() : '';
+    const fieldValue = offer.value != null ? String(offer.value).trim() : '';
+
+    if (!fieldName || !fieldValue) {
+        return null;
+    }
+
+    return { field: fieldName, value: fieldValue };
+}
+
+// Narrow soft accept: one missing field + CloudPilot just proposed a value for it.
+function trySoftAcceptEffect(state, message) {
+    if (!ActionStatusFunctions.isCollectingFields(state.status)) {
+        return null;
+    }
+
+    if (!isSoftAcceptPhrase(message)) {
+        return null;
+    }
+
+    const missing = state.missing || [];
+
+    if (missing.length !== 1) {
+        return null;
+    }
+
+    const offer = readSoftAcceptOffer(state.asked);
+
+    if (!offer) {
+        return null;
+    }
+
+    if (offer.field !== missing[0]) {
+        return null;
+    }
+
+    return {
+        affectsOpenRequest: true,
+        openRequestEffect: {
+            type: 'information',
+            values: { [offer.field]: offer.value },
+            continueNormalConversation: false
+        }
     };
 }
 
@@ -75,13 +163,23 @@ function looksLikeMixedMessage(message, applicableValues) {
     }
 
     let rest = String(message || '');
+    const values = applicableValues && typeof applicableValues === 'object' ? applicableValues : {};
 
-    if (applicableValues && applicableValues.region) {
-        rest = rest.replace(new RegExp(String(applicableValues.region).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig'), ' ');
+    if (values.region) {
+        const region = String(values.region);
+        rest = rest.replace(new RegExp(region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig'), ' ');
+        // "west 2" / "west-2" after extracting us-west-2
+        const regionTail = region.replace(/^us-/i, '').replace(/-/g, '[\\s-]*');
+        if (regionTail) {
+            rest = rest.replace(new RegExp('\\b' + regionTail + '\\b', 'ig'), ' ');
+        }
     }
 
     rest = rest
-        .replace(/\b(use|region|in|for|me|please|set|to|my|the|a|an)\b/gi, ' ')
+        .replace(
+            /\b(use|using|region|in|for|me|please|set|to|my|the|a|an|yes|yeah|yep|ok|okay|sure|lets|let|go|with|that|works|sounds|good|fine|proceed)\b/gi,
+            ' '
+        )
         .replace(/[^\w\s]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -165,6 +263,13 @@ function interpretOpenRequestEffect(understanding, requestState, message) {
         };
     }
 
+    // 2b) Soft accept of a value CloudPilot just suggested (waiting_on_fields only)
+    const softAcceptEffect = trySoftAcceptEffect(state, message);
+
+    if (softAcceptEffect) {
+        return softAcceptEffect;
+    }
+
     // 3) Confirmation — only when Current State is waiting on confirmation
     if (u.reply === 'confirm' && isConfirmAllowed(state)) {
         return {
@@ -177,7 +282,7 @@ function interpretOpenRequestEffect(understanding, requestState, message) {
         };
     }
 
-    // 4) Leave alone (including soft "yes" when not waiting on confirmation)
+    // 4) Leave alone (including soft "yes" when not waiting on confirmation / no offer)
     return emptyEffect();
 }
 
@@ -209,8 +314,11 @@ function logOpenRequestEffect(effect) {
 
 module.exports = {
     MVP_DEFAULT_AWS_REGION,
+    SOFT_ACCEPT_OFFER_KEY,
     interpretOpenRequestEffect,
     logOpenRequestEffect,
     hasApplicableValues,
+    isSoftAcceptPhrase,
+    readSoftAcceptOffer,
     pickApplicableValues
 };

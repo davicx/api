@@ -82,19 +82,12 @@ function buildMissingFieldPromptLines(missingFields, actionDefinition, exampleCo
 
 function buildMissingFieldsMessage(actionDefinition, missingFields, collectedFields, exampleContext) {
     const lines = buildMissingFieldPromptLines(missingFields, actionDefinition, exampleContext);
-    const parts = [];
 
-    if (lines.length > 0) {
-        parts.push(MISSING_FIELDS_INTRO + '\n\n' + lines.join('\n'));
+    if (lines.length === 0) {
+        return '';
     }
 
-    const requestNamePrompt = buildOptionalRequestNamePrompt(actionDefinition, collectedFields);
-
-    if (requestNamePrompt) {
-        parts.push(requestNamePrompt);
-    }
-
-    return parts.join('\n\n');
+    return MISSING_FIELDS_INTRO + '\n\n' + lines.join('\n');
 }
 
 function buildOptionalRequestNamePrompt(actionDefinition, collectedFields) {

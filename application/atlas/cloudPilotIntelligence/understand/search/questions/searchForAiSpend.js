@@ -4,7 +4,7 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig'
 const SearchLogs = require('../helpers/searchLogs');
 const {
     getAiSpendSearchContext
-} = require('../../../context/operationContext/getAiSpendSearchContext');
+} = require('../../../context/searches/aiSpendSearchContext');
 
 /*
 FUNCTIONS A: AI spend search

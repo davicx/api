@@ -1,10 +1,10 @@
 const Message = require('../../../../functions/classes/Message');
 
 /*
-ConversationHistoryContext — past turns for AI (not Situation).
+ConversationHistoryContext — past turns for AI (context type).
 
 One job: load recent DB messages and format them for OpenAI-style roles.
-Does not build Identity, Situation, or Knowledge. Does not call OpenAI.
+Does not build Identity, Current State, or Knowledge. Does not call OpenAI.
 
 getMessages(messageHistoryCount) = that many message ROWS (not exchanges).
 Excludes the current turn's user message when it was already saved to DB.

@@ -4,7 +4,7 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 const SearchLogs = require('./helpers/searchLogs');
 const {
     getOrganizationalKnowledgeSearchContext
-} = require('../../context/operationContext/getOrganizationalKnowledgeSearchContext');
+} = require('../../context/searches/organizationKnowledgeSearchContext');
 
 /*
 FUNCTIONS A: Organizational knowledge search (S3 MVP)

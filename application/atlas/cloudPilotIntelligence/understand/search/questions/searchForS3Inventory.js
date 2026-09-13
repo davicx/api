@@ -2,7 +2,7 @@ const actionMap = require('../../../../cloudPilot/masterCloudPilotCapabilities')
 const SearchLogs = require('../helpers/searchLogs');
 const {
     getS3InventorySearchContext
-} = require('../../../context/operationContext/getS3InventorySearchContext');
+} = require('../../../context/searches/s3InventorySearchContext');
 
 /*
 FUNCTIONS A: S3 inventory Question search

@@ -2,7 +2,7 @@ const actionMap = require('../../../../cloudPilot/masterCloudPilotCapabilities')
 const SearchLogs = require('../helpers/searchLogs');
 const {
     getEc2InventorySearchContext
-} = require('../../../context/operationContext/getEc2InventorySearchContext');
+} = require('../../../context/searches/ec2InventorySearchContext');
 
 /*
 FUNCTIONS A: EC2 inventory Question search

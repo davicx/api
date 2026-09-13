@@ -2,10 +2,11 @@ const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
 const { buildAIContext } = require('../context/buildContext');
 const { buildAISystemMessage } = require('../context/buildSystemMessage');
-const ConversationHistoryContext = require('../context/classes/ConversationHistoryContext');
-const masterFinalResponseContext = require('../context/masterContext/masterFinalResponseContext');
+const ConversationHistoryContext = require('../context/contextTypes/conversationHistoryContext');
+const finalResponseContext = require('../context/finalResponseContext');
 const SearchForOrganizationalKnowledgeFunctions = require('../understand/search/searchForOrganizationalKnowledge');
 const OrganizationKnowledgeFunctions = require('../../cloudPilot/knowledge/organizationKnowledgeFunctions');
+const MasterLogging = require('../../cloudPilot/logging/masterLogging');
 
 /*
 CloudPilot Intelligence — generateGeneralMessageReply()
@@ -13,7 +14,7 @@ CloudPilot Intelligence — generateGeneralMessageReply()
 GenAI conversation front door. Builds context, history, and Internal stub vs OpenAI.
 CloudPilotMessage.prepareGeneralMessageReply calls this, then formats the outgoing product message.
 
-Recipe: context/masterContext/masterFinalResponseContext.js (which ingredients for this AI call).
+Recipe: context/finalResponseContext.js (which ingredients for this AI call).
 Org knowledge: only when recipe.includeKnowledge (MVP Final Response = OFF).
 */
 
@@ -24,7 +25,7 @@ async function generateGeneralMessageReply(processMessageContext) {
     let context = processMessageContext || {};
     const currentUserMessage = context.currentUserMessage || '';
     const conversationID = context.conversationID;
-    const recipe = masterFinalResponseContext;
+    const recipe = finalResponseContext;
 
     //STEP 0: Resolve organization knowledge only when this recipe includes Knowledge
     if (recipe.includeKnowledge) {
@@ -35,10 +36,7 @@ async function generateGeneralMessageReply(processMessageContext) {
         includeIdentity: recipe.includeIdentity,
         includeCapabilities: recipe.includeCapabilities,
         includeCurrentState: recipe.includeCurrentState,
-        includeKnowledge: recipe.includeKnowledge,
-        situationTypes: Array.isArray(recipe.situationTypes)
-            ? recipe.situationTypes
-            : []
+        includeKnowledge: recipe.includeKnowledge
     });
     const systemMessage = buildAISystemMessage(aiContext);
     const useOpenAIMessageResponse =
@@ -156,6 +154,9 @@ async function generateGeneralMessageReply(processMessageContext) {
             context: contextSummary
         });
     } else {
+        MasterLogging.logOpenAIInputSkipped(
+            'Internal message response — no OpenAI call this turn'
+        );
         openAIResult = {
             success: true,
             data: CHAT_STUB_MESSAGE

@@ -1,5 +1,5 @@
 /*
-Open Requests Search — operation context
+Open Requests Search — search context
 
 Assembles ONE OpenRequestsSearchContext for the Open Requests Search operation.
 Internal and OpenAI both receive this same object.

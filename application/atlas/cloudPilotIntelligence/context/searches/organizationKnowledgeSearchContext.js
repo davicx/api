@@ -1,5 +1,5 @@
 /*
-Organizational Knowledge Search — operation context
+Organizational Knowledge Search — search context
 
 Assembles ONE OrganizationalKnowledgeSearchContext for this operation.
 Internal and OpenAI both receive this same object.

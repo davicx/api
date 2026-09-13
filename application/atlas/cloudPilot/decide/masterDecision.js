@@ -164,15 +164,13 @@ function decideNextStep({ understanding, requestState }) {
             ? effectBody.values
             : u.values;
 
-        if (effectBody.continueNormalConversation || u.question) {
-            // Mixed: do not swallow the whole turn into request-only speech.
-            // processMessage applies the field merge, then question/general continues.
-            if (u.question) {
-                return resolveQuestionDecision(state, u.question, u);
-            }
-            return buildGeneralChatDecision();
+        // Mixed question + field fill: merge happens in processMessage STEP 5b, then answer question.
+        if (u.question) {
+            return resolveQuestionDecision(state, u.question, u);
         }
 
+        // Structured values that apply to the open request continue that request —
+        // even when Action stayed general_chat. Do not leave-alone as general chat.
         return buildFieldsMergedDecision(state, mergeValues);
     }
 
@@ -207,10 +205,8 @@ function decideNextStep({ understanding, requestState }) {
         return buildFieldsMergedDecision(state, u.values);
     }
 
-    if (shouldReaskOpenRequest(state)) {
-        return resolveRequestChat(state);
-    }
-
+    // Open request is context, not a lock: general_chat / leave-alone answers
+    // normally and leaves the row untouched (do not re-ask missing fields).
     return buildGeneralChatDecision();
 }
 

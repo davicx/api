@@ -1,5 +1,5 @@
 /*
-AI Spend Search — operation context
+AI Spend Search — search context
 
 Assembles ONE AiSpendSearchContext for the AI Spend Search operation.
 Internal and OpenAI both receive this same object.

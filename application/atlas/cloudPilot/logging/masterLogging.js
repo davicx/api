@@ -15,21 +15,22 @@ B: Open Request (STEP 1)    logOpenRequestOn
 C: Understand (STEP 2/2B)   logUnderstandingOn
 D: Decide (STEP 3)          logDecisionOn
 E: Fulfill (STEP 4)         logFulfillOn
-F: Respond (STEP 5)         logRespondOn
+F: OpenAI Input (STEP 5)    logOpenAIInputOn
+G: Respond (STEP 6)         logRespondOn
 
 ===============================================================================
 DETAIL LOGS (verbose — normally OFF except 2A while rebuilding chat)
 ===============================================================================
-G: Understanding Search (MASTER STEP 2A)   logUnderstandingSearchDetailsOn
-H: Decision Details                        logDecisionDetailsOn
+H: Understanding Search (MASTER STEP 2 Search Results)   logUnderstandingSearchDetailsOn
+I: Decision Details                        logDecisionDetailsOn
    — STEP 4/5 JSON blobs, OPEN REQUEST EFFECT, STEP 5b merge dumps
-I: Execution Details                       logExecutionDetailsOn
+J: Execution Details                       logExecutionDetailsOn
    — STEP 2 Initial State, STEP 6 Execute JSON, Execute — starting, STEP 6b
-J: Atlas RAW payloads                      logAtlasRawOn
-K: Atlas formatted/normalized payloads     logAtlasFormattedOn
-L: Message build / request templates       logMessageBuildOn
-M: OpenAI detail / cost                    logOpenAIDetailOn, logOpenAICostTotalOn
-N: Save / final response misc              logSaveCloudPilotMessageOn, logFinalResponseOn
+K: Atlas RAW payloads                      logAtlasRawOn
+L: Atlas formatted/normalized payloads     logAtlasFormattedOn
+M: Message build / request templates       logMessageBuildOn
+N: OpenAI detail / cost                    logOpenAIDetailOn, logOpenAICostTotalOn
+O: Save / final response misc              logSaveCloudPilotMessageOn, logFinalResponseOn
 
 ===============================================================================
 */
@@ -40,6 +41,7 @@ const logOpenRequestOn = true;
 const logUnderstandingOn = true;
 const logDecisionOn = true;
 const logFulfillOn = true;
+const logOpenAIInputOn = true;
 const logRespondOn = true;
 
 // --- DETAIL ---
@@ -53,6 +55,9 @@ const logSaveCloudPilotMessageOn = false;
 const logFinalResponseOn = false;
 const logOpenAICostTotalOn = false;
 const logOpenAIDetailOn = false;
+
+// Per-turn: ensure MASTER STEP 5 appears before STEP 6 even when OpenAI was not called
+let openAIInputLoggedThisTurn = false;
 
 /*
 FUNCTIONS A: Header and Footer
@@ -76,15 +81,19 @@ FUNCTIONS E: Checkpoint (legacy rebuild)
 FUNCTIONS F: Fulfill
     1) Function F1: logFulfill
 
-FUNCTIONS G: Respond
-    1) Function G1: logRespond
+FUNCTIONS G: OpenAI Input (final user-facing response only)
+    1) Function G1: logOpenAIInput
+    2) Function G2: logOpenAIInputSkipped
 
-FUNCTIONS H: Detail writers (gated console.log helpers)
-    1) Function H1: logDecisionDetail
-    2) Function H2: logExecutionDetail
-    3) Function H3: logAtlasRaw
-    4) Function H4: logAtlasFormatted
-    5) Function H5: logMessageBuildDetail
+FUNCTIONS H: Respond
+    1) Function H1: logRespond
+
+FUNCTIONS I: Detail writers (gated console.log helpers)
+    1) Function I1: logDecisionDetail
+    2) Function I2: logExecutionDetail
+    3) Function I3: logAtlasRaw
+    4) Function I4: logAtlasFormatted
+    5) Function I5: logMessageBuildDetail
 */
 
 //FUNCTIONS A: Header and Footer
@@ -93,6 +102,8 @@ function logHeader(headerMessage) {
     if (!logHeaderFooterOn) {
         return;
     }
+
+    openAIInputLoggedThisTurn = false;
 
     console.log('______________________________________________________________');
     console.log('HEADER: ' + String(headerMessage || 'New Message'));
@@ -169,7 +180,7 @@ function logUnderstandStart() {
     console.log(' ');
 }
 
-//Function C2: Log Understanding result (MASTER STEP 2B)
+//Function C2: Log Understanding result (after Search Results)
 function logUnderstandingResult(understanding) {
     if (!logUnderstandingOn) {
         return;
@@ -177,8 +188,7 @@ function logUnderstandingResult(understanding) {
 
     const result = understanding || {};
 
-    console.log('MASTER STEP 2B: UNDERSTANDING RESULT');
-    console.log(' ');
+    console.log('Understanding Result');
     console.log('Action: ' + formatLogValue(result.action));
     console.log('Values: ' + formatLogValues(result.values));
     console.log('Reply: ' + formatLogValue(result.reply));
@@ -366,11 +376,67 @@ function logFulfill(options) {
     console.log(' ');
 }
 
-//FUNCTIONS G: Respond Logs
-//Function G1: What CloudPilot told the user — debug only
+//FUNCTIONS G: OpenAI Input Logs (exact final-response payload)
+//Function G1: Exact object passed into OpenAI chat.completions.create
+function logOpenAIInput(requestBody) {
+    if (!logOpenAIInputOn) {
+        return;
+    }
+
+    openAIInputLoggedThisTurn = true;
+
+    const body = requestBody && typeof requestBody === 'object' ? requestBody : {};
+
+    console.log('--------------------------------------------------');
+    console.log('MASTER STEP 5: OPENAI INPUT');
+    console.log(' ');
+
+    if (body.model != null && String(body.model).trim() !== '') {
+        console.log('Model: ' + String(body.model));
+        console.log(' ');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'messages')) {
+        console.log('Messages:');
+        console.log(JSON.stringify(body.messages, null, 2));
+        console.log(' ');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'max_tokens')) {
+        console.log('max_tokens: ' + String(body.max_tokens));
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'temperature')) {
+        console.log('temperature: ' + String(body.temperature));
+    }
+
+    console.log(' ');
+}
+
+//Function G2: Final response path did not call OpenAI
+function logOpenAIInputSkipped(reason) {
+    if (!logOpenAIInputOn) {
+        return;
+    }
+
+    openAIInputLoggedThisTurn = true;
+
+    console.log('--------------------------------------------------');
+    console.log('MASTER STEP 5: OPENAI INPUT');
+    console.log(' ');
+    console.log('Skipped: ' + (reason ? String(reason) : 'no OpenAI call this turn'));
+    console.log(' ');
+}
+
+//FUNCTIONS H: Respond Logs
+//Function H1: What CloudPilot told the user — debug only
 function logRespond(conversationOutcome, decision) {
     if (!logRespondOn) {
         return;
+    }
+
+    if (logOpenAIInputOn && !openAIInputLoggedThisTurn) {
+        logOpenAIInputSkipped('no final-response OpenAI call this turn');
     }
 
     const outcome = conversationOutcome || {};
@@ -383,7 +449,7 @@ function logRespond(conversationOutcome, decision) {
         message.length > 220 ? message.slice(0, 217) + '...' : message;
 
     console.log('--------------------------------------------------');
-    console.log('MASTER STEP 5: RESPOND');
+    console.log('MASTER STEP 6: RESPOND');
     console.log(' ');
     console.log('Response Type: ' + formatLogValue(responseType));
     console.log('CloudPilot Says: "' + preview.replace(/\n/g, ' / ') + '"');
@@ -569,6 +635,7 @@ module.exports = {
     logUnderstandingOn,
     logDecisionOn,
     logFulfillOn,
+    logOpenAIInputOn,
     logRespondOn,
     // DETAIL toggles
     logUnderstandingSearchDetailsOn,
@@ -591,6 +658,8 @@ module.exports = {
     logDecision,
     logTemporaryCheckpoint,
     logFulfill,
+    logOpenAIInput,
+    logOpenAIInputSkipped,
     logRespond,
     logDecisionDetail,
     logExecutionDetail,

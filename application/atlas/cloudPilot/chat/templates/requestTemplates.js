@@ -122,12 +122,6 @@ async function cloudPilotRespondMissingFieldsGiven(payload) {
             collectedFields
         );
         acknowledgement += '\n\n' + missingFieldsMessage;
-    } else {
-        const requestNamePrompt = buildOptionalRequestNamePrompt(actionDefinition, collectedFields);
-
-        if (requestNamePrompt) {
-            acknowledgement += '\n\n' + requestNamePrompt;
-        }
     }
 
     return {
@@ -159,8 +153,6 @@ async function cloudPilotRespondAwaitingExecutionMode(payload) {
             estimatedComputeCost: estimatedComputeCost,
             requestNamePrompt: requestNamePrompt
         });
-    } else if (requestNamePrompt) {
-        message += '\n\n' + requestNamePrompt;
     }
 
     return {

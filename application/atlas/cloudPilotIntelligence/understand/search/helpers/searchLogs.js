@@ -66,16 +66,68 @@ function flushSearchLog() {
         return;
     }
 
-    console.log('MASTER STEP 2A: SEARCH RESULTS');
-    console.log('');
+    const found = [];
+    const noMatch = [];
+    const skipped = [];
 
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        console.log(row.name);
-        console.log('Method: ' + row.method);
-        console.log('Result: ' + row.result);
-        console.log('');
+
+        // Action is shown on Understanding Result — skip duplicate search row
+        if (String(row.name).trim().toLowerCase() === 'action') {
+            continue;
+        }
+
+        if (row.method === 'Skipped') {
+            skipped.push(row);
+            continue;
+        }
+
+        if (isNoMatchResult(row.result)) {
+            noMatch.push(row);
+            continue;
+        }
+
+        found.push(row);
     }
+
+    console.log('Search Results');
+
+    console.log('Found:');
+    for (let i = 0; i < found.length; i++) {
+        const row = found[i];
+        console.log(row.name + ': ' + row.result + ' (' + row.method + ')');
+    }
+    console.log('');
+
+    console.log('No Match:');
+    for (let i = 0; i < noMatch.length; i++) {
+        console.log(noMatch[i].name);
+    }
+    console.log('');
+
+    console.log('Skipped:');
+    for (let i = 0; i < skipped.length; i++) {
+        console.log(skipped[i].name);
+    }
+    console.log('');
+}
+
+function isNoMatchResult(result) {
+    const text = result == null ? '' : String(result).trim();
+
+    if (!text) {
+        return true;
+    }
+
+    const lower = text.toLowerCase();
+
+    return (
+        lower === 'searched but nothing found' ||
+        lower === 'not used' ||
+        lower === 'none' ||
+        lower === 'null'
+    );
 }
 
 function formatMethod(method) {

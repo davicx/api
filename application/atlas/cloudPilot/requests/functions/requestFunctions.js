@@ -2,6 +2,10 @@ const actionMap = require('../../masterCloudPilotCapabilities');
 const Request = require('../classes/Request');
 const RequestStateFunctions = require('./requestLoadFunctions');
 const { RESPONSE_TYPE } = require('../decisionTypes');
+const FieldPromptExamples = require('../../chat/templates/fieldPromptExamples');
+const {
+    SOFT_ACCEPT_OFFER_KEY
+} = require('../interpretOpenRequestEffect');
 
 /*
 FUNCTIONS A: Apply STEP 4 decision to the database (STEP 5)
@@ -21,6 +25,9 @@ FUNCTIONS C: Helpers
     6) Function C6: resolveSkipReasonForNoRequest
     7) Function C7: requestTargetMatchesState
     8) Function C8: arraysMatchInOrder
+    9) Function C9: buildSoftAcceptOffer
+   10) Function C10: syncSoftAcceptOfferOnRequest
+   11) Function C11: clearSoftAcceptOfferOnRequest
 */
 
 //Function A1: Route decision to start, update, or skip (D1 — finish/cancel in D2)
@@ -38,7 +45,9 @@ async function applyDecision(decision, context) {
     }
 
     if (decision.response && decision.response.type === RESPONSE_TYPE.IMMEDIATE_EXECUTION) {
-        return buildSkipOutcome(requestState, 'immediate_execution_no_row');
+        const clearedState = await clearSoftAcceptOfferOnRequest(requestState);
+
+        return buildSkipOutcome(clearedState, 'immediate_execution_no_row');
     }
 
     if (decision.response && decision.response.type === RESPONSE_TYPE.RESOURCE_SCAN_DECLINED) {
@@ -57,8 +66,11 @@ async function applyDecision(decision, context) {
     }
 
     if (!targetRequest || !targetRequest.action) {
+        // Leave-alone turns (general chat, etc.) clear soft-accept eligibility
+        // so a later "ok" cannot accept a stale suggestion.
+        const clearedState = await clearSoftAcceptOfferOnRequest(requestState);
         const reason = resolveSkipReasonForNoRequest(decision);
-        return buildSkipOutcome(requestState, reason);
+        return buildSkipOutcome(clearedState, reason);
     }
 
     const hasOpenRequest = !RequestStateFunctions.actionStateIsEmpty(requestState);
@@ -162,12 +174,15 @@ async function startRequest(decision, context) {
 
     console.log('startRequest: new row — requestID:', workflowId, 'actionType:', actionType);
 
+    const mappedState = RequestStateFunctions.mapActionToState(dbAction);
+    const withOffer = await syncSoftAcceptOfferOnRequest(workflowId, mappedState, actionType);
+
     return {
         success: true,
         action: 'created',
         reason: null,
         requestID: workflowId,
-        request: RequestStateFunctions.mapActionToState(dbAction),
+        request: withOffer,
         error: null
     };
 }
@@ -210,12 +225,19 @@ async function updateRequest(decision, context) {
 
     console.log('updateRequest: requestID:', workflowId, 'actionType:', targetRequest.action);
 
+    const mappedState = RequestStateFunctions.mapActionToState(updateOutcome.action);
+    const withOffer = await syncSoftAcceptOfferOnRequest(
+        workflowId,
+        mappedState,
+        targetRequest.action
+    );
+
     return {
         success: true,
         action: 'updated',
         reason: null,
         requestID: workflowId,
-        request: RequestStateFunctions.mapActionToState(updateOutcome.action),
+        request: withOffer,
         error: null
     };
 }
@@ -423,6 +445,104 @@ function arraysMatchInOrder(left, right) {
     }
 
     return true;
+}
+
+//Function C9: Build soft-accept offer when exactly one missing field has a known suggestion
+function buildSoftAcceptOffer(actionType, missingFields) {
+    const missing = Array.isArray(missingFields) ? missingFields : [];
+
+    if (missing.length !== 1) {
+        return null;
+    }
+
+    const fieldName = String(missing[0] || '').trim();
+
+    if (!fieldName || fieldName === 'request_name') {
+        return null;
+    }
+
+    const actionDefinition = actionMap[actionType] || null;
+    const suggestedValue = FieldPromptExamples.resolveFieldExample(
+        fieldName,
+        actionDefinition,
+        {}
+    );
+
+    if (
+        !suggestedValue ||
+        String(suggestedValue).trim() === '' ||
+        String(suggestedValue).trim() === 'your_value_here'
+    ) {
+        return null;
+    }
+
+    return {
+        field: fieldName,
+        value: String(suggestedValue).trim()
+    };
+}
+
+//Function C10: Persist or clear soft-accept offer on asked JSON
+async function syncSoftAcceptOfferOnRequest(workflowId, mappedState, actionType) {
+    if (!workflowId || !mappedState) {
+        return mappedState;
+    }
+
+    const asked = copyObject(mappedState.asked || {});
+    const offer = buildSoftAcceptOffer(actionType, mappedState.missing);
+    const existing = asked[SOFT_ACCEPT_OFFER_KEY] || null;
+    let changed = false;
+
+    if (offer) {
+        if (
+            !existing ||
+            existing.field !== offer.field ||
+            String(existing.value) !== String(offer.value)
+        ) {
+            asked[SOFT_ACCEPT_OFFER_KEY] = offer;
+            changed = true;
+        }
+    } else if (existing) {
+        delete asked[SOFT_ACCEPT_OFFER_KEY];
+        changed = true;
+    }
+
+    if (!changed) {
+        return mappedState;
+    }
+
+    const updateOutcome = await Request.updateAction(workflowId, { asked: asked });
+
+    if (!updateOutcome.success || !updateOutcome.action) {
+        return mappedState;
+    }
+
+    return RequestStateFunctions.mapActionToState(updateOutcome.action);
+}
+
+//Function C11: Clear soft-accept offer when a leave-alone turn happens
+async function clearSoftAcceptOfferOnRequest(requestState) {
+    const state = requestState || RequestStateFunctions.emptyActionState();
+
+    if (!state.workflowId) {
+        return state;
+    }
+
+    const asked = copyObject(state.asked || {});
+
+    if (!asked[SOFT_ACCEPT_OFFER_KEY]) {
+        return state;
+    }
+
+    delete asked[SOFT_ACCEPT_OFFER_KEY];
+
+    const updateOutcome = await Request.updateAction(state.workflowId, { asked: asked });
+
+    if (!updateOutcome.success || !updateOutcome.action) {
+        return state;
+    }
+
+    return RequestStateFunctions.mapActionToState(updateOutcome.action);
 }
 
 module.exports = {

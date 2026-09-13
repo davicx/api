@@ -1,5 +1,5 @@
 /*
-S3 Inventory Search — operation context
+S3 Inventory Search — search context
 
 Assembles ONE S3InventorySearchContext for this Search TASK.
 Internal receives this object today (MVP has no OpenAI path yet).

@@ -1,5 +1,5 @@
 /*
-Region Search — operation context
+Region Search — search context
 
 Assembles ONE RegionSearchContext for the Region Search operation.
 Internal and OpenAI both receive this same object.

@@ -7,7 +7,7 @@ const { CHAT_CONFIG } = require('../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 const {
     getActionSearchContext
-} = require('../../context/operationContext/getActionSearchContext');
+} = require('../../context/searches/actionSearchContext');
 
 /*
 FUNCTIONS A: Action detection from user message
@@ -163,7 +163,10 @@ async function searchMessageForActionOpenAI(context) {
         }
 
         return {
-            result: parseOpenAIActionResponse(responseText),
+            result: parseOpenAIActionResponse(
+                responseText,
+                context && context.userMessage ? context.userMessage : ''
+            ),
             billing: true,
             openAIResponse: responseText,
             fallback: null
@@ -209,6 +212,9 @@ function buildActionOpenAIMessages(context) {
                     '- Return an action when the user wants CloudPilot to run that capability.\n' +
                     '- A question about the user’s current AWS resources requires a read capability.\n' +
                     '- General knowledge questions such as "what is an EC2 instance?" are not actions.\n' +
+                    '- Vague help such as "help me with S3" or "help with EC2" is NOT an action — return {}.\n' +
+                    '- Only choose scan_ec2 or scan_s3 when the user explicitly asks to scan, analyze, or check for issues.\n' +
+                    '- Mentioning a service name alone is not enough to start a scan or change.\n' +
                     '- Never answer the question and never invent AWS facts.\n' +
                     '- Return JSON only: {"action":"scan_ec2"} or {}.'
             }
@@ -216,7 +222,7 @@ function buildActionOpenAIMessages(context) {
     };
 }
 
-function parseOpenAIActionResponse(raw) {
+function parseOpenAIActionResponse(raw, userMessage) {
     let text = String(raw || '').trim();
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
 
@@ -233,6 +239,10 @@ function parseOpenAIActionResponse(raw) {
             return buildNoActionOutcome('openai');
         }
 
+        if (!openAIActionIsExplicitlyAllowed(action, userMessage)) {
+            return buildNoActionOutcome('openai');
+        }
+
         return {
             action: action,
             ambiguous: false,
@@ -243,6 +253,29 @@ function parseOpenAIActionResponse(raw) {
     } catch (error) {
         return buildNoActionOutcome('openai');
     }
+}
+
+// Reject vague OpenAI scan picks ("help me with S3") that lack explicit scan language.
+function openAIActionIsExplicitlyAllowed(action, userMessage) {
+    if (action !== 'scan_ec2' && action !== 'scan_s3') {
+        return true;
+    }
+
+    const text = String(userMessage || '').toLowerCase();
+
+    if (!text) {
+        return false;
+    }
+
+    if (/\b(scan|analyze|analyse)\b/.test(text)) {
+        return true;
+    }
+
+    if (/\bcheck\b/.test(text) && /\bissues?\b/.test(text)) {
+        return true;
+    }
+
+    return false;
 }
 
 function buildNoActionOutcome(source) {

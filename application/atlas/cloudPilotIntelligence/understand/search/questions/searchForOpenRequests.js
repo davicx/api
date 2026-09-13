@@ -4,7 +4,7 @@ const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig'
 const SearchLogs = require('../helpers/searchLogs');
 const {
     getOpenRequestsSearchContext
-} = require('../../../context/operationContext/getOpenRequestsSearchContext');
+} = require('../../../context/searches/openRequestsSearchContext');
 
 /*
 FUNCTIONS A: Open requests Question search

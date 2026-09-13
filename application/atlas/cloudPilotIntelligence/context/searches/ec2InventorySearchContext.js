@@ -1,5 +1,5 @@
 /*
-EC2 Inventory Search — operation context
+EC2 Inventory Search — search context
 
 Assembles ONE Ec2InventorySearchContext for this Search TASK.
 Internal receives this object today (MVP has no OpenAI path yet).

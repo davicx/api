@@ -7,7 +7,6 @@ Intelligence lives in contextTypes/ builders and services/knowledge/.
 Conceptual sections (render order locked):
   IDENTITY         — Who is CloudPilot?              (cloudPilotContext)
   CAPABILITIES     — What can I do / retrieve?       (cloudPilotCapabilitiesContext)
-  SITUATION        — What should AI look for / do?   (cloudPilotSituationContext)
   CURRENT STATE    — Factual open request (Chat)     (cloudPilotCurrentStateContext)
   CURRENT QUESTION — What did the user say?          (currentQuestionContext)
   Knowledge        — Optional organization/product   (organizationKnowledgeContext)
@@ -19,9 +18,8 @@ FUNCTIONS B: Write each part of the message
     1) Function B1: writeIdentity
     2) Function B1a: writeCapabilities
     3) Function B1b: writeCurrentState
-    4) Function B2: writeSituation
-    5) Function B3: writeCurrentQuestion
-    6) Function B4: writeKnowledge
+    4) Function B3: writeCurrentQuestion
+    5) Function B4: writeKnowledge
 
 FUNCTIONS C: Small helpers
     1) Function C1: writeBulletList
@@ -276,48 +274,11 @@ function writeCurrentState(currentStateContext) {
     lines.push(
         'Use this information only when relevant to the user\'s current question.'
     );
+    lines.push(
+        'This turn is answering chat only — do not claim the open request is starting, running, completed, or being executed.'
+    );
 
     return lines.join('\n');
-}
-
-//Function B2: Write Situation (What should AI look for / do?)
-function writeSituation(situationContext) {
-    const data = situationContext && situationContext.data;
-
-    if (!hasContent(data)) {
-        return '';
-    }
-
-    const sections = [];
-    const keys = Object.keys(data);
-
-    for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        const piece = data[key];
-
-        if (!piece || typeof piece !== 'object') {
-            continue;
-        }
-
-        const pieceSections = [String(key).toUpperCase()];
-
-        if (piece.purpose) {
-            pieceSections.push(piece.purpose);
-        }
-
-        const rules = writeBulletList(piece.rules);
-        if (rules) {
-            pieceSections.push('Rules:\n' + rules);
-        }
-
-        sections.push(pieceSections.join('\n\n'));
-    }
-
-    if (sections.length === 0) {
-        return '';
-    }
-
-    return 'SITUATION\n\n' + sections.join('\n\n');
 }
 
 //Function B3: Write Current Question (What did the user say?)
@@ -421,7 +382,7 @@ function writeKnowledge(knowledgeContext) {
 
 //FUNCTIONS A: Build AI system message
 //Function A1: Build AI system message from collected context
-// Order: Identity → Capabilities → Situation → Current State → Current Question → Knowledge
+// Order: Identity → Capabilities → Current State → Current Question → Knowledge
 function buildAISystemMessage(aiContext) {
     const sections = [];
 
@@ -433,11 +394,6 @@ function buildAISystemMessage(aiContext) {
     const capabilitiesText = writeCapabilities(aiContext && aiContext.capabilities);
     if (capabilitiesText) {
         sections.push(capabilitiesText);
-    }
-
-    const situationText = writeSituation(aiContext && aiContext.situation);
-    if (situationText) {
-        sections.push(situationText);
     }
 
     const currentStateText = writeCurrentState(aiContext && aiContext.currentState);

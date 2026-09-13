@@ -2,7 +2,7 @@ const OpenAIClient = require('../../../../providers/openAI/client/openAIClient')
 const { CHAT_CONFIG } = require('../../../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
 const SearchLogs = require('../helpers/searchLogs');
-const { getRegionSearchContext } = require('../../../context/operationContext/getRegionSearchContext');
+const { getRegionSearchContext } = require('../../../context/searches/regionSearchContext');
 
 /*
 FUNCTIONS A: Region search

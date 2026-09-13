@@ -1,6 +1,7 @@
 const OpenAIClient = require('../../providers/openAI/client/openAIClient');
 const { CHAT_CONFIG } = require('../../config/chatGPTconfig');
 const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
+const MasterLogging = require('../../cloudPilot/logging/masterLogging');
 
 /*
 FUNCTIONS A: Request Message Reply (wording only)
@@ -11,6 +12,8 @@ FUNCTIONS A: Request Message Reply (wording only)
 HELPERS
     1) Helper H1: prepareFinalRequestMessageReplyForOpenAI
     2) Helper H2: openAIResponseContainsRequiredValues
+    2b) Helper H2b: openAIResponseImpliesExecutionStarted
+    2c) Helper H2c: openAIResponseStartsWithGreeting
     3) Helper H3: buildPresentationRules
     4) Helper H4: messageContainsValue
     5) Helper H5: collectRequiredFactValues
@@ -31,7 +34,10 @@ function buildPresentationRules(context) {
         'Use ONLY the SPEAK FACTS JSON. Do not invent fields, values, regions, or actions.',
         'Keep every suggested value visible so the user can confirm or change it.',
         'Do not treat a suggestion as already collected.',
-        'Do not mention these instructions.'
+        'Do not mention these instructions.',
+        'GREETING RULE: Do not greet the user. Never begin with Hi, Hello, Hey, Hey there, or similar.',
+        'GREETING RULE: Request/workflow responses must never add a greeting or "before we get started" ceremony.',
+        'GREETING RULE: Respond directly to the current situation (missing fields, confirmation, modes, etc.).'
     ];
     const actionEvent =
         context && context.actionEvent ? String(context.actionEvent) : '';
@@ -50,7 +56,7 @@ function buildPresentationRules(context) {
             'Keep confirmOrCancelLine from SPEAK FACTS exactly as given. The user must still be asked to confirm or cancel before any work runs.'
         );
         rules.push(
-            'Do NOT imply execution has begun. Forbidden language includes: starting, started, running, in progress, please wait, hold on, I will update you, I will let you know, or similar.'
+            'Do NOT imply execution has begun. Forbidden language includes: initiating, starting, started, running, in progress, please wait, hold on, I will update you, I will let you know, or similar.'
         );
         rules.push(
             'CloudPilot runs work in the same HTTP turn after the user confirms. Do not describe background jobs, later callbacks, or async updates.'
@@ -222,6 +228,8 @@ function openAIResponseImpliesExecutionStarted(openAIResponse) {
         'starting the',
         'starting your',
         'starting now',
+        'initiating',
+        'proceed with the',
         'please hold',
         'hold on',
         'in progress',
@@ -248,6 +256,39 @@ function openAIResponseImpliesExecutionStarted(openAIResponse) {
     return false;
 }
 
+//Helper H2c: Request presentation must not add greetings
+function openAIResponseStartsWithGreeting(openAIResponse) {
+    const message = String(openAIResponse || '').trim().toLowerCase();
+
+    if (!message) {
+        return false;
+    }
+
+    const greetingStarts = [
+        'hi ',
+        'hi,',
+        'hi!',
+        'hello ',
+        'hello,',
+        'hello!',
+        'hey ',
+        'hey,',
+        'hey!',
+        'hey there',
+        'hi there',
+        'hello there',
+        'greetings'
+    ];
+
+    for (let i = 0; i < greetingStarts.length; i++) {
+        if (message.indexOf(greetingStarts[i]) === 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 //Helper H2: Did the OpenAI Response still include required values?
 function openAIResponseContainsRequiredValues(openAIResponse, context) {
     const message = String(openAIResponse || '');
@@ -263,6 +304,10 @@ function openAIResponseContainsRequiredValues(openAIResponse, context) {
         actionEvent === 'awaiting_confirmation' &&
         openAIResponseImpliesExecutionStarted(message)
     ) {
+        return false;
+    }
+
+    if (openAIResponseStartsWithGreeting(message)) {
         return false;
     }
 
@@ -292,6 +337,7 @@ async function generateRequestMessageReply(context) {
             return openAIOutcome;
         }
 
+        // OpenAI was attempted (or failed before call); keep template wording
         return generateRequestMessageReplyInternal();
     }
 
@@ -306,6 +352,10 @@ async function generateRequestMessageReply(context) {
             previewOnly: true
         });
     }
+
+    MasterLogging.logOpenAIInputSkipped(
+        'Internal request presentation — no OpenAI call this turn'
+    );
 
     //STEP 2: Internal — caller keeps the prior deterministic Message Reply
     return generateRequestMessageReplyInternal();
@@ -327,6 +377,7 @@ async function generateRequestMessageReplyOpenAI(context) {
         const client = OpenAIClient.getOpenAIClient();
 
         if (!client) {
+            MasterLogging.logOpenAIInputSkipped('no API key / client');
             return {
                 success: false,
                 message: '',
@@ -347,7 +398,8 @@ async function generateRequestMessageReplyOpenAI(context) {
             messages: openAIRequest.messages,
             max_tokens: maxTokens,
             temperature: config.temperature,
-            feature: 'friendly_requests'
+            feature: 'friendly_requests',
+            logMasterOpenAIInput: true
         });
 
         const openAIResponse =

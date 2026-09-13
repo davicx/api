@@ -3,6 +3,7 @@ const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../../../config/chatGPTco
 const { CLOUDPILOT_AI_CONFIG } = require('../../../config/cloudPilotAIConfig');
 const SaveAiUsageFunctions = require('../usage/saveAiUsage');
 const { calculateOpenAICost } = require('../usage/calculateOpenAICost');
+const MasterLogging = require('../../../cloudPilot/logging/masterLogging');
 
 /*
 FUNCTIONS A: ChatGPT / OpenAI only (no intent logic — use ../logic + ./cloudPilotMessageFunctions for that)
@@ -359,13 +360,20 @@ async function createOpenAiChatCompletion(client, params) {
         ? Math.min(requested, ceiling)
         : Math.min(64, ceiling);
 
+    // Exact object passed to OpenAI — log before the call for final user-facing responses
+    const openAIRequestBody = {
+        model,
+        messages,
+        max_tokens,
+        temperature
+    };
+
+    if (params.logMasterOpenAIInput === true) {
+        MasterLogging.logOpenAIInput(openAIRequestBody);
+    }
+
     try {
-        const response = await client.chat.completions.create({
-            model,
-            messages,
-            max_tokens,
-            temperature
-        });
+        const response = await client.chat.completions.create(openAIRequestBody);
 
         const choice = response.choices && response.choices[0] && response.choices[0].message;
         const data = choice && choice.content != null ? choice.content : null;
@@ -558,7 +566,9 @@ async function sendGeneralChat(payload, legacySystemPrompt) {
         model: config.model,
         messages: messages,
         max_tokens: messageMaxTokens,
-        temperature: config.temperature
+        temperature: config.temperature,
+        feature: 'general_chat',
+        logMasterOpenAIInput: true
     });
 
     logOpenAI({

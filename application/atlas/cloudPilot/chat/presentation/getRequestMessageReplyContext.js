@@ -152,24 +152,8 @@ function getRequestMessageReplyContext(payload, templateMessage) {
         );
     }
 
-    const requestNamePrompt = FieldPromptExamples.buildOptionalRequestNamePrompt(
-        actionDefinition,
-        collectedFields
-    );
-
-    if (requestNamePrompt) {
-        optionalPrompts.push('request_name');
-        suggestions.request_name = FieldPromptExamples.resolveRequestNameExample(
-            actionDefinition
-        );
-    }
-
     const hasMissingFields = missingFields.length > 0;
-    const hasOptionalNameAsk =
-        optionalPrompts.length > 0 &&
-        (actionEvent === 'new_action' ||
-            actionEvent === 'missing_fields_given' ||
-            actionEvent === 'awaiting_execution_mode');
+    const hasOptionalNameAsk = false;
     const hasFieldAcknowledgement =
         actionEvent === 'missing_fields_given' &&
         latestCollectedFieldName(collectedFields) != null;

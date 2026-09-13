@@ -1,5 +1,5 @@
 /*
-Action Search — operation context
+Action Search — search context
 
 Assembles ONE ActionSearchContext for the Action Search operation.
 Internal and OpenAI both receive this same object.
@@ -47,6 +47,8 @@ function getActionSearchContext(message) {
                 'Return an action when the user wants CloudPilot to run that capability.',
                 'A question about the user’s current AWS resources requires a read capability.',
                 'General knowledge questions such as "what is an EC2 instance?" are not actions.',
+                'Vague help such as "help me with S3" is not an action.',
+                'Only choose scan actions when the user explicitly asks to scan, analyze, or check for issues.',
                 'Never answer the question and never invent AWS facts.'
             ].join('\n'),
             catalog: buildActionCatalog(),

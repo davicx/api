@@ -11,6 +11,68 @@ Please **inspect the existing implementation before making changes**. Do not sta
 
 ---
 
+# Where we are (2026-09-12) — overnight handoff
+
+## Pipeline status
+
+```text
+MESSAGE
+  ↓
+1. OPEN REQUEST     ✅
+  ↓
+2. UNDERSTAND       ✅
+  ↓
+3. DECIDE           ✅  (requestType + permission metadata; permission drives confirmation)
+  ↓
+4. FULFILL          ✅  (Decide early-return checkpoint removed)
+  ↓
+5. RESPOND          ← NEXT FOCUS (Checkpoint 5 — verify / finish)
+```
+
+## Architecture checkpoints (Chat vs Request model)
+
+| Checkpoint | Goal | Status |
+|---|---|---|
+| 1 | Capability `requestType` + `permission` metadata | ✅ Done |
+| 2 | Decide uses `permission` for confirm vs immediate | ✅ Done |
+| 3 | AWS questions → Information caps (`get_ec2_inventory` / `get_s3_inventory`), not Scan workflow | ✅ Done |
+| 4 | Re-enable Fulfill end-to-end; Information immediate; Scan waits for confirm | ✅ Done |
+| 5 | RESPOND matches Decision + Fulfill (inventory ≠ scan wording; mode ask ≠ Live stub) | 🔄 In progress — much already landed; finish via behavior test matrix |
+| Logging | Master Steps 1–5 + detail toggles in `masterLogging.js`; cycle with capabilities fixed | ✅ Done — leave alone |
+
+## Important facts for tomorrow
+
+- **Chat vs Request:** Request carries `requestType` (scan / change / information) and `permission` (confirmation / none). Permission drives confirmation — do **not** branch on `if (requestType === 'information')` for execution.
+- **Separate capabilities, shared handlers:** `scan_ec2` vs `get_ec2_inventory` (same `scanEC2Handler`); `scan_s3` vs `get_s3_inventory` (same `scanS3Handler`). Capability = user intent; handler = AWS retrieval.
+- **Information / none:** immediate_execution, **no** DB request row.
+- **Scan / confirmation:** fields → confirm → then Atlas.
+- **Logging:** control panel is `api/application/atlas/cloudPilot/logging/masterLogging.js`. Do not redesign logging next.
+- **Do not** start pronoun/follow-up resolution or agent loops until Checkpoint 5 Respond is signed off.
+
+## Next step (tomorrow)
+
+Resume **Checkpoint 5 — RESPOND** by reviewing the behavior test matrix (no big redesign):
+
+1. `"Do I have any EC2 instances running?"` → Information inventory wording  
+2. `"How many S3 buckets do I have?"` → Information inventory wording  
+3. `"scan my EC2 instances"` → region → confirm → yes → Scan wording only after execute  
+4. `"pause my EC2 instance"` → fields → execution mode (not `"Open AI will respond when Live"`)
+
+Capture clean MASTER STEP 1–5 logs. Fix only if a specific layer (UNDERSTAND / DECIDE / FULFILL / RESPOND) is wrong.
+
+### Checkpoint 5 matrix — run 2026-09-12 (no code fixes)
+
+| # | Result | Notes |
+|---|---|---|
+| 1 EC2 info | ✅ Pass | `get_ec2_inventory` / Information / immediate / no row / `"I don't see any EC2 instances in us-west-2."` |
+| 2 S3 info | ✅ Pass | `get_s3_inventory` / Information / immediate / no row / lists 3 buckets |
+| 3 Explicit scan | ✅ Pass | fields → confirm (no Atlas) → yes executes → `"EC2 scan completed…"` / row closed |
+| 4 Pause | ⚠️ Partial (expected with fake id) | Decide correctly `awaiting_execution_mode`; fulfill/preflight → `resource_not_found` + scan offer; **not** Live stub |
+
+Tomorrow: decide whether Checkpoint 5 Respond is signed off, or whether pause needs a real instance to prove the mode-ask template end-to-end.
+
+---
+
 # Locked decisions (inspection complete — not implemented yet)
 
 ## Master capabilities file
