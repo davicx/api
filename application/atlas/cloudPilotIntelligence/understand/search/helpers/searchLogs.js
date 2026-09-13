@@ -1,9 +1,11 @@
 const { CLOUDPILOT_AI_CONFIG } = require('../../../../config/cloudPilotAIConfig');
+const MasterLogging = require('../../../../cloudPilot/logging/masterLogging');
 
 /*
 SEARCH logging — one structured block for how CloudPilot understood the message.
 
-Gated by CLOUDPILOT_SEARCH_LOGS (independent of OPENAI logs).
+Gated by masterLogging.logUnderstandingSearchDetailsOn (control panel).
+ENV CLOUDPILOT_SEARCH_LOGS remains a secondary gate for compatibility.
 
 Usage:
   beginSearchSession()
@@ -13,9 +15,16 @@ Usage:
 
 let searchSession = null;
 
+function searchDetailsEnabled() {
+    return (
+        MasterLogging.logUnderstandingSearchDetailsOn === true &&
+        CLOUDPILOT_AI_CONFIG.searchLogs === true
+    );
+}
+
 //Function A1: Start collecting search rows for this understandMessage pass
 function beginSearchSession() {
-    if (!CLOUDPILOT_AI_CONFIG.searchLogs) {
+    if (!searchDetailsEnabled()) {
         searchSession = null;
         return;
     }

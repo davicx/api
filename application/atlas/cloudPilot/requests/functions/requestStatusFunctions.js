@@ -37,9 +37,18 @@ function initialStatusForNewAction(requiredFields) {
 }
 
 //Function A2: Status after all required fields are collected
-function statusWhenFieldsComplete(actionSupportsExecutionModes, executionMode) {
+// requiresConfirmation: from capability.permission === 'confirmation' (default true)
+function statusWhenFieldsComplete(
+    actionSupportsExecutionModes,
+    executionMode,
+    requiresConfirmation
+) {
     if (actionSupportsExecutionModes && !executionMode) {
         return STATUS.WAITING_ON_EXECUTION_MODE;
+    }
+
+    if (requiresConfirmation === false) {
+        return STATUS.RUNNING;
     }
 
     return STATUS.WAITING_ON_CONFIRMATION;
@@ -85,8 +94,17 @@ function isTerminalStatus(status) {
 }
 
 //Function A7: Should we write status now that fields are complete?
-function shouldUpdateStatusWhenFieldsComplete(currentStatus, actionSupportsExecutionModes, executionMode) {
-    const targetStatus = statusWhenFieldsComplete(actionSupportsExecutionModes, executionMode);
+function shouldUpdateStatusWhenFieldsComplete(
+    currentStatus,
+    actionSupportsExecutionModes,
+    executionMode,
+    requiresConfirmation
+) {
+    const targetStatus = statusWhenFieldsComplete(
+        actionSupportsExecutionModes,
+        executionMode,
+        requiresConfirmation
+    );
 
     if (currentStatus === targetStatus) {
         return false;
@@ -98,7 +116,8 @@ function shouldUpdateStatusWhenFieldsComplete(currentStatus, actionSupportsExecu
 
     if (
         isWaitingOnExecutionMode(currentStatus) &&
-        targetStatus === STATUS.WAITING_ON_CONFIRMATION
+        (targetStatus === STATUS.WAITING_ON_CONFIRMATION ||
+            targetStatus === STATUS.RUNNING)
     ) {
         return true;
     }

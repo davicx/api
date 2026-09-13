@@ -96,8 +96,8 @@ function searchForS3InventoryInternal(context) {
         return {};
     }
 
-    if (typeof actionMap.matchesScanS3Intent === 'function') {
-        if (actionMap.matchesScanS3Intent(text)) {
+    if (typeof actionMap.matchesGetS3InventoryIntent === 'function') {
+        if (actionMap.matchesGetS3InventoryIntent(text)) {
             return { question: 's3_inventory' };
         }
     }

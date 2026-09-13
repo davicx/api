@@ -2,6 +2,7 @@ const atlasAWSFunctions = require('./atlasAWSFunctions');
 const atlasAWSInventoryFormatter = require('./atlasAWSInventoryFormatter');
 const atlasAWSInventoryMessageBuilder = require('./atlasAWSInventoryMessageBuilder');
 const atlasAWSInventoryNavigatorAdapter = require('./atlasAWSInventoryNavigatorAdapter');
+const MasterLogging = require('../../logging/masterLogging');
 
 async function inventoryAWSHandler() {
 
@@ -12,10 +13,10 @@ async function inventoryAWSHandler() {
         const atlasResponseRaw =
             await atlasAWSFunctions.inventoryAWS();
 
-        console.log("_____________________________________");
-        console.log("RAW Atlas AWS Inventory Response:");
-        console.log(JSON.stringify(atlasResponseRaw, null, 2));
-        console.log("_____________________________________");
+        MasterLogging.logAtlasRaw('_____________________________________');
+        MasterLogging.logAtlasRaw('RAW Atlas AWS Inventory Response:');
+        MasterLogging.logAtlasRaw(JSON.stringify(atlasResponseRaw, null, 2));
+        MasterLogging.logAtlasRaw('_____________________________________');
 
         if (
             atlasResponseRaw?.success === true &&
@@ -28,10 +29,10 @@ async function inventoryAWSHandler() {
                 );
         }
 
-        console.log("_____________________________________");
-        console.log("Atlas AWS Inventory Response:");
-        console.log(atlasResponseFormatted);
-        console.log("_____________________________________");
+        MasterLogging.logAtlasFormatted('_____________________________________');
+        MasterLogging.logAtlasFormatted('Atlas AWS Inventory Response:');
+        MasterLogging.logAtlasFormatted(atlasResponseFormatted);
+        MasterLogging.logAtlasFormatted('_____________________________________');
 
         const cloudPilotMessage =
             atlasAWSInventoryMessageBuilder.buildAWSInventoryMessage(

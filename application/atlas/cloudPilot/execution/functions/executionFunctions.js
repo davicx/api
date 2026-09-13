@@ -4,6 +4,7 @@ const HistoryFunctions = require('../../history/functions/historyFunctions');
 const UndoFunctions = require('../../history/functions/undoFunctions');
 const AutomaticStrategy = require('../../executionModes/automatic/AutomaticLogic');
 const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
+const MasterLogging = require('../../logging/masterLogging');
 
 /*
 What this file answers:
@@ -42,7 +43,7 @@ async function executeRequest(decision, context) {
         return null;
     }
 
-    console.log('STEP 6: Execute — starting');
+    MasterLogging.logExecutionDetail('STEP 6: Execute — starting');
 
     const requestState = context.requestState || {};
     const workflowId = requestState.workflowId;
@@ -248,7 +249,17 @@ function resolveExecutionActionType(decision, requestState) {
 }
 
 //Function B3: Shape passed into action handlers (matches AtlasExecution context)
+// Capability defaults fill missing collected keys (e.g. get_ec2_inventory → us-west-2)
 function buildExecutionContext(context, actionDefinition, requestState) {
+    const defaults =
+        actionDefinition && actionDefinition.defaults && typeof actionDefinition.defaults === 'object'
+            ? actionDefinition.defaults
+            : {};
+    const collected =
+        requestState && requestState.collected && typeof requestState.collected === 'object'
+            ? requestState.collected
+            : {};
+
     return {
         userMessage: context.currentUserMessage || '',
         action: actionDefinition,
@@ -257,7 +268,7 @@ function buildExecutionContext(context, actionDefinition, requestState) {
             status: 'running',
             executionMode: requestState.executionMode || null,
             missing: requestState.missing || [],
-            collected: requestState.collected || {}
+            collected: Object.assign({}, defaults, collected)
         },
         conversationID: context.conversationID
     };

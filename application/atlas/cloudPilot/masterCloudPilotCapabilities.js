@@ -27,10 +27,14 @@ Chat
 Explore AWS
 - inventory_aws: Inventory AWS resources.
 - show_billing: Review AWS billing.
-- scan_ec2: Scan EC2 instances and answer questions using current EC2 data.
-  (Regional. Default MVP region: us-west-2.)
-- scan_s3: Scan S3 buckets and answer questions using current S3 data.
-  (Account-wide bucket inventory.)
+- get_ec2_inventory: Answer EC2 inventory questions (information / none).
+  (Regional. Default MVP region: us-west-2. Reuses scanEC2Handler.)
+- get_s3_inventory: Answer S3 inventory questions (information / none).
+  (Account-wide. Reuses scanS3Handler.)
+- scan_ec2: Explicit EC2 scan workflow (scan / confirmation).
+  (Regional. Reuses scanEC2Handler.)
+- scan_s3: Explicit S3 scan workflow (scan / confirmation).
+  (Account-wide bucket inventory. Reuses scanS3Handler.)
 
 CloudPilot
 - show_ai_usage: Review CloudPilot's OpenAI usage.
@@ -61,12 +65,22 @@ Each capability can contain:
 - Identity: type and actionLabel
 - Policy: allowed
 - Orchestration: actionTier, requiresWorkflow, and requiresExecution
+- Request classification (metadata only until Decide consumes it):
+  - requestType: 'scan' | 'change' | 'information' | null
+    (null = not a Request — Chat only, e.g. general_chat)
+  - permission: 'confirmation' | 'none' | null
+    (independent of requestType; null when not a Request)
 - Intent detection: match
 - Request data: requiredFields and defaults
 - Change strategy: executionModes, when applicable
 - Fulfillment: executionFunction
 - Intelligence context: capability
 - Response copy: messages
+
+NOTE: Decide reads `permission` to decide confirmation vs immediate fulfill.
+`requestType` is descriptive metadata for inspection/routing later — do not drive
+execution from requestType alone. Keep actionTier as-is (technical tier).
+Do not treat actionTier as requestType.
 
 IMPORTANT BOUNDARIES
 
@@ -100,6 +114,9 @@ const actionMap = {
         actionTier: 'general_chat',
         requiresWorkflow: false,
         requiresExecution: false,
+        // Chat — not a Request (Decide does not use these yet)
+        requestType: null,
+        permission: null,
 
         //Intent Detection
         match: () => false,
@@ -139,11 +156,8 @@ const actionMap = {
         actionTier: 'informational',
         requiresWorkflow: false,
         requiresExecution: true,
-
-        //Intent Detection
-        match: (text) =>
-            text.includes('show me all my aws resources') ||
-            text.includes('show my aws resources'),
+        requestType: 'information',
+        permission: 'none',
 
         //Fields Required Before Ready
         requiredFields: [],
@@ -185,6 +199,8 @@ const actionMap = {
         actionTier: 'informational',
         requiresWorkflow: false,
         requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
 
         //Intent Detection
         match: (text) =>
@@ -238,6 +254,8 @@ const actionMap = {
         actionTier: 'informational',
         requiresWorkflow: false,
         requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
 
         // Not an Action (toggle_ec2, …). Detected as Question via searchForAiSpend → question=ai_spend.
         // match kept empty so actionMap rules do not treat spend questions as actions.
@@ -283,6 +301,9 @@ const actionMap = {
         actionTier: 'informational',
         requiresWorkflow: false,
         requiresExecution: true,
+        // Provisional: catalog answer is fulfillment today; could be treated as Chat later
+        requestType: 'information',
+        permission: 'none',
 
         //Intent Detection — avoid bare "help" so "help me create ec2" stays create_ec2
         match: (text) => {
@@ -342,6 +363,8 @@ const actionMap = {
         actionTier: 'informational',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'scan',
+        permission: 'confirmation',
 
         //Intent Detection
         match: (text) => matchesScanEC2Intent(text),
@@ -385,6 +408,57 @@ const actionMap = {
         }
     },
 
+    //SERVICE: EC2
+    //Action: Get EC2 inventory (Information Request — not an explicit Scan workflow)
+    // Detected as Question via searchForEc2Inventory → question=ec2_inventory.
+    // Shares scanEC2Handler / Atlas with scan_ec2; different requestType + permission.
+    get_ec2_inventory: {
+        //Identity
+        type: 'get_ec2_inventory',
+        actionLabel: 'EC2 Inventory',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        // Not an Action match — Question search owns inventory phrasing
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        // Quiet MVP default — do not ask the user for region on inventory questions
+        defaults: {
+            region: 'us-west-2'
+        },
+
+        //Execution — same Atlas EC2 retrieval as scan_ec2
+        executionFunction: scanEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'List your EC2 instances',
+            scope: 'Regional. Default MVP region: us-west-2.'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Looking up your EC2 instances.',
+            missingFields: {},
+            ready: 'Everything is ready for EC2 inventory.',
+            executing: 'Loading EC2 inventory.',
+            success: 'Here are your EC2 instances.',
+            failed: 'EC2 inventory failed.'
+        }
+    },
+
     //SERVICE: S3
     //Action: Scan S3
     scan_s3: {
@@ -399,6 +473,8 @@ const actionMap = {
         actionTier: 'informational',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'scan',
+        permission: 'confirmation',
 
         //Intent Detection
         match: (text) => matchesScanS3Intent(text),
@@ -443,6 +519,58 @@ const actionMap = {
         }
     },
 
+    //SERVICE: S3
+    //Action: Get S3 inventory (Information Request — not an explicit Scan workflow)
+    // Detected as Question via searchForS3Inventory → question=s3_inventory.
+    // Shares scanS3Handler / Atlas with scan_s3; different requestType + permission.
+    // Account-wide — no required region field (Atlas call may still receive a quiet default).
+    get_s3_inventory: {
+        //Identity
+        type: 'get_s3_inventory',
+        actionLabel: 'S3 Inventory',
+
+        //Policy
+        allowed: true,
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        // Not an Action match — Question search owns inventory phrasing
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        // Quiet default for Atlas API shape only — inventory is account-wide, not region-scoped UX
+        defaults: {
+            region: 'us-west-2'
+        },
+
+        //Execution — same Atlas S3 retrieval as scan_s3
+        executionFunction: scanS3Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'List your S3 buckets',
+            scope: 'Account-wide bucket inventory.'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Looking up your S3 buckets.',
+            missingFields: {},
+            ready: 'Everything is ready for S3 inventory.',
+            executing: 'Loading S3 inventory.',
+            success: 'Here are your S3 buckets.',
+            failed: 'S3 inventory failed.'
+        }
+    },
+
     //SERVICE: EC2
     //Action: Toggle EC2
     toggle_ec2: {
@@ -457,6 +585,8 @@ const actionMap = {
         actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
 
         //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
@@ -515,6 +645,8 @@ const actionMap = {
         actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
 
         //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
@@ -580,6 +712,8 @@ const actionMap = {
         actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
 
         //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
@@ -637,6 +771,8 @@ const actionMap = {
         actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
 
         //Change strategies (destructive actions only)
         executionModes: [
@@ -711,6 +847,8 @@ const actionMap = {
         actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
 
         //Change strategies — no PR for pause/resume
         executionModes: [
@@ -800,6 +938,8 @@ const actionMap = {
         actionTier: 'destructive',
         requiresWorkflow: true,
         requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
 
         //Change strategies — no PR for pause/resume
         executionModes: [
@@ -876,11 +1016,10 @@ const actionMap = {
 };
 
 /*
-Natural S3 data questions reuse scan_s3.
+Explicit Scan S3 only ("scan … s3").
 
+Inventory questions ("what buckets do I have?") → matchesGetS3InventoryIntent / Question search.
 General knowledge ("what is S3?" / "what is a bucket?") stays General Chat.
-Named-bucket purpose ("what is this bucket for?") stays org knowledge.
-Account/current-data questions ("what buckets do I have?") require a real scan.
 */
 function matchesScanS3Intent(message) {
     const text = String(message || '').toLowerCase().trim();
@@ -893,16 +1032,33 @@ function matchesScanS3Intent(message) {
         return false;
     }
 
+    return /\bscan\b/.test(text) && /\bs3\b/.test(text);
+}
+
+/*
+S3 inventory Information questions (not explicit Scan).
+Used by Question search → get_s3_inventory. Do not route these through scan_s3.
+*/
+function matchesGetS3InventoryIntent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text) {
+        return false;
+    }
+
+    if (isS3DefinitionQuestion(text)) {
+        return false;
+    }
+
+    if (/\bscan\b/.test(text)) {
+        return false;
+    }
+
     const mentionsS3 = /\bs3\b/.test(text);
     const mentionsBuckets = /\bbuckets\b/.test(text);
 
     if (!mentionsS3 && !mentionsBuckets) {
         return false;
-    }
-
-    // Existing explicit command
-    if (/\bscan\b/.test(text) && mentionsS3) {
-        return true;
     }
 
     const asksForOwnedData =
@@ -936,10 +1092,10 @@ function isS3DefinitionQuestion(text) {
 }
 
 /*
-Natural EC2 data questions reuse scan_ec2.
+Explicit Scan EC2 only ("scan … ec2").
 
+Inventory questions ("what EC2 instances do I have?") → matchesGetEc2InventoryIntent / Question search.
 General knowledge ("what is an EC2 instance?") stays General Chat.
-Account/current-data questions ("how many do I have?") require a real scan.
 */
 function matchesScanEC2Intent(message) {
     const text = String(message || '').toLowerCase().trim();
@@ -948,9 +1104,26 @@ function matchesScanEC2Intent(message) {
         return false;
     }
 
-    // Existing explicit command
+    return /\bscan\b/.test(text);
+}
+
+/*
+EC2 inventory Information questions (not explicit Scan).
+Used by Question search → get_ec2_inventory. Do not route these through scan_ec2.
+*/
+function matchesGetEc2InventoryIntent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text || !/\bec2\b/.test(text)) {
+        return false;
+    }
+
     if (/\bscan\b/.test(text)) {
-        return true;
+        return false;
+    }
+
+    if (/\bwhat\s+is\s+(an?\s+)?ec2\b/.test(text)) {
+        return false;
     }
 
     const mentionsInstances = /\b(instances?|servers?)\b/.test(text);
@@ -992,10 +1165,36 @@ function actionRequiresExecutionModeSelection(actionDefinition) {
     );
 }
 
+// Decide: confirmation required? Driven by permission metadata only (not requestType).
+function capabilityRequiresConfirmation(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        actionDefinition.permission === 'confirmation'
+    );
+}
+
+// Decide: may fulfill without confirmation? Driven by permission metadata only.
+function capabilityAllowsImmediateFulfill(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        actionDefinition.permission === 'none'
+    );
+}
+
 module.exports = actionMap;
 
 Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
     value: actionRequiresExecutionModeSelection,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'capabilityRequiresConfirmation', {
+    value: capabilityRequiresConfirmation,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'capabilityAllowsImmediateFulfill', {
+    value: capabilityAllowsImmediateFulfill,
     enumerable: false
 });
 
@@ -1006,5 +1205,15 @@ Object.defineProperty(module.exports, 'matchesScanEC2Intent', {
 
 Object.defineProperty(module.exports, 'matchesScanS3Intent', {
     value: matchesScanS3Intent,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesGetEc2InventoryIntent', {
+    value: matchesGetEc2InventoryIntent,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesGetS3InventoryIntent', {
+    value: matchesGetS3InventoryIntent,
     enumerable: false
 });

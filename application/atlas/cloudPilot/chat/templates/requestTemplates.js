@@ -5,6 +5,7 @@ const {
     buildMissingFieldsMessage,
     buildOptionalRequestNamePrompt
 } = require('./fieldPromptExamples');
+const MasterLogging = require('../../logging/masterLogging');
 
 /*
 Request Message Reply — deterministic workflow UX (missing fields, modes, confirmation, status).
@@ -12,10 +13,10 @@ Called by CloudPilotMessage for Request Conversation.
 */
 
 async function getRequestMessageReply(payload) {
-    console.log(' ');
-    console.log('CLOUD_PILOT MESSAGE — request templates');
-    console.log(JSON.stringify(payload, null, 2));
-    console.log(' ');
+    MasterLogging.logMessageBuildDetail(' ');
+    MasterLogging.logMessageBuildDetail('CLOUD_PILOT MESSAGE — request templates');
+    MasterLogging.logMessageBuildDetail(JSON.stringify(payload, null, 2));
+    MasterLogging.logMessageBuildDetail(' ');
 
     if (payload.actionEvent === 'new_action') {
         return await cloudPilotRespondNewRequest(payload);

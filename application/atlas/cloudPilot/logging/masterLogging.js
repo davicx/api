@@ -1,39 +1,91 @@
 const timeFunctions = require('../../../functions/timeFunctions');
 
 /*
-CloudPilot master logging — toggles on/off without ENV.
-Pull console.log sites here one at a time.
+CloudPilot master logging — ONE control panel (no ENV for these toggles).
+Pull console.log sites here one at a time. Visibility only — no behavior changes.
 
-FUNCTIONS A: Header and Footer
-    1) Function A1: logHeader
-    2) Function A2: logFooter
+Do NOT require masterCloudPilotCapabilities here — handlers import this file, and
+capabilities import handlers (circular dependency). Pass Decide log metadata in.
 
-FUNCTIONS B: Request Related Logs
-    1) Function B1: logOpenRequest
-    2) Function B2: logOpenRequestStatus
+===============================================================================
+MASTER PIPELINE LOGS (clean turn trace — normally ON)
+===============================================================================
+A: Header / Footer          logHeaderFooterOn
+B: Open Request (STEP 1)    logOpenRequestOn
+C: Understand (STEP 2/2B)   logUnderstandingOn
+D: Decide (STEP 3)          logDecisionOn
+E: Fulfill (STEP 4)         logFulfillOn
+F: Respond (STEP 5)         logRespondOn
 
-FUNCTIONS C: Understanding Logs
-    1) Function C1: logUnderstandStart
-    2) Function C2: logUnderstandingResult
+===============================================================================
+DETAIL LOGS (verbose — normally OFF except 2A while rebuilding chat)
+===============================================================================
+G: Understanding Search (MASTER STEP 2A)   logUnderstandingSearchDetailsOn
+H: Decision Details                        logDecisionDetailsOn
+   — STEP 4/5 JSON blobs, OPEN REQUEST EFFECT, STEP 5b merge dumps
+I: Execution Details                       logExecutionDetailsOn
+   — STEP 2 Initial State, STEP 6 Execute JSON, Execute — starting, STEP 6b
+J: Atlas RAW payloads                      logAtlasRawOn
+K: Atlas formatted/normalized payloads     logAtlasFormattedOn
+L: Message build / request templates       logMessageBuildOn
+M: OpenAI detail / cost                    logOpenAIDetailOn, logOpenAICostTotalOn
+N: Save / final response misc              logSaveCloudPilotMessageOn, logFinalResponseOn
 
-FUNCTIONS D: Decision Logs
-    1) Function D1: logDecision
-
-FUNCTIONS E: Checkpoint Logs
-    1) Function E1: logTemporaryCheckpoint
+===============================================================================
 */
 
+// --- MASTER PIPELINE ---
 const logHeaderFooterOn = true;
 const logOpenRequestOn = true;
 const logUnderstandingOn = true;
 const logDecisionOn = true;
+const logFulfillOn = true;
+const logRespondOn = true;
 
-// Quiet while chat rebuild checkpoint is on (turn back on later)
+// --- DETAIL ---
+const logUnderstandingSearchDetailsOn = true;
+const logDecisionDetailsOn = false;
+const logExecutionDetailsOn = false;
+const logAtlasRawOn = false;
+const logAtlasFormattedOn = false;
 const logMessageBuildOn = false;
 const logSaveCloudPilotMessageOn = false;
 const logFinalResponseOn = false;
 const logOpenAICostTotalOn = false;
 const logOpenAIDetailOn = false;
+
+/*
+FUNCTIONS A: Header and Footer
+    1) Function A1: logHeader
+    2) Function A2: logFooter
+
+FUNCTIONS B: Open Request
+    1) Function B1: logOpenRequest
+    2) Function B2: logOpenRequestStatus
+
+FUNCTIONS C: Understand
+    1) Function C1: logUnderstandStart
+    2) Function C2: logUnderstandingResult
+
+FUNCTIONS D: Decide
+    1) Function D1: logDecision
+
+FUNCTIONS E: Checkpoint (legacy rebuild)
+    1) Function E1: logTemporaryCheckpoint
+
+FUNCTIONS F: Fulfill
+    1) Function F1: logFulfill
+
+FUNCTIONS G: Respond
+    1) Function G1: logRespond
+
+FUNCTIONS H: Detail writers (gated console.log helpers)
+    1) Function H1: logDecisionDetail
+    2) Function H2: logExecutionDetail
+    3) Function H3: logAtlasRaw
+    4) Function H4: logAtlasFormatted
+    5) Function H5: logMessageBuildDetail
+*/
 
 //FUNCTIONS A: Header and Footer
 //Function A1: Message turn header
@@ -138,7 +190,8 @@ function logUnderstandingResult(understanding) {
 
 //FUNCTIONS D: Decision Logs
 //Function D1: Log Decision summary (MASTER STEP 3)
-function logDecision(decision) {
+// logMeta (optional): { requestType, userRequest } from caller — do not look up capabilities here.
+function logDecision(decision, logMeta) {
     if (!logDecisionOn) {
         return;
     }
@@ -146,6 +199,7 @@ function logDecision(decision) {
     const result = decision || {};
     const request = result.request;
     const response = result.response || {};
+    const meta = logMeta && typeof logMeta === 'object' ? logMeta : {};
 
     console.log('--------------------------------------------------');
     console.log('MASTER STEP 3: DECIDE');
@@ -165,6 +219,9 @@ function logDecision(decision) {
         }
     }
 
+    console.log('Request Type: ' + formatRequestTypeForLog(result, meta));
+    console.log('User Request: ' + formatUserRequestForLog(meta));
+
     console.log('Response Type: ' + formatLogValue(response.type));
 
     if (result.closeRequest === true) {
@@ -182,11 +239,278 @@ function logDecision(decision) {
     console.log(' ');
 }
 
+// scan → Scan, change → Change, information → Information; chat / missing → none
+// Prefer logMeta.requestType, then decision fields already set by Decide.
+function formatRequestTypeForLog(decision, logMeta) {
+    let requestType = null;
+
+    if (logMeta && logMeta.requestType != null) {
+        requestType = logMeta.requestType;
+    } else if (decision.request && decision.request.requestType != null) {
+        requestType = decision.request.requestType;
+    } else if (decision.requestType != null) {
+        requestType = decision.requestType;
+    }
+
+    if (requestType === 'scan') {
+        return 'Scan';
+    }
+
+    if (requestType === 'change') {
+        return 'Change';
+    }
+
+    if (requestType === 'information') {
+        return 'Information';
+    }
+
+    return 'none';
+}
+
+// Prefer logMeta.userRequest (capability description / label from caller)
+function formatUserRequestForLog(logMeta) {
+    if (logMeta && logMeta.userRequest) {
+        return String(logMeta.userRequest).trim() || 'none';
+    }
+
+    return 'none';
+}
+
 //FUNCTIONS E: Checkpoint Logs
 //Function E1: Temporary rebuild stop line
 function logTemporaryCheckpoint(message) {
     console.log(String(message || 'TEMPORARY CHECKPOINT'));
     console.log(' ');
+}
+
+//FUNCTIONS H: Detail writers — gate noisy console.log sites (visibility only)
+function logDecisionDetail() {
+    if (!logDecisionDetailsOn) {
+        return;
+    }
+
+    console.log.apply(console, arguments);
+}
+
+function logExecutionDetail() {
+    if (!logExecutionDetailsOn) {
+        return;
+    }
+
+    console.log.apply(console, arguments);
+}
+
+function logAtlasRaw() {
+    if (!logAtlasRawOn) {
+        return;
+    }
+
+    console.log.apply(console, arguments);
+}
+
+function logAtlasFormatted() {
+    if (!logAtlasFormattedOn) {
+        return;
+    }
+
+    console.log.apply(console, arguments);
+}
+
+function logMessageBuildDetail() {
+    if (!logMessageBuildOn) {
+        return;
+    }
+
+    console.log.apply(console, arguments);
+}
+
+//FUNCTIONS F: Fulfill Logs
+//Function F1: What actually happened (store + execute) — debug only
+function logFulfill(options) {
+    if (!logFulfillOn) {
+        return;
+    }
+
+    const details = options || {};
+    const requestOutcome = details.requestOutcome || null;
+    const executionOutcome = details.executionOutcome || null;
+    const decision = details.decision || {};
+    const skippedGeneral = details.skippedGeneral === true;
+
+    console.log('--------------------------------------------------');
+    console.log('MASTER STEP 4: FULFILL');
+    console.log(' ');
+
+    if (skippedGeneral) {
+        console.log('Request Storage: Skipped (General Conversation)');
+        console.log('Execution: Skipped');
+        console.log(' ');
+        return;
+    }
+
+    console.log('Request Storage: ' + formatRequestStorageForLog(requestOutcome, details));
+    console.log('Execution: ' + formatExecutionForLog(decision, executionOutcome, details.requestStateAfter));
+
+    const actionName = resolveFulfillActionName(decision, executionOutcome);
+
+    if (actionName) {
+        console.log('Action: ' + actionName);
+    }
+
+    if (executionOutcome && executionOutcome.ran) {
+        console.log(
+            'Result: ' + (executionOutcome.success === true ? 'Success' : 'Failed')
+        );
+    }
+
+    console.log(' ');
+}
+
+//FUNCTIONS G: Respond Logs
+//Function G1: What CloudPilot told the user — debug only
+function logRespond(conversationOutcome, decision) {
+    if (!logRespondOn) {
+        return;
+    }
+
+    const outcome = conversationOutcome || {};
+    const responseType =
+        decision && decision.response && decision.response.type
+            ? decision.response.type
+            : 'none';
+    const message = String(outcome.cloudPilotMessage || '').trim();
+    const preview =
+        message.length > 220 ? message.slice(0, 217) + '...' : message;
+
+    console.log('--------------------------------------------------');
+    console.log('MASTER STEP 5: RESPOND');
+    console.log(' ');
+    console.log('Response Type: ' + formatLogValue(responseType));
+    console.log('CloudPilot Says: "' + preview.replace(/\n/g, ' / ') + '"');
+    console.log(' ');
+}
+
+function formatRequestStorageForLog(requestOutcome, details) {
+    const afterState = details && details.requestStateAfter ? details.requestStateAfter : null;
+    const decision = details && details.decision ? details.decision : {};
+    const responseType =
+        decision.response && decision.response.type ? String(decision.response.type) : '';
+
+    if (responseType === 'immediate_execution') {
+        return 'None';
+    }
+
+    if (
+        details &&
+        details.executionOutcome &&
+        details.executionOutcome.ran &&
+        afterState &&
+        !afterState.pendingAction
+    ) {
+        return 'Closed';
+    }
+
+    if (!requestOutcome || typeof requestOutcome !== 'object') {
+        return 'None';
+    }
+
+    const action = requestOutcome.action ? String(requestOutcome.action) : '';
+
+    if (action === 'skipped' || requestOutcome.reason === 'immediate_execution_no_row') {
+        return 'None';
+    }
+
+    if (action === 'created') {
+        return 'Created';
+    }
+
+    if (action === 'updated') {
+        return 'Updated';
+    }
+
+    if (action === 'cancelled' || action === 'finished' || action === 'closed') {
+        return 'Closed';
+    }
+
+    if (requestOutcome.request && requestOutcome.request.pendingAction) {
+        return 'Updated';
+    }
+
+    return action ? action : 'None';
+}
+
+function formatExecutionForLog(decision, executionOutcome, requestStateAfter) {
+    if (executionOutcome && executionOutcome.ran) {
+        if (executionOutcome.success === true) {
+            return 'Completed';
+        }
+
+        return 'Failed';
+    }
+
+    const status =
+        requestStateAfter && requestStateAfter.status
+            ? String(requestStateAfter.status)
+            : '';
+
+    if (status === 'waiting_on_confirmation') {
+        return 'Waiting for Confirmation';
+    }
+
+    if (status === 'waiting_on_execution_mode') {
+        return 'Waiting for Execution Mode';
+    }
+
+    if (status === 'waiting_on_fields') {
+        return 'Waiting for Fields';
+    }
+
+    if (status === 'waiting_on_resource_scan') {
+        return 'Waiting for Resource Scan';
+    }
+
+    const responseType =
+        decision && decision.response && decision.response.type
+            ? String(decision.response.type)
+            : '';
+
+    if (responseType === 'awaiting_confirmation') {
+        return 'Waiting for Confirmation';
+    }
+
+    if (responseType === 'awaiting_execution_mode') {
+        return 'Waiting for Execution Mode';
+    }
+
+    if (responseType === 'ask_for_missing_fields') {
+        return 'Waiting for Fields';
+    }
+
+    if (responseType === 'immediate_execution' || responseType === 'execution_started') {
+        return 'Not Run';
+    }
+
+    return 'Not Run';
+}
+
+function resolveFulfillActionName(decision, executionOutcome) {
+    if (decision && decision.execute && decision.execute.action) {
+        return String(decision.execute.action);
+    }
+
+    if (decision && decision.request && decision.request.action) {
+        return String(decision.request.action);
+    }
+
+    if (
+        executionOutcome &&
+        executionOutcome.request &&
+        executionOutcome.request.pendingAction
+    ) {
+        return String(executionOutcome.request.pendingAction);
+    }
+
+    return null;
 }
 
 //Helper: Scalar / null display for master logs
@@ -239,15 +563,25 @@ function formatExecuteIntent(execute) {
 }
 
 module.exports = {
+    // MASTER toggles
     logHeaderFooterOn,
     logOpenRequestOn,
     logUnderstandingOn,
     logDecisionOn,
+    logFulfillOn,
+    logRespondOn,
+    // DETAIL toggles
+    logUnderstandingSearchDetailsOn,
+    logDecisionDetailsOn,
+    logExecutionDetailsOn,
+    logAtlasRawOn,
+    logAtlasFormattedOn,
     logMessageBuildOn,
     logSaveCloudPilotMessageOn,
     logFinalResponseOn,
     logOpenAICostTotalOn,
     logOpenAIDetailOn,
+    // Writers
     logHeader,
     logFooter,
     logOpenRequest,
@@ -255,5 +589,12 @@ module.exports = {
     logUnderstandStart,
     logUnderstandingResult,
     logDecision,
-    logTemporaryCheckpoint
+    logTemporaryCheckpoint,
+    logFulfill,
+    logRespond,
+    logDecisionDetail,
+    logExecutionDetail,
+    logAtlasRaw,
+    logAtlasFormatted,
+    logMessageBuildDetail
 };

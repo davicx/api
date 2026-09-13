@@ -25,6 +25,8 @@ const ACTION_LABELS = {
     undo_update_ec2_tag: 'Undo Update EC2 Tag',
     scan_ec2: 'Scan EC2',
     scan_s3: 'Scan S3',
+    get_ec2_inventory: 'EC2 Inventory',
+    get_s3_inventory: 'S3 Inventory',
     inventory_aws: 'Inventory AWS'
 };
 

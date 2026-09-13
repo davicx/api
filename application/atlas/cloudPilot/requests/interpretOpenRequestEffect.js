@@ -70,6 +70,10 @@ function hasApplicableValues(state, values) {
 
 /** True when message looks like more than a bare field fill (e.g. region + DynamoDB ask). */
 function looksLikeMixedMessage(message, applicableValues) {
+    if (looksLikeStructuredFieldFill(message)) {
+        return false;
+    }
+
     let rest = String(message || '');
 
     if (applicableValues && applicableValues.region) {
@@ -84,6 +88,24 @@ function looksLikeMixedMessage(message, applicableValues) {
 
     const words = rest.split(/\s+/).filter(Boolean);
     return words.length >= 3;
+}
+
+/** Structured field lines only — e.g. region: "us-west-2" — not a mixed conversation turn */
+function looksLikeStructuredFieldFill(message) {
+    const lines = String(message || '')
+        .split(/\n/)
+        .map(function (line) {
+            return String(line || '').trim();
+        })
+        .filter(Boolean);
+
+    if (lines.length === 0) {
+        return false;
+    }
+
+    return lines.every(function (line) {
+        return /^[a-z_][a-z0-9_]*\s*:\s*.+/i.test(line);
+    });
 }
 
 function isConfirmAllowed(state) {
@@ -162,26 +184,27 @@ function interpretOpenRequestEffect(understanding, requestState, message) {
 function logOpenRequestEffect(effect) {
     const e = effect || emptyEffect();
     const body = e.openRequestEffect || {};
+    const MasterLogging = require('../logging/masterLogging');
 
-    console.log('OPEN REQUEST EFFECT');
+    MasterLogging.logDecisionDetail('OPEN REQUEST EFFECT');
     if (!e.affectsOpenRequest) {
-        console.log('affects: NO');
-        console.log(' ');
+        MasterLogging.logDecisionDetail('affects: NO');
+        MasterLogging.logDecisionDetail(' ');
         return;
     }
 
-    console.log('affects: YES');
-    console.log('type: ' + (body.type || 'null'));
+    MasterLogging.logDecisionDetail('affects: YES');
+    MasterLogging.logDecisionDetail('type: ' + (body.type || 'null'));
     if (body.type === 'information' && body.values && Object.keys(body.values).length > 0) {
-        console.log('values:');
+        MasterLogging.logDecisionDetail('values:');
         for (const key of Object.keys(body.values)) {
-            console.log('  ' + key + ': ' + body.values[key]);
+            MasterLogging.logDecisionDetail('  ' + key + ': ' + body.values[key]);
         }
     }
     if (body.continueNormalConversation) {
-        console.log('continueNormalConversation: YES');
+        MasterLogging.logDecisionDetail('continueNormalConversation: YES');
     }
-    console.log(' ');
+    MasterLogging.logDecisionDetail(' ');
 }
 
 module.exports = {

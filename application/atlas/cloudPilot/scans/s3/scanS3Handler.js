@@ -2,6 +2,7 @@ const atlasS3Functions = require('./atlasS3Functions');
 const atlasS3Formatter = require('./atlasS3Formatter');
 const atlasS3MessageBuilder = require('./atlasS3MessageBuilder');
 const atlasS3ScanNavigatorAdapter = require('./atlasS3ScanNavigatorAdapter');
+const MasterLogging = require('../../logging/masterLogging');
 
 async function scanS3Handler(context) {
 
@@ -15,10 +16,10 @@ async function scanS3Handler(context) {
         const atlasResponseRaw =
             await atlasS3Functions.scanS3(region);
 
-        console.log("_____________________________________");
-        console.log("RAW Atlas S3 Response:");
-        console.log(JSON.stringify(atlasResponseRaw, null, 2));
-        console.log("_____________________________________");
+        MasterLogging.logAtlasRaw('_____________________________________');
+        MasterLogging.logAtlasRaw('RAW Atlas S3 Response:');
+        MasterLogging.logAtlasRaw(JSON.stringify(atlasResponseRaw, null, 2));
+        MasterLogging.logAtlasRaw('_____________________________________');
 
         if (
             atlasResponseRaw?.success === true &&
@@ -31,15 +32,18 @@ async function scanS3Handler(context) {
                 );
         }
 
-        console.log("_____________________________________");
-        console.log("Atlas S3 Response:");
-        console.log(atlasResponseFormatted);
-        console.log("_____________________________________");
+        MasterLogging.logAtlasFormatted('_____________________________________');
+        MasterLogging.logAtlasFormatted('Atlas S3 Response:');
+        MasterLogging.logAtlasFormatted(atlasResponseFormatted);
+        MasterLogging.logAtlasFormatted('_____________________________________');
+
+        const capabilityType =
+            context.action && context.action.type ? String(context.action.type) : 'scan_s3';
 
         const cloudPilotMessage =
-            atlasS3MessageBuilder.buildS3ScanMessage(
-                atlasResponseFormatted
-            );
+            capabilityType === 'get_s3_inventory'
+                ? atlasS3MessageBuilder.buildS3InventoryMessage(atlasResponseFormatted)
+                : atlasS3MessageBuilder.buildS3ScanMessage(atlasResponseFormatted);
 
         const navigatorResponse =
             atlasS3ScanNavigatorAdapter.buildS3ScanNavigatorResponse(

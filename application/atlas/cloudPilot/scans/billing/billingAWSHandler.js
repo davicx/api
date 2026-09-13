@@ -1,6 +1,7 @@
 const AtlasBillingFunctions = require('./atlasBillingFunctions');
 const AtlasAWSBillingMessage = require('./atlasAWSBillingMessage');
 const AtlasAWSBillingNavigator = require('./atlasAWSBillingNavigator');
+const MasterLogging = require('../../logging/masterLogging');
 
 /*
 FUNCTIONS A: show_billing handler
@@ -14,10 +15,10 @@ async function billingAWSHandler() {
             period_days: 30
         });
 
-        console.log('_____________________________________');
-        console.log('RAW Atlas Billing Response:');
-        console.log(JSON.stringify(atlasResponseRaw, null, 2));
-        console.log('_____________________________________');
+        MasterLogging.logAtlasRaw('_____________________________________');
+        MasterLogging.logAtlasRaw('RAW Atlas Billing Response:');
+        MasterLogging.logAtlasRaw(JSON.stringify(atlasResponseRaw, null, 2));
+        MasterLogging.logAtlasRaw('_____________________________________');
 
         if (!(atlasResponseRaw && atlasResponseRaw.success === true && atlasResponseRaw.data)) {
             const errorCode =

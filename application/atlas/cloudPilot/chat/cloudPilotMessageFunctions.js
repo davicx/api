@@ -12,6 +12,7 @@ const {
     buildCurrentStateContext
 } = require('../../cloudPilotIntelligence/context/contextTypes/cloudPilotCurrentStateContext');
 const MasterLogging = require('../logging/masterLogging');
+const actionMap = require('../masterCloudPilotCapabilities');
 
 /*
 CloudPilot Message Pipeline (processMessage)
@@ -139,43 +140,13 @@ async function processMessage(rawUserMessage, conversationID, context) {
             requestState: currentRequestState
         });
 
-        MasterLogging.logDecision(decision);
-        MasterLogging.logTemporaryCheckpoint(
-            'TEMPORARY CHECKPOINT: Stopping after Decide.'
-        );
+        MasterLogging.logDecision(decision, buildDecisionLogMeta(decision));
 
-        // TEMPORARY CHAT REBUILD CHECKPOINT:
-        // Stop after Decide.
-        // Fulfill → Respond will be re-enabled one stage at a time.
-        const checkpointMessage = buildDecideCheckpointMessage(decision);
+        // Decide early-return checkpoint removed (Checkpoint 4).
+        // Pipeline continues: open-request effect → Decide (with effect) → Fulfill → Respond.
 
-        processMessageOutcome.success = true;
-        processMessageOutcome.cloudPilotMessage = checkpointMessage;
-        processMessageOutcome.logFinalResponse = buildShortResponseOutcome({
-            success: true,
-            cloudPilotMessage: checkpointMessage,
-            error: null
-        });
-
-        return await attachUndoAvailable(
-            applyConversationToProcessMessageOutcome(
-                processMessageOutcome,
-                {
-                    success: true,
-                    cloudPilotMessage: checkpointMessage,
-                    atlasResponse: null,
-                    error: null
-                },
-                currentRequestState,
-                activeRequestAction
-            ),
-            conversationID
-        );
-
-        // --- code below kept for later rebuild stages (unreachable while checkpoint is on) ---
-
-        console.log("STEP 2: Initial State");
-        await RequestStateFunctions.printUsersActionState(conversationID, "INITIAL STATE:");
+        MasterLogging.logExecutionDetail('STEP 2: Initial State');
+        await RequestStateFunctions.printUsersActionState(conversationID, 'INITIAL STATE:');
 
         // TEMPORARY: CLOUDPILOT_CURRENT_STATE_TEST
         // Read-only early return: prove open-request existence + Current State facts after STEP 2.
@@ -241,9 +212,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
         messageUnderstanding.openRequestEffect = openRequestEffectResult.openRequestEffect;
         OpenRequestEffectFunctions.logOpenRequestEffect(openRequestEffectResult);
 
-        console.log("STEP 4: Message Understanding");
-        console.log(JSON.stringify(messageUnderstanding, null, 2));
-        console.log(" ");
+        MasterLogging.logDecisionDetail('STEP 4: Message Understanding');
+        MasterLogging.logDecisionDetail(JSON.stringify(messageUnderstanding, null, 2));
+        MasterLogging.logDecisionDetail(' ');
 
 
         //STEP 5: Decide — which conversation is this?
@@ -252,9 +223,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
             requestState: currentRequestState
         });
 
-    console.log("STEP 5: Decision");
-    console.log(JSON.stringify(decision, null, 2));
-    console.log(" ");
+    MasterLogging.logDecisionDetail('STEP 5: Decision');
+    MasterLogging.logDecisionDetail(JSON.stringify(decision, null, 2));
+    MasterLogging.logDecisionDetail(' ');
 
     // General Conversation — skip execute
     // Guardrail: Questions never answer via MESSAGE_RESPONSE / OpenAI general chat
@@ -287,7 +258,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
         (effectBody.continueNormalConversation || messageUnderstanding.question) &&
         (GeneralConversation.isGeneralConversation(decision) || messageUnderstanding.question)
     ) {
-        console.log('STEP 5b: Apply open-request information (continue normal conversation)');
+        MasterLogging.logDecisionDetail(
+            'STEP 5b: Apply open-request information (continue normal conversation)'
+        );
         const mergeDecision = MasterDecision.buildFieldsMergedDecision(
             currentRequestState,
             effectBody.values
@@ -301,14 +274,19 @@ async function processMessage(rawUserMessage, conversationID, context) {
             currentRequestState = mergeOutcome.request;
             activeRequestAction = currentRequestState.pendingAction;
         }
-        console.log(JSON.stringify(mergeOutcome, null, 2));
-        console.log(' ');
+        MasterLogging.logDecisionDetail(JSON.stringify(mergeOutcome, null, 2));
+        MasterLogging.logDecisionDetail(' ');
     }
 
     if (GeneralConversation.isGeneralConversation(decision)) {
-        console.log("STEP 6: Execute");
-        console.log("Skipped (General Conversation)");
-        console.log(" ");
+        MasterLogging.logExecutionDetail('STEP 6: Execute');
+        MasterLogging.logExecutionDetail('Skipped (General Conversation)');
+        MasterLogging.logExecutionDetail(' ');
+
+        MasterLogging.logFulfill({
+            decision: decision,
+            skippedGeneral: true
+        });
 
         const conversationOutcome = await GeneralConversation.conversation({
             ...processMessageContext,
@@ -316,6 +294,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
             conversationID: conversationID,
             requestState: currentRequestState
         });
+
+        MasterLogging.logRespond(conversationOutcome, decision);
 
         const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
         processMessageOutcome.logFinalResponse = shortResponseOutcome;
@@ -332,7 +312,7 @@ async function processMessage(rawUserMessage, conversationID, context) {
     }
 
     //STEP 6: Request Conversation — maintain state + perform work
-    console.log("STEP 6: Execute");
+    MasterLogging.logExecutionDetail('STEP 6: Execute');
 
     const requestOutcome = await RequestWorkflow.store(decision, {
         conversationID: conversationID,
@@ -340,8 +320,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
         requestState: currentRequestState
     });
 
-    console.log(JSON.stringify(requestOutcome, null, 2));
-    console.log(" ");
+    MasterLogging.logExecutionDetail(JSON.stringify(requestOutcome, null, 2));
+    MasterLogging.logExecutionDetail(' ');
 
     if (requestOutcome.request) {
         currentRequestState = requestOutcome.request;
@@ -365,9 +345,9 @@ async function processMessage(rawUserMessage, conversationID, context) {
     }
 
     if (preflightOutcome.blocked) {
-        console.log('STEP 6b: verifyResource preflight blocked progression');
-        console.log(JSON.stringify(preflightOutcome.verification, null, 2));
-        console.log(' ');
+        MasterLogging.logExecutionDetail('STEP 6b: verifyResource preflight blocked progression');
+        MasterLogging.logExecutionDetail(JSON.stringify(preflightOutcome.verification, null, 2));
+        MasterLogging.logExecutionDetail(' ');
     }
 
     //RUN: executeRequest → runAction() → handler → capability → atlasPost → Atlas
@@ -390,6 +370,13 @@ async function processMessage(rawUserMessage, conversationID, context) {
         }
     }
 
+    MasterLogging.logFulfill({
+        decision: decision,
+        requestOutcome: requestOutcome,
+        executionOutcome: executionOutcome,
+        requestStateAfter: currentRequestState
+    });
+
     await RequestStateFunctions.printUsersActionState(conversationID, "FINAL STATE:");
 
 
@@ -402,6 +389,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
         executionOutcome: executionOutcome,
         context: processMessageContext
     });
+
+    MasterLogging.logRespond(conversationOutcome, decision);
 
     const shortResponseOutcome = buildShortResponseOutcome(conversationOutcome);
     processMessageOutcome.logFinalResponse = shortResponseOutcome;
@@ -466,6 +455,42 @@ function applyConversationToProcessMessageOutcome(
     );
 
     return processMessageOutcome;
+}
+
+// Debug-only Decide log metadata from capability catalog (caller owns actionMap lookup)
+function buildDecisionLogMeta(decision) {
+    const result = decision || {};
+    let capabilityName = null;
+
+    if (result.execute && result.execute.action) {
+        capabilityName = String(result.execute.action).trim() || null;
+    } else if (result.request && typeof result.request === 'object') {
+        const name = result.request.action || result.request.pendingAction;
+        capabilityName = name ? String(name).trim() || null : null;
+    }
+
+    const definition = capabilityName ? actionMap[capabilityName] : null;
+    let requestType = null;
+    let userRequest = null;
+
+    if (result.request && result.request.requestType != null) {
+        requestType = result.request.requestType;
+    } else if (result.requestType != null) {
+        requestType = result.requestType;
+    } else if (definition && definition.requestType != null) {
+        requestType = definition.requestType;
+    }
+
+    if (definition && definition.capability && definition.capability.description) {
+        userRequest = String(definition.capability.description).trim() || null;
+    } else if (definition && definition.actionLabel) {
+        userRequest = String(definition.actionLabel).trim() || null;
+    }
+
+    return {
+        requestType: requestType,
+        userRequest: userRequest
+    };
 }
 
 //Function B6: After execute + record history, expose whether undo is available (H6)
@@ -587,19 +612,47 @@ function buildDecideCheckpointMessage(decision) {
     const requestAction =
         request && typeof request === 'object'
             ? request.action || request.pendingAction || null
-            : null;
+            : result.execute && result.execute.action
+              ? result.execute.action
+              : null;
     const responseType =
         result.response && result.response.type ? result.response.type : null;
+    const requestType =
+        request && request.requestType != null
+            ? request.requestType
+            : result.requestType != null
+              ? result.requestType
+              : null;
+    const permission =
+        request && request.permission != null
+            ? request.permission
+            : result.permission != null
+              ? result.permission
+              : null;
+    const status = request && request.status ? request.status : null;
+    const parts = ['Checkpoint: Decide complete.'];
 
     if (requestAction) {
-        return 'Checkpoint: Decide complete. Request action: ' + String(requestAction) + '.';
+        parts.push('Request action: ' + String(requestAction) + '.');
+    }
+
+    if (requestType != null) {
+        parts.push('requestType: ' + String(requestType) + '.');
+    }
+
+    if (permission != null) {
+        parts.push('permission: ' + String(permission) + '.');
+    }
+
+    if (status) {
+        parts.push('status: ' + String(status) + '.');
     }
 
     if (responseType) {
-        return 'Checkpoint: Decide complete. Response type: ' + String(responseType) + '.';
+        parts.push('Response type: ' + String(responseType) + '.');
     }
 
-    return 'Checkpoint: Decide complete.';
+    return parts.join(' ');
 }
 
 //Function B5: Short STEP 7 log — top-level fields + atlasResponse.summary only

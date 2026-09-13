@@ -92,8 +92,8 @@ function searchForEc2InventoryInternal(context) {
         return {};
     }
 
-    if (typeof actionMap.matchesScanEC2Intent === 'function') {
-        if (actionMap.matchesScanEC2Intent(text)) {
+    if (typeof actionMap.matchesGetEc2InventoryIntent === 'function') {
+        if (actionMap.matchesGetEc2InventoryIntent(text)) {
             return { question: 'ec2_inventory' };
         }
     }
