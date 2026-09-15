@@ -58,7 +58,7 @@ class Comment {
     static async getPostComments(postID)  {
         const connection = db.getConnection(); 
 
-        const queryString = "SELECT comments.comment_id, comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name, user_profile.storage_location, user_profile.image_url, user_profile.cloud_key FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ?"
+        const queryString = "SELECT comments.comment_id, comments.post_id, comments.comment, comments.comment_from, comments.created, user_profile.user_name, user_profile.image_name, user_profile.first_name, user_profile.last_name, user_profile.storage_location, user_profile.image_url, user_profile.cloud_key FROM comments INNER JOIN user_profile ON comments.comment_from = user_profile.user_name WHERE comments.post_id = ? AND comments.comment_deleted = 0"
         var commentsOutcome = {
             success: false,
             comments: []
@@ -302,10 +302,74 @@ class Comment {
         });
     }
 
+    // Method A6: Soft-delete a Comment (author only)
+    static async deleteComment(commentID, currentUser) {
+        const connection = db.getConnection();
 
-    
-    
+        let deleteCommentOutcome = {
+            success: false,
+            message: "",
+            commentID: commentID,
+            currentUser: currentUser,
+            errors: []
+        };
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                const getCommentQuery = `
+                    SELECT comment_id, comment_from, comment_deleted
+                    FROM comments
+                    WHERE comment_id = ?
+                    LIMIT 1
+                `;
+
+                connection.query(getCommentQuery, [commentID], (err, rows) => {
+                    if (err) {
+                        deleteCommentOutcome.errors.push(err);
+                        return reject(deleteCommentOutcome);
+                    }
+
+                    if (!rows || rows.length === 0) {
+                        deleteCommentOutcome.message = "Comment not found";
+                        return resolve(deleteCommentOutcome);
+                    }
+
+                    const row = rows[0];
+                    if (row.comment_deleted == 1) {
+                        deleteCommentOutcome.success = true;
+                        deleteCommentOutcome.message = "Comment already deleted";
+                        return resolve(deleteCommentOutcome);
+                    }
+
+                    if (String(row.comment_from).toLowerCase() !== String(currentUser).toLowerCase()) {
+                        deleteCommentOutcome.message = "Only the comment author can delete this comment";
+                        return resolve(deleteCommentOutcome);
+                    }
+
+                    const updateQuery = `
+                        UPDATE comments
+                        SET comment_deleted = 1
+                        WHERE comment_id = ?
+                    `;
+
+                    connection.query(updateQuery, [commentID], (updateErr) => {
+                        if (updateErr) {
+                            deleteCommentOutcome.errors.push(updateErr);
+                            return reject(deleteCommentOutcome);
+                        }
+
+                        deleteCommentOutcome.success = true;
+                        deleteCommentOutcome.message = "Successfully deleted comment " + commentID;
+                        return resolve(deleteCommentOutcome);
+                    });
+                });
+            } catch (err) {
+                console.log("Exception in deleteComment: ", err);
+                deleteCommentOutcome.errors.push(err);
+                return reject(deleteCommentOutcome);
+            }
+        });
+    }
 
 }
-
 module.exports = Comment;

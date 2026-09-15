@@ -17,6 +17,7 @@ FUNCTIONS B: All Functions Related to getting Comments
 FUNCTIONS C: All Functions Related to Comment Actions
 	1) Function C1: Like a Comment
 	2) Function C2: Unlike a Comment 
+	3) Function C3: Delete a Comment
 
 */
 
@@ -45,7 +46,12 @@ commentRouter.post('/comment/unlike', function(req, res) {
     comments.unlikeComment(req, res);
 })
 
-//Route C2: Get all Comments (with Pagination)
+//Route C2: Soft-delete a Comment
+commentRouter.post('/comment/delete', function(req, res) {
+    comments.deleteComment(req, res);
+})
+
+//Route C3: Get all Comments (with Pagination)
 commentRouter.get('/comments', function(req, res) {
     comments.getAllComments(req, res);
 })
