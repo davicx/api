@@ -17,6 +17,7 @@
  *   CLOUDPILOT_AI_SPEND_SEARCH       searchForAiSpend() — Question classify only
  *   CLOUDPILOT_OPEN_REQUESTS_SEARCH  searchForOpenRequests() — Question classify only
  *   CLOUDPILOT_ORG_KNOWLEDGE_SEARCH  understandOrganizationalKnowledge() — extract reference only
+ *   CLOUDPILOT_USER_CONFIRMATION_SEARCH  waiting_on_confirmation classifier (confirm|cancel|unclear)
  *
  * History / OpenAI transport:
  *   OPENAI_SEND_CONVERSATION_HISTORY, OPENAI_CONVERSATION_HISTORY_LIMIT
@@ -111,6 +112,15 @@ const CLOUDPILOT_AI_CONFIG = {
         'CLOUDPILOT_ORG_KNOWLEDGE_SEARCH',
         'internal'
     ),
+    /**
+     * waiting_on_confirmation only — OpenAI classifies confirm|cancel|unclear.
+     * Master AI OFF forces internal (existing searchMessageForReply).
+     * Default openai: natural confirmations beyond the phrase list.
+     */
+    userConfirmationSearch: readImplementation(
+        'CLOUDPILOT_USER_CONFIRMATION_SEARCH',
+        'openai'
+    ),
 
     /**
      * Individual logging switches (not one master LOGS_ON).
@@ -140,6 +150,11 @@ const CLOUDPILOT_AI_CONFIG = {
     orgKnowledgeTokenLimit: readEnvPositiveInt(
         'CLOUDPILOT_ORG_KNOWLEDGE_TOKEN_LIMIT',
         60,
+        100
+    ),
+    userConfirmationTokenLimit: readEnvPositiveInt(
+        'CLOUDPILOT_USER_CONFIRMATION_TOKEN_LIMIT',
+        40,
         100
     )
 };

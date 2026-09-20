@@ -544,6 +544,10 @@ function formatExecutionForLog(decision, executionOutcome, requestStateAfter) {
         return 'Waiting for Confirmation';
     }
 
+    if (responseType === 'confirmation_unclear') {
+        return 'Waiting for Confirmation';
+    }
+
     if (responseType === 'awaiting_execution_mode') {
         return 'Waiting for Execution Mode';
     }

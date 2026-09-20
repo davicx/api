@@ -92,7 +92,8 @@ function buildCapabilitiesCatalog() {
             type: actionDefinition.type,
             actionLabel: actionDefinition.actionLabel || actionDefinition.type,
             description: description,
-            executionModes: executionModes
+            executionModes: executionModes,
+            status: actionDefinition.status || null
         });
     }
 

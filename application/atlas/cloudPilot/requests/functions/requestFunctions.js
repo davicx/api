@@ -65,6 +65,21 @@ async function applyDecision(decision, context) {
         };
     }
 
+    if (decision.response && decision.response.type === RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE) {
+        if (requestState.workflowId) {
+            await Request.cancelAction(requestState.workflowId);
+        }
+
+        return {
+            success: true,
+            action: requestState.workflowId ? 'cancelled' : 'skipped',
+            reason: 'capability_not_available',
+            requestID: requestState.workflowId || null,
+            request: RequestStateFunctions.emptyActionState(),
+            error: null
+        };
+    }
+
     if (!targetRequest || !targetRequest.action) {
         // Leave-alone turns (general chat, etc.) clear soft-accept eligibility
         // so a later "ok" cannot accept a stale suggestion.
@@ -383,6 +398,10 @@ function resolveSkipReasonForNoRequest(decision) {
 
     if (responseType === RESPONSE_TYPE.AMBIGUOUS_ACTION) {
         return 'ambiguous_no_write';
+    }
+
+    if (responseType === RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE) {
+        return 'capability_not_available';
     }
 
     return 'no_request_change';

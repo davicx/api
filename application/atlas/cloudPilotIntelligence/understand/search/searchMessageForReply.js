@@ -69,8 +69,9 @@ function looksLikeConfirmReply(normalized) {
 }
 
 //Function A1: Find confirm, cancel, or execution mode in the message
-function searchMessageForReply(message) {
+function searchMessageForReply(message, options) {
     const normalized = String(message || '').toLowerCase().trim().replace(/[.!?]+$/g, '');
+    const skipLog = Boolean(options && options.skipLog);
 
     let result = null;
 
@@ -96,11 +97,13 @@ function searchMessageForReply(message) {
         }
     }
 
-    SearchLogs.recordSearch({
-        name: 'Reply',
-        method: 'Internal',
-        result: result
-    });
+    if (!skipLog) {
+        SearchLogs.recordSearch({
+            name: 'Reply',
+            method: 'Internal',
+            result: result
+        });
+    }
 
     return result;
 }

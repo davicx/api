@@ -174,6 +174,29 @@ async function conversation(decision, context) {
         });
     }
 
+    if (responseType === RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE) {
+        const unavailableAction =
+            decision.response && decision.response.action
+                ? String(decision.response.action)
+                : '';
+        const unavailableDefinition = unavailableAction
+            ? actionMap[unavailableAction]
+            : null;
+        const unavailableLabel =
+            unavailableDefinition && unavailableDefinition.actionLabel
+                ? String(unavailableDefinition.actionLabel)
+                : 'That feature';
+
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: true,
+            cloudPilotMessage:
+                unavailableLabel + ' is not currently available.',
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: null
+        });
+    }
+
     if (responseType === RESPONSE_TYPE.RESOURCE_VERIFY_FAILED) {
         const verification = decision.response && decision.response.verifyResource
             ? decision.response.verifyResource
@@ -246,6 +269,10 @@ function mapResponseTypeToActionEvent(responseType, requestOutcome) {
 
     if (responseType === RESPONSE_TYPE.AWAITING_CONFIRMATION) {
         return 'awaiting_confirmation';
+    }
+
+    if (responseType === RESPONSE_TYPE.CONFIRMATION_UNCLEAR) {
+        return 'confirmation_unclear';
     }
 
     if (responseType === RESPONSE_TYPE.AWAITING_EXECUTION_MODE) {

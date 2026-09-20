@@ -13,6 +13,67 @@ const showCapabilitiesHandler = require('./capabilities/showCapabilitiesHandler'
 
 /*
 ===============================================================================
+CAPABILITY LIFECYCLE STATUS — master ON/OFF switch
+===============================================================================
+
+- live            → ON  (allowed)
+- in_development  → OFF (not allowed)
+- coming_soon     → OFF (not allowed)
+
+Change only the statuses below to turn capabilities on or off.
+Detailed capability behavior is defined in actionMap further down.
+*/
+
+const CAPABILITY_STATUS = Object.freeze({
+    LIVE: 'live',
+    IN_DEVELOPMENT: 'in_development',
+    COMING_SOON: 'coming_soon'
+});
+
+const capabilityStatus = Object.freeze({
+
+    // Chat
+    general_chat: CAPABILITY_STATUS.LIVE,
+    show_capabilities: CAPABILITY_STATUS.LIVE,
+
+    // AWS — General
+    inventory_aws: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    show_billing: CAPABILITY_STATUS.IN_DEVELOPMENT,
+
+    // EC2 — Explore
+    get_ec2_inventory: CAPABILITY_STATUS.LIVE,
+    scan_ec2: CAPABILITY_STATUS.LIVE,
+
+    // EC2 — Manage
+    create_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    pause_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    resume_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    delete_ec2: CAPABILITY_STATUS.COMING_SOON,
+    toggle_ec2: CAPABILITY_STATUS.COMING_SOON,
+    update_ec2_tag: CAPABILITY_STATUS.COMING_SOON,
+
+    // S3 — Explore
+    get_s3_inventory: CAPABILITY_STATUS.LIVE,
+    scan_s3: CAPABILITY_STATUS.LIVE,
+
+    // CloudPilot
+    show_ai_usage: CAPABILITY_STATUS.LIVE
+});
+
+function getCapabilityStatus(capabilityName) {
+    return capabilityStatus[capabilityName] || CAPABILITY_STATUS.COMING_SOON;
+}
+
+function isCapabilityLive(capabilityName) {
+    return getCapabilityStatus(capabilityName) === CAPABILITY_STATUS.LIVE;
+}
+
+
+
+
+
+/*
+===============================================================================
 MASTER CLOUDPILOT CAPABILITY CATALOG
 ===============================================================================
 
@@ -49,7 +110,9 @@ Manage EC2
 
 WHAT THIS FILE CONTROLS
 
-- Which capabilities exist and whether each one is allowed.
+- Which capabilities exist and how each one works.
+- Lifecycle ON/OFF status is the capabilityStatus map at the top of this file
+  (live → allowed; in_development / coming_soon → not allowed).
 - How a user message is matched to a capability.
 - What fields must be collected before a request is ready.
 - Which execution modes are available for a change.
@@ -63,7 +126,7 @@ CAPABILITY DEFINITION SHAPE
 Each capability can contain:
 
 - Identity: type and actionLabel
-- Policy: allowed
+- Policy: status (lifecycle) and allowed (derived from status)
 - Orchestration: actionTier, requiresWorkflow, and requiresExecution
 - Request classification (metadata only until Decide consumes it):
   - requestType: 'scan' | 'change' | 'information' | null
@@ -108,7 +171,8 @@ const actionMap = {
         actionLabel: 'General Chat',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('general_chat'),
+        allowed: isCapabilityLive('general_chat'),
 
         //Orchestration
         actionTier: 'general_chat',
@@ -150,7 +214,8 @@ const actionMap = {
         actionLabel: 'Inventory AWS Resources',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('inventory_aws'),
+        allowed: isCapabilityLive('inventory_aws'),
 
         //Orchestration
         actionTier: 'informational',
@@ -193,7 +258,8 @@ const actionMap = {
         actionLabel: 'AWS Billing',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('show_billing'),
+        allowed: isCapabilityLive('show_billing'),
 
         //Orchestration
         actionTier: 'informational',
@@ -248,7 +314,8 @@ const actionMap = {
         actionLabel: 'AI Usage',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('show_ai_usage'),
+        allowed: isCapabilityLive('show_ai_usage'),
 
         //Orchestration
         actionTier: 'informational',
@@ -295,7 +362,8 @@ const actionMap = {
         actionLabel: 'Show Capabilities',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('show_capabilities'),
+        allowed: isCapabilityLive('show_capabilities'),
 
         //Orchestration
         actionTier: 'informational',
@@ -357,7 +425,8 @@ const actionMap = {
         actionLabel: 'Scan EC2',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('scan_ec2'),
+        allowed: isCapabilityLive('scan_ec2'),
 
         //Orchestration
         actionTier: 'informational',
@@ -418,7 +487,8 @@ const actionMap = {
         actionLabel: 'EC2 Inventory',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('get_ec2_inventory'),
+        allowed: isCapabilityLive('get_ec2_inventory'),
 
         //Orchestration
         actionTier: 'informational',
@@ -467,7 +537,8 @@ const actionMap = {
         actionLabel: 'Scan S3',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('scan_s3'),
+        allowed: isCapabilityLive('scan_s3'),
 
         //Orchestration
         actionTier: 'informational',
@@ -530,7 +601,8 @@ const actionMap = {
         actionLabel: 'S3 Inventory',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('get_s3_inventory'),
+        allowed: isCapabilityLive('get_s3_inventory'),
 
         //Orchestration
         actionTier: 'informational',
@@ -579,7 +651,8 @@ const actionMap = {
         actionLabel: 'Toggle EC2',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('toggle_ec2'),
+        allowed: isCapabilityLive('toggle_ec2'),
 
         //Orchestration
         actionTier: 'destructive',
@@ -639,7 +712,8 @@ const actionMap = {
         actionLabel: 'Create EC2',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('create_ec2'),
+        allowed: isCapabilityLive('create_ec2'),
 
         //Orchestration
         actionTier: 'destructive',
@@ -706,7 +780,8 @@ const actionMap = {
         actionLabel: 'Delete EC2',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('delete_ec2'),
+        allowed: isCapabilityLive('delete_ec2'),
 
         //Orchestration
         actionTier: 'destructive',
@@ -765,7 +840,8 @@ const actionMap = {
         actionLabel: 'Update EC2 Tag',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('update_ec2_tag'),
+        allowed: isCapabilityLive('update_ec2_tag'),
 
         //Orchestration
         actionTier: 'destructive',
@@ -841,7 +917,8 @@ const actionMap = {
         actionLabel: 'Pause EC2',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('pause_ec2'),
+        allowed: isCapabilityLive('pause_ec2'),
 
         //Orchestration
         actionTier: 'destructive',
@@ -932,7 +1009,8 @@ const actionMap = {
         actionLabel: 'Resume EC2',
 
         //Policy
-        allowed: true,
+        status: getCapabilityStatus('resume_ec2'),
+        allowed: isCapabilityLive('resume_ec2'),
 
         //Orchestration
         actionTier: 'destructive',
@@ -1181,6 +1259,65 @@ function capabilityAllowsImmediateFulfill(actionDefinition) {
     );
 }
 
+/*
+Validate status catalog against actionMap.
+Throws with the capability name when catalogs disagree or a status is invalid.
+Does not silently treat missing entries as coming_soon.
+*/
+function validateCapabilityStatusCatalog(
+    actionKeys,
+    statusCatalog,
+    statusConstants
+) {
+    const keys = Array.isArray(actionKeys) ? actionKeys : [];
+    const catalog = statusCatalog && typeof statusCatalog === 'object' ? statusCatalog : {};
+    const validStatuses = new Set(
+        statusConstants && typeof statusConstants === 'object'
+            ? Object.values(statusConstants)
+            : []
+    );
+
+    for (let i = 0; i < keys.length; i++) {
+        const capabilityName = keys[i];
+
+        if (!Object.prototype.hasOwnProperty.call(catalog, capabilityName)) {
+            throw new Error(
+                'Missing capability status entry for "' + capabilityName + '"'
+            );
+        }
+    }
+
+    const statusKeys = Object.keys(catalog);
+
+    for (let i = 0; i < statusKeys.length; i++) {
+        const capabilityName = statusKeys[i];
+
+        if (keys.indexOf(capabilityName) === -1) {
+            throw new Error(
+                'Unknown capability in status catalog: "' + capabilityName + '"'
+            );
+        }
+
+        const status = catalog[capabilityName];
+
+        if (!validStatuses.has(status)) {
+            throw new Error(
+                'Invalid capability status for "' +
+                    capabilityName +
+                    '": "' +
+                    String(status) +
+                    '"'
+            );
+        }
+    }
+}
+
+validateCapabilityStatusCatalog(
+    Object.keys(actionMap),
+    capabilityStatus,
+    CAPABILITY_STATUS
+);
+
 module.exports = actionMap;
 
 Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
@@ -1195,6 +1332,31 @@ Object.defineProperty(module.exports, 'capabilityRequiresConfirmation', {
 
 Object.defineProperty(module.exports, 'capabilityAllowsImmediateFulfill', {
     value: capabilityAllowsImmediateFulfill,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'validateCapabilityStatusCatalog', {
+    value: validateCapabilityStatusCatalog,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'CAPABILITY_STATUS', {
+    value: CAPABILITY_STATUS,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'capabilityStatus', {
+    value: capabilityStatus,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'getCapabilityStatus', {
+    value: getCapabilityStatus,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'isCapabilityLive', {
+    value: isCapabilityLive,
     enumerable: false
 });
 

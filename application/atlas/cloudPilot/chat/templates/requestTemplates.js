@@ -34,6 +34,10 @@ async function getRequestMessageReply(payload) {
         return await cloudPilotRespondAwaitingConfirmation(payload);
     }
 
+    if (payload.actionEvent === 'confirmation_unclear') {
+        return cloudPilotRespondConfirmationUnclear(payload);
+    }
+
     if (payload.actionEvent === 'execution_requested') {
         return await AtlasExecution.startNewAtlasExecution(payload);
     }
@@ -205,6 +209,43 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
         }
 
         message += '\n\n' + buildConfirmOrCancelLine(actionType);
+    }
+
+    return {
+        success: true,
+        message: message,
+        atlasResponse: null,
+        error: null
+    };
+}
+
+function cloudPilotRespondConfirmationUnclear(payload) {
+    const actionDefinition = payload.actionDefinition || {};
+    const capability =
+        actionDefinition.capability && typeof actionDefinition.capability === 'object'
+            ? actionDefinition.capability
+            : {};
+    const description = capability.description
+        ? String(capability.description).trim()
+        : '';
+    const actionLabel = actionDefinition.actionLabel
+        ? String(actionDefinition.actionLabel).trim()
+        : '';
+
+    let message =
+        'Please confirm whether you want me to continue with this request, or cancel it.';
+
+    if (description) {
+        message =
+            'Please confirm whether you want me to ' +
+            description.charAt(0).toLowerCase() +
+            description.slice(1) +
+            ', or cancel the request.';
+    } else if (actionLabel) {
+        message =
+            'Please confirm whether you want me to continue with ' +
+            actionLabel +
+            ', or cancel the request.';
     }
 
     return {

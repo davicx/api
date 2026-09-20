@@ -1,6 +1,7 @@
 const SearchMessageForActionFunctions = require('./search/searchMessageForAction');
 const SearchMessageForValuesFunctions = require('./search/searchMessageForValues');
 const SearchMessageForReplyFunctions = require('./search/searchMessageForReply');
+const SearchMessageForUserConfirmationFunctions = require('./search/searchMessageForUserConfirmation');
 const SearchMessageForConversationFunctions = require('./search/searchMessageForConversation');
 const SearchMessageForQuestionFunctions = require('./search/searchMessageForQuestion');
 const SearchLogs = require('./search/helpers/searchLogs');
@@ -11,7 +12,7 @@ What this file answers:
 * What does the user want?
 * What action, values, reply, conversation, or question signals were found?
 
-Outputs: action, values, reply, conversation, question, ambiguous, candidates
+Outputs: action, values, reply, replyType, replySource, conversation, question, ambiguous, candidates
 
 This is the WHAT layer (STEP 3).
 
@@ -57,7 +58,43 @@ async function understandMessage(message, requestState) {
             message,
             requestState
         );
-        const reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
+
+        let reply = null;
+        let replyType = null;
+        let replySource = null;
+
+        const waitingOnConfirmation =
+            SearchMessageForUserConfirmationFunctions.shouldRunUserConfirmationSearch(
+                requestState
+            );
+
+        if (waitingOnConfirmation) {
+            const confirmation =
+                await SearchMessageForUserConfirmationFunctions.searchMessageForUserConfirmation(
+                    message,
+                    requestState
+                );
+
+            if (confirmation) {
+                reply = confirmation.reply;
+                replyType = confirmation.replyType;
+                replySource = confirmation.replySource;
+            } else {
+                replyType = 'unclear';
+                replySource = 'internal';
+            }
+        } else {
+            reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
+
+            if (reply === 'confirm') {
+                replyType = 'confirm';
+                replySource = 'internal';
+            } else if (reply === 'cancel') {
+                replyType = 'cancel';
+                replySource = 'internal';
+            }
+        }
+
         const conversation =
             SearchMessageForConversationFunctions.searchMessageForConversation(message);
         const question = await SearchMessageForQuestionFunctions.searchMessageForQuestion(
@@ -71,6 +108,8 @@ async function understandMessage(message, requestState) {
             action: actionResult.action,
             values,
             reply,
+            replyType,
+            replySource,
             conversation,
             question: question,
             ambiguous: actionResult.ambiguous,

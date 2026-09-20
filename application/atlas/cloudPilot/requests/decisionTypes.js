@@ -26,12 +26,14 @@ const RESPONSE_TYPE = {
     REQUEST_STATUS: 'request_status',
     AMBIGUOUS_ACTION: 'ambiguous_action',
     WORKFLOW_RUNNING: 'workflow_running',
+    CONFIRMATION_UNCLEAR: 'confirmation_unclear',
     GENERAL_CHAT: 'general_chat',
     IMMEDIATE_EXECUTION: 'immediate_execution',
     UNDO_EXECUTION: 'undo_execution',
     RESOURCE_NOT_FOUND: 'resource_not_found',
     RESOURCE_VERIFY_FAILED: 'resource_verify_failed',
     RESOURCE_SCAN_DECLINED: 'resource_scan_declined',
+    CAPABILITY_NOT_AVAILABLE: 'capability_not_available',
     EC2_COMPUTE_COST: 'ec2_compute_cost'
 };
 
