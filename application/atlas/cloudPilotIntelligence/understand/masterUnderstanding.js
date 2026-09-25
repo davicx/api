@@ -54,10 +54,19 @@ async function understandMessage(message, requestState) {
     SearchLogs.beginSearchSession();
 
     try {
-        const values = await SearchMessageForValuesFunctions.searchMessageForValues(
-            message,
-            requestState
-        );
+        const valuesOutcome =
+            await SearchMessageForValuesFunctions.searchMessageForValues(
+                message,
+                requestState
+            );
+        const values =
+            valuesOutcome && valuesOutcome.values
+                ? valuesOutcome.values
+                : valuesOutcome || {};
+        const ambiguousFields =
+            valuesOutcome && Array.isArray(valuesOutcome.ambiguousFields)
+                ? valuesOutcome.ambiguousFields.slice()
+                : [];
 
         let reply = null;
         let replyType = null;
@@ -80,7 +89,7 @@ async function understandMessage(message, requestState) {
                 replyType = confirmation.replyType;
                 replySource = confirmation.replySource;
             } else {
-                replyType = 'unclear';
+                replyType = 'unrelated';
                 replySource = 'internal';
             }
         } else {
@@ -107,6 +116,7 @@ async function understandMessage(message, requestState) {
         return {
             action: actionResult.action,
             values,
+            ambiguousFields: ambiguousFields,
             reply,
             replyType,
             replySource,

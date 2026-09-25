@@ -13,19 +13,27 @@ FUNCTIONS A: User confirmation search (waiting_on_confirmation only)
     3) Function A3: searchMessageForUserConfirmationInternal
     4) Function A4: searchMessageForUserConfirmationOpenAI
 
-Classifies confirm | cancel | unclear. Does not execute, speak, or change DB.
+Classifies how the message relates to the open confirmation prompt.
+Does not execute, speak, or change DB.
+
+replyType:
+  confirm | cancel | about_open_request | ambiguous_confirmation | unrelated
+
+unrelated = not a response to the open request → continue normal understanding.
 */
 
 const VALID_REPLY_TYPES = {
     confirm: true,
     cancel: true,
-    unclear: true
+    about_open_request: true,
+    ambiguous_confirmation: true,
+    unrelated: true
 };
 
 //HELPERS
 function buildConfirmationResult(replyType, replySource, fallbackReason) {
     const normalized =
-        replyType && VALID_REPLY_TYPES[replyType] ? replyType : 'unclear';
+        replyType && VALID_REPLY_TYPES[replyType] ? replyType : 'unrelated';
 
     return {
         reply:
@@ -61,7 +69,7 @@ function parseOpenAIConfirmationResponse(raw) {
             return null;
         }
 
-        const replyType = String(
+        let replyType = String(
             parsed.replyType || parsed.reply_type || parsed.reply || ''
         )
             .trim()
@@ -83,16 +91,33 @@ function buildUserConfirmationOpenAIMessages(context) {
     const action = String(searchContext.action || '');
     const actionLabel = String(searchContext.actionLabel || action || 'request');
     const description = String(searchContext.description || '');
+    const collectedSummary = String(searchContext.collectedSummary || '');
 
     const systemMessage = [
         'TASK',
         '',
         'CloudPilot has an open request waiting for the user to confirm or cancel execution.',
-        'Classify the CURRENT MESSAGE as exactly one of: confirm, cancel, unclear.',
+        'Classify the CURRENT MESSAGE as exactly one of:',
         '',
         'confirm — user wants CloudPilot to run the open request now',
+        '  Examples: "yes", "run it", "go ahead".',
         'cancel — user wants to cancel / stop / not run the open request',
-        'unclear — question, hesitation, unrelated chat, or anything else',
+        '  Examples: "cancel", "never mind", "do not run it".',
+        'about_open_request — user asks a question about the waiting request without authorizing it',
+        '  Examples: "what will this do?", "is this safe?", "will this cost money?",',
+        '  "what region will it scan?".',
+        'ambiguous_confirmation — message plausibly refers to the waiting request,',
+        '  but the user\'s execution intent is unclear.',
+        '  Examples: "maybe", "I am not sure whether to run it".',
+        'unrelated — message is NOT about confirming/cancelling this request',
+        '  Examples: "hello", "hi", "hey", "help", "how are you?",',
+        '  "what EC2 instances do I have?", "tell me about S3 encryption".',
+        '',
+        'IMPORTANT',
+        'A message is not ambiguous_confirmation merely because it is vague, short,',
+        'or is not a confirmation. Use ambiguous_confirmation only when the message',
+        'appears to refer to the open request and execution intent is unclear.',
+        'Greetings and general help requests are unrelated.',
         '',
         'Return JSON only in this shape:',
         '{"replyType":"confirm"}',
@@ -103,7 +128,8 @@ function buildUserConfirmationOpenAIMessages(context) {
         'OPEN REQUEST',
         'action: ' + action,
         'label: ' + actionLabel,
-        description ? 'description: ' + description : ''
+        description ? 'description: ' + description : '',
+        collectedSummary ? 'collected: ' + collectedSummary : ''
     ]
         .filter(Boolean)
         .join('\n');
@@ -131,6 +157,16 @@ function buildConfirmationSearchContext(message, requestState) {
         definition && definition.capability && typeof definition.capability === 'object'
             ? definition.capability
             : {};
+    const collected =
+        state.collected && typeof state.collected === 'object' ? state.collected : {};
+    const collectedParts = [];
+
+    if (collected.request_name) {
+        collectedParts.push('scan_name=' + String(collected.request_name));
+    }
+    if (collected.region) {
+        collectedParts.push('region=' + String(collected.region));
+    }
 
     return {
         userMessage: String(message || ''),
@@ -138,7 +174,8 @@ function buildConfirmationSearchContext(message, requestState) {
         actionLabel:
             (definition && definition.actionLabel) || action || 'request',
         description: capability.description ? String(capability.description) : '',
-        status: state.status ? String(state.status) : ''
+        status: state.status ? String(state.status) : '',
+        collectedSummary: collectedParts.join(', ')
     };
 }
 
@@ -148,6 +185,7 @@ function logUserConfirmationSearch(details) {
         method: details.method,
         result: {
             replyType: details.replyType,
+            replySource: details.replySource || null,
             action: details.action || null,
             status: details.status || null,
             fallback: details.fallbackReason || null
@@ -179,7 +217,8 @@ function searchMessageForUserConfirmationInternal(message) {
         return buildConfirmationResult('cancel', 'internal', null);
     }
 
-    return buildConfirmationResult('unclear', 'internal', null);
+    // Phrase list cannot distinguish about / ambiguous / unrelated — continue normally.
+    return buildConfirmationResult('unrelated', 'internal', null);
 }
 
 async function searchMessageForUserConfirmationOpenAI(context) {
@@ -189,7 +228,7 @@ async function searchMessageForUserConfirmationOpenAI(context) {
         if (!client) {
             return {
                 result: buildConfirmationResult(
-                    'unclear',
+                    'unrelated',
                     'openai',
                     'no API key / client'
                 ),
@@ -200,7 +239,7 @@ async function searchMessageForUserConfirmationOpenAI(context) {
         const config = CHAT_CONFIG.MEDIUM;
         const maxTokens = Math.min(
             CLOUDPILOT_AI_CONFIG.userConfirmationTokenLimit || 40,
-            40
+            60
         );
         const openAIRequest = buildUserConfirmationOpenAIMessages(context);
 
@@ -210,7 +249,7 @@ async function searchMessageForUserConfirmationOpenAI(context) {
             max_tokens: maxTokens,
             temperature: config.temperature,
             feature: 'user_confirmation_search',
-            logMasterOpenAIInput: true
+            logMasterOpenAIInput: false
         });
 
         const openAIResponse =
@@ -224,7 +263,6 @@ async function searchMessageForUserConfirmationOpenAI(context) {
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
             context: openAIRequest.contextSummary,
-            messages: openAIRequest.messages,
             previewOnly: false,
             responseText: apiResult.success
                 ? openAIResponse
@@ -235,7 +273,7 @@ async function searchMessageForUserConfirmationOpenAI(context) {
         if (!apiResult.success || !openAIResponse) {
             return {
                 result: buildConfirmationResult(
-                    'unclear',
+                    'unrelated',
                     'openai',
                     apiResult.message || apiResult.error || 'openai_failed'
                 ),
@@ -248,7 +286,7 @@ async function searchMessageForUserConfirmationOpenAI(context) {
         if (!replyType) {
             return {
                 result: buildConfirmationResult(
-                    'unclear',
+                    'unrelated',
                     'openai',
                     'invalid_json'
                 ),
@@ -263,7 +301,7 @@ async function searchMessageForUserConfirmationOpenAI(context) {
     } catch (error) {
         return {
             result: buildConfirmationResult(
-                'unclear',
+                'unrelated',
                 'openai',
                 error && error.message ? error.message : 'openai_exception'
             ),
@@ -279,11 +317,30 @@ async function searchMessageForUserConfirmation(message, requestState) {
         logUserConfirmationSearch({
             method: 'Skipped',
             replyType: null,
+            replySource: null,
             action: context.action,
             status: context.status,
             fallbackReason: null
         });
         return null;
+    }
+
+    // Exact confirm/cancel phrases win first — never let OpenAI turn "yes!" into unrelated chat.
+    const internalResult = searchMessageForUserConfirmationInternal(message);
+
+    if (
+        internalResult.replyType === 'confirm' ||
+        internalResult.replyType === 'cancel'
+    ) {
+        logUserConfirmationSearch({
+            method: 'Internal',
+            replyType: internalResult.replyType,
+            replySource: internalResult.replySource,
+            action: context.action,
+            status: context.status,
+            fallbackReason: null
+        });
+        return internalResult;
     }
 
     const openaiRequested = CLOUDPILOT_AI_CONFIG.userConfirmationSearch === 'openai';
@@ -297,6 +354,7 @@ async function searchMessageForUserConfirmation(message, requestState) {
         logUserConfirmationSearch({
             method: 'OpenAI',
             replyType: result.replyType,
+            replySource: result.replySource,
             action: context.action,
             status: context.status,
             fallbackReason: openAIOutcome.fallbackReason
@@ -312,22 +370,20 @@ async function searchMessageForUserConfirmation(message, requestState) {
             conversationHistoryEnabled: false,
             conversationHistoryCount: 0,
             context: openAIRequest.contextSummary,
-            messages: openAIRequest.messages,
             previewOnly: true
         });
     }
 
-    const result = searchMessageForUserConfirmationInternal(message);
-
     logUserConfirmationSearch({
         method: 'Internal',
-        replyType: result.replyType,
+        replyType: internalResult.replyType,
+        replySource: internalResult.replySource,
         action: context.action,
         status: context.status,
         fallbackReason: masterDisabled ? 'ai_disabled' : null
     });
 
-    return result;
+    return internalResult;
 }
 
 module.exports = {
@@ -336,5 +392,6 @@ module.exports = {
     searchMessageForUserConfirmationInternal,
     searchMessageForUserConfirmationOpenAI,
     parseOpenAIConfirmationResponse,
-    buildConfirmationResult
+    buildConfirmationResult,
+    buildUserConfirmationOpenAIMessages
 };

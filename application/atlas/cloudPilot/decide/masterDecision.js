@@ -77,6 +77,29 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.AMBIGUOUS_ACTION);
     }
 
+    // Ambiguous open-request field value — ask one clarification; do not save.
+    if (
+        state.pendingAction &&
+        ActionStatusFunctions.isCollectingFields(state.status) &&
+        Array.isArray(u.ambiguousFields) &&
+        u.ambiguousFields.length > 0
+    ) {
+        const blockedAmbiguous = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedAmbiguous) {
+            return blockedAmbiguous;
+        }
+
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: buildRequestFromState(state),
+            response: {
+                type: RESPONSE_TYPE.FIELD_UNCLEAR,
+                field: String(u.ambiguousFields[0])
+            }
+        };
+    }
+
     // Legacy conversation signal (phrases moved to questions/searchForOpenRequests)
     if (u.conversation === 'list_open') {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
@@ -102,8 +125,8 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.WORKFLOW_RUNNING);
     }
 
-    // Waiting on confirmation — classify before general chat / new actions.
-    // replyType unclear must never fall through to general_chat.
+    // Waiting on confirmation — only activate open-request path for confirm/cancel/
+    // about/ambiguous. "unrelated" is not a response: fall through to normal Decide.
     if (
         state.pendingAction &&
         ActionStatusFunctions.isWaitingOnConfirmation(state.status)
@@ -112,13 +135,6 @@ function decideNextStep({ understanding, requestState }) {
 
         if (blockedWaitingConfirm) {
             return blockedWaitingConfirm;
-        }
-
-        if (u.replyType === 'unclear') {
-            return cloudpilotDecision(
-                buildRequestFromState(state),
-                RESPONSE_TYPE.CONFIRMATION_UNCLEAR
-            );
         }
 
         if (u.replyType === 'cancel' || effectType === 'cancel') {
@@ -137,11 +153,24 @@ function decideNextStep({ understanding, requestState }) {
             return buildExecutionStartedDecision(state);
         }
 
-        // Confirm/cancel not established — stay waiting (do not general-chat).
-        return cloudpilotDecision(
-            buildRequestFromState(state),
-            RESPONSE_TYPE.CONFIRMATION_UNCLEAR
-        );
+        if (u.replyType === 'about_open_request') {
+            // Answer the actual question through normal response generation.
+            // General Chat already receives the open request as Current State context.
+            return {
+                chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
+                request: null,
+                response: { type: RESPONSE_TYPE.ABOUT_OPEN_REQUEST }
+            };
+        }
+
+        if (u.replyType === 'ambiguous_confirmation') {
+            return cloudpilotDecision(
+                buildRequestFromState(state),
+                RESPONSE_TYPE.CONFIRMATION_UNCLEAR
+            );
+        }
+
+        // unrelated / legacy unclear / missing replyType → continue normal routing below
     }
 
 // Not-found scan offer — before cancel/confirm/mode so "yes" cannot run the mutation
@@ -294,6 +323,14 @@ function decideNextStep({ understanding, requestState }) {
             return blockedNew;
         }
 
+        // One open request at a time — never silently replace a non final request.
+        if (
+            state.pendingAction &&
+            !ActionStatusFunctions.isFinalStatus(state.status)
+        ) {
+            return buildReplaceOpenRequestOfferDecision(state, u.action);
+        }
+
         return buildNewRequestDecision(u);
     }
 
@@ -318,7 +355,7 @@ function shouldReaskOpenRequest(state) {
         return false;
     }
 
-    if (ActionStatusFunctions.isTerminalStatus(state.status)) {
+    if (ActionStatusFunctions.isFinalStatus(state.status)) {
         return false;
     }
 
@@ -419,6 +456,13 @@ function hasApplicableValues(state, values) {
             return true;
         }
 
+        if (
+            fieldName === 'name' &&
+            (missing.includes('request_name') || requiredFields.includes('request_name'))
+        ) {
+            return true;
+        }
+
         if (missing.includes(fieldName) || requiredFields.includes(fieldName)) {
             return true;
         }
@@ -449,6 +493,18 @@ function mergeValuesIntoRequest(collected, requiredFields, values, defaults, cur
 
             if (fieldName === 'request_name') {
                 newCollected.request_name = String(fieldValue).trim();
+                missingSet.delete('request_name');
+                continue;
+            }
+
+            // Free-text name extraction often lands in `name`; map onto scan request_name when needed.
+            if (
+                fieldName === 'name' &&
+                missingSet.has('request_name') &&
+                requiredFields.includes('request_name')
+            ) {
+                newCollected.request_name = String(fieldValue).trim();
+                missingSet.delete('request_name');
                 continue;
             }
 
@@ -464,6 +520,17 @@ function mergeValuesIntoRequest(collected, requiredFields, values, defaults, cur
         return fieldValue == null || fieldValue === '';
     });
 
+    const optionalFields = ['finding_id', 'rule_id', 'scan_snapshot_id'];
+
+    for (let i = 0; i < optionalFields.length; i++) {
+        const fieldName = optionalFields[i];
+        const fieldValue = values && values[fieldName];
+
+        if (fieldValue != null && fieldValue !== '') {
+            newCollected[fieldName] = fieldValue;
+        }
+    }
+
     return { collected: newCollected, missing };
 }
 
@@ -477,6 +544,16 @@ function isReadyForExecutionMode(state) {
     }
 
     if (ActionStatusFunctions.isWaitingOnExecutionMode(state.status)) {
+        return true;
+    }
+
+    // A failed instructions/CLI/PR attempt can leave the row open. Let the user pick again.
+    if (
+        state.executionMode &&
+        state.executionMode !== 'automatic' &&
+        (state.status === ActionStatusFunctions.STATUS.COMPLETED ||
+            state.status === ActionStatusFunctions.STATUS.FAILED)
+    ) {
         return true;
     }
 
@@ -544,6 +621,30 @@ function buildNewRequestDecision(understanding) {
         request,
         response: { type: responseType },
         replaceOpenRequest: true
+    };
+}
+
+//Function B7b: New action while a non-final open request exists — ask before replace
+function buildReplaceOpenRequestOfferDecision(state, proposedAction) {
+    const pendingDefinition = actionMap[state.pendingAction] || null;
+    const proposedDefinition = actionMap[proposedAction] || null;
+    const pendingLabel =
+        (pendingDefinition && pendingDefinition.actionLabel) ||
+        String(state.pendingAction || 'open request');
+    const proposedLabel =
+        (proposedDefinition && proposedDefinition.actionLabel) ||
+        String(proposedAction || 'new request');
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request: buildRequestFromState(state),
+        response: {
+            type: RESPONSE_TYPE.REPLACE_OPEN_REQUEST,
+            pendingLabel: pendingLabel,
+            proposedLabel: proposedLabel,
+            proposedAction: proposedAction
+        },
+        replaceOpenRequest: false
     };
 }
 
@@ -623,11 +724,11 @@ function handleExecutionModeSelection(state, mode) {
     }
 
     const request = buildRequestFromState(state);
-    request.executionMode = mode;
     const actionDefinition = actionMap[state.pendingAction];
     const requiresConfirmation = actionMap.capabilityRequiresConfirmation(actionDefinition);
 
     if (mode === 'automatic') {
+        request.executionMode = mode;
         // Change + automatic still confirms when permission requires it
         if (requiresConfirmation) {
             request.status = ActionStatusFunctions.STATUS.WAITING_ON_CONFIRMATION;
@@ -640,7 +741,9 @@ function handleExecutionModeSelection(state, mode) {
         return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_STARTED);
     }
 
-    request.status = ActionStatusFunctions.STATUS.COMPLETED;
+    // Keep the request open until the strategy succeeds. A missing template can be retried.
+    request.executionMode = null;
+    request.status = ActionStatusFunctions.STATUS.WAITING_ON_EXECUTION_MODE;
     request.ready = true;
 
     const responseTypeByMode = {
@@ -713,7 +816,7 @@ function resolveImmediateExecutionAction(state, understanding) {
         return actionName;
     }
 
-    if (ActionStatusFunctions.isTerminalStatus(state.status)) {
+    if (ActionStatusFunctions.isFinalStatus(state.status)) {
         return actionName;
     }
 

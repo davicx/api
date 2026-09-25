@@ -77,7 +77,16 @@ async function understandAction(message) {
 //Function B4: Understand resource / field signals from message
 async function understandResource(message, requestState) {
     //STEP 1: Delegate to values extractors (region, ids, name, tags, structured fields)
-    return SearchMessageForValuesFunctions.searchMessageForValues(message, requestState);
+    const outcome = await SearchMessageForValuesFunctions.searchMessageForValues(
+        message,
+        requestState
+    );
+
+    if (outcome && outcome.values) {
+        return outcome.values;
+    }
+
+    return outcome;
 }
 
 //Function B5: Detect AI spend / OpenAI usage questions (classify only)

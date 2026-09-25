@@ -192,6 +192,8 @@ function logUnderstandingResult(understanding) {
     console.log('Action: ' + formatLogValue(result.action));
     console.log('Values: ' + formatLogValues(result.values));
     console.log('Reply: ' + formatLogValue(result.reply));
+    console.log('Reply Type: ' + formatLogValue(result.replyType));
+    console.log('Reply Source: ' + formatLogValue(result.replySource));
     console.log('Conversation: ' + formatLogValue(result.conversation));
     console.log('Question: ' + formatLogValue(result.question));
     console.log('Ambiguous: ' + (result.ambiguous === true ? 'YES' : 'NO'));
@@ -546,6 +548,14 @@ function formatExecutionForLog(decision, executionOutcome, requestStateAfter) {
 
     if (responseType === 'confirmation_unclear') {
         return 'Waiting for Confirmation';
+    }
+
+    if (responseType === 'about_open_request') {
+        return 'Not Run';
+    }
+
+    if (responseType === 'replace_open_request') {
+        return 'Not Run';
     }
 
     if (responseType === 'awaiting_execution_mode') {

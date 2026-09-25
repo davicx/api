@@ -32,7 +32,13 @@ function slimSelectedFinding(selectedFinding) {
         'estimatedSavings',
         'currentType',
         'recommendedType',
-        'region'
+        'region',
+        'action',
+        'findingId',
+        'bucketName',
+        'bucket_name',
+        'scanSnapshotId',
+        'ruleId'
     ];
 
     const slim = {};

@@ -58,6 +58,59 @@ function buildOpenRequestsResponse(requestState) {
     };
 }
 
+//Function A2: Describe only the current pending request (about_open_request)
+function buildAboutOpenRequestResponse(requestState) {
+    const state = requestState || {};
+    const pendingAction = state.pendingAction || null;
+
+    if (!pendingAction) {
+        return {
+            success: true,
+            cloudPilotMessage: 'You have no open request waiting right now.',
+            atlasResponse: null,
+            error: null
+        };
+    }
+
+    const actionDefinition = actionMap[pendingAction] || null;
+    const actionLabel =
+        actionDefinition && actionDefinition.actionLabel
+            ? actionDefinition.actionLabel
+            : String(pendingAction);
+    const collected =
+        state.collected && typeof state.collected === 'object' ? state.collected : {};
+    const missing = Array.isArray(state.missing) ? state.missing : [];
+    const status = state.status ? String(state.status) : '';
+
+    const lines = ['Here is your open request:', '', actionLabel];
+
+    if (collected.request_name) {
+        lines.push('Scan name: ' + String(collected.request_name).trim());
+    }
+
+    if (collected.region) {
+        lines.push('Region: ' + String(collected.region).trim());
+    }
+
+    if (status === 'waiting_on_confirmation') {
+        lines.push('');
+        lines.push('Status: waiting for you to confirm or cancel.');
+    } else if (missing.length > 0) {
+        lines.push('');
+        lines.push('Still needed: ' + formatWaitingFor(missing) + '.');
+    } else if (status) {
+        lines.push('');
+        lines.push('Status: ' + status.replace(/_/g, ' ') + '.');
+    }
+
+    return {
+        success: true,
+        cloudPilotMessage: lines.join('\n'),
+        atlasResponse: null,
+        error: null
+    };
+}
+
 function formatWaitingFor(missing) {
     if (!Array.isArray(missing) || missing.length === 0) {
         return 'more information';
@@ -75,5 +128,6 @@ function formatWaitingFor(missing) {
 }
 
 module.exports = {
-    buildOpenRequestsResponse
+    buildOpenRequestsResponse,
+    buildAboutOpenRequestResponse
 };

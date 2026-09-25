@@ -4,6 +4,7 @@ const SearchMessageForInstanceIdFunctions = require('./values/searchMessageForIn
 const SearchMessageForInstanceTypeFunctions = require('./values/searchMessageForInstanceType');
 const SearchMessageForNameFunctions = require('./values/searchMessageForName');
 const SearchMessageForTagUpdateFunctions = require('./values/searchMessageForTagUpdate');
+const SearchMessageForOpenRequestFieldsFunctions = require('./values/searchMessageForOpenRequestFields');
 
 /*
 FUNCTIONS A: Structured field extraction from user message
@@ -17,6 +18,7 @@ Questions (AI spend, open requests) live under ./questions/ — not here.
 async function searchMessageForValues(message, requestState) {
     const structured = SearchMessageForStructuredFieldsFunctions.searchMessageForStructuredFields(message);
     const values = { ...structured };
+    let ambiguousFields = [];
 
     const regionResult = await SearchMessageForRegionFunctions.searchMessageForRegion(
         message,
@@ -63,7 +65,32 @@ async function searchMessageForValues(message, requestState) {
         values.tag_value = tagUpdateResult.tag_value;
     }
 
-    return values;
+    // OpenAI fill for remaining missing open-request fields (multi-field, multi-word).
+    const openRequestFields =
+        await SearchMessageForOpenRequestFieldsFunctions.searchMessageForOpenRequestFields(
+            message,
+            requestState,
+            values
+        );
+    const openValues =
+        openRequestFields && openRequestFields.values
+            ? openRequestFields.values
+            : {};
+
+    for (const fieldName of Object.keys(openValues)) {
+        if (values[fieldName] === undefined || values[fieldName] === '') {
+            values[fieldName] = openValues[fieldName];
+        }
+    }
+
+    ambiguousFields = Array.isArray(openRequestFields && openRequestFields.ambiguousFields)
+        ? openRequestFields.ambiguousFields.slice()
+        : [];
+
+    return {
+        values: values,
+        ambiguousFields: ambiguousFields
+    };
 }
 
 module.exports = { searchMessageForValues };

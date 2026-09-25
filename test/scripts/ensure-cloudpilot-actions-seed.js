@@ -19,7 +19,10 @@ const ACTIONS = [
     { action_type: 'toggle_ec2', display_name: 'Toggle EC2', requires_execution: 0 },
     { action_type: 'create_ec2', display_name: 'Create EC2', requires_execution: 0 },
     { action_type: 'delete_ec2', display_name: 'Delete EC2', requires_execution: 0 },
-    { action_type: 'update_ec2_tag', display_name: 'Update EC2 Tag', requires_execution: 0 }
+    { action_type: 'update_ec2_tag', display_name: 'Update EC2 Tag', requires_execution: 0 },
+    { action_type: 'pause_ec2', display_name: 'Pause EC2', requires_execution: 0 },
+    { action_type: 'resume_ec2', display_name: 'Resume EC2', requires_execution: 0 },
+    { action_type: 'enable_s3_versioning', display_name: 'Enable S3 Versioning', requires_execution: 0 }
 ];
 
 function runQuery(connection, queryString, params) {

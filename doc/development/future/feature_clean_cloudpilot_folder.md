@@ -2,7 +2,7 @@
 
 Goal: understand and later simplify `api/application/atlas/cloudPilot/` chat + execution structure.
 
-**Do not refactor until we decide.** This doc captures an inspection of the actual code (Scan Conversation MVP context).
+**Status:** Future — deferred from current (2026-09-23). Inspection only. Do not refactor until we decide.
 
 **Architecture north star (locked with Intelligence cleanup):** CloudPilot owns the application turn — **UNDERSTAND (via Intelligence) → DECIDE → FULFILL → RESPOND (via Intelligence)**. Intelligence never jumps from understand into AWS retrieve/execute. See `feature_clean_cloudpilotintelligence_folder.md`. Prefer small fixes that restore that path over more folders. `processMessage` is the conductor.
 

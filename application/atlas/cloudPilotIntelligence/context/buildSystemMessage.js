@@ -174,6 +174,9 @@ function writeCurrentState(currentStateContext) {
         const label = openRequest.label ? String(openRequest.label).trim() : '';
         const action = openRequest.action ? String(openRequest.action).trim() : '';
         const status = openRequest.status ? String(openRequest.status).trim() : '';
+        const currentMessageRelation = data.currentMessageRelation
+            ? String(data.currentMessageRelation).trim()
+            : '';
 
         lines.push('Open request:');
 
@@ -224,6 +227,29 @@ function writeCurrentState(currentStateContext) {
         }
 
         lines.push('');
+
+        if (currentMessageRelation === 'unrelated') {
+            lines.push('CURRENT TURN ROUTING:');
+            lines.push(
+                'The current message is unrelated to the open request. Answer the current message normally.'
+            );
+            lines.push(
+                'Do not mention, summarize, confirm, cancel, or remind the user about the open request in this response.'
+            );
+            lines.push('');
+        } else if (currentMessageRelation === 'about_open_request') {
+            lines.push('CURRENT TURN ROUTING:');
+            lines.push(
+                'Answer the user\'s actual question about the open request using the available context.'
+            );
+            lines.push(
+                'Do not execute it and do not append a generic confirmation or cancellation reminder.'
+            );
+            lines.push(
+                'Do not claim you will proceed, run, start, or complete the open request in this response.'
+            );
+            lines.push('');
+        }
     }
 
     if (hasCreateEc2) {

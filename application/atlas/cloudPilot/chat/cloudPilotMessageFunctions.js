@@ -2,6 +2,7 @@ const openAIFunctions = require('../../providers/openAI/client/openAIClient');
 const RequestStateFunctions = require('../requests/functions/requestLoadFunctions');
 const ResourceVerificationFunctions = require('../requests/functions/resourceVerificationFunctions');
 const CloudPilotIntelligence = require('../../cloudPilotIntelligence/CloudPilotIntelligence');
+const { applyVersioningFixContext } = require('../actions/enableS3Versioning/applyVersioningFixContext');
 const MasterDecision = require('../decide/masterDecision');
 const OpenRequestEffectFunctions = require('../requests/interpretOpenRequestEffect');
 const RequestWorkflow = require('../requests/workflow');
@@ -98,6 +99,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
             undoAvailable: false
         },
         atlasResponse: null, //This is the response we get from Atlas after an AWS interaction
+        scanSnapshotID: null,
+        snapshotSaved: null,
         error: null 
     };
 
@@ -128,6 +131,10 @@ async function processMessage(rawUserMessage, conversationID, context) {
         const messageUnderstanding = await CloudPilotIntelligence.understandMessage(
             currentUserMessage,
             currentRequestState
+        );
+        applyVersioningFixContext(
+            messageUnderstanding,
+            processMessageContext.selectedFinding
         );
 
         MasterLogging.logUnderstandingResult(messageUnderstanding);
@@ -292,7 +299,8 @@ async function processMessage(rawUserMessage, conversationID, context) {
             ...processMessageContext,
             currentUserMessage: currentUserMessage,
             conversationID: conversationID,
-            requestState: currentRequestState
+            requestState: currentRequestState,
+            openRequestReplyType: messageUnderstanding.replyType || null
         });
 
         MasterLogging.logRespond(conversationOutcome, decision);
@@ -342,6 +350,10 @@ async function processMessage(rawUserMessage, conversationID, context) {
     if (preflightOutcome.requestState) {
         currentRequestState = preflightOutcome.requestState;
         activeRequestAction = currentRequestState.pendingAction;
+
+        if (requestOutcome) {
+            requestOutcome.request = currentRequestState;
+        }
     }
 
     if (preflightOutcome.blocked) {
@@ -359,6 +371,13 @@ async function processMessage(rawUserMessage, conversationID, context) {
     });
 
     if (executionOutcome && executionOutcome.ran) {
+        processMessageOutcome.scanSnapshotID =
+            executionOutcome.scanSnapshotId || null;
+        processMessageOutcome.snapshotSaved =
+            executionOutcome.snapshotSaved == null
+                ? null
+                : Boolean(executionOutcome.snapshotSaved);
+
         currentRequestState = await RequestStateFunctions.getUsersActionState(conversationID);
         activeRequestAction = currentRequestState.pendingAction;
 

@@ -5,7 +5,7 @@ FUNCTIONS A: Request status rules (status column on cloudpilot_requests)
     3) Function A3: isWaitingOnConfirmation
     4) Function A4: isWaitingOnExecutionMode
     5) Function A5: isCollectingFields
-    6) Function A6: isTerminalStatus
+    6) Function A6: isFinalStatus
     7) Function A7: shouldUpdateStatusWhenFieldsComplete
     8) Function A8: isWaitingOnResourceScan
 */
@@ -85,7 +85,7 @@ function isCollectingFields(status) {
 }
 
 //Function A6: Request row is closed or finished running
-function isTerminalStatus(status) {
+function isFinalStatus(status) {
     return (
         status === STATUS.COMPLETED ||
         status === STATUS.FAILED ||
@@ -133,6 +133,6 @@ module.exports = {
     isWaitingOnExecutionMode,
     isWaitingOnResourceScan,
     isCollectingFields,
-    isTerminalStatus,
+    isFinalStatus,
     shouldUpdateStatusWhenFieldsComplete
 };

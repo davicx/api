@@ -17,7 +17,8 @@
  *   CLOUDPILOT_AI_SPEND_SEARCH       searchForAiSpend() — Question classify only
  *   CLOUDPILOT_OPEN_REQUESTS_SEARCH  searchForOpenRequests() — Question classify only
  *   CLOUDPILOT_ORG_KNOWLEDGE_SEARCH  understandOrganizationalKnowledge() — extract reference only
- *   CLOUDPILOT_USER_CONFIRMATION_SEARCH  waiting_on_confirmation classifier (confirm|cancel|unclear)
+ *   CLOUDPILOT_USER_CONFIRMATION_SEARCH  waiting_on_confirmation five-result classifier
+ *   CLOUDPILOT_OPEN_REQUEST_FIELDS_SEARCH  waiting_on_fields multi-field value extraction
  *
  * History / OpenAI transport:
  *   OPENAI_SEND_CONVERSATION_HISTORY, OPENAI_CONVERSATION_HISTORY_LIMIT
@@ -113,12 +114,22 @@ const CLOUDPILOT_AI_CONFIG = {
         'internal'
     ),
     /**
-     * waiting_on_confirmation only — OpenAI classifies confirm|cancel|unclear.
+     * waiting_on_confirmation only — OpenAI classifies confirm, cancel,
+     * about_open_request, ambiguous_confirmation, or unrelated.
      * Master AI OFF forces internal (existing searchMessageForReply).
      * Default openai: natural confirmations beyond the phrase list.
      */
     userConfirmationSearch: readImplementation(
         'CLOUDPILOT_USER_CONFIRMATION_SEARCH',
+        'openai'
+    ),
+    /**
+     * waiting_on_fields only — OpenAI extracts missing required field values
+     * (including multiple fields / multi-word request_name) from one message.
+     * Master AI OFF forces internal (existing extractors only).
+     */
+    openRequestFieldsSearch: readImplementation(
+        'CLOUDPILOT_OPEN_REQUEST_FIELDS_SEARCH',
         'openai'
     ),
 
@@ -156,6 +167,11 @@ const CLOUDPILOT_AI_CONFIG = {
         'CLOUDPILOT_USER_CONFIRMATION_TOKEN_LIMIT',
         40,
         100
+    ),
+    openRequestFieldsTokenLimit: readEnvPositiveInt(
+        'CLOUDPILOT_OPEN_REQUEST_FIELDS_TOKEN_LIMIT',
+        80,
+        160
     )
 };
 

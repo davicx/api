@@ -1,5 +1,7 @@
 # CloudPilot — Scan Conversation MVP
 
+**Status:** Future — deferred from current (2026-09-23). Some small slices already landed; the rest is not active work.
+
 I want to simplify CloudPilot's conversation system and focus on getting **two capabilities working extremely well first**:
 
 * Scan S3

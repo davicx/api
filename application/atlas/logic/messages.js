@@ -8,6 +8,7 @@ const Functions = require('../../functions/functions');
 const openAIFunctions = require('../providers/openAI/client/openAIClient');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../config/chatGPTconfig');
 const MasterLogging = require('../cloudPilot/logging/masterLogging');
+const ScanSnapshotService = require('../cloudPilot/scans/persistence/ScanSnapshotService');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
@@ -119,6 +120,26 @@ async function postMessage(req, res) {
     if (MasterLogging.logSaveCloudPilotMessageOn) {
         console.log(" ");
     }
+
+    if (
+        cloudPilotResult &&
+        cloudPilotResult.scanSnapshotID &&
+        cloudPilotMessageOutcome &&
+        cloudPilotMessageOutcome.newMessage
+    ) {
+        const savedMessage = cloudPilotMessageOutcome.newMessage;
+        const messageID =
+            savedMessage.messageID ||
+            savedMessage.message_id ||
+            null;
+        const attachOutcome = await ScanSnapshotService.attachMessage({
+            scanSnapshotId: cloudPilotResult.scanSnapshotID,
+            messageId: messageID
+        });
+        if (!attachOutcome.success) {
+            cloudPilotResult.snapshotSaved = false;
+        }
+    }
     
     //Step 6A: Add CloudPilot message to JSON output when saved
     if (cloudPilotMessageOutcome && cloudPilotMessageOutcome.newMessage) {
@@ -144,6 +165,15 @@ async function postMessage(req, res) {
     if (cloudPilotResult && cloudPilotResult.atlasResponse) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
     }
+
+    messageOutcome.data.scanSnapshotID =
+        cloudPilotResult && cloudPilotResult.scanSnapshotID
+            ? cloudPilotResult.scanSnapshotID
+            : null;
+    messageOutcome.data.snapshotSaved =
+        cloudPilotResult && cloudPilotResult.snapshotSaved != null
+            ? Boolean(cloudPilotResult.snapshotSaved)
+            : null;
 
     //STEP 8: Final Response (CloudPilot pipeline story ends here)
     if (MasterLogging.logFinalResponseOn) {

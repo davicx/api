@@ -7,6 +7,8 @@ const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 const InstructionsStrategy = require('../../executionModes/instructions/InstructionsLogic');
 const CliStrategy = require('../../executionModes/cli/CliLogic');
 const PrStrategy = require('../../executionModes/pr/PrLogic');
+const RequestFunctions = require('../../requests/functions/requestFunctions');
+const ActionStatusFunctions = require('../../requests/functions/requestStatusFunctions');
 const CreateEC2Guidance = require('../../actions/createEC2/createEC2Guidance');
 const EstimatePricingFunctions = require('../../pricing/estimatePricing');
 
@@ -128,6 +130,44 @@ async function conversation(decision, context) {
         });
     }
 
+    if (responseType === RESPONSE_TYPE.ABOUT_OPEN_REQUEST) {
+        const aboutResponse = OpenRequestsFunctions.buildAboutOpenRequestResponse(
+            requestState
+        );
+
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: aboutResponse.success,
+            cloudPilotMessage: aboutResponse.cloudPilotMessage,
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: aboutResponse.error || null
+        });
+    }
+
+    if (responseType === RESPONSE_TYPE.REPLACE_OPEN_REQUEST) {
+        const pendingLabel =
+            decision.response && decision.response.pendingLabel
+                ? String(decision.response.pendingLabel)
+                : 'open request';
+        const proposedLabel =
+            decision.response && decision.response.proposedLabel
+                ? String(decision.response.proposedLabel)
+                : 'new request';
+
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: true,
+            cloudPilotMessage:
+                'You already have an open ' +
+                pendingLabel +
+                ' request. Say cancel to close it if you want to start ' +
+                proposedLabel +
+                ' instead. I will not replace it automatically.',
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: null
+        });
+    }
+
     if (responseType === RESPONSE_TYPE.EC2_COMPUTE_COST) {
         const computeCostResponse = await Ec2ComputeCostFunctions.buildEc2ComputeCostResponse({
             values:
@@ -160,6 +200,16 @@ async function conversation(decision, context) {
             atlasResponse: decision.response && decision.response.verifyResource
                 ? decision.response.verifyResource.atlasResponse
                 : null,
+            error: null
+        });
+    }
+
+    if (responseType === RESPONSE_TYPE.REQUEST_CANCELLED) {
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: true,
+            cloudPilotMessage: 'I closed that request. Nothing was changed.',
+            chatType: decision.chatType,
+            atlasResponse: null,
             error: null
         });
     }
@@ -197,6 +247,24 @@ async function conversation(decision, context) {
         });
     }
 
+    if (responseType === RESPONSE_TYPE.VERSIONING_ALREADY_ENABLED) {
+        const bucketName =
+            (decision.response && decision.response.bucketName) ||
+            (requestState.collected && requestState.collected.bucket_name) ||
+            'this bucket';
+
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: true,
+            cloudPilotMessage:
+                'Versioning is already enabled for ' +
+                bucketName +
+                '. CloudPilot did not change the bucket.',
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: null
+        });
+    }
+
     if (responseType === RESPONSE_TYPE.RESOURCE_VERIFY_FAILED) {
         const verification = decision.response && decision.response.verifyResource
             ? decision.response.verifyResource
@@ -223,6 +291,26 @@ async function conversation(decision, context) {
     );
 
     if (changeStrategyResponse) {
+        if (changeStrategyResponse.success && requestState.workflowId) {
+            await RequestFunctions.finishRequest(
+                requestState.workflowId,
+                ActionStatusFunctions.STATUS.COMPLETED,
+                responseType
+            );
+        }
+
+        if (!changeStrategyResponse.success) {
+            return CloudPilotMessage.prepareKnownMessageReply({
+                success: false,
+                cloudPilotMessage: buildUnavailableStrategyMessage(
+                    changeStrategyResponse.cloudPilotMessage
+                ),
+                chatType: decision.chatType,
+                atlasResponse: null,
+                error: changeStrategyResponse.error || 'strategy_unavailable'
+            });
+        }
+
         return CloudPilotMessage.prepareKnownMessageReply(changeStrategyResponse);
     }
 
@@ -245,7 +333,11 @@ async function conversation(decision, context) {
         currentUserMessage: context.currentUserMessage,
         actionEvent: actionEvent,
         actionDefinition: actionDefinition,
-        requestState: requestState
+        requestState: requestState,
+        unclearField:
+            decision.response && decision.response.field
+                ? String(decision.response.field)
+                : null
     });
 
     return CloudPilotMessage.prepareRequestMessageReply(chatPayload, decision.chatType);
@@ -273,6 +365,18 @@ function mapResponseTypeToActionEvent(responseType, requestOutcome) {
 
     if (responseType === RESPONSE_TYPE.CONFIRMATION_UNCLEAR) {
         return 'confirmation_unclear';
+    }
+
+    if (responseType === RESPONSE_TYPE.FIELD_UNCLEAR) {
+        return 'field_unclear';
+    }
+
+    if (responseType === RESPONSE_TYPE.ABOUT_OPEN_REQUEST) {
+        return 'about_open_request';
+    }
+
+    if (responseType === RESPONSE_TYPE.REPLACE_OPEN_REQUEST) {
+        return 'replace_open_request';
     }
 
     if (responseType === RESPONSE_TYPE.AWAITING_EXECUTION_MODE) {
@@ -322,6 +426,7 @@ function buildChatHandlerPayload(options) {
         currentUserMessage: options.currentUserMessage,
         actionEvent: options.actionEvent,
         actionDefinition: options.actionDefinition,
+        unclearField: options.unclearField || null,
         actionReady: isRequestReady(missingFields),
         actionState: {
             pendingAction: requestState.pendingAction,
@@ -358,6 +463,22 @@ function copyStringArray(source) {
     }
 
     return copy;
+}
+
+function buildUnavailableStrategyMessage(message) {
+    const text = String(message || '').trim();
+    const retry =
+        'That option is not available for this request. Choose another way, or close the request.';
+
+    if (!text) {
+        return retry + '\n\n[[cloudpilot:fix-options]]';
+    }
+
+    if (text.indexOf('[[cloudpilot:fix-options]]') !== -1) {
+        return text;
+    }
+
+    return text + '\n\n' + retry + '\n\n[[cloudpilot:fix-options]]';
 }
 
 function isRequestReady(missingFields) {

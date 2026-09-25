@@ -32,7 +32,11 @@ async function generateGeneralMessageReply(processMessageContext) {
         context = await attachOrganizationKnowledgeToContext(context);
     }
 
-    const aiContext = buildAIContext(context, {
+    const isolateFromOpenRequest = shouldIsolateUnrelatedOpenRequestTurn(context);
+    const aiContextInput = isolateFromOpenRequest
+        ? Object.assign({}, context, { requestState: null })
+        : context;
+    const aiContext = buildAIContext(aiContextInput, {
         includeIdentity: recipe.includeIdentity,
         includeCapabilities: recipe.includeCapabilities,
         includeCurrentState: recipe.includeCurrentState,
@@ -104,7 +108,9 @@ async function generateGeneralMessageReply(processMessageContext) {
     const historyLimit = Number(historyRecipe.limit) > 0 ? Number(historyRecipe.limit) : 6;
     let conversationHistory = [];
     const historyEnabled =
-        historyRecipe.include === true && Boolean(conversationID);
+        historyRecipe.include === true &&
+        Boolean(conversationID) &&
+        !isolateFromOpenRequest;
 
     if (historyEnabled) {
         const historyContext = new ConversationHistoryContext(conversationID, {
@@ -178,6 +184,17 @@ async function generateGeneralMessageReply(processMessageContext) {
         message: message,
         error: null
     };
+}
+
+// Unrelated turns must not inherit a waiting request or its confirmation history.
+function shouldIsolateUnrelatedOpenRequestTurn(processMessageContext) {
+    const context = processMessageContext || {};
+    const requestState = context.requestState || {};
+
+    return Boolean(
+        requestState.pendingAction &&
+        context.openRequestReplyType === 'unrelated'
+    );
 }
 
 //Function A2: Search + load org knowledge onto process context (facts only)
@@ -326,5 +343,6 @@ function logConversationHistory(conversationHistory, historyLimit) {
 module.exports = {
     generateGeneralMessageReply,
     attachOrganizationKnowledgeToContext,
-    buildInternalOrganizationKnowledgeMessage
+    buildInternalOrganizationKnowledgeMessage,
+    shouldIsolateUnrelatedOpenRequestTurn
 };

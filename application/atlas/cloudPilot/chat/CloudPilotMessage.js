@@ -48,7 +48,9 @@ async function prepareRequestMessageReply(payload, chatType) {
             templateMessage
         );
 
-    if (requestMessageReplyContext) {
+    const keepDesignedFixChooser = templateMessage.includes('[[cloudpilot:fix-options]]');
+
+    if (requestMessageReplyContext && !keepDesignedFixChooser) {
         const presented = await CloudPilotIntelligence.generateRequestMessageReply(
             requestMessageReplyContext
         );

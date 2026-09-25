@@ -80,12 +80,8 @@ function buildReadyReviewMessage(options) {
     message +=
         '\n\n' +
         'CloudPilot will only create the instance after you approve the action.\n\n' +
-        'How would you like to create it?\n\n' +
-        '1. Instructions\n' +
-        '2. CLI Commands\n' +
-        '3. Pull Request (not available for create yet)\n' +
-        '4. Cloud Pilot Does It\n\n' +
-        'For create, choose Instructions, CLI, or Cloud Pilot Does It.';
+        'I can fix this a few different ways. How would you like to handle it?\n\n' +
+        '[[cloudpilot:fix-options]]';
 
     if (requestNamePrompt) {
         message += '\n\n' + requestNamePrompt;

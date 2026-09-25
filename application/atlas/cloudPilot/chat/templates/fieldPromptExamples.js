@@ -11,6 +11,7 @@ const FIELD_FORMAT_EXAMPLES = {
     primary_instance_id: 'i-0abc123',
     secondary_instance_id: 'i-0xyz987',
     instance_id: 'i-0abc123',
+    bucket_name: 'kite-assets',
     name: 'my-app-server',
     instance_type: 't3.micro',
     tag_key: 'CloudPilot-Test',
@@ -23,8 +24,8 @@ const REQUEST_NAME_EXAMPLES_BY_ACTION = {
     create_ec2: 'updating kite S3',
     delete_ec2: 'removing demo instance',
     update_ec2_tag: 'update CloudPilot-Test tag',
-    scan_ec2: 'Kite EC2 scan',
-    scan_s3: 'updating kite S3',
+    scan_ec2: 'Production EC2 Scan',
+    scan_s3: 'Production S3 Scan',
     inventory_aws: 'Kite inventory'
 };
 
@@ -69,6 +70,19 @@ function buildMissingFieldPromptLines(missingFields, actionDefinition, exampleCo
 
         if (override && String(override).includes(':')) {
             lines.push(String(override).trim());
+            continue;
+        }
+
+        if (
+            fieldName === 'request_name' &&
+            actionDefinition &&
+            actionDefinition.requestType === 'scan'
+        ) {
+            const example = resolveFieldExample(fieldName, actionDefinition, exampleContext);
+            lines.push(
+                'What would you like to name this scan?\n\n' +
+                    formatFieldPromptLine(fieldName, example)
+            );
             continue;
         }
 

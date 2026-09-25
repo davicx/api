@@ -36,12 +36,22 @@ async function applyDecision(decision, context) {
     const conversationID = context.conversationID;
     const targetRequest = decision.request || null;
 
-    if (decision.closeRequest === true) {
-        return buildSkipOutcome(requestState, 'finish_cancel_deferred_d2');
-    }
+    if (
+        decision.closeRequest === true ||
+        (decision.response && decision.response.type === RESPONSE_TYPE.REQUEST_CANCELLED)
+    ) {
+        if (requestState.workflowId) {
+            await Request.cancelAction(requestState.workflowId);
+        }
 
-    if (decision.response && decision.response.type === RESPONSE_TYPE.REQUEST_CANCELLED) {
-        return buildSkipOutcome(requestState, 'finish_cancel_deferred_d2');
+        return {
+            success: true,
+            action: 'cancelled',
+            reason: 'cancelled_by_user',
+            requestID: requestState.workflowId || null,
+            request: RequestStateFunctions.emptyActionState(),
+            error: null
+        };
     }
 
     if (decision.response && decision.response.type === RESPONSE_TYPE.IMMEDIATE_EXECUTION) {
@@ -333,8 +343,8 @@ function buildDbUpdatesFromTargetRequest(targetRequest) {
         updates.status = targetRequest.status;
     }
 
-    if (targetRequest.executionMode != null && targetRequest.executionMode !== '') {
-        updates.execution_mode = targetRequest.executionMode;
+    if (Object.prototype.hasOwnProperty.call(targetRequest, 'executionMode')) {
+        updates.execution_mode = targetRequest.executionMode || null;
     }
 
     return updates;

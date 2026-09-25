@@ -43,6 +43,7 @@ const messages = require('./application/atlas/routes/messageRoutes.js');
 const todos = require('./application/routes/todoRoutes.js');
 const instructions = require('./application/atlas/routes/instructionRoutes.js');
 const aiUsage = require('./application/atlas/routes/aiUsageRoutes.js');
+const scans = require('./application/atlas/routes/scanRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');
 const openAI = require('./application/routes/openAI/openAIRoutes.js');
 
@@ -62,6 +63,7 @@ app.use(messages);
 app.use(todos);
 app.use(instructions);
 app.use(aiUsage);
+app.use(scans);
 app.use(conversations);
 app.use(openAI);
 

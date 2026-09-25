@@ -38,7 +38,15 @@ const OUTCOME_MESSAGES = {
     missing_tag_value:
         'Send the tag value:\ntag_value: "B"',
     execution_failed:
-        'That action did not complete. Please check your inputs and try again.'
+        'That action did not complete. Please check your inputs and try again.',
+    missing_bucket_name:
+        'Send the bucket name:\nbucket_name: "kite-assets"',
+    versioning_read_failed:
+        'CloudPilot could not read the current versioning state for {bucket_name}. {detail}',
+    versioning_not_verified:
+        'CloudPilot could not verify that versioning is enabled for {bucket_name}. {detail}',
+    aws_put_bucket_versioning_failed:
+        'CloudPilot could not enable versioning for {bucket_name}. {detail}'
 };
 
 const DEFAULT_EXECUTION_FAILED = {
@@ -47,7 +55,8 @@ const DEFAULT_EXECUTION_FAILED = {
     create_ec2: 'I could not create the EC2 instance.',
     update_ec2_tag: 'I could not update that EC2 tag.',
     pause_ec2: 'I could not pause the EC2 instance.',
-    resume_ec2: 'I could not resume the EC2 instance.'
+    resume_ec2: 'I could not resume the EC2 instance.',
+    enable_s3_versioning: 'I could not enable S3 versioning.'
 };
 
 function applyOutcomeTemplate(template, context) {
@@ -62,12 +71,15 @@ function applyOutcomeTemplate(template, context) {
         context && context.detail
             ? String(context.detail)
             : 'Please try again in a moment.';
+    const bucketName =
+        context && context.bucket_name ? String(context.bucket_name) : 'that bucket';
 
     return String(template)
         .replace(/\{region\}/g, region)
         .replace(/\{instance_id\}/g, instanceId)
         .replace(/\{primary_instance_id\}/g, primaryInstanceId)
         .replace(/\{secondary_instance_id\}/g, secondaryInstanceId)
+        .replace(/\{bucket_name\}/g, bucketName)
         .replace(/\{detail\}/g, detail);
 }
 
@@ -79,6 +91,7 @@ function buildActionOutcomeContext(collected, atlasResponseRaw) {
             collected && collected.primary_instance_id ? String(collected.primary_instance_id).trim() : '',
         secondary_instance_id:
             collected && collected.secondary_instance_id ? String(collected.secondary_instance_id).trim() : '',
+        bucket_name: collected && collected.bucket_name ? String(collected.bucket_name).trim() : '',
         detail: atlasResponseRaw && atlasResponseRaw.message ? String(atlasResponseRaw.message) : ''
     };
 }

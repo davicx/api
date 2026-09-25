@@ -2,6 +2,7 @@ const actionMap = require('../../masterCloudPilotCapabilities');
 const RequestFunctions = require('../../requests/functions/requestFunctions');
 const HistoryFunctions = require('../../history/functions/historyFunctions');
 const UndoFunctions = require('../../history/functions/undoFunctions');
+const ScanSnapshotService = require('../../scans/persistence/ScanSnapshotService');
 const AutomaticStrategy = require('../../executionModes/automatic/AutomaticLogic');
 const { RESPONSE_TYPE } = require('../../requests/decisionTypes');
 const MasterLogging = require('../../logging/masterLogging');
@@ -158,11 +159,45 @@ async function executeRequest(decision, context) {
             orchestrationContext: context
         });
 
+        const processContext = context.context || {};
+        let scanSaveOutcome;
+        try {
+            scanSaveOutcome = await ScanSnapshotService.saveCompletedScan({
+                actionType: actionType,
+                atlasResponse: executionResult.atlasResponse || null,
+                conversationId: context.conversationID,
+                requestId: workflowId || null,
+                executedByUser: processContext.requestedByUserName || '',
+                organization: processContext.masterSite || 'Cloud Pilot',
+                collected: requestState.collected || {}
+            });
+        } catch (scanSaveError) {
+            scanSaveOutcome = {
+                success: false,
+                skipped: false,
+                scanSnapshotId: null,
+                errors: [scanSaveError]
+            };
+        }
+
+        if (!scanSaveOutcome.success && scanSaveOutcome.skipped !== true) {
+            console.error('Scan completed but snapshot persistence failed', {
+                conversationId: context.conversationID,
+                requestId: workflowId || null,
+                errors: scanSaveOutcome.errors
+            });
+        }
+
         return buildExecutionOutcome({
             success: true,
             cloudPilotMessage: cloudPilotMessage,
             atlasResponse: executionResult.atlasResponse || null,
             request: finishOutcome ? finishOutcome.request : null,
+            scanSnapshotId: scanSaveOutcome.scanSnapshotId || null,
+            snapshotSaved:
+                scanSaveOutcome.skipped === true
+                    ? null
+                    : Boolean(scanSaveOutcome.success),
             error: null
         });
     }
@@ -282,6 +317,9 @@ function buildExecutionOutcome(options) {
         cloudPilotMessage: options.cloudPilotMessage || '',
         atlasResponse: options.atlasResponse || null,
         request: options.request || null,
+        scanSnapshotId: options.scanSnapshotId || null,
+        snapshotSaved:
+            options.snapshotSaved == null ? null : Boolean(options.snapshotSaved),
         error: options.error || null
     };
 }

@@ -185,7 +185,7 @@ Can reach general chat with an open request when understanding has no actionable
 - Confirm/cancel/mode phrases → advance/close request
 - Different new action → replace open request
 - `ec2_inventory` / `s3_inventory` questions → **new scan request** (can replace open)
-- `inventory_aws` / `show_billing` while open non-terminal → **blocked**
+- `inventory_aws` / `show_billing` while open non-final → **blocked**
 - Soft “yes” while waiting confirmation → may start execution
 
 ### 5. Where understanding checks signals
@@ -217,7 +217,7 @@ Interpretation of those signals is in **`decideNextStep`**, not understand.
 
 **Critical gap vs target:** “How many S3 buckets?” is treated like starting Scan S3 work, not a quiet read capability. Read results are **not** folded into a shared turn-facts context for later interpretation — they become that turn’s reply.
 
-Immediate reads (`inventory_aws`, `show_billing`) are **suppressed** when a non-terminal open request exists.
+Immediate reads (`inventory_aws`, `show_billing`) are **suppressed** when a non-final open request exists.
 
 ### 8. How Current State is built
 
@@ -294,7 +294,7 @@ TODAY:   load → understand signals → decide binary chatType → General OR R
 3. **Value merge** treating incidental fields as request updates  
 4. **Confirm/cancel** phrase matching without a dedicated affect/readiness gate  
 5. **Inventory questions** → `buildNewRequestDecision` → close/replace open request  
-6. **Immediate reads** blocked while a non-terminal open request exists  
+6. **Immediate reads** blocked while a non-final open request exists
 7. **New different action** always replaces the open request (one-open policy)  
 
 ### 4. SINGLE smallest next implementation step

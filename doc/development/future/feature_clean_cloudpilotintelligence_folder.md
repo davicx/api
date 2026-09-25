@@ -1,6 +1,6 @@
 # Feature: Clean `cloudPilotIntelligence/` folder
 
-**Status:** Architecture ideas refining. **Do not code / do not add or rename folders yet.**
+**Status:** Future — deferred from current (2026-09-23). Architecture ideas only. **Do not code / do not add or rename folders yet.**
 
 Goal: make Intelligence a **service CloudPilot calls**, not a second application.
 

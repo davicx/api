@@ -27,6 +27,14 @@ function buildCurrentStateContext(processMessageContext) {
         openRequest: openRequest
     };
 
+    if (
+        hasOpenRequest &&
+        (context.openRequestReplyType === 'unrelated' ||
+            context.openRequestReplyType === 'about_open_request')
+    ) {
+        data.currentMessageRelation = context.openRequestReplyType;
+    }
+
     const createEc2Knowledge = slimCreateEc2Knowledge(requestState);
 
     if (createEc2Knowledge) {

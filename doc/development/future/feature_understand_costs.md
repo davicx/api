@@ -1,6 +1,6 @@
 # Feature: Understand AWS Costs
 
-**Status:** Future plan — not started  
+**Status:** Future — deferred from current (2026-09-23). Not started.  
 **Priority:** High-value roadmap candidate; safe to defer  
 **Primary capability:** Extend existing `show_billing`  
 **MVP data source:** AWS Cost Explorer `GetCostAndUsage`  

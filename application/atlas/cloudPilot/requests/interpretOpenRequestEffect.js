@@ -144,6 +144,13 @@ function pickApplicableValues(state, values) {
             out[fieldName] = fieldValue;
             continue;
         }
+        if (
+            fieldName === 'name' &&
+            (missing.includes('request_name') || requiredFields.includes('request_name'))
+        ) {
+            out.request_name = fieldValue;
+            continue;
+        }
         if (missing.includes(fieldName) || requiredFields.includes(fieldName)) {
             out[fieldName] = fieldValue;
         }
@@ -164,10 +171,21 @@ function looksLikeMixedMessage(message, applicableValues) {
 
     let rest = String(message || '');
     const values = applicableValues && typeof applicableValues === 'object' ? applicableValues : {};
+    const valueNames = Object.keys(values);
+
+    for (let i = 0; i < valueNames.length; i++) {
+        const fieldValue = values[valueNames[i]];
+
+        if (fieldValue == null || fieldValue === '') {
+            continue;
+        }
+
+        const escaped = String(fieldValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        rest = rest.replace(new RegExp(escaped, 'ig'), ' ');
+    }
 
     if (values.region) {
         const region = String(values.region);
-        rest = rest.replace(new RegExp(region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig'), ' ');
         // "west 2" / "west-2" after extracting us-west-2
         const regionTail = region.replace(/^us-/i, '').replace(/-/g, '[\\s-]*');
         if (regionTail) {
@@ -177,7 +195,7 @@ function looksLikeMixedMessage(message, applicableValues) {
 
     rest = rest
         .replace(
-            /\b(use|using|region|in|for|me|please|set|to|my|the|a|an|yes|yeah|yep|ok|okay|sure|lets|let|go|with|that|works|sounds|good|fine|proceed)\b/gi,
+            /\b(use|using|region|in|for|me|please|set|to|my|the|a|an|yes|yeah|yep|ok|okay|sure|lets|let|go|with|that|works|sounds|good|fine|proceed|scan|name|call|it)\b/gi,
             ' '
         )
         .replace(/[^\w\s]/g, ' ')

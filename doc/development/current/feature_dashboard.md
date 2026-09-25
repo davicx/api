@@ -61,6 +61,12 @@ Individual Finding      ← Level 3
 URL structure mirrors the UI hierarchy. Encode bucket names in the path
 (`encodeURIComponent`).
 
+**Update (2026-09-22):** For the first real-data Atlas ship, see
+[feature_dashboard_real_data](./feature_dashboard_real_data.md) — **one
+`DashboardPage`** on `/dashboard` with path-in-state for Buckets → Bucket
+(URL sync optional later). Hierarchy and design below still apply; the React
+tree does not need three separate page apps.
+
 ### Breadcrumbs (locked)
 
 | Page | Breadcrumb |

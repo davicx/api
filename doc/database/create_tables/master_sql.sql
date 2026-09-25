@@ -13,6 +13,7 @@
 --   5. cloudpilot_organization_knowledge (+ tags) — why a resource exists (org facts)
 --   6. cloud_pilot_images   — instruction image catalog (relative paths)
 --   7. cloud_service_pricing — curated unit rates (MVP: EC2 hourly)
+--   8. cloudpilot_scan_snapshots — persisted completed S3/EC2 scan results
 --
 -- Docs: doc/database/database.md
 --       doc/development/architecture/development_undo_feature.md (history)
@@ -44,6 +45,7 @@
 --   SELECT * FROM cloudpilot_organization_knowledge_tags;
 --   SELECT * FROM cloud_pilot_images;
 --   SELECT * FROM cloud_service_pricing;
+--   SELECT * FROM cloudpilot_scan_snapshots;
 -- =============================================================================
 
 
@@ -298,7 +300,8 @@ INSERT INTO cloudpilot_actions (action_type, display_name, requires_execution) V
     ('delete_ec2', 'Delete EC2', 0),
     ('update_ec2_tag', 'Update EC2 Tag', 0),
     ('pause_ec2', 'Pause EC2', 0),
-    ('resume_ec2', 'Resume EC2', 0)
+    ('resume_ec2', 'Resume EC2', 0),
+    ('enable_s3_versioning', 'Enable S3 Versioning', 0)
 AS new_action
 ON DUPLICATE KEY UPDATE
     display_name = new_action.display_name,
@@ -575,3 +578,36 @@ ON DUPLICATE KEY UPDATE
     unit = new_row.unit,
     currency = new_row.currency,
     updated_at = CURRENT_TIMESTAMP;
+
+
+-- -----------------------------------------------------------------------------
+-- 8. cloudpilot_scan_snapshots
+-- -----------------------------------------------------------------------------
+-- One immutable formatted result per successful explicit S3/EC2 scan.
+
+CREATE TABLE IF NOT EXISTS cloudpilot_scan_snapshots (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    organization VARCHAR(255) NOT NULL DEFAULT 'Cloud Pilot',
+    group_id BIGINT NOT NULL,
+    conversation_id BIGINT NOT NULL,
+    request_id BIGINT UNSIGNED NULL,
+    cloudpilot_message_id BIGINT NULL,
+    executed_by_user VARCHAR(255) NOT NULL,
+    scan_name VARCHAR(255) NOT NULL,
+    action_type VARCHAR(100) NOT NULL,
+    service VARCHAR(20) NOT NULL,
+    region VARCHAR(50) NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'completed',
+    resources_scanned INT UNSIGNED NOT NULL DEFAULT 0,
+    finding_count INT UNSIGNED NOT NULL DEFAULT 0,
+    schema_version TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    payload JSON NOT NULL,
+    completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uk_scan_request (request_id),
+    INDEX idx_scans_conversation_completed (conversation_id, completed_at),
+    INDEX idx_scans_group_completed (group_id, completed_at),
+    INDEX idx_scans_user_completed (executed_by_user, completed_at),
+    INDEX idx_scans_message (cloudpilot_message_id)
+);

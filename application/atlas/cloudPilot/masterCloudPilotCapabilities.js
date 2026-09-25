@@ -6,6 +6,7 @@ const deleteEC2Handler = require('./actions/deleteEC2/deleteEC2Handler');
 const pauseEC2Handler = require('./actions/pauseEC2/pauseEC2Handler');
 const resumeEC2Handler = require('./actions/resumeEC2/resumeEC2Handler');
 const updateEC2TagHandler = require('./actions/updateEC2Tag/updateEC2TagHandler');
+const enableS3VersioningHandler = require('./actions/enableS3Versioning/enableS3VersioningHandler');
 const inventoryAWSHandler = require('./scans/inventory/inventoryAWSHandler');
 const billingAWSHandler = require('./scans/billing/billingAWSHandler');
 const showAiUsageHandler = require('./scans/aiUsage/showAiUsageHandler');
@@ -45,7 +46,7 @@ const capabilityStatus = Object.freeze({
     scan_ec2: CAPABILITY_STATUS.LIVE,
 
     // EC2 — Manage
-    create_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    create_ec2: CAPABILITY_STATUS.LIVE,
     pause_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
     resume_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
     delete_ec2: CAPABILITY_STATUS.COMING_SOON,
@@ -55,6 +56,7 @@ const capabilityStatus = Object.freeze({
     // S3 — Explore
     get_s3_inventory: CAPABILITY_STATUS.LIVE,
     scan_s3: CAPABILITY_STATUS.LIVE,
+    enable_s3_versioning: CAPABILITY_STATUS.LIVE,
 
     // CloudPilot
     show_ai_usage: CAPABILITY_STATUS.LIVE
@@ -95,6 +97,7 @@ Explore AWS
 - scan_ec2: Explicit EC2 scan workflow (scan / confirmation).
   (Regional. Reuses scanEC2Handler.)
 - scan_s3: Explicit S3 scan workflow (scan / confirmation).
+- enable_s3_versioning: Enable versioning on one S3 bucket (change / confirmation).
   (Account-wide bucket inventory. Reuses scanS3Handler.)
 
 CloudPilot
@@ -440,7 +443,8 @@ const actionMap = {
 
         //Fields Required Before Ready
         requiredFields: [
-            'region'
+            'region',
+            'request_name'
         ],
 
         //Optional Defaults
@@ -552,7 +556,8 @@ const actionMap = {
 
         //Fields Required Before Ready
         requiredFields: [
-            'region'
+            'region',
+            'request_name'
         ],
 
         //Optional Defaults
@@ -660,6 +665,12 @@ const actionMap = {
         requiresExecution: false,
         requestType: 'change',
         permission: 'confirmation',
+        costImpact: {
+            classification: 'unknown',
+            summary:
+                'Starting one instance and stopping another can change compute cost, depending on the instance types. CloudPilot cannot price that change yet.',
+            estimateAvailable: false
+        },
 
         //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
@@ -721,6 +732,11 @@ const actionMap = {
         requiresExecution: false,
         requestType: 'change',
         permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_increase',
+            summary: 'A new EC2 instance adds compute charges for as long as it runs.',
+            estimateAvailable: true
+        },
 
         //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
@@ -789,6 +805,12 @@ const actionMap = {
         requiresExecution: false,
         requestType: 'change',
         permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_decrease',
+            summary:
+                'Terminating an instance stops its compute charges. Other resources, such as storage, can continue to cost money.',
+            estimateAvailable: false
+        },
 
         //Change strategies (destructive actions only; scan/inventory skip this)
         executionModes: [
@@ -849,6 +871,11 @@ const actionMap = {
         requiresExecution: false,
         requestType: 'change',
         permission: 'confirmation',
+        costImpact: {
+            classification: 'none',
+            summary: 'Changing an EC2 tag does not by itself change the instance price.',
+            estimateAvailable: false
+        },
 
         //Change strategies (destructive actions only)
         executionModes: [
@@ -926,6 +953,12 @@ const actionMap = {
         requiresExecution: false,
         requestType: 'change',
         permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_decrease',
+            summary:
+                'Stopping an instance stops its compute charges while it is stopped. Storage and other attached resources can continue to cost money.',
+            estimateAvailable: false
+        },
 
         //Change strategies — no PR for pause/resume
         executionModes: [
@@ -1018,6 +1051,11 @@ const actionMap = {
         requiresExecution: false,
         requestType: 'change',
         permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_increase',
+            summary: 'Starting an instance resumes its compute charges.',
+            estimateAvailable: false
+        },
 
         //Change strategies — no PR for pause/resume
         executionModes: [
@@ -1089,6 +1127,63 @@ const actionMap = {
             executing: 'Resuming EC2 instance.',
             success: 'EC2 instance resumed.',
             failed: 'EC2 resume failed.'
+        }
+    },
+
+    //SERVICE: S3
+    //Action: Enable bucket versioning
+    enable_s3_versioning: {
+        type: 'enable_s3_versioning',
+        actionLabel: 'Enable S3 Versioning',
+
+        status: getCapabilityStatus('enable_s3_versioning'),
+        allowed: isCapabilityLive('enable_s3_versioning'),
+
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_increase',
+            summary:
+                'Enabling versioning has no separate activation fee, but retained object versions can increase S3 storage costs.',
+            estimateAvailable: false
+        },
+
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+            return (
+                normalized.includes('enable versioning') ||
+                normalized.includes('enable bucket versioning')
+            );
+        },
+
+        requiredFields: [
+            'bucket_name'
+        ],
+
+        verifyResource: {
+            resourceType: 's3_versioning',
+            idField: 'bucket_name'
+        },
+
+        defaults: {},
+
+        executionFunction: enableS3VersioningHandler,
+
+        capability: {
+            section: 'Manage S3',
+            description: 'Enable versioning for one S3 bucket'
+        },
+
+        messages: {
+            started: 'Preparing to enable S3 versioning.',
+            missingFields: {},
+            ready: 'Enable versioning for this bucket?',
+            executing: 'Enabling S3 versioning.',
+            success: 'S3 versioning is enabled.',
+            failed: 'S3 versioning could not be enabled.'
         }
     }
 };
@@ -1312,11 +1407,68 @@ function validateCapabilityStatusCatalog(
     }
 }
 
+const COST_CLASSIFICATIONS = new Set([
+    'possible_increase',
+    'possible_decrease',
+    'increase',
+    'decrease',
+    'none',
+    'unknown'
+]);
+
+function validateChangeCostImpact(actionDefinitions) {
+    const definitions = actionDefinitions && typeof actionDefinitions === 'object'
+        ? actionDefinitions
+        : {};
+    const names = Object.keys(definitions);
+
+    for (let i = 0; i < names.length; i++) {
+        const capabilityName = names[i];
+        const actionDefinition = definitions[capabilityName];
+
+        if (!actionDefinition || actionDefinition.requestType !== 'change') {
+            continue;
+        }
+
+        const costImpact = actionDefinition.costImpact;
+
+        if (!costImpact || typeof costImpact !== 'object') {
+            throw new Error(
+                'Change capability "' + capabilityName + '" is missing costImpact'
+            );
+        }
+
+        if (!COST_CLASSIFICATIONS.has(costImpact.classification)) {
+            throw new Error(
+                'Change capability "' +
+                    capabilityName +
+                    '" has an invalid cost classification'
+            );
+        }
+
+        if (!String(costImpact.summary || '').trim()) {
+            throw new Error(
+                'Change capability "' + capabilityName + '" is missing a cost summary'
+            );
+        }
+
+        if (typeof costImpact.estimateAvailable !== 'boolean') {
+            throw new Error(
+                'Change capability "' +
+                    capabilityName +
+                    '" must say whether a cost estimate is available'
+            );
+        }
+    }
+}
+
 validateCapabilityStatusCatalog(
     Object.keys(actionMap),
     capabilityStatus,
     CAPABILITY_STATUS
 );
+
+validateChangeCostImpact(actionMap);
 
 module.exports = actionMap;
 
@@ -1337,6 +1489,11 @@ Object.defineProperty(module.exports, 'capabilityAllowsImmediateFulfill', {
 
 Object.defineProperty(module.exports, 'validateCapabilityStatusCatalog', {
     value: validateCapabilityStatusCatalog,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'validateChangeCostImpact', {
+    value: validateChangeCostImpact,
     enumerable: false
 });
 

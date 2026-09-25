@@ -110,7 +110,7 @@
 
 - [x] Durable request rows in MySQL + `Request.js`
 - [x] `display_name` from registry `actionLabel`
-- [x] Statuses: `waiting_on_fields`, `waiting_on_execution_mode`, `waiting_on_confirmation`, `running`, terminal
+- [x] Statuses: `waiting_on_fields`, `waiting_on_execution_mode`, `waiting_on_confirmation`, `running`, final
 - [x] MySQL default (`CLOUDPILOT_STATE_BACKEND=mysql`)
 - [x] Focused request tracking (P2C)
 - [x] England-rule copy in request templates (P3A)

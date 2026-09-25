@@ -13,7 +13,13 @@ const EXECUTION_MODES = {
     '1': 'instructions',
     '2': 'cli',
     '3': 'pr',
-    '4': 'automatic'
+    '4': 'automatic',
+    'instructions': 'instructions',
+    'cli': 'cli',
+    'cli command': 'cli',
+    'pull request': 'pr',
+    'pr': 'pr',
+    'automatic': 'automatic'
 };
 
 // Exact whole-message confirms (existing path — reply = 'confirm')
@@ -46,7 +52,19 @@ const DECLINE_MESSAGES = [
     'no thank you'
 ];
 
-const CANCEL_PHRASES = ['cancel', 'stop', 'never mind', 'nevermind', 'forget it', 'abort', 'quit'];
+const CANCEL_PHRASES = [
+    'cancel',
+    'stop',
+    'never mind',
+    'nevermind',
+    'forget it',
+    'abort',
+    'quit',
+    'close this request',
+    'close the request',
+    'close request',
+    'close it'
+];
 
 const SearchLogs = require('./helpers/searchLogs');
 

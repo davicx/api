@@ -38,6 +38,10 @@ async function getRequestMessageReply(payload) {
         return cloudPilotRespondConfirmationUnclear(payload);
     }
 
+    if (payload.actionEvent === 'field_unclear') {
+        return cloudPilotRespondFieldUnclear(payload);
+    }
+
     if (payload.actionEvent === 'execution_requested') {
         return await AtlasExecution.startNewAtlasExecution(payload);
     }
@@ -142,12 +146,8 @@ async function cloudPilotRespondAwaitingExecutionMode(payload) {
     const requestNamePrompt = buildOptionalRequestNamePrompt(actionDefinition, collectedFields);
 
     let message =
-        'Everything is ready.\n\n' +
-        'How would you like me to perform this action?\n\n' +
-        '1. Instructions\n' +
-        '2. CLI Commands\n' +
-        '3. Pull Request\n' +
-        '4. Cloud Pilot Does It';
+        'I can fix this a few different ways. How would you like to handle it?\n\n' +
+        '[[cloudpilot:fix-options]]';
 
     if (actionDefinition && actionDefinition.type === 'create_ec2') {
         const estimatedComputeCost = await buildCreateEc2EstimatedCostSpeak(collectedFields);
@@ -188,6 +188,8 @@ async function cloudPilotRespondAwaitingConfirmation(payload) {
             executionMode: executionMode,
             estimatedComputeCost: estimatedComputeCost
         });
+    } else if (actionDefinition && actionDefinition.type === 'enable_s3_versioning') {
+        message = buildEnableS3VersioningConfirmMessage(collectedFields);
     } else if (actionDefinition && actionDefinition.type === 'pause_ec2') {
         message = await buildPauseEc2ConfirmMessage({
             readyMessage: readyMessage,
@@ -232,25 +234,58 @@ function cloudPilotRespondConfirmationUnclear(payload) {
         ? String(actionDefinition.actionLabel).trim()
         : '';
 
-    let message =
-        'Please confirm whether you want me to continue with this request, or cancel it.';
+    let requestedWork = 'continue with this request';
+    const scanLabel = actionLabel.match(/^scan\s+(.+)$/i);
 
-    if (description) {
-        message =
-            'Please confirm whether you want me to ' +
-            description.charAt(0).toLowerCase() +
-            description.slice(1) +
-            ', or cancel the request.';
+    if (scanLabel && scanLabel[1]) {
+        requestedWork = 'run the ' + scanLabel[1] + ' scan';
+    } else if (description) {
+        requestedWork =
+            description.charAt(0).toLowerCase() + description.slice(1);
     } else if (actionLabel) {
-        message =
-            'Please confirm whether you want me to continue with ' +
-            actionLabel +
-            ', or cancel the request.';
+        requestedWork = 'continue with ' + actionLabel;
     }
 
     return {
         success: true,
-        message: message,
+        message: 'Did you want me to ' + requestedWork + '?',
+        atlasResponse: null,
+        error: null
+    };
+}
+
+function cloudPilotRespondFieldUnclear(payload) {
+    const fieldName =
+        payload.unclearField ||
+        (payload.decisionResponse && payload.decisionResponse.field) ||
+        '';
+    const normalized = String(fieldName || '').trim();
+
+    if (normalized === 'request_name') {
+        return {
+            success: true,
+            message:
+                'I wasn\'t sure what to use for the scan name. What would you like to name this scan?',
+            atlasResponse: null,
+            error: null
+        };
+    }
+
+    if (normalized === 'region') {
+        return {
+            success: true,
+            message:
+                'I wasn\'t sure which region you meant. Which AWS region should I use?',
+            atlasResponse: null,
+            error: null
+        };
+    }
+
+    const label = normalized ? normalized.replace(/_/g, ' ') : 'that value';
+
+    return {
+        success: true,
+        message: 'I wasn\'t sure about the ' + label + '. Could you clarify?',
         atlasResponse: null,
         error: null
     };
@@ -376,15 +411,15 @@ function buildCollectedFieldsConfirmSummary(collectedFields) {
     const collected = collectedFields && typeof collectedFields === 'object' ? collectedFields : {};
     const fieldLabels = {
         region: 'Region',
-        request_name: 'Name',
+        request_name: 'Scan name',
         instance_id: 'Instance ID',
         instance_type: 'Instance type',
         primary_instance_id: 'Primary instance ID',
         secondary_instance_id: 'Secondary instance ID'
     };
     const preferredOrder = [
-        'region',
         'request_name',
+        'region',
         'instance_id',
         'instance_type',
         'primary_instance_id',
@@ -474,6 +509,37 @@ async function buildPauseEc2SavingsSpeak(collectedFields) {
     const savings = EstimatePricingFunctions.estimatePauseSavings(estimate);
 
     return EstimatePricingFunctions.formatPauseSavingsSpeakLine(savings);
+}
+
+function buildEnableS3VersioningConfirmMessage(collectedFields) {
+    const collected = collectedFields || {};
+    const bucketName = String(collected.bucket_name || '').trim() || 'this bucket';
+    const summary = String(collected.cost_impact_summary || '').trim() ||
+        'Enabling versioning has no separate activation fee, but retained object versions can increase S3 storage costs.';
+
+    return (
+        'Enable versioning for ' + bucketName + '?\n\n' +
+        'Available method: CloudPilot automatic fix\n\n' +
+        'Current: ' + versioningStateLabel(collected.versioning_status_before) + '\n' +
+        'Proposed: Enabled\n\n' +
+        'This helps retain earlier versions when objects are overwritten or deleted after versioning is enabled.\n\n' +
+        'Cost impact: Possible increase. ' + summary + '\n\n' +
+        'Existing objects are not copied by enabling versioning. If the bucket has never been versioned, it cannot later return to its never-versioned state; versioning can be suspended. Existing expiration behavior may also need review because noncurrent versions can remain stored.\n\n' +
+        'Confirm or cancel?'
+    );
+}
+
+function versioningStateLabel(state) {
+    if (state === 'suspended') {
+        return 'Suspended';
+    }
+    if (state === 'never_versioned') {
+        return 'Never versioned';
+    }
+    if (state === 'enabled') {
+        return 'Enabled';
+    }
+    return 'Unknown';
 }
 
 async function buildPauseEc2ConfirmMessage(options) {

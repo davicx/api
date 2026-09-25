@@ -1,5 +1,6 @@
 const actionMap = require('../../masterCloudPilotCapabilities');
 const ChangeEC2Functions = require('../../../providers/atlas/ec2/changeEC2');
+const EnableS3Versioning = require('../../../providers/atlas/s3/enableS3Versioning');
 const Request = require('../classes/Request');
 const RequestFunctions = require('./requestFunctions');
 const RequestStateFunctions = require('./requestLoadFunctions');
@@ -52,6 +53,10 @@ async function runVerifyResourcePreflight(decision, requestState) {
 
     if (!actionDefinition || !actionDefinition.verifyResource) {
         return outcome;
+    }
+
+    if (actionDefinition.verifyResource.resourceType === 's3_versioning') {
+        return applyS3VersioningPreflight(decision, requestState, actionDefinition);
     }
 
     const verification = await verifyActionResource(
@@ -254,6 +259,109 @@ async function stashVerifiedInstanceType(requestState, verification) {
     }
 
     return RequestStateFunctions.mapActionToState(updateOutcome.action);
+}
+
+async function applyS3VersioningPreflight(decision, requestState, actionDefinition) {
+    const outcome = {
+        decision: decision,
+        requestState: requestState,
+        blocked: false,
+        verification: null
+    };
+    const bucketName = String(
+        (requestState.collected && requestState.collected.bucket_name) || ''
+    ).trim();
+
+    if (!bucketName) {
+        return outcome;
+    }
+
+    const atlasResponse = await EnableS3Versioning.readS3Versioning({
+        bucket_name: bucketName
+    });
+    const data = atlasResponse && atlasResponse.data ? atlasResponse.data : null;
+    const current = data ? String(data.versioning_status || '').trim() : '';
+    const readable = current === 'enabled' || current === 'suspended' || current === 'never_versioned';
+
+    if (!atlasResponse || atlasResponse.success !== true || !readable) {
+        decision.response = {
+            type: RESPONSE_TYPE.RESOURCE_VERIFY_FAILED,
+            verifyResource: {
+                message:
+                    (atlasResponse && atlasResponse.message) ||
+                    'Could not read the current S3 versioning state.',
+                atlasResponse: atlasResponse || null
+            }
+        };
+        outcome.blocked = true;
+        outcome.verification = decision.response.verifyResource;
+
+        if (requestState.workflowId) {
+            await RequestFunctions.finishRequest(
+                requestState.workflowId,
+                ActionStatusFunctions.STATUS.FAILED,
+                'versioning_read_failed'
+            );
+        }
+
+        outcome.requestState = {
+            pendingAction: null,
+            status: null,
+            executionMode: null,
+            workflowId: null,
+            missing: [],
+            collected: {},
+            asked: {}
+        };
+        return outcome;
+    }
+
+    const costImpact = actionDefinition.costImpact || {};
+    const collected = Object.assign({}, requestState.collected || {}, {
+        versioning_status_before: current,
+        versioning_status_proposed: 'enabled',
+        cost_impact_classification: costImpact.classification || 'unknown',
+        cost_impact_summary: costImpact.summary || ''
+    });
+
+    if (requestState.workflowId) {
+        const updateOutcome = await Request.updateAction(requestState.workflowId, {
+            collected: collected
+        });
+
+        if (updateOutcome.success && updateOutcome.action) {
+            outcome.requestState = RequestStateFunctions.mapActionToState(updateOutcome.action);
+        } else {
+            outcome.requestState = Object.assign({}, requestState, { collected: collected });
+        }
+    }
+
+    if (current === 'enabled') {
+        if (requestState.workflowId) {
+            await RequestFunctions.finishRequest(
+                requestState.workflowId,
+                ActionStatusFunctions.STATUS.COMPLETED,
+                'already_enabled'
+            );
+        }
+
+        decision.response = {
+            type: RESPONSE_TYPE.VERSIONING_ALREADY_ENABLED,
+            bucketName: bucketName
+        };
+        outcome.blocked = true;
+        outcome.requestState = {
+            pendingAction: null,
+            status: ActionStatusFunctions.STATUS.COMPLETED,
+            executionMode: null,
+            workflowId: requestState.workflowId || null,
+            missing: [],
+            collected: collected,
+            asked: {}
+        };
+    }
+
+    return outcome;
 }
 
 module.exports = {

@@ -5,6 +5,7 @@ const CreateEc2HistoryBuilder = require('../historyBuilders/createEc2History');
 const Ec2HistoryBuilder = require('../historyBuilders/ec2History');
 const PauseEc2HistoryBuilder = require('../historyBuilders/pauseEc2History');
 const ResumeEc2HistoryBuilder = require('../historyBuilders/resumeEc2History');
+const EnableS3VersioningHistoryBuilder = require('../historyBuilders/enableS3VersioningHistory');
 const HistoryNavigatorAdapter = require('../historyNavigatorAdapter');
 const HistoryActionNameFunctions = require('./historyActionNameFunctions');
 
@@ -29,7 +30,8 @@ const HISTORY_BUILDERS = {
     create_ec2: CreateEc2HistoryBuilder.buildCreateEc2HistoryFields,
     update_ec2_tag: Ec2HistoryBuilder.buildUpdateEc2TagHistoryFields,
     pause_ec2: PauseEc2HistoryBuilder.buildPauseEc2HistoryFields,
-    resume_ec2: ResumeEc2HistoryBuilder.buildResumeEc2HistoryFields
+    resume_ec2: ResumeEc2HistoryBuilder.buildResumeEc2HistoryFields,
+    enable_s3_versioning: EnableS3VersioningHistoryBuilder.buildEnableS3VersioningHistoryFields
 };
 
 //Function A1: Build history fields and insert row when execution changed cloud resources (STEP 6B)
