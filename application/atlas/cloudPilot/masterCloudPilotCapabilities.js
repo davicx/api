@@ -47,7 +47,7 @@ const capabilityStatus = Object.freeze({
 
     // EC2 — Manage
     create_ec2: CAPABILITY_STATUS.LIVE,
-    pause_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    pause_ec2: CAPABILITY_STATUS.LIVE,
     resume_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
     delete_ec2: CAPABILITY_STATUS.COMING_SOON,
     toggle_ec2: CAPABILITY_STATUS.COMING_SOON,

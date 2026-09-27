@@ -38,6 +38,7 @@ const RESPONSE_TYPE = {
     VERSIONING_ALREADY_ENABLED: 'versioning_already_enabled',
     RESOURCE_SCAN_DECLINED: 'resource_scan_declined',
     CAPABILITY_NOT_AVAILABLE: 'capability_not_available',
+    EXECUTION_MODE_UNAVAILABLE: 'execution_mode_unavailable',
     EC2_COMPUTE_COST: 'ec2_compute_cost'
 };
 

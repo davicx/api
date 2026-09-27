@@ -69,6 +69,15 @@ async function scanEC2Handler(context) {
                 ? atlasEC2MessageBuilder.buildEC2InventoryMessage(atlasResponseFormatted)
                 : atlasEC2MessageBuilder.buildEC2ScanMessage(atlasResponseFormatted);
 
+        if (capabilityType === 'get_ec2_inventory') {
+            return {
+                success: true,
+                cloudPilotMessage: cloudPilotMessage,
+                error: null,
+                atlasResponse: null
+            };
+        }
+
         const navigatorResponse =
             atlasEC2ScanNavigatorAdapter.buildEC2ScanNavigatorResponse(
                 atlasResponseFormatted,

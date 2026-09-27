@@ -224,6 +224,18 @@ async function conversation(decision, context) {
         });
     }
 
+    if (responseType === RESPONSE_TYPE.EXECUTION_MODE_UNAVAILABLE) {
+        return CloudPilotMessage.prepareKnownMessageReply({
+            success: true,
+            cloudPilotMessage:
+                'That fix method is coming soon. Please try one of the other options.\n\n' +
+                '[[cloudpilot:fix-options]]',
+            chatType: decision.chatType,
+            atlasResponse: null,
+            error: null
+        });
+    }
+
     if (responseType === RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE) {
         const unavailableAction =
             decision.response && decision.response.action

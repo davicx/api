@@ -716,6 +716,14 @@ function buildFieldsMergedDecision(state, values) {
 // Mode 4 (automatic): persist execution_mode → waiting_on_confirmation → user confirms → STEP 6 handler → capability → Atlas.
 // Strategies 1–3 (instructions / cli / pr): STEP 7 → change/strategies/ (no STEP 6).
 // Request templates: conversation/CloudPilotMessage.js → templates/requestTemplates.js
+function executionModeIsSupported(actionDefinition, mode) {
+    const modes = actionDefinition && Array.isArray(actionDefinition.executionModes)
+        ? actionDefinition.executionModes
+        : [];
+
+    return modes.indexOf(mode) !== -1;
+}
+
 function handleExecutionModeSelection(state, mode) {
     const blocked = capabilityAvailabilityGate(state.pendingAction);
 
@@ -725,6 +733,16 @@ function handleExecutionModeSelection(state, mode) {
 
     const request = buildRequestFromState(state);
     const actionDefinition = actionMap[state.pendingAction];
+
+    // Four choices are always offered. executionModes is what this action can do.
+    if (!executionModeIsSupported(actionDefinition, mode)) {
+        request.executionMode = null;
+        request.status = ActionStatusFunctions.STATUS.WAITING_ON_EXECUTION_MODE;
+        request.ready = true;
+
+        return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_MODE_UNAVAILABLE);
+    }
+
     const requiresConfirmation = actionMap.capabilityRequiresConfirmation(actionDefinition);
 
     if (mode === 'automatic') {

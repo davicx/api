@@ -45,6 +45,15 @@ async function scanS3Handler(context) {
                 ? atlasS3MessageBuilder.buildS3InventoryMessage(atlasResponseFormatted)
                 : atlasS3MessageBuilder.buildS3ScanMessage(atlasResponseFormatted);
 
+        if (capabilityType === 'get_s3_inventory') {
+            return {
+                success: true,
+                cloudPilotMessage: cloudPilotMessage,
+                error: null,
+                atlasResponse: null
+            };
+        }
+
         const navigatorResponse =
             atlasS3ScanNavigatorAdapter.buildS3ScanNavigatorResponse(
                 atlasResponseFormatted,

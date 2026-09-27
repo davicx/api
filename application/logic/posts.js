@@ -39,6 +39,7 @@ FUNCTIONS B: All Functions Related to getting Posts
 	2) Function B2: Get all User Posts 
 	3) Function B3: Get Single Post by ID 
 	4) Function B4: Get All Posts
+	5) Function B5: Get Home Feed Posts (master_site = kite)
 
 FUNCTIONS C: All Functions Related to Post Actions
 	1) Function C1: Like a Post
@@ -791,6 +792,34 @@ async function getAllGroupPosts(req, res) {
 
 }
 
+//Function B5: Get Home Feed Posts (master_site = kite)
+//http://localhost:3003/posts/home
+async function getHomePosts(req, res) {
+	const currentUser = req.currentUser
+
+	var headerMessage = "HEADER: Get Home Feed Posts master_site kite"
+	Functions.addHeader(headerMessage)
+
+	var postsOutcome = await Post.getHomePosts("kite")
+	var postsRaw = postsOutcome.posts;
+
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
+	var postsLikes = await PostFunctions.addPostLikes(currentUser, postsComments)
+	var posts = await PostFunctions.addSignedURLPostsArray(postsLikes);
+
+	var postsResponse = {
+		data: posts,
+		message: "Need to add error and stuff in this always works!",
+		success: true,
+		statusCode: 200,
+		errors: [],
+		currentUser: currentUser
+	}
+
+	Functions.addFooter()
+	res.json(postsResponse)
+}
+
 //Route B2: Get Group Posts Pagination
 //http://localhost:3003/posts/group/72/page/1/
 async function getGroupPosts(req, res) {
@@ -1207,7 +1236,7 @@ async function editPost(req, res) {
 }
 
 
-module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
+module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getHomePosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
 
 
 

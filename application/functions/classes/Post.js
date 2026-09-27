@@ -566,6 +566,103 @@ class Post {
             } 
         })
     }
+
+    //Method B2b: Home feed — active posts for a master_site, newest first
+    static async getHomePosts(masterSite)  {
+        const connection = db.getConnection(); 
+        const fileFunctions = require('../fileFunctions');
+
+        const queryString = `SELECT 
+                                posts.*, 
+                                shareshare.groups.group_name,  
+                                shareshare.groups.group_image,
+                                user_profile.storage_location,
+                                user_profile.image_url,
+                                user_profile.cloud_key as user_cloud_key
+                            FROM posts
+                            JOIN shareshare.groups ON posts.group_id = shareshare.groups.group_id
+                            LEFT JOIN user_profile ON posts.post_from = user_profile.user_name
+                            WHERE posts.master_site = ? AND posts.post_status = 1
+                            ORDER BY posts.post_id DESC`
+
+        var postsOutcome = {
+            success: false,
+            posts: []
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                connection.query(queryString, [masterSite], (err, rows) => {
+                    if (!err) {
+                        Promise.all(rows.map(async (row) => {
+                            let postTimeData = {}
+                            let date = dayjs(row.created).format('MM/DD/YYYY')      
+                            let minutes = dayjs(row.created).minute()
+                            let hour = dayjs(row.created).hour()
+                        
+                            if(hour > 12) {
+                                hour = hour - 12
+                            }
+
+                            let time = hour + ":0" + minutes + " pm";
+                            let timeMessage = dayjs(row.created).fromNow()
+                        
+                            postTimeData.date = date
+                            postTimeData.time = time
+                            postTimeData.timeMessage = timeMessage
+
+                        let userImage = null;
+                        if (row.storage_location && row.image_url) {
+                            try {
+                                userImage = await fileFunctions.getImageURL(row.storage_location, row.image_url, row.user_cloud_key);
+                            } catch (error) {
+                                console.log("Error getting user image for " + row.post_from + ": " + error);
+                                userImage = null;
+                            }
+                        }
+
+                            return {
+                                postID: row.post_id,
+                                postType: row.post_type,
+                                groupID: row.group_id,
+                                groupName: row.group_name,
+                                groupImage: row.group_image,
+                                listID: row.list_id,
+                                postFrom: row.post_from,
+                                postFromImage: userImage,
+                                postTo: row.post_to,
+                                postCaption: row.post_caption,
+                                fileName: row.file_name,
+                                fileNameServer: row.file_name_server,
+                                fileURL: row.file_url,
+                                cloudBucket: row.cloud_bucket,
+                                cloudKey: row.cloud_key,
+                                storageType: row.storage_type,
+                                videoURL: row.video_url,
+                                videoCode: row.video_code,
+                                postDate: postTimeData.date,
+                                postTime: postTimeData.time,
+                                timeMessage: postTimeData.timeMessage,
+                                created: row.created
+                            }
+                        })).then(posts => {
+                            postsOutcome.posts = posts;
+                            postsOutcome.success = true;
+                            resolve(postsOutcome)
+                        }).catch(error => {
+                            console.log("Error processing posts: " + error);
+                            reject(postsOutcome);
+                        });
+                    } else {
+                        console.log("Failed to Select Posts" + err)
+                        reject(postsOutcome);
+                    }
+            })
+            } catch(err) { 
+                reject(postsOutcome);
+            } 
+        })
+    }
         
     //Method B3: Get Single Group Post
     static async getSingleGroupPost(postID)  {
