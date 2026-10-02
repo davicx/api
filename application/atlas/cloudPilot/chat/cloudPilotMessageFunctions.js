@@ -237,7 +237,10 @@ async function processMessage(rawUserMessage, conversationID, context) {
     // General Conversation — skip execute
     // Guardrail: Questions never answer via MESSAGE_RESPONSE / OpenAI general chat
     if (GeneralConversation.isGeneralConversation(decision)) {
-        if (messageUnderstanding.question) {
+        if (
+            messageUnderstanding.question &&
+            messageUnderstanding.replyType !== 'about_open_request'
+        ) {
             console.warn(
                 '[CLOUDPILOT_QUESTION_GUARDRAIL] question=' +
                     messageUnderstanding.question +
@@ -302,6 +305,17 @@ async function processMessage(rawUserMessage, conversationID, context) {
             requestState: currentRequestState,
             openRequestReplyType: messageUnderstanding.replyType || null
         });
+
+        if (
+            decision.response &&
+            decision.response.type === 'about_open_request' &&
+            decision.response.includeUpdatedReview
+        ) {
+            conversationOutcome.cloudPilotMessage = await RequestConversation.appendOpenRequestReview(
+                conversationOutcome.cloudPilotMessage,
+                currentRequestState
+            );
+        }
 
         MasterLogging.logRespond(conversationOutcome, decision);
 

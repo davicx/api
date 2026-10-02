@@ -126,4 +126,29 @@ function searchMessageForReply(message, options) {
     return result;
 }
 
-module.exports = { searchMessageForReply };
+// Whole-message confirm/cancel only. Longer text must reach contextual understanding.
+function searchMessageForExactReply(message) {
+    const normalized = String(message || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[.!?]+$/g, '');
+
+    if (!normalized) {
+        return null;
+    }
+
+    if (CONFIRM_MESSAGES.indexOf(normalized) !== -1) {
+        return 'confirm';
+    }
+
+    if (CANCEL_PHRASES.indexOf(normalized) !== -1) {
+        return 'cancel';
+    }
+
+    return null;
+}
+
+module.exports = {
+    searchMessageForReply,
+    searchMessageForExactReply
+};

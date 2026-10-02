@@ -14,6 +14,8 @@ const {
     buildConfirmationResult,
     buildUserConfirmationOpenAIMessages
 } = require('../../../../application/atlas/cloudPilotIntelligence/understand/search/searchMessageForUserConfirmation');
+const { understandMessage } = require('../../../../application/atlas/cloudPilotIntelligence/understand/masterUnderstanding');
+const RequestConversation = require('../../../../application/atlas/cloudPilot/chat/request/RequestConversation');
 const MasterDecision = require('../../../../application/atlas/cloudPilot/decide/masterDecision');
 const { RESPONSE_TYPE, CHAT_TYPE } = require('../../../../application/atlas/cloudPilot/requests/decisionTypes');
 const actionMap = require('../../../../application/atlas/cloudPilot/masterCloudPilotCapabilities');
@@ -338,6 +340,282 @@ describe('decideNextStep waiting_on_confirmation routing', () => {
         expect(decision.replaceOpenRequest).toBe(false);
         expect(decision.request.action).toBe('scan_s3');
         expect(decision.request.status).toBe('waiting_on_confirmation');
+    });
+});
+
+const createEc2FieldsState = {
+    pendingAction: 'create_ec2',
+    status: 'waiting_on_fields',
+    executionMode: null,
+    workflowId: 2,
+    missing: ['name'],
+    collected: { region: 'us-west-2', instance_type: 't3.micro' },
+    asked: {}
+};
+
+const createEc2ConfirmState = {
+    pendingAction: 'create_ec2',
+    status: 'waiting_on_confirmation',
+    executionMode: 'automatic',
+    workflowId: 3,
+    missing: [],
+    collected: {
+        name: 'demo-server',
+        region: 'us-west-2',
+        instance_type: 't3.micro'
+    },
+    asked: {}
+};
+
+describe('open-request questions', () => {
+    const originalAiEnabled = CLOUDPILOT_AI_CONFIG.aiEnabled;
+    const originalMode = CLOUDPILOT_AI_CONFIG.userConfirmationSearch;
+
+    afterEach(() => {
+        CLOUDPILOT_AI_CONFIG.aiEnabled = originalAiEnabled;
+        CLOUDPILOT_AI_CONFIG.userConfirmationSearch = originalMode;
+        jest.clearAllMocks();
+    });
+
+    test('a longer yes reaches OpenAI instead of the exact confirm shortcut', async () => {
+        CLOUDPILOT_AI_CONFIG.aiEnabled = true;
+        CLOUDPILOT_AI_CONFIG.userConfirmationSearch = 'openai';
+        OpenAIClient.getOpenAIClient.mockReturnValue({});
+        OpenAIClient.createOpenAiChatCompletion.mockResolvedValue({
+            success: true,
+            data: JSON.stringify({
+                replyType: 'about_open_request',
+                values: {},
+                ambiguousFields: []
+            }),
+            finishReason: 'stop',
+            usage: null
+        });
+
+        const result = await searchMessageForUserConfirmation(
+            'Yes, but is this the cheapest?',
+            createEc2FieldsState
+        );
+
+        expect(OpenAIClient.createOpenAiChatCompletion).toHaveBeenCalled();
+        expect(result.replyType).toBe('about_open_request');
+        expect(result.succeeded).toBe(true);
+        expect(result.values).toEqual({});
+    });
+
+    test('truncated OpenAI output is a failed interpretation, not a confirm', async () => {
+        CLOUDPILOT_AI_CONFIG.aiEnabled = true;
+        CLOUDPILOT_AI_CONFIG.userConfirmationSearch = 'openai';
+        OpenAIClient.getOpenAIClient.mockReturnValue({});
+        OpenAIClient.createOpenAiChatCompletion.mockResolvedValue({
+            success: true,
+            data: '{"replyType":"confirm"',
+            finishReason: 'length',
+            usage: null
+        });
+
+        const result = await searchMessageForUserConfirmation(
+            'Is this the smallest and cheapest?',
+            createEc2FieldsState
+        );
+
+        expect(result.replyType).toBe('unrelated');
+        expect(result.succeeded).toBe(false);
+        expect(result.fallbackReason).toBe('truncated');
+        expect(result.values).toEqual({});
+    });
+
+    test('question during field collection does not let a regex instance type win', async () => {
+        CLOUDPILOT_AI_CONFIG.aiEnabled = true;
+        CLOUDPILOT_AI_CONFIG.userConfirmationSearch = 'openai';
+        OpenAIClient.getOpenAIClient.mockReturnValue({});
+        OpenAIClient.createOpenAiChatCompletion.mockResolvedValue({
+            success: true,
+            data: JSON.stringify({
+                replyType: 'about_open_request',
+                values: {},
+                ambiguousFields: []
+            }),
+            finishReason: 'stop',
+            usage: null
+        });
+
+        const understanding = await understandMessage(
+            'Is t3.nano cheaper?',
+            createEc2FieldsState
+        );
+        const features = OpenAIClient.createOpenAiChatCompletion.mock.calls.map(function (call) {
+            return call[1] && call[1].feature;
+        });
+
+        expect(features).toEqual(['user_confirmation_search']);
+        expect(understanding.replyType).toBe('about_open_request');
+        expect(understanding.values.instance_type).toBeUndefined();
+        expect(understanding.ambiguousFields).toEqual([]);
+
+        const decision = MasterDecision.decideNextStep({
+            understanding: understanding,
+            requestState: createEc2FieldsState
+        });
+
+        expect(decision.response.type).toBe(RESPONSE_TYPE.ABOUT_OPEN_REQUEST);
+        expect(decision.chatType).toBe(CHAT_TYPE.GENERAL_CHAT_RESPONDING);
+        expect(decision.response.includeUpdatedReview).toBe(false);
+        expect(decision.execute).toBeUndefined();
+    });
+
+    test('quoted instance type question does not ask about the name', () => {
+        const decision = MasterDecision.decideNextStep({
+            understanding: {
+                reply: null,
+                replyType: 'about_open_request',
+                replySource: 'openai',
+                action: 'general_chat',
+                values: {},
+                ambiguousFields: ['name'],
+                openRequestInterpretation: { authoritative: true, succeeded: true },
+                rawMessage: 'Is Instance type: t3.micro the smallest and cheapest I can use?'
+            },
+            requestState: createEc2FieldsState
+        });
+
+        expect(decision.response.type).toBe(RESPONSE_TYPE.ABOUT_OPEN_REQUEST);
+        expect(decision.response.type).not.toBe(RESPONSE_TYPE.FIELD_UNCLEAR);
+    });
+
+    test('mixed name update and question keeps the answer and marks a review', () => {
+        const decision = MasterDecision.decideNextStep({
+            understanding: {
+                reply: null,
+                replyType: 'about_open_request',
+                replySource: 'openai',
+                action: 'general_chat',
+                values: { name: 'demo-server' },
+                ambiguousFields: [],
+                openRequestInterpretation: { authoritative: true, succeeded: true }
+            },
+            requestState: createEc2FieldsState
+        });
+
+        expect(decision.response.type).toBe(RESPONSE_TYPE.ABOUT_OPEN_REQUEST);
+        expect(decision.response.includeUpdatedReview).toBe(true);
+        expect(decision.execute).toBeUndefined();
+        expect(decision.chatType).toBe(CHAT_TYPE.GENERAL_CHAT_RESPONDING);
+    });
+
+    test('question while awaiting confirmation does not execute', () => {
+        const decision = MasterDecision.decideNextStep({
+            understanding: {
+                reply: null,
+                replyType: 'about_open_request',
+                replySource: 'openai',
+                action: 'general_chat',
+                values: {},
+                openRequestInterpretation: { authoritative: true, succeeded: true },
+                rawMessage: 'Will this cost money?'
+            },
+            requestState: createEc2ConfirmState
+        });
+
+        expect(decision.response.type).toBe(RESPONSE_TYPE.ABOUT_OPEN_REQUEST);
+        expect(decision.execute).toBeUndefined();
+        expect(decision.request).toBe(null);
+    });
+
+    test('confirm before the request is ready does not execute', () => {
+        const decision = MasterDecision.decideNextStep({
+            understanding: {
+                reply: 'confirm',
+                replyType: 'confirm',
+                replySource: 'openai',
+                action: 'general_chat',
+                values: {},
+                openRequestInterpretation: { authoritative: true, succeeded: true },
+                rawMessage: 'Yes, create it.'
+            },
+            requestState: createEc2FieldsState
+        });
+
+        expect(decision.response.type).not.toBe(RESPONSE_TYPE.EXECUTION_STARTED);
+        expect(decision.execute).toBeUndefined();
+    });
+
+    test('invalid region is rejected and other collected values stay', async () => {
+        const decision = MasterDecision.decideNextStep({
+            understanding: {
+                reply: null,
+                replyType: 'unrelated',
+                replySource: 'openai',
+                action: 'general_chat',
+                values: {},
+                rejectedFields: [{ field: 'region', value: 'the moon' }],
+                ambiguousFields: [],
+                openRequestInterpretation: { authoritative: true, succeeded: true }
+            },
+            requestState: createEc2FieldsState
+        });
+
+        expect(decision.response.type).toBe(RESPONSE_TYPE.FIELD_UNCLEAR);
+        expect(decision.response.invalidFieldValue).toBe('the moon');
+        expect(decision.request.collected.region).toBe('us-west-2');
+        expect(decision.request.collected.instance_type).toBe('t3.micro');
+        expect(decision.request.missing).toEqual(['name']);
+
+        const reply = await RequestTemplates.getRequestMessageReply({
+            actionEvent: 'field_unclear',
+            actionDefinition: actionMap.create_ec2,
+            invalidFieldValue: 'the moon',
+            unclearField: 'region',
+            actionState: {
+                missingFields: decision.request.missing,
+                collectedFields: decision.request.collected,
+                askedForFields: {}
+            }
+        });
+
+        expect(reply.message).toContain('not a valid AWS region');
+        expect(reply.message).not.toContain("I wasn't sure about the name");
+    });
+
+    test('failed interpretation does not confirm or fill fields', () => {
+        const decision = MasterDecision.decideNextStep({
+            understanding: {
+                reply: null,
+                replyType: 'unrelated',
+                replySource: 'openai',
+                action: 'create_ec2',
+                values: {},
+                ambiguousFields: ['name'],
+                openRequestInterpretation: { authoritative: true, succeeded: false }
+            },
+            requestState: createEc2FieldsState
+        });
+
+        expect(decision.response.type).toBe(RESPONSE_TYPE.GENERAL_CHAT);
+        expect(decision.execute).toBeUndefined();
+        expect(decision.request).toBe(null);
+    });
+
+    test('answer plus updated review keeps both parts', async () => {
+        const combined = await RequestConversation.appendOpenRequestReview(
+            't3.micro is not the smallest T3 size.',
+            {
+                pendingAction: 'create_ec2',
+                status: 'waiting_on_confirmation',
+                executionMode: 'automatic',
+                missing: [],
+                collected: {
+                    name: 'demo-server',
+                    region: 'us-west-2',
+                    instance_type: 't3.micro'
+                },
+                asked: {}
+            }
+        );
+
+        expect(combined.indexOf('t3.micro is not the smallest T3 size.')).toBe(0);
+        expect(combined).toContain('demo-server');
+        expect(combined).not.toContain("I wasn't sure about the name");
     });
 });
 

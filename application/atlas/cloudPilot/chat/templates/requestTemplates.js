@@ -272,10 +272,16 @@ function cloudPilotRespondFieldUnclear(payload) {
     }
 
     if (normalized === 'region') {
+        const invalidValue = payload.invalidFieldValue
+            ? String(payload.invalidFieldValue).trim()
+            : '';
+        const message = invalidValue
+            ? '"' + invalidValue + '" is not a valid AWS region. Which AWS region should I use?'
+            : 'I wasn\'t sure which region you meant. Which AWS region should I use?';
+
         return {
             success: true,
-            message:
-                'I wasn\'t sure which region you meant. Which AWS region should I use?',
+            message: message,
             atlasResponse: null,
             error: null
         };

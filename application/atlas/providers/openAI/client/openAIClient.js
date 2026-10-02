@@ -375,9 +375,11 @@ async function createOpenAiChatCompletion(client, params) {
     try {
         const response = await client.chat.completions.create(openAIRequestBody);
 
-        const choice = response.choices && response.choices[0] && response.choices[0].message;
-        const data = choice && choice.content != null ? choice.content : null;
+        const choice = response.choices && response.choices[0];
+        const message = choice && choice.message;
+        const data = message && message.content != null ? message.content : null;
         const usage = response.usage || null;
+        const finishReason = choice && choice.finish_reason ? choice.finish_reason : null;
 
         if (usage) {
             void SaveAiUsageFunctions.saveAiUsageFromOpenAIResponse({
@@ -393,7 +395,8 @@ async function createOpenAiChatCompletion(client, params) {
         return {
             success: true,
             data,
-            usage: usage
+            usage: usage,
+            finishReason: finishReason
         };
     } catch (error) {
         console.error('[createOpenAiChatCompletion] ChatGPT error:', error.message || error);

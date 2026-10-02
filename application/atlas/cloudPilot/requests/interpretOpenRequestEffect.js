@@ -12,6 +12,7 @@ MVP default AWS region (when a quiet read later needs one): us-west-2
 */
 
 const MVP_DEFAULT_AWS_REGION = 'us-west-2';
+const REGION_PATTERN = /^(?:us|eu|ap|sa|ca|me|af)-(?:gov-)?[a-z]+-\d$/i;
 
 // Stored on asked JSON — eligible only until a non-request turn clears it.
 const SOFT_ACCEPT_OFFER_KEY = '__softAcceptOffer';
@@ -244,6 +245,32 @@ function isConfirmAllowed(state) {
  * @param {object} requestState — loaded open request (or empty)
  * @param {string} [message] — original user text (for mixed detection)
  */
+function partitionRequestFieldUpdates(requestState, values) {
+    const state = normalizeState(requestState);
+    const picked = pickApplicableValues(state, values);
+    const accepted = {};
+    const rejected = [];
+
+    Object.keys(picked).forEach(function (fieldName) {
+        const fieldValue = picked[fieldName];
+
+        if (fieldName === 'region' && !REGION_PATTERN.test(String(fieldValue).trim())) {
+            rejected.push({
+                field: 'region',
+                value: String(fieldValue).trim()
+            });
+            return;
+        }
+
+        accepted[fieldName] = fieldValue;
+    });
+
+    return {
+        accepted: accepted,
+        rejected: rejected
+    };
+}
+
 function interpretOpenRequestEffect(understanding, requestState, message) {
     const state = normalizeState(requestState);
 
@@ -252,6 +279,12 @@ function interpretOpenRequestEffect(understanding, requestState, message) {
     }
 
     const u = understanding || {};
+    const interpretation = u.openRequestInterpretation || null;
+
+    if (interpretation && interpretation.authoritative && interpretation.succeeded === false) {
+        return emptyEffect();
+    }
+
     const applicableValues = pickApplicableValues(state, u.values);
 
     // 1) Cancellation
@@ -269,7 +302,9 @@ function interpretOpenRequestEffect(understanding, requestState, message) {
     // 2) Information for open request (region, etc.)
     if (Object.keys(applicableValues).length > 0) {
         const continueNormal =
-            Boolean(u.question) || looksLikeMixedMessage(message, applicableValues);
+            Boolean(u.question) ||
+            u.replyType === 'about_open_request' ||
+            looksLikeMixedMessage(message, applicableValues);
 
         return {
             affectsOpenRequest: true,
@@ -282,6 +317,10 @@ function interpretOpenRequestEffect(understanding, requestState, message) {
     }
 
     // 2b) Soft accept of a value CloudPilot just suggested (waiting_on_fields only)
+    if (u.replyType === 'about_open_request') {
+        return emptyEffect();
+    }
+
     const softAcceptEffect = trySoftAcceptEffect(state, message);
 
     if (softAcceptEffect) {
@@ -334,6 +373,7 @@ module.exports = {
     MVP_DEFAULT_AWS_REGION,
     SOFT_ACCEPT_OFFER_KEY,
     interpretOpenRequestEffect,
+    partitionRequestFieldUpdates,
     logOpenRequestEffect,
     hasApplicableValues,
     isSoftAcceptPhrase,

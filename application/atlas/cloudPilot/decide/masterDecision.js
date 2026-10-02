@@ -77,6 +77,53 @@ function decideNextStep({ understanding, requestState }) {
         return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.AMBIGUOUS_ACTION);
     }
 
+    const interpretation = u.openRequestInterpretation || null;
+
+    if (interpretation && interpretation.authoritative && interpretation.succeeded === false) {
+        return buildGeneralChatDecision();
+    }
+
+    if (state.pendingAction && u.replyType === 'about_open_request') {
+        const blockedQuestion = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedQuestion) {
+            return blockedQuestion;
+        }
+
+        return buildAboutOpenRequestDecision(state, u);
+    }
+
+    if (
+        state.pendingAction &&
+        Array.isArray(u.rejectedFields) &&
+        u.rejectedFields.length > 0
+    ) {
+        const blockedRejected = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedRejected) {
+            return blockedRejected;
+        }
+
+        const rejected = u.rejectedFields[0];
+        const acceptedValues = u.values || {};
+        const mergedRejected = Object.keys(acceptedValues).length > 0
+            ? buildFieldsMergedDecision(state, acceptedValues)
+            : null;
+        const request = mergedRejected && mergedRejected.request
+            ? mergedRejected.request
+            : buildRequestFromState(state);
+
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: request,
+            response: {
+                type: RESPONSE_TYPE.FIELD_UNCLEAR,
+                field: rejected.field,
+                invalidFieldValue: rejected.value
+            }
+        };
+    }
+
     // Ambiguous open-request field value — ask one clarification; do not save.
     if (
         state.pendingAction &&
@@ -151,16 +198,6 @@ function decideNextStep({ understanding, requestState }) {
             shouldStartExecutionOnConfirm(state, 'confirm')
         ) {
             return buildExecutionStartedDecision(state);
-        }
-
-        if (u.replyType === 'about_open_request') {
-            // Answer the actual question through normal response generation.
-            // General Chat already receives the open request as Current State context.
-            return {
-                chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
-                request: null,
-                response: { type: RESPONSE_TYPE.ABOUT_OPEN_REQUEST }
-            };
         }
 
         if (u.replyType === 'ambiguous_confirmation') {
@@ -295,6 +332,15 @@ function decideNextStep({ understanding, requestState }) {
 
             // Step 3: leave alone — if open request still needs user input, re-ask (do not general-chat stub)
             if (!affectsOpen) {
+                if (
+                    u.replyType === 'unrelated' &&
+                    u.replySource === 'openai' &&
+                    interpretation &&
+                    interpretation.authoritative
+                ) {
+                    return buildGeneralChatDecision();
+                }
+
                 if (shouldReaskOpenRequest(state)) {
                     const blockedReask = capabilityAvailabilityGate(state.pendingAction);
 
@@ -1018,6 +1064,36 @@ function buildResourceScanAcceptedDecision(state) {
             type: region
                 ? RESPONSE_TYPE.EXECUTION_STARTED
                 : RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS
+        }
+    };
+}
+
+function buildAboutOpenRequestDecision(state, understanding) {
+    const values = understanding && understanding.values ? understanding.values : {};
+    let includeUpdatedReview = false;
+
+    if (Object.keys(values).length > 0) {
+        const merged = buildFieldsMergedDecision(state, values);
+        const mergedRequest = merged && merged.request ? merged.request : null;
+        const missing = mergedRequest && Array.isArray(mergedRequest.missing)
+            ? mergedRequest.missing
+            : state.missing || [];
+        const completed = missing.length === 0;
+        const changedPendingConfirmation = ActionStatusFunctions.isWaitingOnConfirmation(
+            state.status
+        );
+
+        if (mergedRequest && (completed || changedPendingConfirmation)) {
+            includeUpdatedReview = true;
+        }
+    }
+
+    return {
+        chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
+        request: null,
+        response: {
+            type: RESPONSE_TYPE.ABOUT_OPEN_REQUEST,
+            includeUpdatedReview: includeUpdatedReview
         }
     };
 }

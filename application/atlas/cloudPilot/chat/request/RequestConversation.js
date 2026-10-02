@@ -11,6 +11,7 @@ const RequestFunctions = require('../../requests/functions/requestFunctions');
 const ActionStatusFunctions = require('../../requests/functions/requestStatusFunctions');
 const CreateEC2Guidance = require('../../actions/createEC2/createEC2Guidance');
 const EstimatePricingFunctions = require('../../pricing/estimatePricing');
+const RequestTemplates = require('../templates/requestTemplates');
 
 /*
 Request Conversation — speak (STEP 7 only)
@@ -131,16 +132,28 @@ async function conversation(decision, context) {
     }
 
     if (responseType === RESPONSE_TYPE.ABOUT_OPEN_REQUEST) {
-        const aboutResponse = OpenRequestsFunctions.buildAboutOpenRequestResponse(
-            requestState
-        );
+        const generalOutcome = await CloudPilotMessage.prepareGeneralMessageReply({
+            ...(context.context || {}),
+            currentUserMessage: context.currentUserMessage,
+            conversationID: context.conversationID,
+            requestState: requestState,
+            openRequestReplyType: 'about_open_request'
+        });
+        let cloudPilotMessage = generalOutcome.cloudPilotMessage || '';
+
+        if (decision.response && decision.response.includeUpdatedReview) {
+            cloudPilotMessage = await appendOpenRequestReview(
+                cloudPilotMessage,
+                requestState
+            );
+        }
 
         return CloudPilotMessage.prepareKnownMessageReply({
-            success: aboutResponse.success,
-            cloudPilotMessage: aboutResponse.cloudPilotMessage,
+            success: Boolean(generalOutcome.success && cloudPilotMessage),
+            cloudPilotMessage: cloudPilotMessage,
             chatType: decision.chatType,
             atlasResponse: null,
-            error: aboutResponse.error || null
+            error: generalOutcome.error || null
         });
     }
 
@@ -349,6 +362,10 @@ async function conversation(decision, context) {
         unclearField:
             decision.response && decision.response.field
                 ? String(decision.response.field)
+                : null,
+        invalidFieldValue:
+            decision.response && decision.response.invalidFieldValue
+                ? String(decision.response.invalidFieldValue)
                 : null
     });
 
@@ -439,6 +456,7 @@ function buildChatHandlerPayload(options) {
         actionEvent: options.actionEvent,
         actionDefinition: options.actionDefinition,
         unclearField: options.unclearField || null,
+        invalidFieldValue: options.invalidFieldValue || null,
         actionReady: isRequestReady(missingFields),
         actionState: {
             pendingAction: requestState.pendingAction,
@@ -615,6 +633,51 @@ async function buildPauseEc2SavingsSpeak(collectedFields) {
     return EstimatePricingFunctions.formatPauseSavingsSpeakLine(savings);
 }
 
+async function appendOpenRequestReview(answer, requestState) {
+    const state = requestState || {};
+    const actionDefinition = state.pendingAction ? actionMap[state.pendingAction] : null;
+
+    if (!actionDefinition) {
+        return String(answer || '').trim();
+    }
+
+    let actionEvent = 'awaiting_confirmation';
+
+    if (ActionStatusFunctions.isWaitingOnExecutionMode(state.status)) {
+        actionEvent = 'awaiting_execution_mode';
+    } else if (ActionStatusFunctions.isCollectingFields(state.status)) {
+        actionEvent = 'workflow_in_progress';
+    }
+
+    const templateResult = await RequestTemplates.getRequestMessageReply({
+        actionEvent: actionEvent,
+        actionDefinition: actionDefinition,
+        actionState: {
+            pendingAction: state.pendingAction,
+            status: state.status,
+            executionMode: state.executionMode || null,
+            missingFields: Array.isArray(state.missing) ? state.missing : [],
+            collectedFields: state.collected || {},
+            askedForFields: state.asked || {}
+        }
+    });
+    const review = String(
+        (templateResult && (templateResult.cloudPilotMessage || templateResult.message)) || ''
+    ).trim();
+    const base = String(answer || '').trim();
+
+    if (!review) {
+        return base;
+    }
+
+    if (base.indexOf(review) !== -1) {
+        return base;
+    }
+
+    return base ? base + '\n\n' + review : review;
+}
+
 module.exports = {
-    conversation
+    conversation,
+    appendOpenRequestReview
 };

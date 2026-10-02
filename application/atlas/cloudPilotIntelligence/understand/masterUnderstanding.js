@@ -1,3 +1,5 @@
+const { CLOUDPILOT_AI_CONFIG } = require('../../config/cloudPilotAIConfig');
+const OpenRequestEffectFunctions = require('../../cloudPilot/requests/interpretOpenRequestEffect');
 const SearchMessageForActionFunctions = require('./search/searchMessageForAction');
 const SearchMessageForValuesFunctions = require('./search/searchMessageForValues');
 const SearchMessageForReplyFunctions = require('./search/searchMessageForReply');
@@ -54,53 +56,98 @@ async function understandMessage(message, requestState) {
     SearchLogs.beginSearchSession();
 
     try {
-        const valuesOutcome =
-            await SearchMessageForValuesFunctions.searchMessageForValues(
-                message,
-                requestState
-            );
-        const values =
-            valuesOutcome && valuesOutcome.values
-                ? valuesOutcome.values
-                : valuesOutcome || {};
-        const ambiguousFields =
-            valuesOutcome && Array.isArray(valuesOutcome.ambiguousFields)
-                ? valuesOutcome.ambiguousFields.slice()
-                : [];
-
+        const contextualOpenRequest = shouldUseContextualOpenRequestUnderstanding(
+            requestState
+        );
+        let values = {};
+        let ambiguousFields = [];
+        let rejectedFields = [];
         let reply = null;
         let replyType = null;
         let replySource = null;
+        let openRequestInterpretation = {
+            authoritative: false,
+            succeeded: true
+        };
 
-        const waitingOnConfirmation =
-            SearchMessageForUserConfirmationFunctions.shouldRunUserConfirmationSearch(
-                requestState
-            );
-
-        if (waitingOnConfirmation) {
+        if (contextualOpenRequest) {
             const confirmation =
                 await SearchMessageForUserConfirmationFunctions.searchMessageForUserConfirmation(
                     message,
                     requestState
                 );
 
-            if (confirmation) {
+            openRequestInterpretation = {
+                authoritative: true,
+                succeeded: Boolean(confirmation && confirmation.succeeded !== false)
+            };
+
+            if (confirmation && openRequestInterpretation.succeeded) {
                 reply = confirmation.reply;
                 replyType = confirmation.replyType;
                 replySource = confirmation.replySource;
+                const partitioned = OpenRequestEffectFunctions.partitionRequestFieldUpdates(
+                    requestState,
+                    confirmation.values || {}
+                );
+                values = partitioned.accepted;
+                rejectedFields = partitioned.rejected;
+                ambiguousFields = Array.isArray(confirmation.ambiguousFields)
+                    ? confirmation.ambiguousFields.slice()
+                    : [];
             } else {
+                reply = null;
                 replyType = 'unrelated';
-                replySource = 'internal';
+                replySource = 'openai';
+                values = {};
+                ambiguousFields = [];
+                rejectedFields = [];
             }
         } else {
-            reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
+            const valuesOutcome =
+                await SearchMessageForValuesFunctions.searchMessageForValues(
+                    message,
+                    requestState
+                );
+            values =
+                valuesOutcome && valuesOutcome.values
+                    ? valuesOutcome.values
+                    : valuesOutcome || {};
+            ambiguousFields =
+                valuesOutcome && Array.isArray(valuesOutcome.ambiguousFields)
+                    ? valuesOutcome.ambiguousFields.slice()
+                    : [];
 
-            if (reply === 'confirm') {
-                replyType = 'confirm';
-                replySource = 'internal';
-            } else if (reply === 'cancel') {
-                replyType = 'cancel';
-                replySource = 'internal';
+            const waitingOnConfirmation =
+                SearchMessageForUserConfirmationFunctions.shouldRunUserConfirmationSearch(
+                    requestState
+                );
+
+            if (waitingOnConfirmation) {
+                const confirmation =
+                    await SearchMessageForUserConfirmationFunctions.searchMessageForUserConfirmation(
+                        message,
+                        requestState
+                    );
+
+                if (confirmation) {
+                    reply = confirmation.reply;
+                    replyType = confirmation.replyType;
+                    replySource = confirmation.replySource;
+                } else {
+                    replyType = 'unrelated';
+                    replySource = 'internal';
+                }
+            } else {
+                reply = SearchMessageForReplyFunctions.searchMessageForReply(message);
+
+                if (reply === 'confirm') {
+                    replyType = 'confirm';
+                    replySource = 'internal';
+                } else if (reply === 'cancel') {
+                    replyType = 'cancel';
+                    replySource = 'internal';
+                }
             }
         }
 
@@ -117,6 +164,8 @@ async function understandMessage(message, requestState) {
             action: actionResult.action,
             values,
             ambiguousFields: ambiguousFields,
+            rejectedFields: rejectedFields,
+            openRequestInterpretation: openRequestInterpretation,
             reply,
             replyType,
             replySource,
@@ -132,4 +181,18 @@ async function understandMessage(message, requestState) {
     }
 }
 
-module.exports = { understandMessage };
+function shouldUseContextualOpenRequestUnderstanding(requestState) {
+    if (!CLOUDPILOT_AI_CONFIG.aiEnabled) {
+        return false;
+    }
+
+    if (CLOUDPILOT_AI_CONFIG.userConfirmationSearch !== 'openai') {
+        return false;
+    }
+
+    return SearchMessageForUserConfirmationFunctions.shouldRunUserConfirmationSearch(
+        requestState
+    );
+}
+
+module.exports = { understandMessage, shouldUseContextualOpenRequestUnderstanding };
