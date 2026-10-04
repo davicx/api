@@ -9,6 +9,7 @@ const openAIFunctions = require('../providers/openAI/client/openAIClient');
 const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../config/chatGPTconfig');
 const MasterLogging = require('../cloudPilot/logging/masterLogging');
 const ScanSnapshotService = require('../cloudPilot/scans/persistence/ScanSnapshotService');
+const Request = require('../cloudPilot/requests/classes/Request');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
@@ -431,13 +432,25 @@ async function getConversationMessages(req, res) {
     var messagesOutcome = await Message.getConversationMessages(conversationID);
     var messages = messagesOutcome.messages || [];
 
+    var openRequestStatus = null;
+    try {
+        const openResult = await Request.getOpenActionForConversation(conversationID);
+        openRequestStatus =
+            openResult && openResult.action && openResult.action.status
+                ? openResult.action.status
+                : null;
+    } catch (err) {
+        openRequestStatus = null;
+    }
+
     var messagesResponse = {
         data: messages,
         message: "Conversation messages",
         success: messagesOutcome.success,
         statusCode: 200,
         errors: [],
-        currentUser: currentUser
+        currentUser: currentUser,
+        openRequestStatus: openRequestStatus
     };
 
     //STEP 3: Conversation messages outcome

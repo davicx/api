@@ -6,6 +6,10 @@
 
 ---
 
+## Recently finished (2026-10-04)
+
+- [x] **Dashboard** — One `/dashboard` page: real scan data, bucket/instance drill-down, side chat — [feature_dashboard.md](./feature_dashboard.md) · leftovers: [feature_dashboard.md](../current/feature_dashboard.md)
+
 ## Recently finished (2026-08-29)
 
 - [x] **Useful Price** — Stored EC2 hourly rates → create/scan/pause speak + “what am I paying?” Question — [feature_useful_price.md](./feature_useful_price.md)

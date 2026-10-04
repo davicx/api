@@ -540,6 +540,7 @@ function cloneActionStatus(state, activeRequestAction, ready) {
     return {
         type: activeRequestAction,
         ready: Boolean(ready),
+        status: state.status || null,
         executionMode: state.executionMode || null,
         missingFields: [...(state.missing || [])],
         collectedFields: { ...(state.collected || {}) },
