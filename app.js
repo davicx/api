@@ -7,13 +7,21 @@ const app = express()
 const PORT = process.env.PORT || 3003;
 //const PORT = process.env.PORT || 5000;
 
+
 app.use(express.json());
 app.use(cookieParser())
 app.use(express.static('public'));
 app.use(
   cors({
       credentials: true,
-      origin: ["http://localhost:3003", "http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3003"]
+      origin: [
+        "http://localhost:3003",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3003"
+      ]
   })
 );
 
@@ -33,7 +41,12 @@ const items = require('./application/routes/itemRoutes.js');
 // Messages: toggle between Kite copy (application/routes) and Atlas duplicate (application/atlas/routes) — keep in sync.
 //const messages = require('./application/routes/messageRoutes.js');
 const messages = require('./application/atlas/routes/messageRoutes.js');
+const todos = require('./application/routes/todoRoutes.js');
+const instructions = require('./application/atlas/routes/instructionRoutes.js');
+const aiUsage = require('./application/atlas/routes/aiUsageRoutes.js');
+const scans = require('./application/atlas/routes/scanRoutes.js');
 const conversations = require('./application/routes/conversationRoutes.js');
+const openAI = require('./application/routes/openAI/openAIRoutes.js');
 
 app.use(login);
 app.use(group);
@@ -48,7 +61,12 @@ app.use(profile);
 app.use(simple);
 app.use(items);
 app.use(messages);
+app.use(todos);
+app.use(instructions);
+app.use(aiUsage);
+app.use(scans);
 app.use(conversations);
+app.use(openAI);
 
 //Moved to doc backup
 //const uploadLearning = require('./application/upload_temp/uploadRoutes.js');

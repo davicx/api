@@ -1,0 +1,76 @@
+
+{
+  "id": "ec2-lowcpu-i-065f09252b2ea0471",
+  "provider": "aws",
+  "service": "ec2",
+  "region": "us-west-2",
+  "status": "active",
+  "priority": 2,
+
+  "resource": {
+    "id": "i-065f09252b2ea0471",
+    "name": "Kite-env",
+    "region": "us-west-2",
+    "instance_type": "t3.micro",
+    "tags": {
+      "env": "dev"
+    }
+  },
+
+  "issue": {
+    "code": "LOW_CPU_UTILIZATION",
+    "title": "Low CPU utilization",
+    "description": "Instance has been under 10% CPU for the last 14 days",
+    "severity": "low",
+    "confidence": 0.92,
+    "category": "cost"
+  },
+
+  "metrics": {
+    "avg_cpu": 0.69,
+    "lookback_days": 14
+  },
+
+  "recommendation": {
+    "action": "RIGHTSIZE",
+    "description": "Downsize instance to reduce cost",
+    "risk": "low",
+    "target": {
+      "instance_type": "t3.small"
+    }
+  },
+
+  "remediation": {
+    "available": true,
+    "actions": [
+      {
+        "type": "cli",
+        "command": "aws ec2 modify-instance-attribute ...",
+        "description": "Run this command locally"
+      },
+      {
+        "type": "automated",
+        "action": "rightsize_instance",
+        "requires_confirmation": false,
+        "params": {
+          "instance_id": "i-065f09252b2ea0471",
+          "target_type": "t3.small"
+        }
+      }
+    ]
+  },
+
+  "cost": {
+    "estimated_monthly_savings": 10,
+    "estimated_annual_savings": 120,
+    "currency": "USD"
+  },
+
+  "summary": "Instance Kite-env is underutilized and can be downsized to save ~$10/month",
+
+  "metadata": {
+    "rule_id": "ec2_low_cpu",
+    "generated_at": "2026-03-27T18:00:00Z"
+  }
+}
+

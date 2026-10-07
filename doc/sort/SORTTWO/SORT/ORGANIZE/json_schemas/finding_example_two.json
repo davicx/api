@@ -1,0 +1,72 @@
+{
+  "id": "s3-unused-bucket-logs-archive",
+  "provider": "aws",
+  "service": "s3",
+  "region": "us-west-2",
+  "status": "active",
+  "priority": 3,
+
+  "resource": {
+    "id": "logs-archive",
+    "name": "logs-archive",
+    "region": "us-west-2",
+    "storage_class": "STANDARD",
+    "tags": {
+      "env": "dev"
+    }
+  },
+
+  "issue": {
+    "code": "UNUSED_BUCKET",
+    "title": "Unused S3 bucket",
+    "description": "No access or uploads detected in the last 30 days",
+    "severity": "medium",
+    "confidence": 0.88,
+    "category": "cost"
+  },
+
+  "metrics": {
+    "last_access_days_ago": 32,
+    "object_count": 12,
+    "total_size_mb": 150
+  },
+
+  "recommendation": {
+    "action": "DELETE",
+    "description": "Remove unused bucket to reduce storage cost",
+    "risk": "medium"
+  },
+
+  "remediation": {
+    "available": true,
+    "actions": [
+      {
+        "type": "cli",
+        "command": "aws s3 rb s3://logs-archive --force",
+        "description": "Delete the bucket and all contents"
+      },
+      {
+        "type": "automated",
+        "action": "delete_s3_bucket",
+        "requires_confirmation": true,
+        "params": {
+          "bucket_name": "logs-archive"
+        }
+      }
+    ]
+  },
+
+  "cost": {
+    "estimated_monthly_savings": 3.2,
+    "estimated_annual_savings": 38.4,
+    "currency": "USD"
+  },
+
+  "summary": "S3 bucket 'logs-archive' has been unused for 30+ days and can be deleted to save ~$3/month",
+
+  "metadata": {
+    "rule_id": "s3_unused_bucket",
+    "generated_at": "2026-03-27T18:00:00Z"
+  }
+}
+

@@ -1,0 +1,154 @@
+/*
+CloudPilot Intelligence Facade
+
+CloudPilotMessage is the product's voice. CloudPilotIntelligence is the product's brain.
+This file is the only front door for GenAI.
+
+CloudPilotIntelligence decides Internal vs OpenAI based on configuration.
+
+See: doc/development/finished/feature_intelligence_front_door.md
+
+FUNCTIONS A: Conversation
+    1) Function A1: generateGeneralMessageReply
+    2) Function A2: generateRequestMessageReply
+
+FUNCTIONS B: Understand (Gather Context)
+    1) Function B1: understandMessage
+    2) Function B2: understandRegion
+    3) Function B3: understandAction
+    4) Function B4: understandResource
+    5) Function B5: searchForAiSpend
+    6) Function B6: searchForOpenRequests
+    7) Function B7: understandOrganizationalKnowledge
+
+FUNCTIONS C: Explain (placeholder)
+    1) Function C1: explain
+
+FUNCTIONS D: Improve (placeholder)
+    1) Function D1: improve
+
+FUNCTIONS E: Generate (placeholder)
+    1) Function E1: generate
+
+Note: Legacy respond() kept as a placeholder export until callers are gone.
+*/
+
+const GenerateGeneralMessageReplyFunctions = require('./conversation/generateGeneralMessageReply');
+const GenerateRequestMessageReplyFunctions = require('./conversation/generateRequestMessageReply');
+const MasterUnderstanding = require('./understand/masterUnderstanding');
+const SearchMessageForRegionFunctions = require('./understand/search/values/searchMessageForRegion');
+const SearchMessageForActionFunctions = require('./understand/search/searchMessageForAction');
+const SearchMessageForValuesFunctions = require('./understand/search/searchMessageForValues');
+const SearchForAiSpendFunctions = require('./understand/search/questions/searchForAiSpend');
+const SearchForOpenRequestsFunctions = require('./understand/search/questions/searchForOpenRequests');
+const SearchForOrganizationalKnowledgeFunctions = require('./understand/search/searchForOrganizationalKnowledge');
+
+//FUNCTIONS A: Conversation
+//Function A1: Generate General Message Reply front door
+async function generateGeneralMessageReply(processMessageContext) {
+    //STEP 1: Delegate to conversation generateGeneralMessageReply implementation
+    return GenerateGeneralMessageReplyFunctions.generateGeneralMessageReply(processMessageContext);
+}
+
+//Function A2: Generate Request Message Reply (Internal AI | OpenAI)
+async function generateRequestMessageReply(context) {
+    //STEP 1: Delegate to Request Message Reply (Internal vs OpenAI)
+    return GenerateRequestMessageReplyFunctions.generateRequestMessageReply(context);
+}
+
+//FUNCTIONS B: Understand (Gather Context)
+//Function B1: Understand full user message
+async function understandMessage(message, requestState) {
+    return MasterUnderstanding.understandMessage(message, requestState);
+}
+
+//Function B2: Understand region from message
+async function understandRegion(message, requestState) {
+    //STEP 1: Delegate to region search (shouldRun + Internal vs OpenAI)
+    return SearchMessageForRegionFunctions.searchMessageForRegion(message, requestState);
+}
+
+//Function B3: Understand action from message
+async function understandAction(message) {
+    //STEP 1: Delegate to action search (rules / actionMap)
+    return SearchMessageForActionFunctions.searchMessageForAction(message);
+}
+
+//Function B4: Understand resource / field signals from message
+async function understandResource(message, requestState) {
+    //STEP 1: Delegate to values extractors (region, ids, name, tags, structured fields)
+    const outcome = await SearchMessageForValuesFunctions.searchMessageForValues(
+        message,
+        requestState
+    );
+
+    if (outcome && outcome.values) {
+        return outcome.values;
+    }
+
+    return outcome;
+}
+
+//Function B5: Detect AI spend / OpenAI usage questions (classify only)
+async function searchForAiSpend(message) {
+    //STEP 1: Delegate to AI spend search (shouldRun + Internal vs OpenAI)
+    return SearchForAiSpendFunctions.searchForAiSpend(message);
+}
+
+//Function B6: Detect open-requests questions (classify only)
+async function searchForOpenRequests(message) {
+    //STEP 1: Delegate to open-requests search (shouldRun + Internal vs OpenAI)
+    return SearchForOpenRequestsFunctions.searchForOpenRequests(message);
+}
+
+//Function B7: Detect org-knowledge question + extract resourceReference only
+async function understandOrganizationalKnowledge(message, options) {
+    //STEP 1: Delegate to org-knowledge search (shouldRun + Internal vs OpenAI)
+    return SearchForOrganizationalKnowledgeFunctions.searchForOrganizationalKnowledge(
+        message,
+        options
+    );
+}
+
+//FUNCTIONS C: Explain
+//Function C1: Explain — placeholder until a later project
+async function explain(context) {
+    //STEP 1: Placeholder only
+    throw new Error('CloudPilotIntelligence.explain is not implemented yet.');
+}
+
+//FUNCTIONS D: Improve
+//Function D1: Improve — placeholder until a later project
+async function improve(context) {
+    //STEP 1: Placeholder only
+    throw new Error('CloudPilotIntelligence.improve is not implemented yet.');
+}
+
+//FUNCTIONS E: Generate
+//Function E1: Generate — placeholder until a later project
+async function generate(context) {
+    //STEP 1: Placeholder only
+    throw new Error('CloudPilotIntelligence.generate is not implemented yet.');
+}
+
+//Legacy placeholder — prefer generateGeneralMessageReply() for GenAI conversation
+async function respond(context) {
+    //STEP 1: Placeholder only
+    throw new Error('CloudPilotIntelligence.respond is not implemented yet.');
+}
+
+module.exports = {
+    generateGeneralMessageReply,
+    generateRequestMessageReply,
+    understandMessage,
+    understandRegion,
+    understandAction,
+    understandResource,
+    searchForAiSpend,
+    searchForOpenRequests,
+    understandOrganizationalKnowledge,
+    explain,
+    improve,
+    generate,
+    respond
+};

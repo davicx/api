@@ -27,4 +27,4 @@ if grep -rEn --binary-files=without-match "${EXCLUDES[@]}" "$PATTERN" . 2>/dev/n
   exit 1
 fi
 
-echo "OK: no forbidden S3 presign query markers under ${ROOT}"
+echo "OK: no S3 presign query markers under ${ROOT}"

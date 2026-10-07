@@ -207,7 +207,7 @@ async function addPostComments(currentUser, posts, groupID)  {
 				comments[j].friendshipStatus = friendshipCheck.friendshipStatus;
 				comments[j].commentLikes = currentCommentLikes.commentLikes;
 				comments[j].commentLikeCount = currentCommentLikes.commentLikes.length;
-				comments[j].groupID = parseInt(groupID);
+				comments[j].groupID = parseInt(posts[i].groupID != null ? posts[i].groupID : groupID);
 
 				// Check if currentUser liked this comment
 				comments[j].commentLikedByCurrentUser = currentCommentLikes.commentLikes.some(

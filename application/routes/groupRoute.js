@@ -60,7 +60,6 @@ groupRouter.post('/group/create/', function(req, res) {
     }
 })
 
-
 //Route A2: Get Groups
 groupRouter.get('/groups/user/:user_name/', function(req, res) {
     groupFunctions.getGroups(req, res);

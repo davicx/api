@@ -17,6 +17,12 @@ FUNCTIONS A: All Routes Related to User Profile
 FUNCTIONS B: All Functions Related to User Info
 	1) Function B1: Get total User Posts, Groups and Friends
 
+FUNCTIONS C: All Functions Related to User Preferences
+	1) Function C1: Get User Preferences
+	2) Function C2: Add User Preference
+	3) Function C3: Edit User Preference
+	4) Function C4: Remove User Preference
+
 */
 
 /*
@@ -75,7 +81,27 @@ profileRouter.get("/profile/info/:user_name", middlewares.verifyUser, (req, res)
     profile.getUserProfileInformation(req, res);
 })
 
+//FUNCTIONS C: All Functions Related to User Preferences
+//Function C1: Get User Preferences
+//http://localhost:3003/preferences/davey
+profileRouter.get("/preferences/:user_name", middlewares.verifyUser, (req, res) => {
+	profile.getUserPreferences(req, res);
+})
 
+//Function C2: Add User Preference
+profileRouter.post("/preferences/add", middlewares.verifyUser, (req, res) => {
+	profile.addUserPreference(req, res);
+})
+
+//Function C3: Edit User Preference
+profileRouter.post("/preferences/edit", middlewares.verifyUser, (req, res) => {
+	profile.editUserPreference(req, res);
+})
+
+//Function C4: Remove User Preference
+profileRouter.post("/preferences/remove", middlewares.verifyUser, (req, res) => {
+	profile.removeUserPreference(req, res);
+})
 
 module.exports = profileRouter;
 

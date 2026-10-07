@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas – Deploy Assistant</title>
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,0.06);
+      --panel-2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.12);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.64);
+      --muted2: rgba(255,255,255,0.46);
+      --accent: #7c5cff;
+      --accent2: #22c55e;
+      --danger: #ef4444;
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+      --radius: 18px;
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 15% 10%, rgba(124,92,255,0.22), transparent 60%),
+        radial-gradient(900px 700px at 85% 15%, rgba(34,197,94,0.14), transparent 55%),
+        radial-gradient(800px 800px at 50% 110%, rgba(56,189,248,0.10), transparent 60%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    .shell{
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px){
+      .shell{ grid-template-columns: 1fr; }
+      body{ padding: 18px; }
+    }
+
+    .topbar{
+      grid-column: 1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .logo{
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 45%),
+        linear-gradient(135deg, rgba(124,92,255,1), rgba(34,197,94,0.8));
+      box-shadow: 0 10px 30px rgba(124,92,255,0.25);
+    }
+
+    .brand h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+    }
+
+    .brand .sub{
+      display:block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--accent2);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.12);
+    }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .cardHeader{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .cardHeader .title{
+      font-size: 13px;
+      color: var(--muted);
+      margin:0;
+    }
+
+    .ghostBtn{
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .ghostBtn:hover{ background: rgba(255,255,255,0.06); }
+
+    /* Chat */
+    .chatWrap{
+      display:flex;
+      flex-direction: column;
+      height: 78vh;
+      min-height: 520px;
+    }
+
+    .chatBody{
+      padding: 16px;
+      overflow: auto;
+      flex: 1;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .msgRow{
+      display:flex;
+      gap: 10px;
+      align-items:flex-end;
+      max-width: 100%;
+    }
+
+    .msgRow.user{
+      justify-content:flex-end;
+    }
+
+    .avatar{
+      width: 30px;
+      height: 30px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+
+    .bubble{
+      max-width: 72%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      line-height: 1.25;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msgRow.user .bubble{
+      background: rgba(124,92,255,0.20);
+      border-color: rgba(124,92,255,0.35);
+    }
+
+    .metaLine{
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted2);
+    }
+
+    .chipRow{
+      margin-top: 10px;
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip{
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .chip:hover{ background: rgba(255,255,255,0.07); }
+
+    .codeTag{
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.85);
+      font-size: 11px;
+      margin: 0 4px;
+      vertical-align: middle;
+    }
+
+    .chatFooter{
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .composer{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+    }
+
+    .composer input{
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .composer input::placeholder{
+      color: rgba(255,255,255,0.45);
+    }
+
+    .sendBtn{
+      border: none;
+      background: linear-gradient(135deg, rgba(124,92,255,1), rgba(124,92,255,0.75));
+      color: white;
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 12px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(124,92,255,0.18);
+    }
+    .sendBtn:hover{ filter: brightness(1.05); }
+
+    /* Side panel */
+    .panelBody{
+      padding: 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+      font-size: 13px;
+    }
+    .kv .k{ color: var(--muted); }
+    .kv .v{ color: var(--text); font-weight: 600; }
+
+    .mini{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .ctaRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .primaryBtn{
+      flex: 1;
+      min-width: 160px;
+      border: none;
+      color: white;
+      background: linear-gradient(135deg, rgba(34,197,94,1), rgba(34,197,94,0.72));
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 12px;
+      box-shadow: 0 10px 30px rgba(34,197,94,0.14);
+    }
+
+    .secondaryBtn{
+      flex: 1;
+      min-width: 160px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .secondaryBtn:hover{ background: rgba(255,255,255,0.07); }
+
+    a.fakeLink{
+      color: rgba(124,92,255,0.95);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a.fakeLink:hover{ text-decoration: underline; }
+
+  </style>
+</head>
+<body>
+
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Atlas</h1>
+          <span class="sub">Friendly deployment assistant (local)</span>
+        </div>
+      </div>
+      <div class="pill" title="Local mode">
+        <span class="dot"></span>
+        Connected • Local Prototype
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="card chatWrap">
+      <div class="cardHeader">
+        <p class="title">Chat</p>
+        <button class="ghostBtn" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="chatBody" id="chatBody">
+        <!-- Atlas intro -->
+        <div class="msgRow">
+          <div class="avatar">A</div>
+          <div>
+            <div class="bubble">
+              Hi! I’m Atlas. Paste a <span class="codeTag">GitHub repo URL</span> and I’ll help you deploy it as a static site on AWS.
+              <div class="chipRow">
+                <button class="chip" data-fill="Deploy https://github.com/yourname/your-repo">Try an example</button>
+                <button class="chip" data-fill="I want to deploy a static site">I want to deploy</button>
+              </div>
+            </div>
+            <div class="metaLine">Tip: You can say “Deploy https://github.com/…”</div>
+          </div>
+        </div>
+
+        <!-- Atlas asks region -->
+        <div class="msgRow">
+          <div class="avatar">A</div>
+          <div>
+            <div class="bubble">
+              Which AWS region should we use?
+              <div class="chipRow">
+                <button class="chip regionChip" data-region="us-east-1">us-east-1</button>
+                <button class="chip regionChip" data-region="us-west-2">us-west-2</button>
+                <button class="chip regionChip" data-region="eu-west-1">eu-west-1</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="chatFooter">
+        <div class="composer">
+          <input id="chatInput" type="text" placeholder="Type a message… e.g. Deploy https://github.com/you/site" />
+          <button class="sendBtn" id="sendBtn">
+            Send
+            <span aria-hidden="true">↵</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="card">
+      <div class="cardHeader">
+        <p class="title">Deployment Info</p>
+        <button class="ghostBtn">Settings</button>
+      </div>
+
+      <div class="panelBody">
+        <div class="kv">
+          <span class="k">Repo</span>
+          <span class="v" id="repoValue">—</span>
+        </div>
+        <div class="kv">
+          <span class="k">Region</span>
+          <span class="v" id="regionValue">—</span>
+        </div>
+        <div class="kv">
+          <span class="k">Plan</span>
+          <span class="v">S3 Static Site</span>
+        </div>
+
+        <div class="mini">
+          You’ll get:
+          <ul style="margin:8px 0 0 18px; padding:0;">
+            <li>Public URL</li>
+            <li>CloudFormation template download</li>
+            <li>(Later) CloudFront + custom domain</li>
+          </ul>
+        </div>
+
+        <div class="ctaRow">
+          <button class="primaryBtn">Deploy (disabled for now)</button>
+          <button class="secondaryBtn">Download CFN (disabled)</button>
+        </div>
+
+        <div class="mini">
+          Status: <strong>UI prototype</strong>. No backend connected yet.<br/>
+          Next: wire chat → structured inputs → <a class="fakeLink" href="javascript:void(0)">POST /deploy</a>.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tiny JS: purely for UI feel. Remove if you want 0 behavior.
+    const chatBody = document.getElementById('chatBody');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    const repoValue = document.getElementById('repoValue');
+    const regionValue = document.getElementById('regionValue');
+
+    function addMessage(text, who = 'user') {
+      const row = document.createElement('div');
+      row.className = 'msgRow ' + (who === 'user' ? 'user' : '');
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+
+      if (who === 'user') {
+        // right aligned, no avatar
+        row.appendChild(bubble);
+      } else {
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = 'A';
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+      }
+
+      chatBody.appendChild(row);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function tryExtractRepo(text) {
+      const match = text.match(/https?:\/\/github\.com\/[^\s]+/i);
+      return match ? match[0].replace(/[\)\]\}>,.]+$/,'') : null;
+    }
+
+    sendBtn.addEventListener('click', () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      addMessage(text, 'user');
+
+      // UI-only: reflect repo if detected
+      const repo = tryExtractRepo(text);
+      if (repo) repoValue.textContent = repo;
+
+      chatInput.value = '';
+      chatInput.focus();
+    });
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+
+    // Fill chips
+    document.querySelectorAll('[data-fill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        chatInput.value = btn.getAttribute('data-fill');
+        chatInput.focus();
+      });
+    });
+
+    // Region chips
+    document.querySelectorAll('.regionChip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = btn.getAttribute('data-region');
+        regionValue.textContent = r;
+        addMessage(`Use region ${r}`, 'user');
+      });
+    });
+
+    // Clear
+    clearBtn.addEventListener('click', () => {
+      // Keep the first two Atlas messages; wipe everything after them
+      const nodes = Array.from(chatBody.children);
+      nodes.slice(2).forEach(n => n.remove());
+      repoValue.textContent = '—';
+      regionValue.textContent = '—';
+      chatInput.value = '';
+      chatInput.focus();
+    });
+  </script>
+
+</body>
+</html>

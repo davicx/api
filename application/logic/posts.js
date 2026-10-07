@@ -39,6 +39,7 @@ FUNCTIONS B: All Functions Related to getting Posts
 	2) Function B2: Get all User Posts 
 	3) Function B3: Get Single Post by ID 
 	4) Function B4: Get All Posts
+	5) Function B5: Get Home Feed Posts (master_site = kite)
 
 FUNCTIONS C: All Functions Related to Post Actions
 	1) Function C1: Like a Post
@@ -79,8 +80,21 @@ async function postText(req, res) {
 		currentUser: req.body.postFrom
 	}
 
-	//STEP 1: Make a new post
-	console.log("STEP 1: Make a new post")
+	//STEP 1: Verify post matches group type (kite only)
+	console.log("STEP 1: Verify post matches group type")
+	var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "post");
+	if (!verifySiteOutcome.success) {
+		postOutcome.message = verifySiteOutcome.message;
+		postOutcome.statusCode = 400;
+		postOutcome.success = false;
+		console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+		res.json(postOutcome);
+		console.log("____________________________")
+		return;
+	}
+
+	//STEP 2: Make a new post
+	console.log("STEP 2: Make a new post")
 	var newPostOutcome = await Post.createPostText(req);
 
 
@@ -94,8 +108,8 @@ async function postText(req, res) {
 			postID = newPostOutcome.newPost.postID
 		}
 
-		//STEP 2: Add the Notifications
-		console.log("STEP 2: Add notifications")
+		//STEP 3: Add the Notifications
+		console.log("STEP 3: Add notifications")
 		var notification = {}
 		const groupUsersOutcome = await Group.getGroupUsers(groupID);
 		const groupUsers = groupUsersOutcome.groupUsers;
@@ -117,15 +131,15 @@ async function postText(req, res) {
 			}
 		}
 		
-		//STEP 3: New Post Outcome 
-		console.log("STEP 3: New Post Outcome")
+		//STEP 4: New Post Outcome 
+		console.log("STEP 4: New Post Outcome")
 		console.log(postOutcome)
 		console.log("YOU MADE A NEW POST!")
 	} else {
 		postOutcome.message = "There was a problem making your post!"
 		postOutcome.statusCode = 500
 		postOutcome.success = false
-		console.log("STEP 3: Something went wrong making this post!")
+		console.log("STEP 4: Something went wrong making this post!")
 	} 
 
 	res.json(postOutcome);
@@ -152,26 +166,37 @@ async function postPhotoLocal(req, res) {
 			currentUser: currentUser
 		}
 
+	//STEP 1: Verify post matches group type (kite only)
+	console.log("STEP 1: Verify post matches group type")
+	var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "post");
+	if (!verifySiteOutcome.success) {
+		postOutcome.message = verifySiteOutcome.message;
+		postOutcome.statusCode = 400;
+		postOutcome.success = false;
+		console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+		Functions.addFooter();
+		return res.status(postOutcome.statusCode).json(postOutcome);
+	}
 
-	//STEP 1: Check for Valid File
+	//STEP 2: Check for Valid File
 	const uploadResult = fileFunctions.handleUploadResult(req, err);
-	console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
+	console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
 
 	uploadSuccess = uploadResult.uploadSuccess;
 	postOutcome.message = uploadResult.message;
 	
 	if (!uploadResult.uploadSuccess) {
-		console.log("STEP 1 (ERROR): Invalid or missing file.");
+		console.log("STEP 2 (ERROR): Invalid or missing file.");
 		Functions.addFooter();
 		return res.status(postOutcome.statusCode).json(postOutcome);
 	}
 
-	//STEP 2: Upload File to storage (Local) and get file information
+	//STEP 3: Upload File to storage (Local) and get file information
 	var uploadFile = {}
 	let file = req.file
-	console.log("STEP 2: Upload File to storage (Local) and get file information")
+	console.log("STEP 3: Upload File to storage (Local) and get file information")
 
-	//STEP 3: Create the Upload File with its information
+	//STEP 4: Create the Upload File with its information
 	uploadFile.fileMimetype = file.mimetype; 
 	uploadFile.originalname = file.originalname; //file_name
 	uploadFile.fileNameServer = file.filename; //file_name_server
@@ -191,9 +216,9 @@ async function postPhotoLocal(req, res) {
 	//uploadFile.bucket = result.Bucket; // cloud_bucket 	
 	//uploadFile.storageType = "aws"; //storage_type		
 
-	//STEP 4: Get Group Post Information
-	console.log("STEP 4: Get Group Post Information")
-	console.log("STEP 4: groupID from req.body:", groupID, "type:", typeof groupID)
+	//STEP 5: Get Group Post Information
+	console.log("STEP 5: Get Group Post Information")
+	console.log("STEP 5: groupID from req.body:", groupID, "type:", typeof groupID)
 	
 	// Get user image
 	let userImage = null;
@@ -223,8 +248,8 @@ async function postPhotoLocal(req, res) {
 		}
 	}
 
-	//STEP 5: Create Post with all information
-	console.log("STEP 5: Create Post with all information")
+	//STEP 6: Create Post with all information
+	console.log("STEP 6: Create Post with all information")
 	let newPostOutcome = await Post.createPostPhoto(req, uploadFile, userImage, groupInfo);
 
 	postOutcome.data = newPostOutcome.newPost;
@@ -232,12 +257,12 @@ async function postPhotoLocal(req, res) {
 	postOutcome.statusCode = 200
 	postOutcome.success = true
 
-	//STEP 3: Add the Notifications
+	//STEP 7: Add the Notifications
 	if(newPostOutcome.outcome == 200) {
 		var notification = {}
 		const groupUsersOutcome = await Group.getGroupUsers(groupID);
 		const groupUsers = groupUsersOutcome.groupUsers;
-		console.log("STEP 4: Add notifications")
+		console.log("STEP 7: Add notifications")
 
 		var postID = 0
 		if (newPostOutcome.newPost.postID) {
@@ -291,28 +316,40 @@ async function postPhotoLocalAWS(req, res) {
 			currentUser: req.body.postFrom
 		}
 
-		//STEP 1: Check for a valid file
+		//STEP 1: Verify post matches group type (kite only)
+		console.log("STEP 1: Verify post matches group type")
+		var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "post");
+		if (!verifySiteOutcome.success) {
+			postOutcome.message = verifySiteOutcome.message;
+			postOutcome.statusCode = 400;
+			postOutcome.success = false;
+			console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+			Functions.addFooter();
+			return res.status(postOutcome.statusCode).json(postOutcome);
+		}
+
+		//STEP 2: Check for a valid file
 		const uploadResult = fileFunctions.handleUploadResult(req, err);
-		console.log("STEP 1: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
+		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
 	
 		uploadSuccess = uploadResult.uploadSuccess;
 		postOutcome.message = uploadResult.message;
 		
 		if (!uploadResult.uploadSuccess) {
-			console.log("STEP 1 (ERROR): Invalid or missing file.");
+			console.log("STEP 2 (ERROR): Invalid or missing file.");
 			Functions.addFooter();
 		}
 
-		//STEP 2: Upload File to storage (AWS) and get file information
+		//STEP 3: Upload File to storage (AWS) and get file information
 		var uploadFile = {}
 		let file = req.file
-		console.log("STEP 2: Upload File to storage (AWS) and get file information")
+		console.log("STEP 3: Upload File to storage (AWS) and get file information")
 			
 		//const fileExtension = mime.extension(file.mimetype) 
 		const result = await awsStorage.uploadPost(file)
 
 
-		//STEP 3: Create the Upload File with its information
+		//STEP 4: Create the Upload File with its information
 		//File Information
 		uploadFile.fileMimetype = file.mimetype; 
 		uploadFile.originalname = file.originalname; //file_name
@@ -330,24 +367,24 @@ async function postPhotoLocalAWS(req, res) {
 		uploadFile.bucket = result.Bucket; // cloud_bucket 	
 		uploadFile.storageType = "aws"; //storage_type		
 
-		//STEP 3: Add Post to Database
+		//STEP 5: Add Post to Database
 		let newPostOutcome = await Post.createPostPhoto(req, uploadFile);
 
-		//STEP 4: Get a Signed URL so we can display this new post
+		//STEP 6: Get a Signed URL so we can display this new post
 		var newPost = await PostFunctions.getSignedURL(newPostOutcome.newPost);
 		
 		postOutcome.data = newPost;
 		postOutcome.message = "Your photo was posted!"
 		postOutcome.statusCode = 200
 		postOutcome.success = true
-		console.log("STEP 3: Post was added to the Database")
+		console.log("STEP 5: Post was added to the Database")
 
-		//STEP 4: Add the Notifications
+		//STEP 7: Add the Notifications
 		if(newPostOutcome.outcome == 200) {
 			var notification = {}
 			const groupUsersOutcome = await Group.getGroupUsers(groupID);
 			const groupUsers = groupUsersOutcome.groupUsers;
-			console.log("STEP 4: Add notifications")
+			console.log("STEP 7: Add notifications")
 
 			//Set the Post ID for the new post in notifications
 			var postID = 0
@@ -407,8 +444,19 @@ async function postVideo(req, res) {
 		currentUser: req.body.currentUser
 	}
 
-	//STEP 1: Create the New Post 
-	console.log("STEP 1: Make a new post")	
+	//STEP 1: Verify post matches group type (kite only)
+	console.log("STEP 1: Verify post matches group type")
+	var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "post");
+	if (!verifySiteOutcome.success) {
+		postOutcome.message = verifySiteOutcome.message;
+		postOutcome.statusCode = 400;
+		postOutcome.success = false;
+		console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+		return res.json(postOutcome);
+	}
+
+	//STEP 2: Create the New Post 
+	console.log("STEP 2: Make a new post")	
 	var newPostOutcome = await Post.createPostVideo(req);
 
 	if(newPostOutcome.outcome == 200) {
@@ -421,7 +469,7 @@ async function postVideo(req, res) {
 			postID = newPostOutcome.newPost.postID
 		}
 
-		//STEP 2: Add the Notification
+		//STEP 3: Add the Notification
 		var notification = {}
 		const groupUsersOutcome = await Group.getGroupUsers(groupID);
 		const groupUsers = groupUsersOutcome.groupUsers;
@@ -742,6 +790,34 @@ async function getAllGroupPosts(req, res) {
 	Functions.addFooter()
 	res.json(postsResponse)
 
+}
+
+//Function B5: Get Home Feed Posts (master_site = kite)
+//http://localhost:3003/posts/home
+async function getHomePosts(req, res) {
+	const currentUser = req.currentUser
+
+	var headerMessage = "HEADER: Get Home Feed Posts master_site kite"
+	Functions.addHeader(headerMessage)
+
+	var postsOutcome = await Post.getHomePosts("kite")
+	var postsRaw = postsOutcome.posts;
+
+	var postsComments = await PostFunctions.addPostComments(currentUser, postsRaw)
+	var postsLikes = await PostFunctions.addPostLikes(currentUser, postsComments)
+	var posts = await PostFunctions.addSignedURLPostsArray(postsLikes);
+
+	var postsResponse = {
+		data: posts,
+		message: "Need to add error and stuff in this always works!",
+		success: true,
+		statusCode: 200,
+		errors: [],
+		currentUser: currentUser
+	}
+
+	Functions.addFooter()
+	res.json(postsResponse)
 }
 
 //Route B2: Get Group Posts Pagination
@@ -1160,7 +1236,7 @@ async function editPost(req, res) {
 }
 
 
-module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
+module.exports = { postText, postPhotoLocal, postPhotoLocalAWS, postVideo, postArticle, getGroupPosts, getAllGroupPosts, getHomePosts, getAllUserPosts, getSinglePost, getAllPosts, likePost, unlikePost, getAllLikes, getPostLikes, deletePost, editPost  };
 
 
 

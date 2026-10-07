@@ -6,7 +6,7 @@ const {
     isWaitingOnExecutionMode,
     isCollectingFields,
     shouldUpdateStatusWhenFieldsComplete
-} = require('../../../../application/atlas/functions/actionStatusFunctions');
+} = require('../../../../application/atlas/services/requests/functions/requestStatusFunctions');
 
 describe('actionStatusFunctions', () => {
     test('initialStatusForNewAction returns waiting_on_fields when missing list not empty', () => {

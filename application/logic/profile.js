@@ -2,10 +2,12 @@ const db = require('../functions/conn');
 
 const Functions = require('../functions/functions');
 const Profile = require('../functions/classes/Profile');
+const Preference = require('../functions/classes/Preference');
 
 const fileFunctions = require('../functions/fileFunctions');
 const userFunctions = require('../functions/userFunctions');
 const profileFunctions = require('../functions/profileFunctions')
+const preferenceFunctions = require('../functions/preferenceFunctions');
 const friendFunctions = require('../functions/friendFunctions');
 const postFunctions = require('../functions/postFunctions');
 const groupFunctions = require('../functions/groupFunctions');
@@ -38,6 +40,12 @@ FUNCTIONS A: All Functions Related to User Profile
 
 FUNCTIONS B: All Functions Related to User Info
 	1) Function B1: Get total User Posts, Groups and Friends
+
+FUNCTIONS C: All Functions Related to User Preferences
+	1) Function C1: Get User Preferences
+	2) Function C2: Add User Preference
+	3) Function C3: Edit User Preference
+	4) Function C4: Remove User Preference
 
 */
 
@@ -511,7 +519,284 @@ async function getUserProfileInformation(req, res) {
     res.json(userProfileInfoOutcome);
 }
 
-module.exports = { getUserProfile, updateUserProfile, updateFullUserProfileLocal, updateFullUserProfileLocalAWS, getUserProfileInformation };
+/*
+FUNCTIONS C: All Functions Related to User Preferences
+	1) Function C1: Get User Preferences
+	2) Function C2: Add User Preference
+	3) Function C3: Edit User Preference
+	4) Function C4: Remove User Preference
+*/
+
+//Function C1: Get User Preferences
+//http://localhost:3003/preferences/davey
+async function getUserPreferences(req, res) {
+	const currentUser = req.currentUser || '';
+	const userName = req.params.user_name;
+
+	Functions.addHeader('Get User Preferences for ' + userName);
+
+	const response = {
+		data: [],
+		message: '',
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	if (!userName) {
+		response.message = 'user_name is required';
+		response.statusCode = 400;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const listOutcome = await Preference.getPreferencesByUserName(userName);
+	if (!listOutcome.success) {
+		response.message = 'Failed to load preferences';
+		response.errors = listOutcome.errors || [];
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	response.data = listOutcome.preferences;
+	response.success = true;
+	response.statusCode = 200;
+	response.message = 'Preferences for ' + userName;
+	Functions.addFooter();
+	return res.json(response);
+}
+
+//Function C2: Add User Preference
+async function addUserPreference(req, res) {
+	const currentUser = req.currentUser || req.body.currentUser || '';
+
+	Functions.addHeader('Add User Preference for ' + currentUser);
+
+	const response = {
+		data: {},
+		message: '',
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	if (!currentUser) {
+		response.message = 'currentUser is required';
+		response.statusCode = 401;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const normalized = preferenceFunctions.normalizePreferenceInput(req.body || {}, {
+		requireTitle: true
+	});
+	if (!normalized.ok) {
+		response.message = 'Invalid preference';
+		response.errors = normalized.errors;
+		response.statusCode = 400;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const createOutcome = await Preference.createPreference({
+		userName: currentUser,
+		preferenceCategory: normalized.preference.preferenceCategory,
+		preferenceTitle: normalized.preference.preferenceTitle,
+		preferenceDescription: normalized.preference.preferenceDescription,
+		displayOrder: normalized.preference.displayOrder
+	});
+
+	if (!createOutcome.success) {
+		response.message = 'Failed to add preference';
+		response.errors = createOutcome.errors || [];
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	response.data = createOutcome.preference;
+	response.success = true;
+	response.statusCode = 200;
+	response.message = 'Preference added';
+	Functions.addFooter();
+	return res.json(response);
+}
+
+//Function C3: Edit User Preference
+async function editUserPreference(req, res) {
+	const currentUser = req.currentUser || req.body.currentUser || '';
+	const userPreferenceID = Number(req.body.userPreferenceID || req.body.preferenceID || 0);
+
+	Functions.addHeader('Edit User Preference ' + userPreferenceID);
+
+	const response = {
+		data: {},
+		message: '',
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	if (!currentUser) {
+		response.message = 'currentUser is required';
+		response.statusCode = 401;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	if (!userPreferenceID) {
+		response.message = 'userPreferenceID is required';
+		response.statusCode = 400;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const existing = await Preference.getPreferenceByID(userPreferenceID);
+	if (!existing.found || !existing.preference) {
+		response.message = 'Preference not found';
+		response.statusCode = 404;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	if (!preferenceFunctions.isPreferenceOwner(currentUser, existing.preference.userName)) {
+		response.message = 'Not allowed to edit this preference';
+		response.statusCode = 403;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	if (existing.preference.active === 0) {
+		response.message = 'Preference is deleted';
+		response.statusCode = 400;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const body = Object.assign({}, req.body || {});
+	if (body.preferenceTitle == null && body.title == null) {
+		body.preferenceTitle = existing.preference.preferenceTitle;
+	}
+	if (body.preferenceDescription == null && body.description == null && body.note == null) {
+		body.preferenceDescription = existing.preference.preferenceDescription;
+	}
+	if (body.preferenceCategory == null && body.category == null) {
+		body.preferenceCategory = existing.preference.preferenceCategory;
+	}
+	if (body.displayOrder == null && body.sortOrder == null) {
+		body.displayOrder = existing.preference.displayOrder;
+	}
+
+	const normalized = preferenceFunctions.normalizePreferenceInput(body, {
+		requireTitle: true
+	});
+	if (!normalized.ok) {
+		response.message = 'Invalid preference';
+		response.errors = normalized.errors;
+		response.statusCode = 400;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const updateOutcome = await Preference.updatePreference({
+		userPreferenceID: userPreferenceID,
+		userName: currentUser,
+		preferenceCategory: normalized.preference.preferenceCategory,
+		preferenceTitle: normalized.preference.preferenceTitle,
+		preferenceDescription: normalized.preference.preferenceDescription,
+		displayOrder: normalized.preference.displayOrder
+	});
+
+	if (!updateOutcome.success) {
+		response.message = 'Failed to update preference';
+		response.errors = updateOutcome.errors || [];
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const refreshed = await Preference.getPreferenceByID(userPreferenceID);
+	response.data = refreshed.preference || {};
+	response.success = true;
+	response.statusCode = 200;
+	response.message = 'Preference updated';
+	Functions.addFooter();
+	return res.json(response);
+}
+
+//Function C4: Remove User Preference
+async function removeUserPreference(req, res) {
+	const currentUser = req.currentUser || req.body.currentUser || '';
+	const userPreferenceID = Number(req.body.userPreferenceID || req.body.preferenceID || 0);
+
+	Functions.addHeader('Remove User Preference ' + userPreferenceID);
+
+	const response = {
+		data: {},
+		message: '',
+		success: false,
+		statusCode: 500,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	if (!currentUser) {
+		response.message = 'currentUser is required';
+		response.statusCode = 401;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	if (!userPreferenceID) {
+		response.message = 'userPreferenceID is required';
+		response.statusCode = 400;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const existing = await Preference.getPreferenceByID(userPreferenceID);
+	if (!existing.found || !existing.preference) {
+		response.message = 'Preference not found';
+		response.statusCode = 404;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	if (!preferenceFunctions.isPreferenceOwner(currentUser, existing.preference.userName)) {
+		response.message = 'Not allowed to remove this preference';
+		response.statusCode = 403;
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	const deleteOutcome = await Preference.softDeletePreference(userPreferenceID, currentUser);
+	if (!deleteOutcome.success) {
+		response.message = 'Failed to remove preference';
+		response.errors = deleteOutcome.errors || [];
+		Functions.addFooter();
+		return res.json(response);
+	}
+
+	response.data = { userPreferenceID: userPreferenceID, active: 0 };
+	response.success = true;
+	response.statusCode = 200;
+	response.message = 'Preference removed';
+	Functions.addFooter();
+	return res.json(response);
+}
+
+module.exports = {
+	getUserProfile,
+	updateUserProfile,
+	updateFullUserProfileLocal,
+	updateFullUserProfileLocalAWS,
+	getUserProfileInformation,
+	getUserPreferences,
+	addUserPreference,
+	editUserPreference,
+	removeUserPreference
+};
 
 
 //APPENDIX
