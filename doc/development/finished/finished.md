@@ -6,9 +6,13 @@
 
 ---
 
+## Recently finished (2026-10-07)
+
+- [x] **Dashboard leftovers** — Finding drill-down, URL path, S3 table cleanup, Scan buttons, mock `/dashboard-chat` archived — [feature_dashboard.md](./feature_dashboard.md)
+
 ## Recently finished (2026-10-04)
 
-- [x] **Dashboard** — One `/dashboard` page: real scan data, bucket/instance drill-down, side chat — [feature_dashboard.md](./feature_dashboard.md) · leftovers: [feature_dashboard.md](../current/feature_dashboard.md)
+- [x] **Dashboard** — One `/dashboard` page: real scan data, bucket/instance drill-down, side chat — [feature_dashboard.md](./feature_dashboard.md)
 
 ## Recently finished (2026-08-29)
 
