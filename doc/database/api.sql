@@ -6,10 +6,34 @@
 #ALL#
 #########
 
-SELECT * FROM cloudpilot_actions;
+
+
+SELECT * FROM shareshare.groups;
+SELECT * FROM posts;
+#SELECT * FROM messages;
+#SELECT * FROM user_profile;
+#SELECT * FROM user_preference;
+
+#UPDATE cloudpilot_requests SET is_open = 0 WHERE id = 69;
+
+#SELECT * FROM cloudpilot_requests;
+
+
+#DELETE FROM shareshare.groups WHERE group_id > 722;
+
+
+
+
+
+-- 3) Clear membership / invites if those tables exist (skip if not)
+-- DELETE FROM group_users WHERE group_id IN (723, 724);
+-- DELETE FROM group_members WHERE group_id IN (723, 724);
+-- DELETE FROM group_invites WHERE group_id IN (723, 724);
+
+-- 4) Delete the groups
+
+
 #SELECT * FROM cloudpilot_workflows;
-
-
 
 
 /*

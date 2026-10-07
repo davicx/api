@@ -340,8 +340,54 @@ async function unlikeComment(req, res) {
 
 }
 
+//Function C3: Soft-delete a Comment (author only)
+async function deleteComment(req, res) {
+	const currentUser = req.body.currentUser;
+	const commentID = req.body.commentID;
+	const postID = req.body.postID;
 
-module.exports = { postComment, getComments, getAllComments, likeComment, unlikeComment };
+	var commentOutcome = {
+		data: {
+			commentID: commentID,
+			postID: postID,
+			currentUser: currentUser
+		},
+		success: false,
+		message: "",
+		statusCode: 200,
+		errors: [],
+		currentUser: currentUser
+	};
+
+	if (!currentUser || !commentID) {
+		commentOutcome.message = "Missing currentUser or commentID";
+		commentOutcome.statusCode = 400;
+		return res.status(400).json(commentOutcome);
+	}
+
+	try {
+		var deleteOutcome = await Comment.deleteComment(commentID, currentUser);
+
+		commentOutcome.success = deleteOutcome.success === true;
+		commentOutcome.message = deleteOutcome.message || "";
+		commentOutcome.errors = deleteOutcome.errors || [];
+
+		if (!commentOutcome.success) {
+			commentOutcome.statusCode = 403;
+			return res.status(403).json(commentOutcome);
+		}
+
+		return res.json(commentOutcome);
+	} catch (err) {
+		commentOutcome.message = "Could not delete comment " + commentID;
+		commentOutcome.statusCode = 500;
+		commentOutcome.errors.push(err);
+		return res.status(500).json(commentOutcome);
+	}
+}
+
+
+module.exports = { postComment, getComments, getAllComments, likeComment, unlikeComment, deleteComment };
 
 //APPENDIX
 /*

@@ -3,10 +3,13 @@ const Message = require('../../functions/classes/Message');
 const Group = require('../../functions/classes/Group');
 const Notification = require('../../functions/classes/Notification');
 const messageFunctions = require('../../functions/messageFunctions');
-const cloudPilotMessageFunctions = require('../services/cloudPilotMessageFunctions');
+const cloudPilotMessageFunctions = require('../cloudPilot/chat/cloudPilotMessageFunctions');
 const Functions = require('../../functions/functions');
-const openAIFunctions = require('../services/chat/openAI/openAIFunctions');
-const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../services/config/chatGPTconfig');
+const openAIFunctions = require('../providers/openAI/client/openAIClient');
+const { CHAT_CONFIG, OPENAI_SAFE_DEFAULTS } = require('../config/chatGPTconfig');
+const MasterLogging = require('../cloudPilot/logging/masterLogging');
+const ScanSnapshotService = require('../cloudPilot/scans/persistence/ScanSnapshotService');
+const Request = require('../cloudPilot/requests/classes/Request');
 
 /*
 FUNCTIONS A: All Functions Related to Messages with an API (ChatGPT API right now)
@@ -36,7 +39,12 @@ async function postMessage(req, res) {
     const storageType = req.body.storageType || 'local';
     
     var headerMessage = "New Message";
-    Functions.addHeader(headerMessage);
+    MasterLogging.logHeader(headerMessage);
+
+    const speakerName = formatMessageSpeakerName(messageFrom);
+    const spokenCaption = String(messageCaption || '').trim();
+    console.log(speakerName + ' Says: "' + spokenCaption + '"');
+    console.log(' ');
 
     var messageOutcome = {
         data: {},
@@ -49,8 +57,10 @@ async function postMessage(req, res) {
 
     //STEP 1: Build Message this is basically the JSON for a message
     var currentUserMessage = messageFunctions.buildNewMessage(req);
-    console.log("STEP 1: Build Message ")
-    console.log(currentUserMessage)
+    if (MasterLogging.logMessageBuildOn) {
+        console.log("STEP 1: Build Message");
+        console.log(currentUserMessage);
+    }
 
     //STEP 2: Send user message to be stored in the database
     //console.log("STEP 2: Send user message to be stored in the database");
@@ -74,7 +84,8 @@ async function postMessage(req, res) {
     try {
         cloudPilotResult = await cloudPilotMessageFunctions.processMessage(messageCaption, conversationID, {
             masterSite: masterSite,
-            requestedByUserName: messageFrom
+            requestedByUserName: messageFrom,
+            selectedFinding: req.body.selectedFinding || null
         });
         //console.log("CloudPilot Result:");
         //console.log("___________________");
@@ -84,8 +95,10 @@ async function postMessage(req, res) {
         console.error("CloudPilot error:", err);
     }
 
-    //STEP 6: Save CloudPilot message to database
-    console.log("STEP 6: Save CloudPilot message to database");
+    //STEP 7: Save CloudPilot message to database
+    if (MasterLogging.logSaveCloudPilotMessageOn) {
+        console.log("STEP 7: Save CloudPilot Message");
+    }
 
     var cloudPilotMessageOutcome = null;
     const cloudPilotReplyText = cloudPilotResult && cloudPilotResult.cloudPilotMessage ? String(cloudPilotResult.cloudPilotMessage).trim() : '';
@@ -94,10 +107,38 @@ async function postMessage(req, res) {
         var cloudPilotMessage = messageFunctions.buildCloudPilotMessage(req, cloudPilotReplyText);
         cloudPilotMessageOutcome = await Message.createMessageText(cloudPilotMessage);
 
-        if (cloudPilotMessageOutcome.outcome == 200) {
-            console.log("STEP 6 SUCCESS: CloudPilot message saved");
-        } else {
-            console.log("STEP 6 FAILED: Could not save CloudPilot message");
+        if (MasterLogging.logSaveCloudPilotMessageOn) {
+            if (cloudPilotMessageOutcome.outcome == 200) {
+                console.log("SUCCESS");
+            } else {
+                console.log("FAILED: Could not save CloudPilot message");
+            }
+        }
+    } else if (MasterLogging.logSaveCloudPilotMessageOn) {
+        console.log("Skipped (no CloudPilot reply text)");
+    }
+
+    if (MasterLogging.logSaveCloudPilotMessageOn) {
+        console.log(" ");
+    }
+
+    if (
+        cloudPilotResult &&
+        cloudPilotResult.scanSnapshotID &&
+        cloudPilotMessageOutcome &&
+        cloudPilotMessageOutcome.newMessage
+    ) {
+        const savedMessage = cloudPilotMessageOutcome.newMessage;
+        const messageID =
+            savedMessage.messageID ||
+            savedMessage.message_id ||
+            null;
+        const attachOutcome = await ScanSnapshotService.attachMessage({
+            scanSnapshotId: cloudPilotResult.scanSnapshotID,
+            messageId: messageID
+        });
+        if (!attachOutcome.success) {
+            cloudPilotResult.snapshotSaved = false;
         }
     }
     
@@ -111,13 +152,48 @@ async function postMessage(req, res) {
         messageOutcome.data.CloudPilotActionStatus = cloudPilotResult.cloudPilot;
     }
 
-    //Step 6C: Add formatted Atlas data to response
+    //Step 6C: Add undo availability hint for clients (H6)
+    if (
+        cloudPilotResult &&
+        cloudPilotResult.cloudPilot &&
+        typeof cloudPilotResult.cloudPilot.undoAvailable === 'boolean'
+    ) {
+        messageOutcome.data.undoAvailable = cloudPilotResult.cloudPilot.undoAvailable;
+    }
+
+    //Step 6D: Add formatted Atlas data to response
     messageOutcome.data.atlasResponse = null;
     if (cloudPilotResult && cloudPilotResult.atlasResponse) {
         messageOutcome.data.atlasResponse = cloudPilotResult.atlasResponse;
     }
 
-    //Step 6D: HTTP success when user message saved and CloudPilot chat turn completed
+    messageOutcome.data.scanSnapshotID =
+        cloudPilotResult && cloudPilotResult.scanSnapshotID
+            ? cloudPilotResult.scanSnapshotID
+            : null;
+    messageOutcome.data.snapshotSaved =
+        cloudPilotResult && cloudPilotResult.snapshotSaved != null
+            ? Boolean(cloudPilotResult.snapshotSaved)
+            : null;
+
+    //STEP 8: Final Response (CloudPilot pipeline story ends here)
+    if (MasterLogging.logFinalResponseOn) {
+        console.log("STEP 8: Final Response");
+        if (cloudPilotResult && cloudPilotResult.logFinalResponse) {
+            console.log(JSON.stringify(cloudPilotResult.logFinalResponse, null, 2));
+        } else if (cloudPilotResult) {
+            console.log(JSON.stringify({
+                success: cloudPilotResult.success,
+                cloudPilotMessage: cloudPilotResult.cloudPilotMessage,
+                error: cloudPilotResult.error || null
+            }, null, 2));
+        } else {
+            console.log("(none)");
+        }
+        console.log(" ");
+    }
+
+    //Step 6E: HTTP success when user message saved and CloudPilot chat turn completed
     const userMessageSaved = currentUserMessageOutcome.outcome == 200;
     const cloudPilotTurnCompleted = Boolean(cloudPilotResult && cloudPilotReplyText);
 
@@ -141,8 +217,7 @@ async function postMessage(req, res) {
         }
     }
 
-    //STEP 7: Return Response
-    Functions.addFooter();
+    // OpenAI detail + FOOTER are owned by processMessage (try/finally).
     res.json(messageOutcome);
 }
 
@@ -357,19 +432,41 @@ async function getConversationMessages(req, res) {
     var messagesOutcome = await Message.getConversationMessages(conversationID);
     var messages = messagesOutcome.messages || [];
 
+    var openRequestStatus = null;
+    try {
+        const openResult = await Request.getOpenActionForConversation(conversationID);
+        openRequestStatus =
+            openResult && openResult.action && openResult.action.status
+                ? openResult.action.status
+                : null;
+    } catch (err) {
+        openRequestStatus = null;
+    }
+
     var messagesResponse = {
         data: messages,
         message: "Conversation messages",
         success: messagesOutcome.success,
         statusCode: 200,
         errors: [],
-        currentUser: currentUser
+        currentUser: currentUser,
+        openRequestStatus: openRequestStatus
     };
 
     //STEP 3: Conversation messages outcome
     //console.log('STEP 3: Conversation messages outcome');
     //Functions.addFooter();
     res.json(messagesResponse);
+}
+
+function formatMessageSpeakerName(messageFrom) {
+    const raw = String(messageFrom || '').trim();
+
+    if (!raw) {
+        return 'User';
+    }
+
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 module.exports = { postMessageHello, postMessage, deleteMessage, editMessage, getGroupMessages, getConversationMessages };

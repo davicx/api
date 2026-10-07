@@ -9,6 +9,78 @@
 
 Atlas stays the **source of truth for what’s wrong**; Node focuses on **how users understand and act on it**. **Python AI in Atlas** may still run occasional calls but is expected to be **mostly idle** for now.
 
+### CloudPilot packages (`application/atlas/`)
+
+Turn model (mental): **UNDERSTAND → DECIDE → FULFILL → RESPOND**.  
+**`cloudPilot/`** owns the application turn (decide, request state, fulfill via scans/actions/execution).  
+**`cloudPilotIntelligence/`** is a service CloudPilot calls for understanding and wording — not workflow or AWS execution.
+
+#### `cloudPilot/` — application / orchestrator
+
+```text
+cloudPilot/
+├── masterCloudPilotCapabilities.js   What CloudPilot can do (actions, match, handlers, fields)
+├── chat/                             User-message turn + speak packaging
+│   ├── cloudPilotMessageFunctions.js processMessage — full turn conductor
+│   ├── CloudPilotMessage.js          Package outgoing reply (does not HTTP-send)
+│   ├── general/                      General-chat speak entry (some dead stubs)
+│   ├── request/                      Request-turn speak router
+│   ├── templates/                    Deterministic request UX copy
+│   └── presentation/                 Request polish facts + Navigator helpers
+├── decide/
+│   └── masterDecision.js             Pure decision from understanding + state
+├── requests/                         Persist / interpret open request (cloudpilot_requests)
+│   ├── workflow.js                   store (apply decision) + execute
+│   ├── interpretOpenRequestEffect.js Does this message affect the open request?
+│   ├── decisionTypes.js              Chat / response type constants
+│   ├── classes/                      Request DB model (+ legacy ActionState)
+│   └── functions/                    Start/update/load/status/verify helpers
+├── execution/                        STEP 6 run approved work
+│   ├── functions/                    executeRequest + runAction (handler dispatch)
+│   ├── outcomes/                     Error codes → friendly copy
+│   └── AtlasExecution.js             Older/parallel run path (mostly unused)
+├── executionModes/                   How remediation is delivered (1–4)
+│   ├── automatic/                    Run handler → Atlas
+│   ├── instructions/                 Walkthrough steps
+│   ├── cli/                          AWS CLI text
+│   └── pr/                           GitHub PR (e.g. toggle_ec2)
+├── scans/                            Informational handlers → Atlas
+│   ├── s3/  ec2/  inventory/  billing/  aiUsage/
+├── actions/                          Mutating EC2 handlers (create/delete/pause/…)
+├── capabilities/                     “What can you do?” catalog + reply
+├── questions/                        Grounded question speak (open requests, EC2 cost)
+├── history/                          Change history + undo
+├── knowledge/                        Org knowledge DB load
+└── pricing/                          On-Demand rate lookup + estimates
+```
+
+#### `cloudPilotIntelligence/` — thinking / language service
+
+```text
+cloudPilotIntelligence/
+├── CloudPilotIntelligence.js         Facade CloudPilot calls
+├── understand/                       Human language → structured meaning
+│   ├── masterUnderstanding.js        Main Understanding orchestrator
+│   └── search/                       Action, values, questions, reply, conversation…
+│       ├── values/                   Region, name, instance id/type, tags
+│       ├── questions/                open_requests, ai_spend, inventory, cost…
+│       └── helpers/                  SEARCH logs, structured fields
+├── conversation/                     Respond / wording (future name: respond/)
+│   ├── generateGeneralMessageReply.js    General Chat (uses masterFinalResponse recipe)
+│   └── generateRequestMessageReply.js  Rephrase request templates (facts owned by CloudPilot)
+├── context/                          Assemble + render what an Intelligence call needs
+│   ├── buildContext.js / buildSystemMessage.js
+│   ├── contextTypes/                 Identity, Capabilities, Situation, Current State,
+│   │                                 Current Question, Knowledge
+│   ├── masterContext/                Recipes: which context ingredients a call gets
+│   │   └── masterFinalResponseContext.js General Chat recipe (config only)
+│   ├── operationContext/             Search task payloads (catalog, examples, output format)
+│   └── classes/                      Conversation history + current question helpers
+├── improve/  explain/  generate/  respond/   Placeholders (mostly empty — not wired)
+```
+
+**Rule of thumb:** CloudPilot decides and fulfills; Intelligence understands and helps respond. Context is infrastructure for Intelligence calls, not a turn stage.
+
 ---
 
 This project is a Node.js Express application. A good place to start would be looking at **posts** or **profile**.This project is very much in development (sorry!). My work at Amazon and Nike have been in Java and this is just a small backend for my iOS app I am making. I plan to add a lot more including things like.  

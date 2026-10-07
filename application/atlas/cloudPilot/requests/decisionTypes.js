@@ -1,0 +1,51 @@
+/*
+FUNCTIONS A: Decision layer constants
+    1) Function A1: CHAT_TYPE
+    2) Function A2: RESPONSE_TYPE
+*/
+
+const CHAT_TYPE = {
+    GENERAL_CHAT_RESPONDING: 'generalChatResponding',
+    CLOUD_PILOT_RESPONDING: 'cloudPilotResponding'
+};
+
+const RESPONSE_TYPE = {
+    ASK_FOR_MISSING_FIELDS: 'ask_for_missing_fields',
+    AWAITING_EXECUTION_MODE: 'awaiting_execution_mode',
+    AWAITING_CONFIRMATION: 'awaiting_confirmation',
+    EXECUTION_INSTRUCTIONS: 'execution_instructions',
+    EXECUTION_CLI: 'execution_cli',
+    EXECUTION_PR: 'execution_pr',
+    EXECUTION_STARTED: 'execution_started',
+    REQUEST_COMPLETED: 'request_completed',
+    REQUEST_FAILED: 'request_failed',
+    REQUEST_CANCELLED: 'request_cancelled',
+    LIST_OPEN_REQUESTS: 'list_open_requests',
+    LIST_HISTORY: 'list_history',
+    FOCUS_REQUEST: 'focus_request',
+    REQUEST_STATUS: 'request_status',
+    AMBIGUOUS_ACTION: 'ambiguous_action',
+    WORKFLOW_RUNNING: 'workflow_running',
+    CONFIRMATION_UNCLEAR: 'confirmation_unclear',
+    FIELD_UNCLEAR: 'field_unclear',
+    ABOUT_OPEN_REQUEST: 'about_open_request',
+    REPLACE_OPEN_REQUEST: 'replace_open_request',
+    GENERAL_CHAT: 'general_chat',
+    IMMEDIATE_EXECUTION: 'immediate_execution',
+    UNDO_EXECUTION: 'undo_execution',
+    RESOURCE_NOT_FOUND: 'resource_not_found',
+    RESOURCE_VERIFY_FAILED: 'resource_verify_failed',
+    VERSIONING_ALREADY_ENABLED: 'versioning_already_enabled',
+    RESOURCE_SCAN_DECLINED: 'resource_scan_declined',
+    CAPABILITY_NOT_AVAILABLE: 'capability_not_available',
+    EXECUTION_MODE_UNAVAILABLE: 'execution_mode_unavailable',
+    EC2_COMPUTE_COST: 'ec2_compute_cost'
+};
+
+const EXECUTION_MODE_REPLIES = ['instructions', 'cli', 'pr', 'automatic'];
+
+module.exports = {
+    CHAT_TYPE,
+    RESPONSE_TYPE,
+    EXECUTION_MODE_REPLIES
+};

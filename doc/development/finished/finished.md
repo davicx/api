@@ -1,0 +1,294 @@
+# Finished
+
+**Last reviewed:** 2026-08-29
+
+> **Active work:** [Current Development](../current/current_development.md) · **To do:** [to_do.md](../future/to_do.md) · **Architecture:** [architecture/](../architecture/)
+
+---
+
+## Recently finished (2026-10-07)
+
+- [x] **Dashboard leftovers** — Finding drill-down, URL path, S3 table cleanup, Scan buttons, mock `/dashboard-chat` archived — [feature_dashboard.md](./feature_dashboard.md)
+
+## Recently finished (2026-10-04)
+
+- [x] **Dashboard** — One `/dashboard` page: real scan data, bucket/instance drill-down, side chat — [feature_dashboard.md](./feature_dashboard.md)
+
+## Recently finished (2026-08-29)
+
+- [x] **Useful Price** — Stored EC2 hourly rates → create/scan/pause speak + “what am I paying?” Question — [feature_useful_price.md](./feature_useful_price.md)
+
+## Recently finished (2026-08-16)
+
+- [x] **Important Fixes** — Turn vocabulary; Message / Response / Message Reply; prepare* / generate* naming — [feature_important_fixes.md](./feature_important_fixes.md) · leftovers: [Message Reply Follow-ups](../future/feature_message_reply_followups.md)
+- [x] **Intelligence Provider** — Region Search: one operation context → Internal | OpenAI → same result; no provider framework — [feature_intelligence_provider.md](./feature_intelligence_provider.md) · [how-to](../how_to/intelligence_provider.md)
+
+## Recently finished (2026-08-14)
+
+- [x] **Feature Chat** — Friendly request presentation when OpenAI is on; templates stay Internal + fallback — [feature_chat.md](./feature_chat.md)
+- [x] **Friendly Dashboard** — S3 Findings-first Dashboard; Fix→Chat “coming soon”; original tables behind View original tables — [feature_friendly_dashboard.md](./feature_friendly_dashboard.md)
+
+## Recently finished (2026-08-13)
+
+- [x] **S3 inventory ask** — “What S3 buckets do I have?” → Question `s3_inventory` → `scan_s3` — [feature_s3_inventory_ask.md](./feature_s3_inventory_ask.md)
+
+## Recently finished (2026-08-12)
+
+- [x] **Organizational Knowledge** — S3 org facts + tags; extract `resourceReference` → DB resolve → Chat Knowledge / Internal speak — [feature_organizational_knowledge.md](./feature_organizational_knowledge.md)
+
+## Recently finished (2026-08-11)
+
+- [x] **Friendly Create EC2** — create Context + Guidance (start/review/confirm/success) + Chat create knowledge; Kite Create · Cancel deferred — [feature_friendly_create_instance.md](./feature_friendly_create_instance.md)
+
+## Recently finished (2026-08-08)
+
+- [x] **CloudPilot Context** — Chat Identity vs tiny Search TASK; CURRENT STATE; `ec2_inventory` → `scan_ec2` — [feature_cloud_pilot_context.md](./feature_cloud_pilot_context.md)
+- [x] **Verify Request Target** — Atlas Test infra + `verifyResource` gate + not-found → `scan_ec2` — [feature_verify_request.md](./feature_verify_request.md)
+- [x] **CloudPilot Images** — `cloud_pilot_images` catalog + loader join + bucket URL + drop legacy `image` — [feature_images.md](./feature_images.md)
+
+## Recently finished (2026-08-07)
+
+- [x] **EC2 Pause / Resume** — `pause_ec2` / `resume_ec2` (Atlas Test acceptance; live AWS optional) — [feature_pause_instance.md](./feature_pause_instance.md)
+
+## Recently finished (2026-08-06)
+
+- [x] **Chat Message UI** — Markdown + ChatGPT-like layout in Kite — [feature_chat_message_ui.md](./feature_chat_message_ui.md)
+- [x] **Questions** — Question path + open-requests speak + guardrail vs general OpenAI — [feature_questions.md](./feature_questions.md)
+
+## Recently finished (2026-08-05)
+
+- [x] **AI Spending** — Kite card + `searchForAiSpend` + summary API — [feature_ai_spending.md](./feature_ai_spending.md)
+
+## Recently finished (2026-08-04)
+
+- [x] **Intelligence Front Door** — GenAI via `CloudPilotIntelligence.chat()` — [feature_intelligence_front_door.md](./feature_intelligence_front_door.md)
+- [x] **OpenAI Logs** — per-capability blocks after pipeline STEPs — [feature_openai_logs.md](./feature_openai_logs.md)
+
+---
+
+## CloudPilot folder organization (2026-08)
+
+### Project A — responsibility folders
+
+- [x] `conversation/` → `chat/`
+- [x] `decision/` → `requests/`
+- [x] `changes/` → `remediations/` (temporary name)
+- [x] scans / billing / inventory / aiUsage under read-only tree
+- [x] navigator helper → `chat/presentation/`
+- [x] Docs + empty-folder cleanup
+- Detail: [cloud_pilot_refactor.md](./cloud_pilot_refactor.md)
+- Related superseded drafts: [responsibility_refactor.md](./responsibility_refactor.md) · [project_structure_plan.md](./project_structure_plan.md)
+
+### Project C — actions + execution modes
+
+- [x] Mutation handlers → `actions/`
+- [x] Automatic / CLI / Instructions / PR → `executionModes/`
+- [x] Delete empty `remediations/`
+- [x] Style pass: `FUNCTIONS` TOC + `//STEP` inside mode logic files
+- Detail: [cloud_pilot_project_c.md](./cloud_pilot_project_c.md)
+
+### Project B — Intelligence facade
+
+- [x] `CloudPilotIntelligence.js` facade entry
+- [x] Move `chat/understand/**` → `cloudPilotIntelligence/understand/**`
+- [x] STEP 3 calls `CloudPilotIntelligence.understandMessage`
+- [x] Internal / OpenAI region selection preserved inside Intelligence
+- [x] `respond` / `explain` / `improve` / `generate` remain placeholders
+- Detail: [cloud_pilot_project_b.md](./cloud_pilot_project_b.md)
+
+### AI Invocation Rules (2026-08)
+
+- [x] Philosophy: only expensive AI work when that function is needed
+- [x] Design rule: **Should I run?** then **How should I run?** (Internal | OpenAI)
+- [x] Phase 1 — `shouldRunRegionSearch()` (open request + region missing)
+- [x] Phase 2 — Region Search verified with OpenAI ENV off (Internal)
+- [x] Phase 3 — General Chat verified with OpenAI ENV off (Internal)
+- [x] Phase 4 — Capabilities `shouldRespondCapabilities` + Internal / OpenAI path (ENV off)
+- Detail: [cloud_pilot_openai_rollout.md](./cloud_pilot_openai_rollout.md)
+
+---
+
+## Checklist — work done
+
+### Message architecture (2026-06)
+
+- [x] Phase 1 — General / Request Conversation fork in orchestrator; General skips STEPS 5–6
+- [x] Phase 2 — Retire `responses/`; speak logic in `conversation/`
+- [x] Phase 3 — `conversation/request/workflow.js` (`store` / `execute`)
+- [x] Phase 3b — `change/strategies/` (instructions, CLI, PR, automatic)
+- [x] Phase 4 — `CloudPilotMessage.js`; retire `chat/` folder
+- [x] `GeneralConversation.js` / `RequestConversation.js` rename
+- [x] `engines/llm/openai/` — OpenAI SDK home
+- [x] `executions/outcomes/outcomeRegistry.js` — handler outcome copy
+- [x] Request vs change vs strategy vocabulary documented — [architecture/code_cleanup.md](../architecture/code_cleanup.md)
+
+### Kite
+
+- [x] Generic Navigator renderer (client) — stats, tables, columns, alerts
+- [x] Foundation to display `navigatorResponse` from API (scan + inventory payloads)
+
+### API — pipeline (`processMessage` STEP 1–7)
+
+- [x] Full loop: **Understand → Decide → Persist → Execute → Respond**
+- [x] STEP 1–7 wired in `cloudPilotMessageFunctions.js`
+- [x] Node always calls Atlas HTTP — no Node-side mock execution
+- [x] General chat routing when idle
+- [x] Failed execution → friendly outcome; conversation continues
+- [x] New request replaces failed / completed open request (one open per conversation)
+
+### API — understanding (STEP 3)
+
+- [x] `understandMessage` + all `searchMessageFor*` extractors
+- [x] Action, region, instance IDs, name, instance_type, structured fields
+- [x] Reply (confirm, cancel, modes 1–4)
+- [x] Conversation (list_open, status, focus_switch)
+- [x] Ambiguous action detection
+
+### API — decision & requests (STEP 4–5)
+
+- [x] `decideNextStep` — chatType + response types
+- [x] `applyDecision` — start / update / skip (+ finish on success path)
+- [x] Destructive tier: execution mode `4` → confirm → execute
+- [x] Informational tier: confirm → execute (scan; inventory immediate)
+
+### API — execution & speak (STEP 6–7)
+
+- [x] `executeRequest` → `actionMap` handlers → Atlas
+- [x] Request speak via `RequestConversation` → `CloudPilotMessage`
+- [x] `scan_ec2`, `inventory_aws`, `general_chat`
+- [x] `create_ec2`, `delete_ec2`, `toggle_ec2` handlers (automatic mode → Atlas)
+
+### API — EC2 mutations (live E2E)
+
+- [x] Create — fields → `4` → `yes` → instance created
+- [x] Toggle — live AWS stop/start through pipeline
+- [x] Delete — termination through pipeline
+- [x] Cross-action sequence — create → toggle → delete on test instances
+- [x] Not-found outcomes — friendly messages, API stays up
+
+### API — requests & database
+
+- [x] Durable request rows in MySQL + `Request.js`
+- [x] `display_name` from registry `actionLabel`
+- [x] Statuses: `waiting_on_fields`, `waiting_on_execution_mode`, `waiting_on_confirmation`, `running`, final
+- [x] MySQL default (`CLOUDPILOT_STATE_BACKEND=mysql`)
+- [x] Focused request tracking (P2C)
+- [x] England-rule copy in request templates (P3A)
+- [x] Open-actions list + focus switch (P3B)
+- [x] `services/` folder restructure (requests / history / executions / navigator / conversation)
+
+### API — change history & undo (MVP — 2026-07)
+
+- [x] **H0** — `cloudpilot_history` in `master_sql.sql`
+- [x] **H1** — `saveHistory()` after toggle automatic success (`STEP 6B`)
+- [x] **H2** — `getLatestUndoable()` log after save (`STEP 6C`)
+- [x] **H3** — Undo intent dry run _(superseded by H4)_
+- [x] **H4** — Execute undo + link rows (`undoRegistry`, `undoFunctions`, STEP 6)
+- [x] **H5** — Failed toggle → history row (`failed`, `undo_available = 0`)
+- [x] **H6** — API `undoAvailable` hint on `POST /message` response
+- [x] **H7** — `create_ec2` history + undo (delete created instance)
+- [x] **H9** — `History.listRecentHistoryByConversation()` (limit 5)
+- [x] **H10** — Understanding — `list_history` phrases
+- [x] **H12** — `decideNextStep` — `LIST_HISTORY` conversation command
+- [x] **H13** — Speak — chat message + Navigator table (`buildHistoryResponse`)
+- [x] **H14** — History Navigator table — **Change** column, Resource, Status, Undo, When
+- [x] Request/history naming — `action_display_name`, `action_record_key`, optional `request_name`
+- [x] Atlas — reuse toggle with swapped targets from `undo_payload`
+- [x] Atlas — `restore_ec2_tag` undo path
+
+**Phase T — Tag discovery (dashboard)**
+
+- [x] **T1** — Scan model includes `tags[]` on each instance
+- [x] **T2** — Tags count column (clickable)
+- [x] **T3** — Click → Tag Key | Value | Actions via `buildKeyValueTable`
+
+**Phase G — Golden path `update_ec2_tag`**
+
+- [x] **G1–G9** — action, fields, Atlas tag read/write/delete, `ec2History.js`, undo, E2E verified
+
+**Kite — History dashboard (2026-07)**
+
+- [x] Dashboard renders History table from `navigatorResponse`
+- [x] **Change** timeline copy (not Action Name)
+- [x] Resource truncation + `resource_full` hover
+- [x] **Undo** button — newest undoable row only (stack undo; calls chat `undo`)
+- [x] `chatContext` in `AtlasFindingsContext` for dashboard undo
+
+**Deferred:** [future_work.md](../future/future.md) (H8, H11, H15+, tag polish, targeted undo).
+
+### API — Billing (Phase B1 — 2026-07)
+
+- [x] `show_billing` — Cost Explorer by service (`ce:GetCostAndUsage`)
+- [x] `capabilities/billing/getBillingSummary.js` + `billingAWS/` handler, message, navigator
+- [x] Atlas `POST /billing/summary` + test mock route
+
+See [billing.md](../future/billing.md).
+
+### API — scan (EC2 + S3 demo)
+
+See [scans.md](../future/scans.md) for MVP plan and service order.
+
+### API — Navigator contract
+
+- [x] `navigatorResponseFunctions.js`
+- [x] `inventory_aws` + `scan_ec2` Navigator adapters
+- [x] Opt-in `raw` on read adapters
+
+### API — error & outcome handling
+
+- [x] `messages.js` — failed remediation does not crash API
+- [x] Atlas toggle/delete preflight → structured envelope
+- [x] `atlasEC2Functions.fetchAtlasMutation` — no throw on `success: false`
+- [x] `outcomeRegistry` — friendly messages with `{instance_id}`, `{region}`, etc.
+- [x] Orchestration guards — repeat intent, failed request, null events
+
+### API — field extractors & action map
+
+- [x] `create_ec2`, `delete_ec2`, `toggle_ec2` in `actionMap.js`
+- [x] Field extractors: region, name, instance_type, instance_id, primary/secondary IDs
+- [x] Instance-id heuristic (one bare `i-…` per message)
+
+### API — scan (S3 demo tier)
+
+- [x] `core/cloud/s3/scanner.py` + 3 rules
+- [x] `POST /scan/s3` + `s3_scan_service.py`
+- [x] API: `scan_s3` action + Navigator adapter
+- [x] `MOCK_SCAN_S3_DATA` (test routes)
+- [x] `s3_public_access_block_disabled`, `s3_default_encryption_off`, `s3_no_lifecycle_policy`
+- [x] DB seed — `scan_s3` in `cloudpilot_actions`
+
+### API — scan (EC2 demo v1 — partial)
+
+- [x] Five EC2 rules wired: low CPU, missing name tag, stopped instance, legacy type, public IP
+
+---
+
+## Atlas — done
+
+### Live routes & AWS
+
+- [x] `POST /ec2/create` — `create_instance` (boto3)
+- [x] `POST /ec2/toggle` — stop primary, start secondary, waiters
+- [x] `POST /ec2/delete` — terminate with preflight
+- [x] `POST /scan/ec2` — full scan + findings
+- [x] Preflight errors → `success: false` envelope (not HTTP 500)
+
+### Test routes & mocks
+
+- [x] Test route package `api/routes/test/`
+- [x] `MOCK_SCAN_EC2_DATA` — captured from live scan
+- [x] `MOCK_TOGGLE_DATA` — captured from live toggle
+- [x] `MOCK_DELETE_DATA` — captured from live delete
+- [x] `MOCK_CREATE_DATA` — placeholder (valid shape)
+- [x] `main.py` Live ↔ Test import toggle documented
+
+### Capture logging (Live)
+
+- [x] `Atlas Response:` log on successful toggle
+- [x] `Atlas Response:` log on successful delete
+
+---
+
+## Notes
+
+Older pipeline rebuild history and doc changelog: [architecture/appendix.md](../architecture/appendix.md).

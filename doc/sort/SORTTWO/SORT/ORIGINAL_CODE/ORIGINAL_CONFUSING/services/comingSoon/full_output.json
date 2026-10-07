@@ -1,0 +1,65 @@
+{
+    "data": {
+      "resourcesScanned": 2,
+      "findingCount": 1,
+      "findings": [
+        {
+          "id": "ec2-lowcpu-i-0abc123def4567890",
+          "provider": "aws",
+          "service": "ec2",
+          "region": "us-west-2",
+          "status": "active",
+          "priority": 2,
+          "resource": {
+            "id": "i-0abc123def4567890",
+            "name": "my-app-server",
+            "region": "us-west-2",
+            "instance_type": "t3.medium",
+            "tags": {
+              "Name": "my-app-server",
+              "cloudpilot-role": "primary"
+            }
+          },
+          "issue": {
+            "code": "LOW_CPU_UTILIZATION",
+            "title": "Low CPU utilization",
+            "description": "Average CPU is below the configured threshold; instance may be oversized.",
+            "severity": "low",
+            "confidence": 0.9,
+            "category": "cost"
+          },
+          "metrics": {
+            "avg_cpu": 0.7
+          },
+          "recommendation": {
+            "action": "RIGHTSIZE",
+            "description": "Consider downsizing to t3.small",
+            "risk": "low"
+          },
+          "remediation": {
+            "available": true,
+            "actions": []
+          },
+          "cost": {
+            "estimated_monthly_savings": 12.5,
+            "currency": "USD"
+          },
+          "summary": "my-app-server is underutilized (low CPU).",
+          "metadata": {
+            "rule_id": "ec2_low_cpu"
+          }
+        }
+      ],
+      "scope": {
+        "type": "full"
+      },
+      "region": "us-west-2",
+      "rules": ["ec2_low_cpu"],
+      "scopeFilterNote": "Atlas currently scans EC2 in one region per request. Use separate requests for additional AWS regions."
+    },
+    "success": true,
+    "message": "EC2 scan completed",
+    "statusCode": 200,
+    "errors": [],
+    "currentUser": "davey"
+  }

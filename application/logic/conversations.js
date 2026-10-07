@@ -59,6 +59,7 @@ async function getConversationsByGroup(req, res) {
     const groupID = req.params.group_id;
     const currentUser = req.currentUser || req.body?.currentUser;
 
+    // Quiet: chat UI polls this often; no header/footer noise.
     // Functions.addHeader('Get conversations for group ' + groupID);
 
     try {
@@ -82,7 +83,7 @@ async function getConversationsByGroup(req, res) {
         });
     }
 
-    Functions.addFooter();
+    // Functions.addFooter();
 }
 
 async function getConversationById(req, res) {

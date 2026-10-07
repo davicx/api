@@ -1,0 +1,1161 @@
+const actionMap = require('../masterCloudPilotCapabilities');
+const ActionStatusFunctions = require('../requests/functions/requestStatusFunctions');
+const { CHAT_TYPE, RESPONSE_TYPE, EXECUTION_MODE_REPLIES } = require('../requests/decisionTypes');
+const OpenRequestEffectFunctions = require('../requests/interpretOpenRequestEffect');
+
+/*
+MASTER DECISION
+
+Receives:
+- the structured Understanding result
+- the current open-request state, when one exists
+
+Returns one decision describing what CloudPilot should do next.
+
+This file decides only.
+It does not:
+- write request state
+- run scans or actions
+- call AWS
+- generate the final user-facing response
+*/
+
+/*
+What this file answers:
+
+* When is a request ready to run?
+* What should happen next?
+
+Examples: ask_for_missing_fields, awaiting_confirmation, execution_started,
+immediate_execution (inventory_aws, show_billing, get_ec2_inventory, get_s3_inventory), general_chat
+
+This is the Decide layer (STEP 4) — what should happen next?
+(Request Workflow subtypes: new request, continue, commands, run work, or General Chat.)
+
+See doc/development/architecture/action_map.md.
+*/
+
+/*
+FUNCTIONS A: Decision layer — target request state + response type (no DB, no chat, no Atlas)
+    1) Function A1: decideNextStep
+
+FUNCTIONS B: Helpers
+    1) Function B1: normalizeRequestState
+    2) Function B2: buildRequestFromState
+    3) Function B3: shouldStartNewRequest
+    4) Function B4: hasApplicableValues
+    5) Function B5: mergeValuesIntoRequest
+    6) Function B6: isReadyForExecutionMode
+    7) Function B7: buildNewRequestDecision
+    8) Function B8: buildFieldsMergedDecision
+    9) Function B9: handleExecutionModeSelection
+    10) Function B10: resolveRequestChat
+    11) Function B11: resolveImmediateExecutionAction
+    12) Function B12: shouldStartExecutionOnConfirm
+    13) Function B13: buildExecutionStartedDecision
+    14) Function B14: buildGeneralChatDecision
+    15) Function B15: resolveQuestionDecision
+    16) Function B16: buildImmediateCapabilityDecision
+    17) Function B17: resolveResourceScanOfferReply
+    18) Function B18: buildResourceScanAcceptedDecision
+*/
+
+//Function A1: Given understanding + loaded request state, return chatType, target request, and response type
+function decideNextStep({ understanding, requestState }) {
+    const state = normalizeRequestState(requestState);
+    const u = understanding || {};
+    const openEffect = u.openRequestEffectResult || OpenRequestEffectFunctions.interpretOpenRequestEffect(
+        u,
+        state,
+        u.rawMessage || ''
+    );
+    const effectBody = openEffect.openRequestEffect || {};
+    const affectsOpen = Boolean(openEffect.affectsOpenRequest);
+    const effectType = effectBody.type || null;
+
+    if (u.ambiguous) {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.AMBIGUOUS_ACTION);
+    }
+
+    const interpretation = u.openRequestInterpretation || null;
+
+    if (interpretation && interpretation.authoritative && interpretation.succeeded === false) {
+        return buildGeneralChatDecision();
+    }
+
+    if (state.pendingAction && u.replyType === 'about_open_request') {
+        const blockedQuestion = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedQuestion) {
+            return blockedQuestion;
+        }
+
+        return buildAboutOpenRequestDecision(state, u);
+    }
+
+    if (
+        state.pendingAction &&
+        Array.isArray(u.rejectedFields) &&
+        u.rejectedFields.length > 0
+    ) {
+        const blockedRejected = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedRejected) {
+            return blockedRejected;
+        }
+
+        const rejected = u.rejectedFields[0];
+        const acceptedValues = u.values || {};
+        const mergedRejected = Object.keys(acceptedValues).length > 0
+            ? buildFieldsMergedDecision(state, acceptedValues)
+            : null;
+        const request = mergedRejected && mergedRejected.request
+            ? mergedRejected.request
+            : buildRequestFromState(state);
+
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: request,
+            response: {
+                type: RESPONSE_TYPE.FIELD_UNCLEAR,
+                field: rejected.field,
+                invalidFieldValue: rejected.value
+            }
+        };
+    }
+
+    // Ambiguous open-request field value — ask one clarification; do not save.
+    if (
+        state.pendingAction &&
+        ActionStatusFunctions.isCollectingFields(state.status) &&
+        Array.isArray(u.ambiguousFields) &&
+        u.ambiguousFields.length > 0
+    ) {
+        const blockedAmbiguous = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedAmbiguous) {
+            return blockedAmbiguous;
+        }
+
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: buildRequestFromState(state),
+            response: {
+                type: RESPONSE_TYPE.FIELD_UNCLEAR,
+                field: String(u.ambiguousFields[0])
+            }
+        };
+    }
+
+    // Legacy conversation signal (phrases moved to questions/searchForOpenRequests)
+    if (u.conversation === 'list_open') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+    }
+
+    if (u.conversation === 'list_history') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_HISTORY);
+    }
+
+    if (u.conversation === 'focus_switch') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.FOCUS_REQUEST);
+    }
+
+    if (u.conversation === 'status') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.REQUEST_STATUS);
+    }
+
+    if (u.conversation === 'undo') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.UNDO_EXECUTION);
+    }
+
+    if (state.pendingAction && state.status === ActionStatusFunctions.STATUS.RUNNING) {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.WORKFLOW_RUNNING);
+    }
+
+    // Waiting on confirmation — only activate open-request path for confirm/cancel/
+    // about/ambiguous. "unrelated" is not a response: fall through to normal Decide.
+    if (
+        state.pendingAction &&
+        ActionStatusFunctions.isWaitingOnConfirmation(state.status)
+    ) {
+        const blockedWaitingConfirm = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedWaitingConfirm) {
+            return blockedWaitingConfirm;
+        }
+
+        if (u.replyType === 'cancel' || effectType === 'cancel') {
+            return {
+                chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+                request: null,
+                response: { type: RESPONSE_TYPE.REQUEST_CANCELLED },
+                closeRequest: true
+            };
+        }
+
+        if (
+            (u.replyType === 'confirm' || effectType === 'confirm') &&
+            shouldStartExecutionOnConfirm(state, 'confirm')
+        ) {
+            return buildExecutionStartedDecision(state);
+        }
+
+        if (u.replyType === 'ambiguous_confirmation') {
+            return cloudpilotDecision(
+                buildRequestFromState(state),
+                RESPONSE_TYPE.CONFIRMATION_UNCLEAR
+            );
+        }
+
+        // unrelated / legacy unclear / missing replyType → continue normal routing below
+    }
+
+// Not-found scan offer — before cancel/confirm/mode so "yes" cannot run the mutation
+    if (
+        state.pendingAction &&
+        ActionStatusFunctions.isWaitingOnResourceScan(state.status)
+    ) {
+        const blockedScanOffer = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedScanOffer) {
+            return blockedScanOffer;
+        }
+
+        return resolveResourceScanOfferReply(state, u);
+    }
+
+    // Step 3: cancel only when interpretation says cancel (not soft text while leave-alone)
+    if (effectType === 'cancel' && state.pendingAction) {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: null,
+            response: { type: RESPONSE_TYPE.REQUEST_CANCELLED },
+            closeRequest: true
+        };
+    }
+
+    if (
+        state.pendingAction &&
+        state.status === ActionStatusFunctions.STATUS.FAILED &&
+        effectType === 'confirm'
+    ) {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.REQUEST_FAILED);
+    }
+
+    if (state.pendingAction && EXECUTION_MODE_REPLIES.includes(u.reply) && isReadyForExecutionMode(state)) {
+        const blockedMode = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedMode) {
+            return blockedMode;
+        }
+
+        return handleExecutionModeSelection(state, u.reply);
+    }
+
+    // Step 3: confirm only when interpretation says confirm (requires waiting_on_confirmation)
+    if (effectType === 'confirm' && shouldStartExecutionOnConfirm(state, 'confirm')) {
+        const blockedConfirm = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedConfirm) {
+            return blockedConfirm;
+        }
+
+        return buildExecutionStartedDecision(state);
+    }
+
+    const immediateAction = resolveImmediateExecutionAction(state, u);
+
+    if (immediateAction) {
+        const blockedImmediate = capabilityAvailabilityGate(immediateAction);
+
+        if (blockedImmediate) {
+            return blockedImmediate;
+        }
+
+        const immediateDefinition = actionMap[immediateAction];
+
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: null,
+            response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
+            execute: { action: immediateAction },
+            requestType:
+                immediateDefinition && immediateDefinition.requestType != null
+                    ? immediateDefinition.requestType
+                    : null,
+            permission:
+                immediateDefinition && immediateDefinition.permission != null
+                    ? immediateDefinition.permission
+                    : null
+        };
+    }
+
+    // Step 3: information for open request (may ALSO continue normal conversation)
+    if (state.pendingAction && effectType === 'information' && hasApplicableValues(state, effectBody.values || u.values)) {
+        const blockedInformation = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedInformation) {
+            return blockedInformation;
+        }
+
+        const mergeValues = effectBody.values && Object.keys(effectBody.values).length > 0
+            ? effectBody.values
+            : u.values;
+
+        // Mixed question + field fill: merge happens in processMessage STEP 5b, then answer question.
+        if (u.question) {
+            return resolveQuestionDecision(state, u.question, u);
+        }
+
+        // Structured values that apply to the open request continue that request —
+        // even when Action stayed general_chat. Do not leave-alone as general chat.
+        return buildFieldsMergedDecision(state, mergeValues);
+    }
+
+    // Questions — after open-request information so mixed "region + ask" can merge first via processMessage
+    if (u.question) {
+        return resolveQuestionDecision(state, u.question, u);
+    }
+
+    if (u.action && u.action !== 'general_chat') {
+        if (!shouldStartNewRequest(state, u.action)) {
+            // Same open action rematched (e.g. soft-fill text contains "EC2" + "scan").
+            if (state.pendingAction && hasApplicableValues(state, u.values)) {
+                const blockedMerge = capabilityAvailabilityGate(state.pendingAction);
+
+                if (blockedMerge) {
+                    return blockedMerge;
+                }
+
+                return buildFieldsMergedDecision(state, u.values);
+            }
+
+            // Step 3: leave alone — if open request still needs user input, re-ask (do not general-chat stub)
+            if (!affectsOpen) {
+                if (
+                    u.replyType === 'unrelated' &&
+                    u.replySource === 'openai' &&
+                    interpretation &&
+                    interpretation.authoritative
+                ) {
+                    return buildGeneralChatDecision();
+                }
+
+                if (shouldReaskOpenRequest(state)) {
+                    const blockedReask = capabilityAvailabilityGate(state.pendingAction);
+
+                    if (blockedReask) {
+                        return blockedReask;
+                    }
+
+                    return resolveRequestChat(state);
+                }
+
+                return buildGeneralChatDecision();
+            }
+
+            const blockedContinue = capabilityAvailabilityGate(state.pendingAction);
+
+            if (blockedContinue) {
+                return blockedContinue;
+            }
+
+            return resolveRequestChat(state);
+        }
+
+        const blockedNew = capabilityAvailabilityGate(u.action);
+
+        if (blockedNew) {
+            return blockedNew;
+        }
+
+        // One open request at a time — never silently replace a non final request.
+        if (
+            state.pendingAction &&
+            !ActionStatusFunctions.isFinalStatus(state.status)
+        ) {
+            return buildReplaceOpenRequestOfferDecision(state, u.action);
+        }
+
+        return buildNewRequestDecision(u);
+    }
+
+    if (state.pendingAction && hasApplicableValues(state, u.values)) {
+        const blockedValues = capabilityAvailabilityGate(state.pendingAction);
+
+        if (blockedValues) {
+            return blockedValues;
+        }
+
+        return buildFieldsMergedDecision(state, u.values);
+    }
+
+    // Open request is context, not a lock: general_chat / leave-alone answers
+    // normally and leaves the row untouched (do not re-ask missing fields).
+    return buildGeneralChatDecision();
+}
+
+// Open request still needs fields / mode / confirmation — Respond must ask, not general-chat stub
+function shouldReaskOpenRequest(state) {
+    if (!state || !state.pendingAction) {
+        return false;
+    }
+
+    if (ActionStatusFunctions.isFinalStatus(state.status)) {
+        return false;
+    }
+
+    if (ActionStatusFunctions.isCollectingFields(state.status)) {
+        return true;
+    }
+
+    if (ActionStatusFunctions.isWaitingOnExecutionMode(state.status)) {
+        return true;
+    }
+
+    if (ActionStatusFunctions.isWaitingOnConfirmation(state.status)) {
+        return true;
+    }
+
+    if (ActionStatusFunctions.isWaitingOnResourceScan(state.status)) {
+        return true;
+    }
+
+    return false;
+}
+
+//Function B1: Normalize loaded request state into a consistent shape
+function normalizeRequestState(requestState) {
+    const state = requestState || {};
+
+    return {
+        pendingAction: state.pendingAction || null,
+        status: state.status || null,
+        executionMode: state.executionMode || null,
+        workflowId: state.workflowId || null,
+        missing: Array.isArray(state.missing) ? state.missing.slice() : [],
+        collected: { ...(state.collected || {}) },
+        asked: { ...(state.asked || {}) }
+    };
+}
+
+//Function B2: Map loaded state to decision request target
+function buildRequestFromState(state) {
+    const missing = state.missing || [];
+    const actionDefinition = state.pendingAction ? actionMap[state.pendingAction] : null;
+
+    const request = {
+        action: state.pendingAction,
+        collected: { ...(state.collected || {}) },
+        missing: missing.slice(),
+        ready: missing.length === 0,
+        status: state.status,
+        executionMode: state.executionMode || null
+    };
+
+    return attachRequestClassification(request, actionDefinition);
+}
+
+//Function B3: Should we start or replace the active request with a new action?
+function shouldStartNewRequest(state, action) {
+    const pendingAction = state.pendingAction;
+
+    if (!pendingAction) {
+        return true;
+    }
+
+    if (pendingAction !== action) {
+        return true;
+    }
+
+    if (state.status === ActionStatusFunctions.STATUS.COMPLETED) {
+        return true;
+    }
+
+    if (state.status === ActionStatusFunctions.STATUS.FAILED) {
+        return true;
+    }
+
+    return false;
+}
+
+//Function B4: Do extracted values apply to the open request?
+function hasApplicableValues(state, values) {
+    if (!values || typeof values !== 'object') {
+        return false;
+    }
+
+    const missing = state.missing || [];
+    const actionDefinition = actionMap[state.pendingAction];
+    const requiredFields = actionDefinition && Array.isArray(actionDefinition.requiredFields)
+        ? actionDefinition.requiredFields
+        : [];
+
+    for (const fieldName of Object.keys(values)) {
+        const fieldValue = values[fieldName];
+
+        if (fieldValue == null || fieldValue === '') {
+            continue;
+        }
+
+        if (fieldName === 'request_name') {
+            return true;
+        }
+
+        if (
+            fieldName === 'name' &&
+            (missing.includes('request_name') || requiredFields.includes('request_name'))
+        ) {
+            return true;
+        }
+
+        if (missing.includes(fieldName) || requiredFields.includes(fieldName)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//Function B5: Merge understanding values into collected / missing
+function mergeValuesIntoRequest(collected, requiredFields, values, defaults, currentMissing) {
+    const newCollected = { ...(defaults || {}), ...(collected || {}) };
+    const missingSet = new Set(
+        Array.isArray(currentMissing) && currentMissing.length > 0
+            ? currentMissing
+            : requiredFields.filter((fieldName) => {
+                const fieldValue = newCollected[fieldName];
+                return fieldValue == null || fieldValue === '';
+            })
+    );
+
+    if (values) {
+        for (const fieldName of Object.keys(values)) {
+            const fieldValue = values[fieldName];
+
+            if (fieldValue == null || fieldValue === '') {
+                continue;
+            }
+
+            if (fieldName === 'request_name') {
+                newCollected.request_name = String(fieldValue).trim();
+                missingSet.delete('request_name');
+                continue;
+            }
+
+            // Free-text name extraction often lands in `name`; map onto scan request_name when needed.
+            if (
+                fieldName === 'name' &&
+                missingSet.has('request_name') &&
+                requiredFields.includes('request_name')
+            ) {
+                newCollected.request_name = String(fieldValue).trim();
+                missingSet.delete('request_name');
+                continue;
+            }
+
+            if (requiredFields.includes(fieldName) || missingSet.has(fieldName)) {
+                newCollected[fieldName] = fieldValue;
+                missingSet.delete(fieldName);
+            }
+        }
+    }
+
+    const missing = requiredFields.filter((fieldName) => {
+        const fieldValue = newCollected[fieldName];
+        return fieldValue == null || fieldValue === '';
+    });
+
+    const optionalFields = ['finding_id', 'rule_id', 'scan_snapshot_id'];
+
+    for (let i = 0; i < optionalFields.length; i++) {
+        const fieldName = optionalFields[i];
+        const fieldValue = values && values[fieldName];
+
+        if (fieldValue != null && fieldValue !== '') {
+            newCollected[fieldName] = fieldValue;
+        }
+    }
+
+    return { collected: newCollected, missing };
+}
+
+//Function B6: Is the user allowed to pick execution mode 1–4 right now?
+function isReadyForExecutionMode(state) {
+    const actionDefinition = actionMap[state.pendingAction];
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
+
+    if (!supportsExecutionModes) {
+        return false;
+    }
+
+    if (ActionStatusFunctions.isWaitingOnExecutionMode(state.status)) {
+        return true;
+    }
+
+    // A failed instructions/CLI/PR attempt can leave the row open. Let the user pick again.
+    if (
+        state.executionMode &&
+        state.executionMode !== 'automatic' &&
+        (state.status === ActionStatusFunctions.STATUS.COMPLETED ||
+            state.status === ActionStatusFunctions.STATUS.FAILED)
+    ) {
+        return true;
+    }
+
+    const ready = (state.missing || []).length === 0;
+
+    return ready && !state.executionMode;
+}
+
+//Function B7: Target state for a brand-new workflow request
+function buildNewRequestDecision(understanding) {
+    const action = understanding.action;
+    const blocked = capabilityAvailabilityGate(action);
+
+    if (blocked) {
+        return blocked;
+    }
+
+    const actionDefinition = actionMap[action];
+    const requiredFields = actionDefinition && Array.isArray(actionDefinition.requiredFields)
+        ? actionDefinition.requiredFields
+        : [];
+    const defaults = actionDefinition && actionDefinition.defaults ? actionDefinition.defaults : {};
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
+    const requiresConfirmation = actionMap.capabilityRequiresConfirmation(actionDefinition);
+
+    const merged = mergeValuesIntoRequest({}, requiredFields, understanding.values, defaults);
+    const ready = merged.missing.length === 0;
+
+    let status = ActionStatusFunctions.STATUS.WAITING_ON_FIELDS;
+
+    if (ready) {
+        status = ActionStatusFunctions.statusWhenFieldsComplete(
+            supportsExecutionModes,
+            null,
+            requiresConfirmation
+        );
+    }
+
+    const request = attachRequestClassification(
+        {
+            action,
+            collected: merged.collected,
+            missing: merged.missing,
+            ready,
+            status,
+            executionMode: null
+        },
+        actionDefinition
+    );
+
+    let responseType = RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS;
+
+    if (ready) {
+        if (supportsExecutionModes) {
+            responseType = RESPONSE_TYPE.AWAITING_EXECUTION_MODE;
+        } else if (requiresConfirmation) {
+            responseType = RESPONSE_TYPE.AWAITING_CONFIRMATION;
+        } else {
+            responseType = RESPONSE_TYPE.EXECUTION_STARTED;
+        }
+    }
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request,
+        response: { type: responseType },
+        replaceOpenRequest: true
+    };
+}
+
+//Function B7b: New action while a non-final open request exists — ask before replace
+function buildReplaceOpenRequestOfferDecision(state, proposedAction) {
+    const pendingDefinition = actionMap[state.pendingAction] || null;
+    const proposedDefinition = actionMap[proposedAction] || null;
+    const pendingLabel =
+        (pendingDefinition && pendingDefinition.actionLabel) ||
+        String(state.pendingAction || 'open request');
+    const proposedLabel =
+        (proposedDefinition && proposedDefinition.actionLabel) ||
+        String(proposedAction || 'new request');
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request: buildRequestFromState(state),
+        response: {
+            type: RESPONSE_TYPE.REPLACE_OPEN_REQUEST,
+            pendingLabel: pendingLabel,
+            proposedLabel: proposedLabel,
+            proposedAction: proposedAction
+        },
+        replaceOpenRequest: false
+    };
+}
+
+//Function B8: Target state after merging field values into an open request
+function buildFieldsMergedDecision(state, values) {
+    const blocked = capabilityAvailabilityGate(state.pendingAction);
+
+    if (blocked) {
+        return blocked;
+    }
+
+    const actionDefinition = actionMap[state.pendingAction];
+    const requiredFields = actionDefinition && Array.isArray(actionDefinition.requiredFields)
+        ? actionDefinition.requiredFields
+        : [];
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
+    const requiresConfirmation = actionMap.capabilityRequiresConfirmation(actionDefinition);
+
+    const merged = mergeValuesIntoRequest(
+        state.collected,
+        requiredFields,
+        values,
+        null,
+        state.missing
+    );
+    const ready = merged.missing.length === 0;
+
+    let status = state.status;
+
+    if (ready && ActionStatusFunctions.isCollectingFields(state.status)) {
+        status = ActionStatusFunctions.statusWhenFieldsComplete(
+            supportsExecutionModes,
+            state.executionMode,
+            requiresConfirmation
+        );
+    }
+
+    const request = attachRequestClassification(
+        {
+            action: state.pendingAction,
+            collected: merged.collected,
+            missing: merged.missing,
+            ready,
+            status,
+            executionMode: state.executionMode || null
+        },
+        actionDefinition
+    );
+
+    let responseType = RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS;
+
+    if (ready) {
+        if (ActionStatusFunctions.isWaitingOnExecutionMode(status)) {
+            responseType = RESPONSE_TYPE.AWAITING_EXECUTION_MODE;
+        } else if (ActionStatusFunctions.isWaitingOnConfirmation(status)) {
+            responseType = RESPONSE_TYPE.AWAITING_CONFIRMATION;
+        } else if (
+            !requiresConfirmation &&
+            status === ActionStatusFunctions.STATUS.RUNNING
+        ) {
+            responseType = RESPONSE_TYPE.EXECUTION_STARTED;
+        }
+    }
+
+    return cloudpilotDecision(request, responseType);
+}
+
+//Function B9: User picked execution mode (Mode layer — STEP 4)
+// Mode 4 (automatic): persist execution_mode → waiting_on_confirmation → user confirms → STEP 6 handler → capability → Atlas.
+// Strategies 1–3 (instructions / cli / pr): STEP 7 → change/strategies/ (no STEP 6).
+// Request templates: conversation/CloudPilotMessage.js → templates/requestTemplates.js
+function executionModeIsSupported(actionDefinition, mode) {
+    const modes = actionDefinition && Array.isArray(actionDefinition.executionModes)
+        ? actionDefinition.executionModes
+        : [];
+
+    return modes.indexOf(mode) !== -1;
+}
+
+function handleExecutionModeSelection(state, mode) {
+    const blocked = capabilityAvailabilityGate(state.pendingAction);
+
+    if (blocked) {
+        return blocked;
+    }
+
+    const request = buildRequestFromState(state);
+    const actionDefinition = actionMap[state.pendingAction];
+
+    // Four choices are always offered. executionModes is what this action can do.
+    if (!executionModeIsSupported(actionDefinition, mode)) {
+        request.executionMode = null;
+        request.status = ActionStatusFunctions.STATUS.WAITING_ON_EXECUTION_MODE;
+        request.ready = true;
+
+        return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_MODE_UNAVAILABLE);
+    }
+
+    const requiresConfirmation = actionMap.capabilityRequiresConfirmation(actionDefinition);
+
+    if (mode === 'automatic') {
+        request.executionMode = mode;
+        // Change + automatic still confirms when permission requires it
+        if (requiresConfirmation) {
+            request.status = ActionStatusFunctions.STATUS.WAITING_ON_CONFIRMATION;
+
+            return cloudpilotDecision(request, RESPONSE_TYPE.AWAITING_CONFIRMATION);
+        }
+
+        request.status = ActionStatusFunctions.STATUS.RUNNING;
+
+        return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_STARTED);
+    }
+
+    // Keep the request open until the strategy succeeds. A missing template can be retried.
+    request.executionMode = null;
+    request.status = ActionStatusFunctions.STATUS.WAITING_ON_EXECUTION_MODE;
+    request.ready = true;
+
+    const responseTypeByMode = {
+        instructions: RESPONSE_TYPE.EXECUTION_INSTRUCTIONS,
+        cli: RESPONSE_TYPE.EXECUTION_CLI,
+        pr: RESPONSE_TYPE.EXECUTION_PR
+    };
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request,
+        response: { type: responseTypeByMode[mode] }
+    };
+}
+
+//Function B10: Open request with no state change — derive chat response from current state
+function resolveRequestChat(state) {
+    const blocked = capabilityAvailabilityGate(state.pendingAction);
+
+    if (blocked) {
+        return blocked;
+    }
+
+    const request = buildRequestFromState(state);
+    const actionDefinition = actionMap[state.pendingAction];
+    const supportsExecutionModes = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
+    const requiresConfirmation = actionMap.capabilityRequiresConfirmation(actionDefinition);
+    const ready = (state.missing || []).length === 0;
+
+    let responseType = RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS;
+
+    if (state.status === ActionStatusFunctions.STATUS.RUNNING) {
+        responseType = RESPONSE_TYPE.WORKFLOW_RUNNING;
+    } else if (state.status === ActionStatusFunctions.STATUS.FAILED) {
+        responseType = RESPONSE_TYPE.REQUEST_FAILED;
+    } else if (ActionStatusFunctions.isWaitingOnResourceScan(state.status)) {
+        responseType = RESPONSE_TYPE.RESOURCE_NOT_FOUND;
+    } else if (ready && supportsExecutionModes && !state.executionMode) {
+        responseType = RESPONSE_TYPE.AWAITING_EXECUTION_MODE;
+    } else if (ready && ActionStatusFunctions.isWaitingOnConfirmation(state.status)) {
+        responseType = RESPONSE_TYPE.AWAITING_CONFIRMATION;
+    } else if ((state.missing || []).length > 0) {
+        responseType = RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS;
+    } else if (ready && requiresConfirmation) {
+        responseType = RESPONSE_TYPE.AWAITING_CONFIRMATION;
+    } else if (ready && !requiresConfirmation) {
+        responseType = RESPONSE_TYPE.EXECUTION_STARTED;
+    }
+
+    return cloudpilotDecision(request, responseType);
+}
+
+//Function B11: permission: none — fulfill immediately (no request row)
+// Driven by capability.permission, not requestType / actionTier.
+function resolveImmediateExecutionAction(state, understanding) {
+    const actionName =
+        understanding && understanding.action ? String(understanding.action).trim() : '';
+
+    if (!actionName || actionName === 'general_chat') {
+        return null;
+    }
+
+    const actionDefinition = actionMap[actionName];
+
+    if (!actionDefinition || !actionMap.capabilityAllowsImmediateFulfill(actionDefinition)) {
+        return null;
+    }
+
+    if (!state.pendingAction) {
+        return actionName;
+    }
+
+    if (ActionStatusFunctions.isFinalStatus(state.status)) {
+        return actionName;
+    }
+
+    return null;
+}
+
+//Function B12: User said yes — start execution when confirmation rules are met
+function shouldStartExecutionOnConfirm(state, reply) {
+    if (!state.pendingAction) {
+        return false;
+    }
+
+    if (reply !== 'confirm') {
+        return false;
+    }
+
+    if (!ActionStatusFunctions.isWaitingOnConfirmation(state.status)) {
+        return false;
+    }
+
+    const actionDefinition = actionMap[state.pendingAction];
+    const needsExecutionMode = actionMap.actionRequiresExecutionModeSelection(actionDefinition);
+
+    if (needsExecutionMode) {
+        if (state.executionMode === 'automatic') {
+            return true;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+//Function B13: Target state when user confirmed — run the open request
+function buildExecutionStartedDecision(state) {
+    const blocked = capabilityAvailabilityGate(state.pendingAction);
+
+    if (blocked) {
+        return blocked;
+    }
+
+    const request = buildRequestFromState(state);
+    request.status = ActionStatusFunctions.STATUS.RUNNING;
+
+    return cloudpilotDecision(request, RESPONSE_TYPE.EXECUTION_STARTED);
+}
+
+//Function B14: Not about the open request — OpenAI only, row untouched
+function buildGeneralChatDecision() {
+    return {
+        chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
+        request: null,
+        response: { type: RESPONSE_TYPE.GENERAL_CHAT }
+    };
+}
+
+//Function B15: Route a classified Question to CloudPilot fulfillment (never general chat)
+// MESSAGE_RESPONSE=openai must not invent open-request / AI-spend / inventory facts.
+// understanding (optional): values when a question also carries field hints
+function resolveQuestionDecision(requestState, question, understanding) {
+    const state = normalizeRequestState(requestState);
+    const u = understanding || {};
+
+    if (question === 'open_requests') {
+        return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+    }
+
+    if (question === 'ai_spend') {
+        return buildImmediateCapabilityDecision('show_ai_usage');
+    }
+
+    if (question === 'ec2_compute_cost') {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: buildRequestFromState(state),
+            response: {
+                type: RESPONSE_TYPE.EC2_COMPUTE_COST,
+                values: u.values && typeof u.values === 'object' ? u.values : {}
+            }
+        };
+    }
+
+    // Information Request — get_ec2_inventory (not scan_ec2)
+    if (question === 'ec2_inventory') {
+        return buildImmediateCapabilityDecision('get_ec2_inventory');
+    }
+
+    // Information Request — get_s3_inventory (not scan_s3)
+    if (question === 's3_inventory') {
+        return buildImmediateCapabilityDecision('get_s3_inventory');
+    }
+
+    console.warn(
+        '[CLOUDPILOT_QUESTION_GUARDRAIL] Unhandled question="' +
+            String(question) +
+            '" — refusing general chat'
+    );
+
+    return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.LIST_OPEN_REQUESTS);
+}
+
+// Immediate fulfill for permission: none capabilities (no open-request row)
+function buildImmediateCapabilityDecision(actionName) {
+    const blocked = capabilityAvailabilityGate(actionName);
+
+    if (blocked) {
+        return blocked;
+    }
+
+    const actionDefinition = actionMap[actionName];
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request: null,
+        response: { type: RESPONSE_TYPE.IMMEDIATE_EXECUTION },
+        execute: { action: actionName },
+        requestType:
+            actionDefinition && actionDefinition.requestType != null
+                ? actionDefinition.requestType
+                : null,
+        permission:
+            actionDefinition && actionDefinition.permission != null
+                ? actionDefinition.permission
+                : null
+    };
+}
+
+//Function B16: yes → existing scan_ec2; no/cancel → close; else re-ask scan offer
+function resolveResourceScanOfferReply(state, understanding) {
+    const u = understanding || {};
+
+    if (u.reply === 'confirm') {
+        return buildResourceScanAcceptedDecision(state);
+    }
+
+    if (u.reply === 'decline' || u.reply === 'cancel') {
+        return {
+            chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+            request: null,
+            response: { type: RESPONSE_TYPE.RESOURCE_SCAN_DECLINED },
+            closeRequest: true
+        };
+    }
+
+    return cloudpilotDecision(buildRequestFromState(state), RESPONSE_TYPE.RESOURCE_NOT_FOUND);
+}
+
+//Function B17: Replace blocked mutation with configured scanAction + run it now
+function buildResourceScanAcceptedDecision(state) {
+    const blockedAction = actionMap[state.pendingAction] || {};
+    const verifyMeta = blockedAction.verifyResource || {};
+    const scanAction = verifyMeta.scanAction
+        ? String(verifyMeta.scanAction).trim()
+        : 'scan_ec2';
+    const blockedScan = capabilityAvailabilityGate(scanAction);
+
+    if (blockedScan) {
+        return blockedScan;
+    }
+
+    const regionField = verifyMeta.regionField
+        ? String(verifyMeta.regionField).trim()
+        : 'region';
+    const region = String((state.collected || {})[regionField] || '').trim();
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        replaceOpenRequest: true,
+        request: {
+            action: scanAction,
+            collected: region ? { region: region } : {},
+            missing: region ? [] : ['region'],
+            status: region
+                ? ActionStatusFunctions.STATUS.RUNNING
+                : ActionStatusFunctions.STATUS.WAITING_ON_FIELDS,
+            executionMode: null,
+            ready: Boolean(region)
+        },
+        response: {
+            type: region
+                ? RESPONSE_TYPE.EXECUTION_STARTED
+                : RESPONSE_TYPE.ASK_FOR_MISSING_FIELDS
+        }
+    };
+}
+
+function buildAboutOpenRequestDecision(state, understanding) {
+    const values = understanding && understanding.values ? understanding.values : {};
+    let includeUpdatedReview = false;
+
+    if (Object.keys(values).length > 0) {
+        const merged = buildFieldsMergedDecision(state, values);
+        const mergedRequest = merged && merged.request ? merged.request : null;
+        const missing = mergedRequest && Array.isArray(mergedRequest.missing)
+            ? mergedRequest.missing
+            : state.missing || [];
+        const completed = missing.length === 0;
+        const changedPendingConfirmation = ActionStatusFunctions.isWaitingOnConfirmation(
+            state.status
+        );
+
+        if (mergedRequest && (completed || changedPendingConfirmation)) {
+            includeUpdatedReview = true;
+        }
+    }
+
+    return {
+        chatType: CHAT_TYPE.GENERAL_CHAT_RESPONDING,
+        request: null,
+        response: {
+            type: RESPONSE_TYPE.ABOUT_OPEN_REQUEST,
+            includeUpdatedReview: includeUpdatedReview
+        }
+    };
+}
+
+function cloudpilotDecision(request, responseType) {
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request,
+        response: { type: responseType }
+    };
+}
+
+/*
+Centralized capability ON/OFF gate.
+LIVE → proceed. IN_DEVELOPMENT / COMING_SOON → recognize and refuse without
+creating a request, asking fields/confirmation, or executing.
+*/
+function isCapabilityAllowed(actionName) {
+    if (!actionName || actionName === 'general_chat') {
+        return true;
+    }
+
+    const actionDefinition = actionMap[actionName];
+
+    return Boolean(actionDefinition && actionDefinition.allowed === true);
+}
+
+function capabilityAvailabilityGate(actionName) {
+    if (isCapabilityAllowed(actionName)) {
+        return null;
+    }
+
+    return {
+        chatType: CHAT_TYPE.CLOUD_PILOT_RESPONDING,
+        request: null,
+        response: {
+            type: RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE,
+            action: actionName || null
+        }
+    };
+}
+
+// Carry requestType / permission on decision.request for inspection (not for if(requestType) branches)
+function attachRequestClassification(request, actionDefinition) {
+    if (!request || !actionDefinition) {
+        return request;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(actionDefinition, 'requestType')) {
+        request.requestType = actionDefinition.requestType;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(actionDefinition, 'permission')) {
+        request.permission = actionDefinition.permission;
+    }
+
+    return request;
+}
+
+module.exports = {
+    decideNextStep,
+    resolveQuestionDecision,
+    buildFieldsMergedDecision,
+    capabilityAvailabilityGate
+};

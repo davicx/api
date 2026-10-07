@@ -1,0 +1,1538 @@
+const scanEC2Handler = require('./scans/ec2/scanEC2Handler');
+const scanS3Handler = require('./scans/s3/scanS3Handler');
+const toggleEC2Handler = require('./actions/toggleEC2/toggleEC2Handler');
+const createEC2Handler = require('./actions/createEC2/createEC2Handler');
+const deleteEC2Handler = require('./actions/deleteEC2/deleteEC2Handler');
+const pauseEC2Handler = require('./actions/pauseEC2/pauseEC2Handler');
+const resumeEC2Handler = require('./actions/resumeEC2/resumeEC2Handler');
+const updateEC2TagHandler = require('./actions/updateEC2Tag/updateEC2TagHandler');
+const enableS3VersioningHandler = require('./actions/enableS3Versioning/enableS3VersioningHandler');
+const inventoryAWSHandler = require('./scans/inventory/inventoryAWSHandler');
+const billingAWSHandler = require('./scans/billing/billingAWSHandler');
+const showAiUsageHandler = require('./scans/aiUsage/showAiUsageHandler');
+const showCapabilitiesHandler = require('./capabilities/showCapabilitiesHandler');
+
+/*
+===============================================================================
+CAPABILITY LIFECYCLE STATUS — master ON/OFF switch
+===============================================================================
+
+- live            → ON  (allowed)
+- in_development  → OFF (not allowed)
+- coming_soon     → OFF (not allowed)
+
+Change only the statuses below to turn capabilities on or off.
+Detailed capability behavior is defined in actionMap further down.
+*/
+
+const CAPABILITY_STATUS = Object.freeze({
+    LIVE: 'live',
+    IN_DEVELOPMENT: 'in_development',
+    COMING_SOON: 'coming_soon'
+});
+
+const capabilityStatus = Object.freeze({
+
+    // Chat
+    general_chat: CAPABILITY_STATUS.LIVE,
+    show_capabilities: CAPABILITY_STATUS.LIVE,
+
+    // AWS — General
+    inventory_aws: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    show_billing: CAPABILITY_STATUS.IN_DEVELOPMENT,
+
+    // EC2 — Explore
+    get_ec2_inventory: CAPABILITY_STATUS.LIVE,
+    scan_ec2: CAPABILITY_STATUS.LIVE,
+
+    // EC2 — Manage
+    create_ec2: CAPABILITY_STATUS.LIVE,
+    pause_ec2: CAPABILITY_STATUS.LIVE,
+    resume_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    delete_ec2: CAPABILITY_STATUS.COMING_SOON,
+    toggle_ec2: CAPABILITY_STATUS.COMING_SOON,
+    update_ec2_tag: CAPABILITY_STATUS.COMING_SOON,
+
+    // S3 — Explore
+    get_s3_inventory: CAPABILITY_STATUS.LIVE,
+    scan_s3: CAPABILITY_STATUS.LIVE,
+    enable_s3_versioning: CAPABILITY_STATUS.LIVE,
+
+    // CloudPilot
+    show_ai_usage: CAPABILITY_STATUS.LIVE
+});
+
+function getCapabilityStatus(capabilityName) {
+    return capabilityStatus[capabilityName] || CAPABILITY_STATUS.COMING_SOON;
+}
+
+function isCapabilityLive(capabilityName) {
+    return getCapabilityStatus(capabilityName) === CAPABILITY_STATUS.LIVE;
+}
+
+
+
+
+
+/*
+===============================================================================
+MASTER CLOUDPILOT CAPABILITY CATALOG
+===============================================================================
+
+File: masterCloudPilotCapabilities.js (formerly actionMap.js)
+
+CURRENT USER CAPABILITIES
+
+Chat
+- general_chat: Respond without fulfilling a CloudPilot operation.
+- show_capabilities: Explain what CloudPilot currently supports.
+
+Explore AWS
+- inventory_aws: Inventory AWS resources.
+- show_billing: Review AWS billing.
+- get_ec2_inventory: Answer EC2 inventory questions (information / none).
+  (Regional. Default MVP region: us-west-2. Reuses scanEC2Handler.)
+- get_s3_inventory: Answer S3 inventory questions (information / none).
+  (Account-wide. Reuses scanS3Handler.)
+- scan_ec2: Explicit EC2 scan workflow (scan / confirmation).
+  (Regional. Reuses scanEC2Handler.)
+- scan_s3: Explicit S3 scan workflow (scan / confirmation).
+- enable_s3_versioning: Enable versioning on one S3 bucket (change / confirmation).
+  (Account-wide bucket inventory. Reuses scanS3Handler.)
+
+CloudPilot
+- show_ai_usage: Review CloudPilot's OpenAI usage.
+
+Manage EC2
+- create_ec2: Create an instance.
+- delete_ec2: Terminate an instance.
+- pause_ec2: Stop an instance.
+- resume_ec2: Start an instance.
+- toggle_ec2: Switch primary and secondary instances.
+- update_ec2_tag: Update an instance tag.
+
+WHAT THIS FILE CONTROLS
+
+- Which capabilities exist and how each one works.
+- Lifecycle ON/OFF status is the capabilityStatus map at the top of this file
+  (live → allowed; in_development / coming_soon → not allowed).
+- How a user message is matched to a capability.
+- What fields must be collected before a request is ready.
+- Which execution modes are available for a change.
+- Which handler fulfills the capability.
+- Which standard status messages can be shown to the user.
+- Which verified facts Intelligence may use after CloudPilot has
+  collected/retrieved real data for that capability.
+
+CAPABILITY DEFINITION SHAPE
+
+Each capability can contain:
+
+- Identity: type and actionLabel
+- Policy: status (lifecycle) and allowed (derived from status)
+- Orchestration: actionTier, requiresWorkflow, and requiresExecution
+- Request classification (metadata only until Decide consumes it):
+  - requestType: 'scan' | 'change' | 'information' | null
+    (null = not a Request — Chat only, e.g. general_chat)
+  - permission: 'confirmation' | 'none' | null
+    (independent of requestType; null when not a Request)
+- Intent detection: match
+- Request data: requiredFields and defaults
+- Change strategy: executionModes, when applicable
+- Fulfillment: executionFunction
+- Intelligence context: capability
+- Response copy: messages
+
+NOTE: Decide reads `permission` to decide confirmation vs immediate fulfill.
+`requestType` is descriptive metadata for inspection/routing later — do not drive
+execution from requestType alone. Keep actionTier as-is (technical tier).
+Do not treat actionTier as requestType.
+
+IMPORTANT BOUNDARIES
+
+- This is the source of truth for static CloudPilot capability definitions.
+- This is not runtime request or workflow state.
+- This is not Atlas scan or execution output.
+- general_chat produces a response but does not require fulfillment.
+- capability.cloudPilotCanAnswer lists facts available after real data has
+  been collected. It does not allow Intelligence to invent those facts.
+- Model context is created in:
+  cloudPilotIntelligence/context/contextTypes/cloudPilotCapabilitiesContext.js
+- Do not send match functions, execution handlers, or system messages to the
+  model as capability context.
+
+Keep every definition in the same stable shape so orchestration, prompts, and
+frontend-safe payloads can rely on consistent names.
+*/
+
+const actionMap = {
+
+    //SERVICE: General Chat
+    general_chat: {
+        //Identity
+        type: 'general_chat',
+        actionLabel: 'General Chat',
+
+        //Policy
+        status: getCapabilityStatus('general_chat'),
+        allowed: isCapabilityLive('general_chat'),
+
+        //Orchestration
+        actionTier: 'general_chat',
+        requiresWorkflow: false,
+        requiresExecution: false,
+        // Chat — not a Request (Decide does not use these yet)
+        requestType: null,
+        permission: null,
+
+        //Intent Detection
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: null,
+
+        //User-Facing System Messages
+        messages: {
+            started: '',
+            missingFields: {},
+            ready: '',
+            executing: '',
+            success: '',
+            failed: ''
+        }
+    },
+
+    //SERVICE: AWS
+    //Action: Inventory AWS Resources
+    //TO DO: Maybe later add regions, resource types
+    inventory_aws: {
+        //Identity
+        type: 'inventory_aws',
+        actionLabel: 'Inventory AWS Resources',
+
+        //Policy
+        status: getCapabilityStatus('inventory_aws'),
+        allowed: isCapabilityLive('inventory_aws'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: inventoryAWSHandler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'Inventory your AWS resources'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing AWS inventory.',
+            missingFields: {},
+            ready: 'Everything is ready for AWS inventory.',
+            executing: 'Gathering AWS resources.',
+            success: 'Great, I found your AWS resources and added them to your dashboard.',
+            failed: 'AWS inventory failed.'
+        }
+    },
+
+    //SERVICE: AWS
+    //Action: AWS Billing summary
+    show_billing: {
+        //Identity
+        type: 'show_billing',
+        actionLabel: 'AWS Billing',
+
+        //Policy
+        status: getCapabilityStatus('show_billing'),
+        allowed: isCapabilityLive('show_billing'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('show my billing') ||
+            text.includes('show my aws bill') ||
+            text.includes('show aws billing') ||
+            text.includes('why is my aws bill') ||
+            text.includes('why is my bill so high') ||
+            text.includes('where is my money going') ||
+            text.includes('what am i being charged'),
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {
+            period_days: 30
+        },
+
+        //Execution
+        executionFunction: billingAWSHandler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'Review AWS billing'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing AWS billing summary.',
+            missingFields: {},
+            ready: 'Everything is ready for AWS billing.',
+            executing: 'Loading AWS billing.',
+            success: 'Here is your AWS billing summary.',
+            failed: 'AWS billing summary failed.'
+        }
+    },
+
+    //SERVICE: CloudPilot
+    //Action: OpenAI / AI usage summary (local cloud_pilot_ai_usage table — not AWS)
+    show_ai_usage: {
+        //Identity
+        type: 'show_ai_usage',
+        actionLabel: 'AI Usage',
+
+        //Policy
+        status: getCapabilityStatus('show_ai_usage'),
+        allowed: isCapabilityLive('show_ai_usage'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        // Not an Action (toggle_ec2, …). Detected as Question via searchForAiSpend → question=ai_spend.
+        // match kept empty so actionMap rules do not treat spend questions as actions.
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: showAiUsageHandler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'CloudPilot',
+            description: 'View OpenAI usage'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Checking OpenAI usage.',
+            missingFields: {},
+            ready: 'Everything is ready for AI usage.',
+            executing: 'Loading AI usage.',
+            success: 'Here is your estimated OpenAI spend.',
+            failed: 'AI usage summary failed.'
+        }
+    },
+
+    //SERVICE: CloudPilot
+    //Action: Show what CloudPilot can do (live actionMap catalog)
+    show_capabilities: {
+        //Identity
+        type: 'show_capabilities',
+        actionLabel: 'Show Capabilities',
+
+        //Policy
+        status: getCapabilityStatus('show_capabilities'),
+        allowed: isCapabilityLive('show_capabilities'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        // Provisional: catalog answer is fulfillment today; could be treated as Chat later
+        requestType: 'information',
+        permission: 'none',
+
+        //Intent Detection — avoid bare "help" so "help me create ec2" stays create_ec2
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase().trim();
+
+            if (
+                normalized === 'help' ||
+                normalized === 'help?' ||
+                normalized === 'help!'
+            ) {
+                return true;
+            }
+
+            return (
+                normalized.includes('what can you do') ||
+                normalized.includes('what do you do') ||
+                normalized.includes('what are your capabilities') ||
+                normalized.includes('what can cloudpilot do') ||
+                normalized.includes('what services do you support') ||
+                normalized.includes('what do you support') ||
+                normalized.includes('show capabilities') ||
+                normalized.includes('list capabilities')
+            );
+        },
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: showCapabilitiesHandler,
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing CloudPilot capabilities.',
+            missingFields: {},
+            ready: 'Everything is ready for capabilities.',
+            executing: 'Loading capabilities.',
+            success: 'Here is how CloudPilot can help you today.',
+            failed: 'Capabilities summary failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Scan EC2
+    scan_ec2: {
+        //Identity
+        type: 'scan_ec2',
+        actionLabel: 'Scan EC2',
+
+        //Policy
+        status: getCapabilityStatus('scan_ec2'),
+        allowed: isCapabilityLive('scan_ec2'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'scan',
+        permission: 'confirmation',
+
+        //Intent Detection
+        match: (text) => matchesScanEC2Intent(text),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'request_name'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: scanEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        // cloudPilotCanAnswer = truthful facts after AWS → Atlas → formatter → conversation
+        capability: {
+            section: 'Explore AWS',
+            description: 'Scan EC2 instances for issues',
+            cloudPilotCanAnswer: [
+                'instance identity and name',
+                'instance state',
+                'instance type',
+                'tags',
+                'region',
+                'average CPU utilization',
+                'estimated On-Demand compute cost when a stored rate exists'
+            ],
+            scope: 'Regional. Default MVP region: us-west-2.'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 scan.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 scan.',
+            executing: 'Running EC2 scan.',
+            success: 'EC2 scan completed.',
+            failed: 'EC2 scan failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Get EC2 inventory (Information Request — not an explicit Scan workflow)
+    // Detected as Question via searchForEc2Inventory → question=ec2_inventory.
+    // Shares scanEC2Handler / Atlas with scan_ec2; different requestType + permission.
+    get_ec2_inventory: {
+        //Identity
+        type: 'get_ec2_inventory',
+        actionLabel: 'EC2 Inventory',
+
+        //Policy
+        status: getCapabilityStatus('get_ec2_inventory'),
+        allowed: isCapabilityLive('get_ec2_inventory'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        // Not an Action match — Question search owns inventory phrasing
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        // Quiet MVP default — do not ask the user for region on inventory questions
+        defaults: {
+            region: 'us-west-2'
+        },
+
+        //Execution — same Atlas EC2 retrieval as scan_ec2
+        executionFunction: scanEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'List your EC2 instances',
+            scope: 'Regional. Default MVP region: us-west-2.'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Looking up your EC2 instances.',
+            missingFields: {},
+            ready: 'Everything is ready for EC2 inventory.',
+            executing: 'Loading EC2 inventory.',
+            success: 'Here are your EC2 instances.',
+            failed: 'EC2 inventory failed.'
+        }
+    },
+
+    //SERVICE: S3
+    //Action: Scan S3
+    scan_s3: {
+        //Identity
+        type: 'scan_s3',
+        actionLabel: 'Scan S3',
+
+        //Policy
+        status: getCapabilityStatus('scan_s3'),
+        allowed: isCapabilityLive('scan_s3'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'scan',
+        permission: 'confirmation',
+
+        //Intent Detection
+        match: (text) => matchesScanS3Intent(text),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'request_name'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: scanS3Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        // cloudPilotCanAnswer = truthful facts after AWS → Atlas → formatter → conversation
+        capability: {
+            section: 'Explore AWS',
+            description: 'Scan S3 buckets',
+            cloudPilotCanAnswer: [
+                'bucket names',
+                'tags',
+                'bucket region',
+                'default encryption',
+                'versioning',
+                'public access signals',
+                'lifecycle rules',
+                'access logging'
+            ],
+            scope: 'Account-wide bucket inventory.'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing S3 scan.',
+            missingFields: {},
+            ready: 'Everything is ready for the S3 scan.',
+            executing: 'Running S3 scan.',
+            success: 'S3 scan completed.',
+            failed: 'S3 scan failed.'
+        }
+    },
+
+    //SERVICE: S3
+    //Action: Get S3 inventory (Information Request — not an explicit Scan workflow)
+    // Detected as Question via searchForS3Inventory → question=s3_inventory.
+    // Shares scanS3Handler / Atlas with scan_s3; different requestType + permission.
+    // Account-wide — no required region field (Atlas call may still receive a quiet default).
+    get_s3_inventory: {
+        //Identity
+        type: 'get_s3_inventory',
+        actionLabel: 'S3 Inventory',
+
+        //Policy
+        status: getCapabilityStatus('get_s3_inventory'),
+        allowed: isCapabilityLive('get_s3_inventory'),
+
+        //Orchestration
+        actionTier: 'informational',
+        requiresWorkflow: false,
+        requiresExecution: true,
+        requestType: 'information',
+        permission: 'none',
+
+        // Not an Action match — Question search owns inventory phrasing
+        match: () => false,
+
+        //Fields Required Before Ready
+        requiredFields: [],
+
+        // Quiet default for Atlas API shape only — inventory is account-wide, not region-scoped UX
+        defaults: {
+            region: 'us-west-2'
+        },
+
+        //Execution — same Atlas S3 retrieval as scan_s3
+        executionFunction: scanS3Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Explore AWS',
+            description: 'List your S3 buckets',
+            scope: 'Account-wide bucket inventory.'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Looking up your S3 buckets.',
+            missingFields: {},
+            ready: 'Everything is ready for S3 inventory.',
+            executing: 'Loading S3 inventory.',
+            success: 'Here are your S3 buckets.',
+            failed: 'S3 inventory failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Toggle EC2
+    toggle_ec2: {
+        //Identity
+        type: 'toggle_ec2',
+        actionLabel: 'Toggle EC2',
+
+        //Policy
+        status: getCapabilityStatus('toggle_ec2'),
+        allowed: isCapabilityLive('toggle_ec2'),
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'unknown',
+            summary:
+                'Starting one instance and stopping another can change compute cost, depending on the instance types. CloudPilot cannot price that change yet.',
+            estimateAvailable: false
+        },
+
+        //Change strategies (destructive actions only; scan/inventory skip this)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('toggle') ||
+            text.includes('switch'),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'primary_instance_id',
+            'secondary_instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: toggleEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Switch between primary and secondary instances'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 toggle.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 toggle.',
+            executing: 'Toggling EC2 instances. This may take a few minutes.',
+            success: 'EC2 toggle completed.',
+            failed: 'EC2 toggle failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Create EC2
+    create_ec2: {
+        //Identity
+        type: 'create_ec2',
+        actionLabel: 'Create EC2',
+
+        //Policy
+        status: getCapabilityStatus('create_ec2'),
+        allowed: isCapabilityLive('create_ec2'),
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_increase',
+            summary: 'A new EC2 instance adds compute charges for as long as it runs.',
+            estimateAvailable: true
+        },
+
+        //Change strategies (destructive actions only; scan/inventory skip this)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('create') &&
+            (text.includes('ec2') || text.includes('instance')),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'name',
+            'region',
+            'instance_type'
+        ],
+
+        //Optional Defaults
+        defaults: {
+            tags: {
+                'managed-by': 'cloudpilot',
+                'cloudpilot-managed': 'true',
+                'environment': 'demo',
+                'cloudpilot-role': 'secondary'
+            }
+        },
+
+        //Execution
+        executionFunction: createEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Create EC2 instances'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 create.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 create.',
+            executing: 'Creating EC2 instance.',
+            success: 'EC2 instance created.',
+            failed: 'EC2 create failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Delete EC2
+    delete_ec2: {
+        //Identity
+        type: 'delete_ec2',
+        actionLabel: 'Delete EC2',
+
+        //Policy
+        status: getCapabilityStatus('delete_ec2'),
+        allowed: isCapabilityLive('delete_ec2'),
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_decrease',
+            summary:
+                'Terminating an instance stops its compute charges. Other resources, such as storage, can continue to cost money.',
+            estimateAvailable: false
+        },
+
+        //Change strategies (destructive actions only; scan/inventory skip this)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) =>
+            text.includes('delete') &&
+            (text.includes('ec2') || text.includes('instance')),
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: deleteEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Delete EC2 instances'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 delete.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 delete.',
+            executing: 'Terminating EC2 instance.',
+            success: 'EC2 instance termination requested.',
+            failed: 'EC2 delete failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Update EC2 tag (Phase G golden path)
+    update_ec2_tag: {
+        //Identity
+        type: 'update_ec2_tag',
+        actionLabel: 'Update EC2 Tag',
+
+        //Policy
+        status: getCapabilityStatus('update_ec2_tag'),
+        allowed: isCapabilityLive('update_ec2_tag'),
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'none',
+            summary: 'Changing an EC2 tag does not by itself change the instance price.',
+            estimateAvailable: false
+        },
+
+        //Change strategies (destructive actions only)
+        executionModes: [
+            'instructions',
+            'cli',
+            'pr',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+            if (normalized.includes('update') && normalized.includes('tag') && normalized.includes('ec2')) {
+                return true;
+            }
+            if (normalized.includes('update') && normalized.includes('tag') && normalized.includes('instance')) {
+                return true;
+            }
+            if (normalized.includes('update') && normalized.includes('cloudpilot-test')) {
+                return true;
+            }
+            if (normalized.includes('update ec2 tag')) {
+                return true;
+            }
+            return false;
+        },
+
+        //Fields Required Before Ready (tag_key defaults to CloudPilot-Test)
+        requiredFields: [
+            'region',
+            'instance_id',
+            'tag_key',
+            'tag_value'
+        ],
+
+        //Optional Defaults
+        defaults: {
+            tag_key: 'CloudPilot-Test'
+        },
+
+        //Execution
+        executionFunction: updateEC2TagHandler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Update EC2 tags'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing EC2 tag update.',
+            missingFields: {},
+            ready: 'Everything is ready for the EC2 tag update.',
+            executing: 'Updating EC2 tag.',
+            success: 'EC2 tag updated.',
+            failed: 'EC2 tag update failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Pause EC2 (AWS StopInstances)
+    pause_ec2: {
+        //Identity
+        type: 'pause_ec2',
+        actionLabel: 'Pause EC2',
+
+        //Policy
+        status: getCapabilityStatus('pause_ec2'),
+        allowed: isCapabilityLive('pause_ec2'),
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_decrease',
+            summary:
+                'Stopping an instance stops its compute charges while it is stopped. Storage and other attached resources can continue to cost money.',
+            estimateAvailable: false
+        },
+
+        //Change strategies — no PR for pause/resume
+        executionModes: [
+            'instructions',
+            'cli',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+
+            if (
+                normalized.includes('delete') ||
+                normalized.includes('terminate') ||
+                normalized.includes('toggle') ||
+                normalized.includes('switch')
+            ) {
+                return false;
+            }
+
+            if (normalized.includes('pause')) {
+                return true;
+            }
+
+            if (
+                normalized.includes('stop') &&
+                (normalized.includes('ec2') || normalized.includes('instance'))
+            ) {
+                return true;
+            }
+
+            return false;
+        },
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        // Verify target exists in Atlas before execution-mode speech
+        // Doc: doc/development/finished/feature_verify_request.md
+        verifyResource: {
+            resourceType: 'ec2',
+            regionField: 'region',
+            scanAction: 'scan_ec2',
+            targets: [
+                { idField: 'instance_id' }
+            ]
+        },
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: pauseEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Pause (stop) one EC2 instance'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing to pause an EC2 instance.',
+            missingFields: {},
+            ready: 'Everything is ready to pause the EC2 instance.',
+            executing: 'Pausing EC2 instance.',
+            success: 'EC2 instance paused.',
+            failed: 'EC2 pause failed.'
+        }
+    },
+
+    //SERVICE: EC2
+    //Action: Resume EC2 (AWS StartInstances)
+    resume_ec2: {
+        //Identity
+        type: 'resume_ec2',
+        actionLabel: 'Resume EC2',
+
+        //Policy
+        status: getCapabilityStatus('resume_ec2'),
+        allowed: isCapabilityLive('resume_ec2'),
+
+        //Orchestration
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_increase',
+            summary: 'Starting an instance resumes its compute charges.',
+            estimateAvailable: false
+        },
+
+        //Change strategies — no PR for pause/resume
+        executionModes: [
+            'instructions',
+            'cli',
+            'automatic'
+        ],
+
+        //Intent Detection
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+
+            if (
+                normalized.includes('create') ||
+                normalized.includes('toggle') ||
+                normalized.includes('switch')
+            ) {
+                return false;
+            }
+
+            if (normalized.includes('resume')) {
+                return true;
+            }
+
+            if (
+                normalized.includes('start') &&
+                (normalized.includes('ec2') || normalized.includes('instance'))
+            ) {
+                return true;
+            }
+
+            return false;
+        },
+
+        //Fields Required Before Ready
+        requiredFields: [
+            'region',
+            'instance_id'
+        ],
+
+        // Verify target exists in Atlas before execution-mode speech
+        // Doc: doc/development/finished/feature_verify_request.md
+        verifyResource: {
+            resourceType: 'ec2',
+            regionField: 'region',
+            scanAction: 'scan_ec2',
+            targets: [
+                { idField: 'instance_id' }
+            ]
+        },
+
+        //Optional Defaults
+        defaults: {},
+
+        //Execution
+        executionFunction: resumeEC2Handler,
+
+        //Capability discovery (optional presentation for show_capabilities)
+        capability: {
+            section: 'Manage EC2',
+            description: 'Resume (start) one EC2 instance'
+        },
+
+        //User-Facing System Messages
+        messages: {
+            started: 'Preparing to resume an EC2 instance.',
+            missingFields: {},
+            ready: 'Everything is ready to resume the EC2 instance.',
+            executing: 'Resuming EC2 instance.',
+            success: 'EC2 instance resumed.',
+            failed: 'EC2 resume failed.'
+        }
+    },
+
+    //SERVICE: S3
+    //Action: Enable bucket versioning
+    enable_s3_versioning: {
+        type: 'enable_s3_versioning',
+        actionLabel: 'Enable S3 Versioning',
+
+        status: getCapabilityStatus('enable_s3_versioning'),
+        allowed: isCapabilityLive('enable_s3_versioning'),
+
+        actionTier: 'destructive',
+        requiresWorkflow: true,
+        requiresExecution: false,
+        requestType: 'change',
+        permission: 'confirmation',
+        costImpact: {
+            classification: 'possible_increase',
+            summary:
+                'Enabling versioning has no separate activation fee, but retained object versions can increase S3 storage costs.',
+            estimateAvailable: false
+        },
+
+        match: (text) => {
+            const normalized = String(text || '').toLowerCase();
+            return (
+                normalized.includes('enable versioning') ||
+                normalized.includes('enable bucket versioning')
+            );
+        },
+
+        requiredFields: [
+            'bucket_name'
+        ],
+
+        verifyResource: {
+            resourceType: 's3_versioning',
+            idField: 'bucket_name'
+        },
+
+        defaults: {},
+
+        executionFunction: enableS3VersioningHandler,
+
+        capability: {
+            section: 'Manage S3',
+            description: 'Enable versioning for one S3 bucket'
+        },
+
+        messages: {
+            started: 'Preparing to enable S3 versioning.',
+            missingFields: {},
+            ready: 'Enable versioning for this bucket?',
+            executing: 'Enabling S3 versioning.',
+            success: 'S3 versioning is enabled.',
+            failed: 'S3 versioning could not be enabled.'
+        }
+    }
+};
+
+/*
+Explicit Scan S3 only ("scan … s3").
+
+Inventory questions ("what buckets do I have?") → matchesGetS3InventoryIntent / Question search.
+General knowledge ("what is S3?" / "what is a bucket?") stays General Chat.
+*/
+function matchesScanS3Intent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text) {
+        return false;
+    }
+
+    if (isS3DefinitionQuestion(text)) {
+        return false;
+    }
+
+    return /\bscan\b/.test(text) && /\bs3\b/.test(text);
+}
+
+/*
+S3 inventory Information questions (not explicit Scan).
+Used by Question search → get_s3_inventory. Do not route these through scan_s3.
+*/
+function matchesGetS3InventoryIntent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text) {
+        return false;
+    }
+
+    if (isS3DefinitionQuestion(text)) {
+        return false;
+    }
+
+    if (/\bscan\b/.test(text)) {
+        return false;
+    }
+
+    const mentionsS3 = /\bs3\b/.test(text);
+    const mentionsBuckets = /\bbuckets\b/.test(text);
+
+    if (!mentionsS3 && !mentionsBuckets) {
+        return false;
+    }
+
+    const asksForOwnedData =
+        /\b(my|our)\s+(s3\s+)?buckets\b/.test(text) ||
+        /\b(my|our)\s+s3\b/.test(text) ||
+        /\b(do|does)\s+(i|we)\s+have\b/.test(text) ||
+        /\b(in\s+my|in\s+our)\s+(aws\s+)?account\b/.test(text);
+
+    const asksToInspect =
+        /\b(show|list|find|display)\b/.test(text) ||
+        /\bhow\s+many\b/.test(text) ||
+        /\b(what|which)\s+(s3\s+)?buckets\b/.test(text) ||
+        /\b(any|are)\s+(s3\s+)?buckets\b/.test(text);
+
+    return (
+        asksToInspect &&
+        (
+            asksForOwnedData ||
+            /\bhow\s+many\b/.test(text) ||
+            /\b(show|list|find|display)\b/.test(text)
+        )
+    );
+}
+
+function isS3DefinitionQuestion(text) {
+    return (
+        /\bwhat\s+is\s+(an?\s+)?s3\b/.test(text) ||
+        /\bwhat\s+is\s+(an?\s+)?s3\s+bucket\b/.test(text) ||
+        /\bwhat\s+is\s+a\s+bucket\b/.test(text)
+    );
+}
+
+/*
+Explicit Scan EC2 only ("scan … ec2").
+
+Inventory questions ("what EC2 instances do I have?") → matchesGetEc2InventoryIntent / Question search.
+General knowledge ("what is an EC2 instance?") stays General Chat.
+*/
+function matchesScanEC2Intent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text || !/\bec2\b/.test(text)) {
+        return false;
+    }
+
+    return /\bscan\b/.test(text);
+}
+
+/*
+EC2 inventory Information questions (not explicit Scan).
+Used by Question search → get_ec2_inventory. Do not route these through scan_ec2.
+*/
+function matchesGetEc2InventoryIntent(message) {
+    const text = String(message || '').toLowerCase().trim();
+
+    if (!text || !/\bec2\b/.test(text)) {
+        return false;
+    }
+
+    if (/\bscan\b/.test(text)) {
+        return false;
+    }
+
+    if (/\bwhat\s+is\s+(an?\s+)?ec2\b/.test(text)) {
+        return false;
+    }
+
+    const mentionsInstances = /\b(instances?|servers?)\b/.test(text);
+
+    if (!mentionsInstances) {
+        return false;
+    }
+
+    const asksForOwnedData =
+        /\b(my|our)\s+(ec2\s+)?(instances?|servers?)\b/.test(text) ||
+        /\b(do|does)\s+(i|we)\s+have\b/.test(text) ||
+        /\b(in\s+my|in\s+our)\s+(aws\s+)?account\b/.test(text);
+
+    const asksToInspect =
+        /\b(show|list|find|display)\b/.test(text) ||
+        /\bhow\s+many\b/.test(text) ||
+        /\b(what|which)\s+ec2\s+(instances?|servers?)\b/.test(text) ||
+        /\b(any|are)\s+ec2\s+(instances?|servers?)\b/.test(text);
+
+    const asksForCurrentState =
+        /\b(running|stopped|pending|terminated|active)\b/.test(text);
+
+    return (
+        asksToInspect &&
+        (
+            asksForOwnedData ||
+            asksForCurrentState ||
+            /\bhow\s+many\b/.test(text) ||
+            /\b(show|list|find|display)\b/.test(text)
+        )
+    );
+}
+
+function actionRequiresExecutionModeSelection(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        Array.isArray(actionDefinition.executionModes) &&
+        actionDefinition.executionModes.length > 0
+    );
+}
+
+// Decide: confirmation required? Driven by permission metadata only (not requestType).
+function capabilityRequiresConfirmation(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        actionDefinition.permission === 'confirmation'
+    );
+}
+
+// Decide: may fulfill without confirmation? Driven by permission metadata only.
+function capabilityAllowsImmediateFulfill(actionDefinition) {
+    return Boolean(
+        actionDefinition &&
+        actionDefinition.permission === 'none'
+    );
+}
+
+/*
+Validate status catalog against actionMap.
+Throws with the capability name when catalogs disagree or a status is invalid.
+Does not silently treat missing entries as coming_soon.
+*/
+function validateCapabilityStatusCatalog(
+    actionKeys,
+    statusCatalog,
+    statusConstants
+) {
+    const keys = Array.isArray(actionKeys) ? actionKeys : [];
+    const catalog = statusCatalog && typeof statusCatalog === 'object' ? statusCatalog : {};
+    const validStatuses = new Set(
+        statusConstants && typeof statusConstants === 'object'
+            ? Object.values(statusConstants)
+            : []
+    );
+
+    for (let i = 0; i < keys.length; i++) {
+        const capabilityName = keys[i];
+
+        if (!Object.prototype.hasOwnProperty.call(catalog, capabilityName)) {
+            throw new Error(
+                'Missing capability status entry for "' + capabilityName + '"'
+            );
+        }
+    }
+
+    const statusKeys = Object.keys(catalog);
+
+    for (let i = 0; i < statusKeys.length; i++) {
+        const capabilityName = statusKeys[i];
+
+        if (keys.indexOf(capabilityName) === -1) {
+            throw new Error(
+                'Unknown capability in status catalog: "' + capabilityName + '"'
+            );
+        }
+
+        const status = catalog[capabilityName];
+
+        if (!validStatuses.has(status)) {
+            throw new Error(
+                'Invalid capability status for "' +
+                    capabilityName +
+                    '": "' +
+                    String(status) +
+                    '"'
+            );
+        }
+    }
+}
+
+const COST_CLASSIFICATIONS = new Set([
+    'possible_increase',
+    'possible_decrease',
+    'increase',
+    'decrease',
+    'none',
+    'unknown'
+]);
+
+function validateChangeCostImpact(actionDefinitions) {
+    const definitions = actionDefinitions && typeof actionDefinitions === 'object'
+        ? actionDefinitions
+        : {};
+    const names = Object.keys(definitions);
+
+    for (let i = 0; i < names.length; i++) {
+        const capabilityName = names[i];
+        const actionDefinition = definitions[capabilityName];
+
+        if (!actionDefinition || actionDefinition.requestType !== 'change') {
+            continue;
+        }
+
+        const costImpact = actionDefinition.costImpact;
+
+        if (!costImpact || typeof costImpact !== 'object') {
+            throw new Error(
+                'Change capability "' + capabilityName + '" is missing costImpact'
+            );
+        }
+
+        if (!COST_CLASSIFICATIONS.has(costImpact.classification)) {
+            throw new Error(
+                'Change capability "' +
+                    capabilityName +
+                    '" has an invalid cost classification'
+            );
+        }
+
+        if (!String(costImpact.summary || '').trim()) {
+            throw new Error(
+                'Change capability "' + capabilityName + '" is missing a cost summary'
+            );
+        }
+
+        if (typeof costImpact.estimateAvailable !== 'boolean') {
+            throw new Error(
+                'Change capability "' +
+                    capabilityName +
+                    '" must say whether a cost estimate is available'
+            );
+        }
+    }
+}
+
+validateCapabilityStatusCatalog(
+    Object.keys(actionMap),
+    capabilityStatus,
+    CAPABILITY_STATUS
+);
+
+validateChangeCostImpact(actionMap);
+
+module.exports = actionMap;
+
+Object.defineProperty(module.exports, 'actionRequiresExecutionModeSelection', {
+    value: actionRequiresExecutionModeSelection,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'capabilityRequiresConfirmation', {
+    value: capabilityRequiresConfirmation,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'capabilityAllowsImmediateFulfill', {
+    value: capabilityAllowsImmediateFulfill,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'validateCapabilityStatusCatalog', {
+    value: validateCapabilityStatusCatalog,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'validateChangeCostImpact', {
+    value: validateChangeCostImpact,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'CAPABILITY_STATUS', {
+    value: CAPABILITY_STATUS,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'capabilityStatus', {
+    value: capabilityStatus,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'getCapabilityStatus', {
+    value: getCapabilityStatus,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'isCapabilityLive', {
+    value: isCapabilityLive,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesScanEC2Intent', {
+    value: matchesScanEC2Intent,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesScanS3Intent', {
+    value: matchesScanS3Intent,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesGetEc2InventoryIntent', {
+    value: matchesGetEc2InventoryIntent,
+    enumerable: false
+});
+
+Object.defineProperty(module.exports, 'matchesGetS3InventoryIntent', {
+    value: matchesGetS3InventoryIntent,
+    enumerable: false
+});
