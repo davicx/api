@@ -216,9 +216,39 @@ Versioning makes this honest only if the byte metric includes the bytes we mean.
 
 ---
 
+## Costs page — checklist to make the mock real
+
+The design mock is `kite/atlas/src/pages/design/CostsPage.js` (“Your AWS costs”). Every number on it is hardcoded. Replacing the JSX with an API call is the small part. Each block below is real only when its data exists. Blank is better than a copied mock number.
+
+Steps 1–4 above fill the **resource “this month”** column for EC2 (known rates) and S3 (known size). They do not fill month-to-month history. Service totals and the chart are a later billing read. Do not merge that bill with these estimates into one unlabeled total.
+
+| Done when | Block on the page | What “real” means |
+|-----------|-------------------|-------------------|
+| [ ] | Page is not the design mock | `/costs` reads an API. No `$42.18` left in the component |
+| [ ] | Current month | One account total for a named month, from Cost Explorer. Today’s `show_billing` is the last 30 days by service, not “September 2026” |
+| [ ] | ↑ or ↓ from last month | The same total for the previous month. Needs two periods, not one |
+| [ ] | Projected month | Labeled as a pace guess (month so far, extended) or left off. Not a fake forecast |
+| [ ] | Potential savings | Sum only where a finding already has `estimated_monthly_savings`. EC2 low CPU can. S3 rules are null, so they add nothing. “2 opportunities” only if two such findings exist |
+| [ ] | Cost over time | Daily or monthly points kept from Cost Explorer (the billing call already asks for daily groups, then throws the days away). 30 days, 6 months, and 1 year are three ranges of that series |
+| [ ] | Cost by service | EC2, S3, and whatever else Cost Explorer returns (Data Transfer, Other). Map AWS service names. This is account spend, not the sum of the resource estimates |
+| [ ] | Insight: instance barely used | A real low-CPU finding for that instance, with a link to it. No insight if the scan has none |
+| [ ] | Insight: S3 went up because of one bucket | Off until a bucket has two months of its own number. Do not say `wishlist-images` “accounts for” an increase from the service total alone |
+| [ ] | Resources table, this month | One row per instance or bucket we can price. EC2: stored rate × 730 when the type is known. S3: `sizeGb` × GB-month rate. Unknown → no row, or a row with no dollar amount |
+| [ ] | Resources table, last month and change | A second stored or billed number for that same resource. Estimates have no last month. Leave those cells blank until then |
+
+Order that matches the difficulty:
+
+1. Wire the page and show **cost by service** plus a **current total** from the billing summary that already exists.
+2. Keep the daily series so **last month**, the **change**, and the **chart** are the same source.
+3. Show **this month** on named EC2 and S3 rows from Steps 1–4. Savings insight only from findings that already carry a savings figure.
+4. Last month and percent change **per resource**, and the “this bucket caused the increase” insight, wait until that per-resource history exists.
+
+---
+
 ## Out of scope
 
-- Cost Explorer, CUR, cost allocation tags, per-bucket “share of the bill”
+- Steps 1–4 calling Cost Explorer. The Costs page checklist uses it later for account totals, the chart, and month-to-month service spend. Those totals stay labeled as the bill, separate from the rate × quantity estimates
+- CUR, cost allocation tags, and claiming one bucket’s share of the S3 bill
 - AWS Price List sync
 - Requests, data transfer, Glacier, Intelligent-Tiering, replication
 - EBS, Elastic IP, tax
