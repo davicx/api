@@ -6,6 +6,7 @@ A person who just created an AWS account should not have to invent IAM policies,
 
 They open CloudPilot, choose EC2 and S3, choose how much CloudPilot may do, and approve a CloudFormation stack in their own account. CloudPilot then assumes a role. Scans and fixes they already have keep working. They receive an authorized client for that account instead of a single machine profile.
 
+
 **Status:** Plan. Do not implement from this file until a step is chosen.  
 **Codename:** `feature_adding_services`  
 **Related:** [Useful Costs](./feature_useful_costs.md) · [Mock AWS](./feature_mock_aws.md)
