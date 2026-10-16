@@ -11,7 +11,7 @@ EC2 is about $11/month.
 
 **Status:** Plan. Do not implement from this file until a step is chosen.  
 **Codename:** `feature_useful_costs`  
-**Related:** [Useful Price](../finished/feature_useful_price.md) (shipped EC2 hourly estimates) · [billing.md](../future/billing.md) (`show_billing`, real AWS bill, out of this plan)
+**Related:** [Useful Price](../finished/feature_useful_price.md) (shipped EC2 hourly estimates) · [billing.md](../future/billing.md) (`show_billing`, real AWS bill, out of this plan) · [First useful AWS costs](feature_first_useful_aws_costs.md) (account bill on the Costs page; separate from this plan)
 
 This plan does **not** read the AWS bill. No Cost Explorer, no Price List API, no `GetCostAndUsage`. The dollar amount is our estimate: a rate we store, times a quantity we already know or can put on the scan.
 
