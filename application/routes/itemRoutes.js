@@ -12,6 +12,7 @@ const db = require('../functions/conn');
 /*
 FUNCTIONS A: All Routes Related to Items
 	1) Function A1: Post Item
+	2) Function A2: Edit Item
 
 FUNCTIONS B: All Routes Related to getting Items
 	1) Function B1: Get all Group Items
@@ -40,6 +41,31 @@ itemRouter.post('/post/item', async function(req, res) {
 	//Type 3: AWS to AWS	
 	} else if(functions.compareStrings(appLocation, "aws") && functions.compareStrings(fileLocation, "aws")) {
 		console.log("Item Router: Type 3: AWS to AWS")
+		res.json({need:"Set this up"})
+	} else {
+		res.json({outcome:"uhh whats up dude", appLocation: appLocation, fileLocation:fileLocation})
+	}
+})
+
+//Route A2: Edit Item
+//http://localhost:3003/item/edit/
+itemRouter.post('/item/edit/', async function(req, res) {
+	const appLocation = process.env.APP_LOCATION
+	const fileLocation = process.env.FILE_LOCATION
+
+	console.log("appLocation " + appLocation + " fileLocation " + fileLocation);
+
+	//Type 1: Local to Local
+	if(functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "local")) {
+		console.log("Item Router: Edit Type 1: Local to Local")
+		items.editItemLocal(req, res)
+	//Type 2: Local to AWS
+	} else if (functions.compareStrings(appLocation, "local") && functions.compareStrings(fileLocation, "aws")) {
+		console.log("Item Router: Edit Type 2: Local to AWS")
+		items.editItemLocalAWS(req, res)
+	//Type 3: AWS to AWS
+	} else if(functions.compareStrings(appLocation, "aws") && functions.compareStrings(fileLocation, "aws")) {
+		console.log("Item Router: Edit Type 3: AWS to AWS")
 		res.json({need:"Set this up"})
 	} else {
 		res.json({outcome:"uhh whats up dude", appLocation: appLocation, fileLocation:fileLocation})

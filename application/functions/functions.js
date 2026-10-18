@@ -12,7 +12,6 @@ FUNCTIONS A: Array and Validation Functions
 	3) Function A3: Remove duplicate values from array
     4) Function A4: Convert an Array to a Set
 
-
 //FUNCTIONS B: Format Functions
     1) Function B1: Add Header
     2) Function B2: Add Footer
@@ -20,10 +19,12 @@ FUNCTIONS A: Array and Validation Functions
 //FUNCTIONS C: String Functions
     1) Function C1: Compare two Strings
 
-
 //FUNCTIONS D: Cloud Functions
     1) Function D1: Get Environments
 
+
+//FUNCTIONS E: Web Functions
+    1) Function E1: Get Base URL 
 
 */
 

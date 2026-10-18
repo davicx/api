@@ -309,6 +309,7 @@ CREATE TABLE `items` (
   `item_price` DECIMAL(10,2) DEFAULT 0.00,
   `item_description` TEXT,
   `item_category` VARCHAR(255) DEFAULT 'item_category',
+  `item_link_name` VARCHAR(255) NULL DEFAULT NULL,
   `item_link` VARCHAR(2083) DEFAULT 'item_link',
   `purchased` BOOLEAN DEFAULT FALSE,
   `purchased_by` VARCHAR(255) DEFAULT 'purchased_by',
@@ -324,6 +325,6 @@ CREATE TABLE `items` (
 
 /*
 post_id, master_site, post_type, post_status, group_id, list_id, post_from, post_to, post_caption, file_name, file_name_server, file_url, cloud_key, cloud_bucket, storage_type, video_url, video_code, updated, created
-item_id, post_id, item_name, item_price, item_description, item_category, item_link, purchased, purchased_by, store, multiple_stores
+item_id, post_id, item_name, item_price, item_description, item_category, item_link_name, item_link, purchased, purchased_by, store, multiple_stores
 */
 

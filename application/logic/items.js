@@ -17,6 +17,7 @@ const fileFunctions = require('../functions/fileFunctions');
 const likeFunctions = require('../functions/likeFunctions');
 const cloudFunctions = require('../functions/cloudFunctions');
 const uploadFunctions = require('../functions/uploadFunctions');
+const validationFunctions = require('../functions/validationFunctions');
 const awsStorage = require('../functions/aws/awsStorage');
 const bucketName = process.env.AWS_BUCKET_NAME
 
@@ -32,7 +33,8 @@ var mime = require('mime-types')
 /*
 FUNCTIONS A: All Functions Related to New Item
 	1) Function A1: Post Item
-	2) Function A2: Purchase Item
+	2) Function A2: Edit Item
+	3) Function A3: Purchase Item
  
 FUNCTIONS B: All Functions Related to getting Items
 	1) Function B1: Get all Group Items
@@ -344,7 +346,193 @@ async function postItemLocalAWS(req, res) {
   })
 }
 
+//Function A2: Edit Item
+//A missing photo keeps the current image. Create uses a default because a new item needs one.
+async function editItemLocal(req, res) {
+	uploadFunctions.uploadPostPhotoLocal(req, res, async function (err) {
+		var headerMessage = "HEADER: Edit Item Local to Local"
+		Functions.addHeader(headerMessage)
 
+		const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
+		console.log("STEP 1: Check file Outcome: " + uploadResult.uploadSuccess + " containsFile: " + uploadResult.containsFile)
+
+		if (!uploadResult.uploadSuccess) {
+			Functions.addFooter();
+			return res.status(uploadResult.statusCode).json({
+				data: {},
+				message: uploadResult.message,
+				success: false,
+				statusCode: uploadResult.statusCode,
+				errors: [],
+				currentUser: req.body.postFrom || req.body.currentUser
+			});
+		}
+
+		var uploadFile = null
+		if (uploadResult.containsFile == true) {
+			let file = req.file
+			uploadFile = {
+				fileMimetype: file.mimetype,
+				originalname: file.originalname,
+				fileNameServer: file.filename,
+				fileURL: "http://localhost:3003/" + bucketName + "/" + postsFolder + "/" + file.filename,
+				cloudKey: postsFolder + "/" + file.filename,
+				bucket: bucketName,
+				storageType: "local"
+			}
+		}
+
+		await saveEditedItem(req, res, uploadFile)
+	})
+}
+
+async function editItemLocalAWS(req, res) {
+	uploadFunctions.uploadPostPhotoLocal(req, res, async function (err) {
+		var headerMessage = "HEADER: Edit Item Local to AWS"
+		Functions.addHeader(headerMessage)
+
+		const uploadResult = fileFunctions.handleOptionalFileUploadResult(req, err);
+		console.log("STEP 1: Check file Outcome: " + uploadResult.uploadSuccess + " containsFile: " + uploadResult.containsFile)
+
+		if (!uploadResult.uploadSuccess) {
+			Functions.addFooter();
+			return res.status(uploadResult.statusCode).json({
+				data: {},
+				message: uploadResult.message,
+				success: false,
+				statusCode: uploadResult.statusCode,
+				errors: [],
+				currentUser: req.body.postFrom || req.body.currentUser
+			});
+		}
+
+		var uploadFile = null
+		if (uploadResult.containsFile == true) {
+			try {
+				let file = req.file
+				const result = await awsStorage.uploadPost(file)
+				uploadFile = {
+					fileMimetype: file.mimetype,
+					originalname: file.originalname,
+					fileNameServer: file.filename,
+					fileURL: result.Location,
+					cloudKey: result.Key,
+					bucket: result.Bucket,
+					storageType: "aws"
+				}
+			} catch (error) {
+				console.log("STEP 1 (ERROR): AWS upload failed " + error)
+				Functions.addFooter()
+				return res.status(500).json({
+					data: {},
+					message: "Could not upload the photo",
+					success: false,
+					statusCode: 500,
+					errors: [String(error)],
+					currentUser: req.body.postFrom || req.body.currentUser
+				})
+			}
+		}
+
+		await saveEditedItem(req, res, uploadFile)
+	})
+}
+
+async function saveEditedItem(req, res, uploadFile) {
+	const currentUser = req.body.postFrom || req.body.currentUser
+	const postID = req.body.postID
+	const postCaption = req.body.postCaption
+	const itemName = req.body.itemName
+	const itemPrice = validationFunctions.convertAndValidateDecimal(req.body.itemPrice)
+	const itemDescription = req.body.itemDescription
+
+	var editOutcome = {
+		data: {},
+		message: "",
+		success: false,
+		statusCode: 400,
+		errors: [],
+		currentUser: currentUser
+	}
+
+	console.log("STEP 2: Edit item post " + postID + " by " + currentUser)
+
+	if (!postID || !currentUser || req.body.itemName === undefined || req.body.postCaption === undefined || req.body.itemDescription === undefined || req.body.itemPrice === undefined) {
+		editOutcome.message = "Missing required fields: postID, postFrom, postCaption, itemName, itemPrice, itemDescription"
+		console.log("STEP 2 (ERROR): " + editOutcome.message)
+		Functions.addFooter()
+		return res.status(400).json(editOutcome)
+	}
+
+	const postExistsOutcome = await PostFunctions.checkPostExists(postID)
+	if (!postExistsOutcome.success || Number(postExistsOutcome.postCount) === 0) {
+		editOutcome.message = "Post not found"
+		editOutcome.statusCode = 404
+		console.log("STEP 3 (ERROR): Post not found")
+		Functions.addFooter()
+		return res.status(404).json(editOutcome)
+	}
+
+	const postFromOutcome = await PostFunctions.getPostFrom(postID)
+	const ownsPost = postFromOutcome.success && String(postFromOutcome.postFrom).toLowerCase() === String(currentUser).toLowerCase()
+	if (!ownsPost) {
+		editOutcome.message = "You can only edit your own item"
+		editOutcome.statusCode = 403
+		console.log("STEP 3 (ERROR): " + editOutcome.message)
+		Functions.addFooter()
+		return res.status(403).json(editOutcome)
+	}
+
+	const itemsOutcome = await Item.getItemsByPostID(postID)
+	if (!itemsOutcome.items || itemsOutcome.items.length === 0) {
+		editOutcome.message = "No item found for this post"
+		editOutcome.statusCode = 404
+		console.log("STEP 4 (ERROR): " + editOutcome.message)
+		Functions.addFooter()
+		return res.status(404).json(editOutcome)
+	}
+
+	const updatePostOutcome = await Post.updateEditedItem(postID, postFromOutcome.postFrom, postCaption, uploadFile)
+	if (!updatePostOutcome.success) {
+		editOutcome.message = updatePostOutcome.message || "Could not update the post"
+		editOutcome.errors = updatePostOutcome.errors || []
+		editOutcome.statusCode = 500
+		Functions.addFooter()
+		return res.status(500).json(editOutcome)
+	}
+
+	const itemLink = req.body.itemLink
+	const itemLinkName = req.body.itemLinkName
+	const updateItemOutcome = await Item.updateItemDetails(postID, itemName, itemPrice, itemDescription, itemLink, itemLinkName)
+	if (!updateItemOutcome.success) {
+		editOutcome.message = updateItemOutcome.message || "Could not update the item"
+		editOutcome.statusCode = 500
+		Functions.addFooter()
+		return res.status(500).json(editOutcome)
+	}
+
+	editOutcome.data = {
+		postID: Number(postID),
+		postCaption: postCaption,
+		itemName: itemName,
+		itemPrice: itemPrice,
+		itemDescription: itemDescription,
+		itemLink: itemLink,
+		itemLinkName: itemLinkName,
+		fileUpdated: uploadFile != null
+	}
+	if (uploadFile) {
+		editOutcome.data.fileURL = uploadFile.fileURL
+		editOutcome.data.fileName = uploadFile.originalname
+		editOutcome.data.fileNameServer = uploadFile.fileNameServer
+	}
+	editOutcome.message = "Your item was updated!"
+	editOutcome.success = true
+	editOutcome.statusCode = 200
+	console.log("STEP 5: Item updated")
+	Functions.addFooter()
+	res.json(editOutcome)
+}
 
 
 //FUNCTIONS B: All Functions Related to getting Items
@@ -601,5 +789,5 @@ async function removePurchase(req, res) {
 	res.json(removePurchaseResponse);
 }
 
-module.exports = { postItemLocal, postItemLocalAWS, getAllGroupItems, getAllItems, purchaseItem, removePurchase };
+module.exports = { postItemLocal, postItemLocalAWS, editItemLocal, editItemLocalAWS, getAllGroupItems, getAllItems, purchaseItem, removePurchase };
 

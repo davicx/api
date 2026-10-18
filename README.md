@@ -9,6 +9,10 @@
 
 Atlas stays the **source of truth for what’s wrong**; Node focuses on **how users understand and act on it**. **Python AI in Atlas** may still run occasional calls but is expected to be **mostly idle** for now.
 
+
+### API Endpoint AWS(`application/atlas/`)
+http://myapi.us-west-2.elasticbeanstalk.com/
+
 ### CloudPilot packages (`application/atlas/`)
 
 Turn model (mental): **UNDERSTAND → DECIDE → FULFILL → RESPOND**.  

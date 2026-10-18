@@ -495,8 +495,9 @@ async function addGroupUsers(req, res) {
 		addGroupUsersOutcome.data.existingUsers = userGroupStatus.existingUsers;
 			
 	} else {
-		const message = "No users added because this group does not exist"
-		addGroupUsersOutcome.messages.push(message);
+		addGroupUsersOutcome.message = "Group id not found"
+		addGroupUsersOutcome.statusCode = 404
+		addGroupUsersOutcome.errors.push("Group id not found")
 	}
 	
 	res.json(addGroupUsersOutcome)

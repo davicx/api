@@ -188,6 +188,43 @@ class Item {
             });
         });
     }
+
+    //METHODS B: UPDATING ITEM
+    //Method B1: Update the item fields for a post
+    static async updateItemDetails(postID, itemName, itemPrice, itemDescription, itemLink, itemLinkName) {
+        const connection = db.getConnection();
+
+        var queryString = "UPDATE items SET item_name = ?, item_price = ?, item_description = ?"
+        var params = [itemName, itemPrice, itemDescription]
+
+        if (itemLink !== undefined) {
+            queryString += ", item_link = ?"
+            params.push(itemLink)
+        }
+        if (itemLinkName !== undefined) {
+            queryString += ", item_link_name = ?"
+            params.push(itemLinkName)
+        }
+
+        queryString += " WHERE post_id = ?"
+        params.push(postID)
+
+        return new Promise((resolve, reject) => {
+            connection.query(queryString, params, (err, result) => {
+                if (!err) {
+                    resolve({
+                        success: true,
+                        message: "Item updated",
+                        postID: postID,
+                        affectedRows: result.affectedRows
+                    });
+                } else {
+                    console.log("Error updating item:", err);
+                    reject(err);
+                }
+            });
+        });
+    }
 }
 
 module.exports = Item;

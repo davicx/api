@@ -298,6 +298,7 @@ class Post {
         const itemDescription = req.body.itemDescription;
         const itemCategory = req.body.itemCategory;
         const itemLink = req.body.itemLink;
+        const itemLinkName = req.body.itemLinkName || "";
 
         console.log("POST " + bucket)
 
@@ -338,6 +339,7 @@ class Post {
                 item_price: itemPrice,
                 item_description: itemDescription,
                 item_category: itemCategory,
+                item_link_name: itemLinkName,
                 item_link: itemLink,
                 purchased: 0,
                 purchased_by: "",
@@ -366,9 +368,9 @@ class Post {
                         postOutcome.newPost.postID = results.insertId;
 
                         //INSERT ITEM
-                        const itemQuery = "INSERT INTO items (post_id, item_name, item_price, item_description, item_category, item_link) VALUES (?, ?, ?, ?, ?, ?)"
+                        const itemQuery = "INSERT INTO items (post_id, item_name, item_price, item_description, item_category, item_link_name, item_link) VALUES (?, ?, ?, ?, ?, ?, ?)"
                         console.log("createPostItem: Inserting item with post_id:", results.insertId, "item_name:", itemName);
-                        connection.query(itemQuery, [results.insertId, itemName, itemPrice, itemDescription, itemCategory, itemLink], (itemErr, itemResults, itemFields) => {
+                        connection.query(itemQuery, [results.insertId, itemName, itemPrice, itemDescription, itemCategory, itemLinkName, itemLink], (itemErr, itemResults, itemFields) => {
                             if (itemErr) {
                                 console.log("createPostItem: Item insert failed:", itemErr);
                                 postOutcome.outcome = "DATABASE: item insert failed"
@@ -818,7 +820,7 @@ class Post {
         const queryString = `
             SELECT p.*, 
                    i.item_id, i.item_name, i.item_price, i.item_description, 
-                   i.item_category, i.item_link, i.purchased, i.purchased_by, 
+                   i.item_category, i.item_link_name, i.item_link, i.purchased, i.purchased_by, 
                    i.store, i.multiple_stores,
                    shareshare.groups.group_name,
                    shareshare.groups.group_image,
@@ -892,6 +894,7 @@ class Post {
                                     item_price: row.item_price,
                                     item_description: row.item_description,
                                     item_category: row.item_category,
+                                    item_link_name: row.item_link_name,
                                     item_link: row.item_link,
                                     purchased: row.purchased,
                                     purchased_by: row.purchased_by,
@@ -955,7 +958,7 @@ class Post {
         const queryString = `
             SELECT p.*, 
                    i.item_id, i.item_name, i.item_price, i.item_description, 
-                   i.item_category, i.item_link, i.purchased, i.purchased_by, 
+                   i.item_category, i.item_link_name, i.item_link, i.purchased, i.purchased_by, 
                    i.store, i.multiple_stores,
                    shareshare.groups.group_name,
                    shareshare.groups.group_image,
@@ -1016,6 +1019,7 @@ class Post {
                                     item_price: row.item_price,
                                     item_description: row.item_description,
                                     item_category: row.item_category,
+                                    item_link_name: row.item_link_name,
                                     item_link: row.item_link,
                                     purchased: row.purchased,
                                     purchased_by: row.purchased_by,
@@ -1107,6 +1111,56 @@ class Post {
                 console.log("REJECTED " + err);
                 reject(updatePostOutcome);
             } 
+        });
+    }
+
+    //Method C2: Update an item post. uploadFile is null when the photo stays the same.
+    static async updateEditedItem(postID, currentUser, postCaption, uploadFile) {
+        const connection = db.getConnection();
+
+        var updatePostOutcome = {
+            postID: postID,
+            success: false,
+            message: "",
+            errors: []
+        }
+
+        var queryString = "UPDATE posts SET post_caption = ? WHERE post_id = ? AND post_from = ?"
+        var params = [postCaption, postID, currentUser]
+
+        if (uploadFile) {
+            queryString = "UPDATE posts SET post_caption = ?, file_name = ?, file_name_server = ?, file_url = ?, cloud_key = ?, cloud_bucket = ?, storage_type = ? WHERE post_id = ? AND post_from = ?"
+            params = [
+                postCaption,
+                uploadFile.originalname,
+                uploadFile.fileNameServer,
+                uploadFile.fileURL,
+                uploadFile.cloudKey,
+                uploadFile.bucket,
+                uploadFile.storageType,
+                postID,
+                currentUser
+            ]
+        }
+
+        return new Promise(async function(resolve, reject) {
+            try {
+                connection.query(queryString, params, (err, rows) => {
+                    if (!err) {
+                        updatePostOutcome.success = true
+                        updatePostOutcome.message = "You updated the item!"
+                        updatePostOutcome.affectedRows = rows.affectedRows
+                    } else {
+                        updatePostOutcome.message = "no worky"
+                        updatePostOutcome.errors.push(err);
+                    }
+                    resolve(updatePostOutcome);
+                })
+            } catch(err) {
+                updatePostOutcome.message = "rejected";
+                updatePostOutcome.errors.push(err);
+                reject(updatePostOutcome);
+            }
         });
     }
 
