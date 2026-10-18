@@ -1,10 +1,50 @@
+
+require('dotenv').config();
+
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.static('public'));
+
+app.use(cors({
+  credentials: true,
+  origin: [
+    "http://localhost:3003",
+    "http://localhost:3000"
+  ]
+}));
+
+// Routes
+app.get("/", (req, res) => {
+  res.send("hiya!");
+});
+
+app.get("/hello", (req, res) => {
+  res.json({ hello: "Hiya davey!" });
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is listening on port ${PORT}`);
+});
+
+
+
+
+//VERSION 1:
+/*
 require('dotenv').config()
 const express = require('express');
 //const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser');
 var cors = require('cors')
 const app = express()
-//const PORT = process.env.PORT || 3003;
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
@@ -21,12 +61,6 @@ app.listen(PORT, () => {
   console.log("Server is up and listening on 5000...")
 })
 
-/*
-app.listen(3003, () => {
-  console.log("Server is up and listening on 3003...")
-})
-*/
-
 app.get("/", (req, res) => {
     console.log("hiya!");
     res.send("hiya!");
@@ -40,6 +74,7 @@ app.get("/hello", (req, res) => {
   res.end()
 })
 
+*/
 
 //Application 
 /*
