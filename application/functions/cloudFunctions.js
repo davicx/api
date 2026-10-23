@@ -7,18 +7,12 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const bucketName = process.env.AWS_BUCKET_NAME
 const region = process.env.AWS_BUCKET_REGION
-const accessKeyId = process.env.AWS_ACCESS_KEY
-const secretAccessKey = process.env.AWS_SECRET_KEY
 
 /*
 FUNCTIONS A: All Functions Related to Cloud
 	1) Function A1: Get Signed URL from AWS
 */
-const s3Client = new S3Client({ 
-    credentials: {
-      accessKeyId: accessKeyId,
-      secretAccessKey: secretAccessKey 
-    },
+const s3Client = new S3Client({
     region: region
 })
 

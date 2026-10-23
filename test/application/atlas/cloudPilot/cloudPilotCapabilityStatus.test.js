@@ -20,10 +20,10 @@ describe('cloudPilotCapabilityStatus', () => {
     });
 
     test('in_development capability is not allowed', () => {
-        expect(getCapabilityStatus('resume_ec2')).toBe(CAPABILITY_STATUS.IN_DEVELOPMENT);
-        expect(isCapabilityLive('resume_ec2')).toBe(false);
-        expect(actionMap.resume_ec2.allowed).toBe(false);
-        expect(actionMap.resume_ec2.status).toBe(CAPABILITY_STATUS.IN_DEVELOPMENT);
+        expect(getCapabilityStatus('show_billing')).toBe(CAPABILITY_STATUS.IN_DEVELOPMENT);
+        expect(isCapabilityLive('show_billing')).toBe(false);
+        expect(actionMap.show_billing.allowed).toBe(false);
+        expect(actionMap.show_billing.status).toBe(CAPABILITY_STATUS.IN_DEVELOPMENT);
     });
 
     test('coming_soon capability is not allowed', () => {
@@ -106,7 +106,7 @@ describe('cloudPilotCapabilityStatus', () => {
     test('decide blocks OFF capabilities without creating a request', () => {
         const decision = decideNextStep({
             understanding: {
-                action: 'resume_ec2',
+                action: 'show_billing',
                 values: {},
                 ambiguous: false
             },
@@ -114,7 +114,7 @@ describe('cloudPilotCapabilityStatus', () => {
         });
 
         expect(decision.response.type).toBe(RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE);
-        expect(decision.response.action).toBe('resume_ec2');
+        expect(decision.response.action).toBe('show_billing');
         expect(decision.request).toBeNull();
         expect(decision.execute).toBeUndefined();
     });
@@ -137,7 +137,8 @@ describe('cloudPilotCapabilityStatus', () => {
     test('capabilityAvailabilityGate mirrors allowed policy', () => {
         expect(capabilityAvailabilityGate('scan_ec2')).toBeNull();
         expect(capabilityAvailabilityGate('pause_ec2')).toBeNull();
-        expect(capabilityAvailabilityGate('resume_ec2').response.type).toBe(
+        expect(capabilityAvailabilityGate('resume_ec2')).toBeNull();
+        expect(capabilityAvailabilityGate('show_billing').response.type).toBe(
             RESPONSE_TYPE.CAPABILITY_NOT_AVAILABLE
         );
         expect(capabilityAvailabilityGate('delete_ec2').response.type).toBe(
@@ -156,6 +157,7 @@ describe('cloudPilotCapabilityStatus', () => {
 
         expect(eligible.some((action) => action.type === 'scan_ec2')).toBe(true);
         expect(eligible.some((action) => action.type === 'pause_ec2')).toBe(true);
+        expect(eligible.some((action) => action.type === 'resume_ec2')).toBe(true);
 
         const flatActions = [];
 

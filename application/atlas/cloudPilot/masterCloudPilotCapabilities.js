@@ -48,7 +48,7 @@ const capabilityStatus = Object.freeze({
     // EC2 — Manage
     create_ec2: CAPABILITY_STATUS.LIVE,
     pause_ec2: CAPABILITY_STATUS.LIVE,
-    resume_ec2: CAPABILITY_STATUS.IN_DEVELOPMENT,
+    resume_ec2: CAPABILITY_STATUS.LIVE,
     delete_ec2: CAPABILITY_STATUS.COMING_SOON,
     toggle_ec2: CAPABILITY_STATUS.COMING_SOON,
     update_ec2_tag: CAPABILITY_STATUS.COMING_SOON,
@@ -1076,7 +1076,7 @@ const actionMap = {
                 return false;
             }
 
-            if (normalized.includes('resume')) {
+            if (normalized.includes('resume') || normalized.includes('restart')) {
                 return true;
             }
 
