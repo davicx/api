@@ -17,6 +17,7 @@ FUNCTIONS A: All Routes Related to Items
 FUNCTIONS B: All Routes Related to getting Items
 	1) Function B1: Get all Group Items
 	2) Function B2: Get All Items (Home feed)
+	3) Function B3: Get one user's items
 */
 
 
@@ -79,6 +80,11 @@ itemRouter.get("/items/group/:group_id", middlewares.verifyUser, (req, res) => {
 
 //Function B2: Get All Items (global Home feed — newest 12)
 itemRouter.get("/items", middlewares.verifyUser, (req, res) => {
+	items.getAllItems(req, res);
+})
+
+//Function B3: Get one user's items
+itemRouter.get("/items/user/:user_name", middlewares.verifyUser, (req, res) => {
 	items.getAllItems(req, res);
 })
 

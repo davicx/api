@@ -951,9 +951,14 @@ class Post {
     }
 
     //Method B7: Get All Items (global, newest 12 — Home feed MVP)
-    static async getAllItems()  {
+    // Pass userName to get that person's items with no home-feed limit.
+    static async getAllItems(userName)  {
         const connection = db.getConnection(); 
         const fileFunctions = require('../fileFunctions');
+        const forUser = userName != null && String(userName).trim() !== ''
+        const userClause = forUser ? 'AND LOWER(p.post_from) = LOWER(?)' : ''
+        const limitClause = forUser ? '' : 'LIMIT 12'
+        const params = forUser ? [String(userName).trim()] : []
 
         const queryString = `
             SELECT p.*, 
@@ -970,8 +975,9 @@ class Post {
             JOIN shareshare.groups ON p.group_id = shareshare.groups.group_id
             LEFT JOIN user_profile ON p.post_from = user_profile.user_name
             WHERE p.post_status = 1 AND p.post_type = 'item'
+            ${userClause}
             ORDER BY p.post_id DESC
-            LIMIT 12
+            ${limitClause}
         `;
         var postsOutcome = {
             success: false,
@@ -980,7 +986,7 @@ class Post {
 
         return new Promise(async function(resolve, reject) {
             try {
-                connection.query(queryString, (err, rows) => {
+                connection.query(queryString, params, (err, rows) => {
                     if (!err) {
                         console.log("getAllItems: Found " + rows.length + " posts");
                         

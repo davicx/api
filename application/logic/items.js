@@ -585,8 +585,8 @@ async function getAllItems(req, res) {
 	var headerMessage = "HEADER: Get All Items (Home feed, limit 12)"
 	Functions.addHeader(headerMessage)
 
-	//STEP 1: Get All Item Posts
-	var postsOutcome = await Post.getAllItems()
+	//STEP 1: Get All Item Posts (user_name limits this to that profile)
+	var postsOutcome = await Post.getAllItems(req.params.user_name)
 	var postsRaw = postsOutcome.posts;
 
 	//STEP 2: Get All Comments for these Posts
