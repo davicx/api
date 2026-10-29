@@ -1,14 +1,16 @@
 USE shareshare;
 
 
+SELECT * FROM posts;
+#SELECT * FROM user_profile;
+
+#SELECT * FROM shareshare.groups;
 
 
-
-#DELETE FROM messages WHERE message_id > 11;
 /*
 #SELECT * FROM todo;
 #SELECT * FROM cloudpilot_instructions;
-SELECT * FROM shareshare.groups;
+
 
 
 SELECT * FROM cloudpilot_requests;
@@ -17,7 +19,7 @@ SELECT * FROM cloudpilot_instructions;
 SELECT * FROM messages;
 
         
-SELECT * FROM posts;
+
 SELECT * FROM user_profile;
 */
 
