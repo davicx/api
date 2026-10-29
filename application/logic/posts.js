@@ -330,7 +330,7 @@ async function postPhotoLocalAWS(req, res) {
 
 		//STEP 2: Check for a valid file
 		const uploadResult = fileFunctions.handleUploadResult(req, err);
-		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadOutcome.uploadSuccess)
+		console.log("STEP 2: Get new File and Check it is valid (an image and not to big) Outcome: " + uploadResult.uploadSuccess)
 	
 		uploadSuccess = uploadResult.uploadSuccess;
 		postOutcome.message = uploadResult.message;
