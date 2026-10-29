@@ -40,6 +40,17 @@ async function getImageURL(storageLocation, imageURL, cloudKey) {
 	}
 }
 
+function logUploadFailure(err) {
+	const code = err && err.code ? String(err.code) : "none"
+	let message = err && err.message ? String(err.message) : "none"
+	if (/accessToken|refreshToken|authorization|bearer |eyJ/i.test(message)) {
+		message = "redacted"
+	}
+	console.log("Error 2B: Not Valid Image File")
+	console.log("Upload error code: " + code)
+	console.log("Upload error message: " + message)
+}
+
 function handleUploadResult(req, err) {
 	const uploadOutcome = {
 		message: "",
@@ -57,7 +68,7 @@ function handleUploadResult(req, err) {
 		uploadOutcome.message = "Error 2A: File too large";
 
 	} else if (err) {
-		console.log("Error 2B: Not Valid Image File");
+		logUploadFailure(err);
 		uploadOutcome.statusCode = 415;
 		uploadOutcome.message = "Error 2B: Not Valid Image File";
 
@@ -97,7 +108,7 @@ function handleOptionalFileUploadResult(req, err) {
 		uploadOutcome.containsFile = true;
 		uploadOutcome.statusCode = 413;
 	} else if (err) {
-		console.log("Error 2B: Not Valid Image File");
+		logUploadFailure(err);
 		uploadOutcome.message = "Error 2B: Not Valid Image File";
 		uploadOutcome.containsFile = true;
 		uploadOutcome.statusCode = 415;

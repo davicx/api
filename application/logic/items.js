@@ -33,8 +33,9 @@ var mime = require('mime-types')
 /*
 FUNCTIONS A: All Functions Related to New Item
 	1) Function A1: Post Item
-	2) Function A2: Edit Item
-	3) Function A3: Purchase Item
+	2) Function A2: Text Item
+	3) Function A3: Edit Item
+	4) Function A4: Purchase Item
  
 FUNCTIONS B: All Functions Related to getting Items
 	1) Function B1: Get all Group Items
@@ -789,5 +790,131 @@ async function removePurchase(req, res) {
 	res.json(removePurchaseResponse);
 }
 
-module.exports = { postItemLocal, postItemLocalAWS, editItemLocal, editItemLocalAWS, getAllGroupItems, getAllItems, purchaseItem, removePurchase };
+//Function A2: Text Item
+//No photo. Saves the caption and optional item link. Does not invent an image key.
+async function postTextItem(req, res) {
+	var groupID = req.body.groupID;
+	var currentUser = req.body.postFrom || ""
+	var caption = (req.body.postCaption || "").trim()
+
+	var headerMessage = "New Text Item created by " + currentUser
+	Functions.addHeader(headerMessage)
+
+	var postOutcome = {
+		data: {},
+		message: "Write something to post.",
+		success: false,
+		statusCode: 400,
+		errors: [],
+		currentUser: currentUser
+	}
+
+	if (!caption) {
+		console.log("STEP 1 (ERROR): Text item needs a caption")
+		Functions.addFooter()
+		return res.status(400).json(postOutcome)
+	}
+
+	console.log("STEP 1: Verify item matches group type")
+	var verifySiteOutcome = await groupFunctions.verifyPostMatchesSite(groupID, "item");
+	if (!verifySiteOutcome.success) {
+		postOutcome.message = verifySiteOutcome.message;
+		postOutcome.statusCode = 400;
+		postOutcome.success = false;
+		console.log("STEP 1 (ERROR): " + verifySiteOutcome.message);
+		Functions.addFooter();
+		return res.status(postOutcome.statusCode).json(postOutcome);
+	}
+
+	req.body.postCaption = caption
+	req.body.postType = req.body.postType || "item"
+	req.body.masterSite = req.body.masterSite || "wishlist"
+	req.body.itemName = req.body.itemName || ""
+	req.body.itemPrice = req.body.itemPrice || ""
+	req.body.itemDescription = req.body.itemDescription || ""
+	req.body.itemCategory = req.body.itemCategory || ""
+	req.body.itemLink = req.body.itemLink || ""
+	req.body.itemLinkName = req.body.itemLinkName || ""
+	req.body.listID = req.body.listID || 0
+	req.body.postTo = req.body.postTo || String(groupID || "")
+
+	var uploadFile = {
+		fileMimetype: "",
+		originalname: "",
+		fileNameServer: "",
+		fileURL: "",
+		cloudKey: "",
+		bucket: "",
+		storageType: "local"
+	}
+
+	let userImage = null;
+	try {
+		const userImageResult = await profileFunctions.getUserImage(currentUser);
+		if (userImageResult.success) {
+			userImage = userImageResult.userProfileImage;
+		}
+	} catch (error) {
+		console.log("Error getting user image for " + currentUser + ": " + error);
+	}
+
+	let groupInfo = {
+		groupName: "needGroupName",
+		groupImage: "needGroupImage"
+	};
+	if (groupID) {
+		try {
+			const groupInfoResult = await Group.getGroupInformation(groupID);
+			if (groupInfoResult.status === 200) {
+				groupInfo.groupName = groupInfoResult.groupName;
+				groupInfo.groupImage = groupInfoResult.groupImage;
+			}
+		} catch (error) {
+			console.log("Error getting group information for " + groupID + ": " + error);
+		}
+	}
+
+	console.log("STEP 2: Create text item with no image")
+	let newPostOutcome = await Post.createPostItem(req, uploadFile, userImage, groupInfo);
+
+	if (newPostOutcome.outcome != 200) {
+		postOutcome.message = "Could not save this item."
+		postOutcome.statusCode = 500
+		postOutcome.success = false
+		postOutcome.errors = newPostOutcome.errors || []
+		Functions.addFooter()
+		return res.status(500).json(postOutcome)
+	}
+
+	postOutcome.data = newPostOutcome.newPost;
+	postOutcome.message = "Your item was posted!"
+	postOutcome.statusCode = 200
+	postOutcome.success = true
+
+	var postID = newPostOutcome.newPost.postID || 0
+	try {
+		const groupUsersOutcome = await Group.getGroupUsers(groupID);
+		const groupUsers = groupUsersOutcome.groupUsers || [];
+		for (let i = 0; i < groupUsers.length; i++) {
+			let notificationOutcome = await Notification.createSingleNotification({
+				masterSite: req.body.masterSite,
+				notificationFrom: currentUser,
+				notificationMessage: req.body.notificationMessage || "Posted a New Item",
+				notificationTo: groupUsers[i],
+				notificationLink: req.body.notificationLink || "",
+				notificationType: req.body.notificationType || "new_item",
+				groupID: groupID,
+				postID: postID
+			})
+			console.log(notificationOutcome)
+		}
+	} catch (error) {
+		console.log("Text item was saved. Notification failed: " + error)
+	}
+
+	Functions.addFooter()
+	res.json(postOutcome)
+}
+
+module.exports = { postItemLocal, postItemLocalAWS, postTextItem, editItemLocal, editItemLocalAWS, getAllGroupItems, getAllItems, purchaseItem, removePurchase };
 

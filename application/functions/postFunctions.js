@@ -255,18 +255,46 @@ async function addPostLikes(currentUser, posts)  {
     return posts;
 }
 
+function isPlaceholderImageValue(value) {
+    if (value == null) {
+        return true
+    }
+    const text = String(value).trim().toLowerCase()
+    if (!text || text === "empty" || text === "no_cloud_key" || text === "local_cloud_key") {
+        return true
+    }
+    if (text.endsWith("/background.jpg") || text.endsWith("background.jpg")) {
+        return true
+    }
+    if (text.includes("postimage-1759360291801-540655558-background.jpg")) {
+        return true
+    }
+    return false
+}
+
+function hasRealImageKey(cloudKey) {
+    return !isPlaceholderImageValue(cloudKey)
+}
+
 //Function A7: Add Signed URLS to a Single Post
 async function getSignedURL(post) {
 
-    if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == false) {
-        let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
-        console.log("getSignedURL: IF");
-        console.log(signedURL);
-        post.fileURL = signedURL;
-    } else {
+    if(Functions.compareStrings(post.cloudKey, "local_cloud_key") == true) {
         console.log("getSignedURL: ELSE");
         post.fileUrl = "#"
+        return post
     }
+
+    if (!hasRealImageKey(post.cloudKey)) {
+        console.log("getSignedURL: skip empty image key")
+        post.fileURL = ""
+        return post
+    }
+
+    let signedURL = await cloudFunctions.getSignedURL(post.cloudKey)
+    console.log("getSignedURL: IF");
+    console.log(signedURL);
+    post.fileURL = signedURL;
 
     return post;
 }
@@ -276,10 +304,13 @@ async function addSignedURLPostsArray(posts)  {
     for (let i = 0; i < posts.length; i++) {
         //console.log(posts[i])
 
-        if(Functions.compareStrings(posts[i].storageType, "aws") == true) {
+        if(Functions.compareStrings(posts[i].storageType, "aws") == true && hasRealImageKey(posts[i].cloudKey)) {
             console.log("GETTING SIGNED URL storageType is aws")
             let signedURL = await cloudFunctions.getSignedURL(posts[i].cloudKey)
             posts[i].fileURL = signedURL;
+        } else if (!hasRealImageKey(posts[i].cloudKey) && isPlaceholderImageValue(posts[i].fileURL)) {
+            console.log("WE ARE NOT GETTING SIGNED URL empty image key")
+            posts[i].fileURL = ""
         } else {
             console.log("WE ARE NOT GETTING SIGNED URL cloudKEY is local_cloud_key")
             //posts[i].fileURL = "#"

@@ -49,10 +49,8 @@ const uploadPostPhotoLocal = multer({
 
 
   fileFilter: function (req, file, cb) {
-    let size = req.rawHeaders.slice(-1)[0]
-
     console.log("STEP 1: Upload file to local storage");
-    console.log("Step 1A: File Limit: " + fileLimit + " File Size: " + size);
+    console.log("Step 1A: File Limit: " + fileLimit);
 
     //Create image and size filter
     //if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {
@@ -72,7 +70,12 @@ const uploadPostPhotoLocal = multer({
 //Function A2: New Group Image Upload for Local Upload
 const localGroupStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, groupUploadFolder)
+    try {
+      fs.mkdirSync(groupUploadFolder, { recursive: true })
+      cb(null, groupUploadFolder)
+    } catch (mkdirError) {
+      cb(mkdirError)
+    }
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
@@ -88,10 +91,8 @@ const uploadGroupPhotoLocal = multer({
 
 
   fileFilter: function (req, file, cb) {
-    let size = req.rawHeaders.slice(-1)[0]
-
     console.log("Davey lets upload a GROUP photo!!");
-    console.log("File Limit: " + fileLimit + " File Size: " + size);
+    console.log("File Limit: " + fileLimit);
 
     //Create image and size filter
     //if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {
@@ -128,10 +129,8 @@ const uploadProfilePhotoLocal = multer({
 
 
   fileFilter: function (req, file, cb) {
-    let size = req.rawHeaders.slice(-1)[0]
-
     console.log("Davey lets upload!!");
-    console.log("File Limit: " + fileLimit + " File Size: " + size);
+    console.log("File Limit: " + fileLimit);
 
     //Create image and size filter
     //if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' && fileSize <= fileLimit) {

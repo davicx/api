@@ -12,7 +12,8 @@ const db = require('../functions/conn');
 /*
 FUNCTIONS A: All Routes Related to Items
 	1) Function A1: Post Item
-	2) Function A2: Edit Item
+	2) Function A2: Text Item
+	3) Function A3: Edit Item
 
 FUNCTIONS B: All Routes Related to getting Items
 	1) Function B1: Get all Group Items
@@ -48,7 +49,14 @@ itemRouter.post('/post/item', async function(req, res) {
 	}
 })
 
-//Route A2: Edit Item
+//Route A2: Text Item
+//http://localhost:3003/post/item/text
+itemRouter.post('/post/item/text', async function(req, res) {
+	console.log("Item Router: Text Item")
+	items.postTextItem(req, res)
+})
+
+//Route A3: Edit Item
 //http://localhost:3003/item/edit/
 itemRouter.post('/item/edit/', async function(req, res) {
 	const appLocation = process.env.APP_LOCATION
