@@ -28,11 +28,20 @@ var uploadFolder = "./public/kite-us-west-two/" + postsFolder;
 var profileUploadFolder = "./public/kite-us-west-two/"  + profileFolder;
 var groupUploadFolder = "./public/kite-us-west-two/" + groupsFolder;
 
+function ensureUploadFolder(folder, cb) {
+  try {
+    fs.mkdirSync(folder, { recursive: true })
+    cb(null, folder)
+  } catch (mkdirError) {
+    cb(mkdirError)
+  }
+}
+
 //FUNCTIONS: POSTS
 //Function A1: Post Image Upload for Local Upload 
 const localStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadFolder)
+    ensureUploadFolder(uploadFolder, cb)
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
@@ -70,12 +79,7 @@ const uploadPostPhotoLocal = multer({
 //Function A2: New Group Image Upload for Local Upload
 const localGroupStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    try {
-      fs.mkdirSync(groupUploadFolder, { recursive: true })
-      cb(null, groupUploadFolder)
-    } catch (mkdirError) {
-      cb(mkdirError)
-    }
+    ensureUploadFolder(groupUploadFolder, cb)
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
@@ -112,7 +116,7 @@ const uploadGroupPhotoLocal = multer({
 //Function A3: User Image Upload for Local Upload
 const localProfileStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, profileUploadFolder)
+    ensureUploadFolder(profileUploadFolder, cb)
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
