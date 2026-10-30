@@ -8,71 +8,115 @@ The old notes are in `api/doc/development/backup/`. This file is the map. Those 
 
 # First part
 
-## See who can reach it
+## AWS Security
 
-Look at a computer and a file bucket and say, in plain words, who is allowed in. Do not change anything.
+### Inspect EC2 and S3 access
 
-## Let only me in, then put it back
+Explain who can reach an instance or access a bucket, using its actual configuration. Distinguish intentional public access from unsafe permissions. Do not change anything.
 
-Close the door of the live app so only one address can open it. Remember the old door, and put that door back when asked.
+### Restrict app access and restore it
 
-## Close one unsafe bucket hole
+Limit the live app to an approved IP address after confirmation. Save the previous rules, verify the change, and support restoring those rules.
 
-If strangers can add or delete files in a bucket, fix that one hole after someone says yes. Leave pictures that are supposed to be readable alone.
+### Fix unsafe S3 access
 
-## Read a traffic log
+Fix a supported case where strangers can upload, overwrite, or delete files, after confirmation. Preserve intentional public image access.
 
-Someone hands over a list of visits. Say what happened in that list. A weird request is not proof that someone got in.
+## Traffic and Logs
 
-## Show the real bill, then a guess beside one thing
+### Explain application traffic
 
-First, show what Amazon actually charged. Later, show a separate guess for one computer or one bucket, and label it as a guess.
+Read a supplied traffic log and summarize visits, errors, and suspicious requests. Distinguish automated probing from evidence that someone got in.
 
-## Let someone connect their own Amazon account
+## Cost Knowledge and Spending Controls
 
-Another person can let CloudPilot look at their account without pasting secret keys. Looking comes before changing.
+### Show the real AWS bill
 
-## Remember what changed
+Show actual account spending using the existing billing integration, with a clear date range and service breakdown.
 
-One bucket or one computer gets a story of how its settings changed. Reading that story comes before any promise to put an old setting back.
+### Estimate individual resource costs
 
-## Talk more clearly
+Show a separate estimate beside an EC2 instance or S3 bucket. Explain what the estimate includes and leave unknown costs blank.
 
-A question, a list of what exists, and a security check stay three different jobs. Follow-up questions stay in the same conversation.
+### Control CloudPilot spending
 
-## A practice set that remembers
+Add warnings and limits for OpenAI calls and supported AWS actions initiated through CloudPilot. Keep spending visibility available when new paid work is blocked.
 
-The fake Amazon used for tests remembers a pause or a setting change, and can be put back to a known start.
+## AWS Connections
 
-## Each page has one job
+### Connect another AWS account
 
-The home page is a steady overview. The cloud page is where you browse. Findings are the problems. Recents are what you did.
+Let someone connect their account through an IAM role without pasting access keys. Start with read-only access, then support selected confirmed actions.
 
-## Come back later
+## Resource History
 
-Work someone chose not to run yet can be found again, reviewed, and then run.
+### Record and compare changes
 
-## More ways to make a change
+Give each instance or bucket a timeline of CloudPilot actions and configuration changes discovered during scans. Show saved versions and comparisons before adding broader restoration.
 
-Some changes can be explained, typed as commands, or opened as a pull request. That uses the same confirm-then-run path.
+## Conversations and Findings
 
-## Look at more Amazon services
+### Improve conversations
 
-After computers and buckets are useful, look at databases, permissions, and small functions. Looking comes before fixing.
+Keep questions, inventory requests, scans, and changes distinct. Answer follow-up questions without losing the open request.
 
-## Other apps
+### Make findings useful
 
-Slack, Jira, and the rest wait until a real person has a real reason.
+Explain what was found, why it matters, and what a proposed fix would change. Ground recommendations in evidence and acknowledge intentional configurations.
 
-## Tidy the code when it gets in the way
+## Testing and Demos
 
-Clean a folder or remove a duplicate only when the feature being built needs it.
+### Make the practice environment remember
+
+Make mock AWS resources retain state after a pause or configuration change. Inventory and scans reflect those changes, with a reset to a known starting point.
+
+## Projects and Navigation
+
+### Give each page a clear purpose
+
+Dashboard is the overview. Cloud is the resource explorer. Findings shows problems. Recents shows activity.
+
+### Organize work into projects
+
+Let a project hold its chat, connections, resources, findings, and history. Start with one primary chat per project.
+
+## Saved Work
+
+### Return to unfinished work
+
+Save requests and proposed actions for later. Let someone find them, review current conditions, and confirm before running them.
+
+## Changes and Execution Modes
+
+### Offer more ways to apply a change
+
+Support instructions, CLI commands, pull requests, and automatic execution for selected actions. Reuse the existing request flow and make clear whether CloudPilot has actually changed AWS.
+
+## AWS Service Coverage
+
+### Inspect more AWS services
+
+Expand into RDS, IAM, broader security-group checks, and Lambda after EC2 and S3 are useful. Add inspection before remediation.
+
+## External Integrations
+
+### Connect tools people already use
+
+Add Slack, Jira, GitHub, monitoring, and other integrations when a real user has a concrete workflow for them.
+
+## Code Maintenance
+
+### Simplify code when needed
+
+Remove duplicates, confusing paths, and unused placeholders when they obstruct current work. Keep cleanup scoped to the feature being built.
 
 ---
 
 # Second part
 
-## See who can reach it
+## AWS Security
+
+### Inspect EC2 and S3 access
 
 Read-only. Reuse the current EC2 scan, S3 scan, findings, and chat. Do not change Amazon. Do not add a new page.
 
@@ -87,7 +131,7 @@ Source: `feature_aws_traffic.md`, plus the rules already in `atlas/app/core/clou
 - [ ] After the ports and bucket rules work, add load balancers, a direct path around a load balancer, whether a firewall is already attached, and whether logs exist.
 - [ ] Done when you can ask how exposed the Kite API and its bucket are, and the answer cites the rules it saw.
 
-## Let only me in, then put it back
+### Restrict app access and restore it
 
 First change CloudPilot is allowed to make for this app. Single-instance Beanstalk only. Do not wait for the full resource-history feature. Do not add a load balancer or a firewall to do this.
 
@@ -104,7 +148,7 @@ Source: `feature_live_aws.md`.
 - [ ] A phone that leaves the current network loses access. Say that in the preview.
 - [ ] Done when CloudPilot can restrict the API and restore the saved rules accurately.
 
-## Close one unsafe bucket hole
+### Fix unsafe S3 access
 
 After inspection works, fix one clearly detected anonymous-write case. Versioning stays a separate recovery feature.
 
@@ -118,7 +162,9 @@ Source: `feature_aws_traffic.md`, `feature_s3_versioning_remediation.md`, `featu
 - [ ] Say that versioning can increase storage cost, and that suspending it does not return a bucket to never-enabled.
 - [ ] Done when one supported exposure can be fixed and checked without breaking intended access.
 
-## Read a traffic log
+## Traffic and Logs
+
+### Explain application traffic
 
 Explain a log someone already has. Do not invent counts.
 
@@ -134,25 +180,44 @@ Source: `feature_live_aws.md`, `feature_aws_traffic.md`.
 - [ ] A firewall is only for an app that already has a supported front door.
 - [ ] Done when a real log produces a summary that uses only that file.
 
-## Show the real bill, then a guess beside one thing
+## Cost Knowledge and Spending Controls
 
-These stay two features. The bill is what Amazon charged. The guess is a rate times a quantity.
+### Show the real AWS bill
 
-Sources: `feature_first_useful_aws_costs.md`, `feature_useful_costs.md`, `billing.md`, `feature_understand_costs.md`, `feature_spending_hard_limit.md`.
+The bill is what Amazon charged. It is not a price-list estimate.
+
+Source: `feature_first_useful_aws_costs.md`, `billing.md`.
 
 - [ ] Connect the Costs page to the billing path chat already uses.
 - [ ] Keep daily rows, page through long results, and use the same UTC 30-day window as chat.
+- [ ] Show totals by service.
 - [ ] Remove the design-mock numbers from that page.
+- [ ] Done when the real account bill is on the page for that date range.
+
+### Estimate individual resource costs
+
+A guess is a stored rate times a quantity. Leave it blank when an input is missing.
+
+Source: `feature_useful_costs.md`, `feature_understand_costs.md`.
+
 - [ ] Show existing EC2 compute guesses beside a resource, labeled as guesses.
 - [ ] Add an S3 storage guess only when the size and a supported rate both exist.
-- [ ] Say what is left out of a guess.
-- [ ] A central gate on OpenAI spending can be its own small task.
-- [ ] A combined Amazon and OpenAI view comes after both numbers are real.
-- [ ] A check before an Amazon write comes after the cost numbers are trustworthy. It cannot promise a hard cap on the Amazon bill.
+- [ ] Say what the guess includes and what it leaves out.
 - [ ] Comparisons, forecasts, and alerts come later.
-- [ ] Done when the real account bill is on the page, and each per-resource number is clearly a guess or clearly absent.
 
-## Let someone connect their own Amazon account
+### Control CloudPilot spending
+
+Visibility stays available when a new paid action is blocked. A check before an Amazon write cannot promise a hard cap on the Amazon bill.
+
+Source: `feature_spending_hard_limit.md`.
+
+- [ ] A central gate on OpenAI spending can be its own small task.
+- [ ] Show combined Amazon and OpenAI spending after both numbers are real.
+- [ ] A check before a supported Amazon write comes after the cost numbers are trustworthy.
+
+## AWS Connections
+
+### Connect another AWS account
 
 Start read-only. Scans and fixes today use one named profile.
 
@@ -160,15 +225,17 @@ Source: `feature_adding_services.md`.
 
 - [ ] Save a connection record.
 - [ ] Hand the person a CloudFormation role to approve in their own account.
-- [ ] Test the connection with AssumeRole.
+- [ ] Test the connection with AssumeRole. Do not ask them to paste access keys.
 - [ ] EC2 and S3 first, read-only.
 - [ ] Scope scans, findings, requests, and history to that account.
-- [ ] Add selected write permissions after read-only works.
+- [ ] Add selected write permissions after read-only works. Each write still requires confirmation.
 - [ ] Support disconnecting.
 - [ ] Move this up only when someone is ready to try their own account.
 - [ ] Done when a second account can be scanned without using the machine profile.
 
-## Remember what changed
+## Resource History
+
+### Record and compare changes
 
 Read-only first. One timeline per resource. Recents stays the list of what you did.
 
@@ -180,9 +247,11 @@ Source: `feature_history.md`.
 - [ ] Compare two versions.
 - [ ] A change found on a later scan is marked as detected. Do not guess who made it.
 - [ ] Restoring an old setting is a later feature, and only for settings CloudPilot knows how to write.
-- [ ] Done when one bucket or instance has a readable timeline.
+- [ ] Done when one bucket or instance has a readable timeline and a comparison.
 
-## Talk more clearly
+## Conversations and Findings
+
+### Improve conversations
 
 Fix the blocker in front of the feature being built. Leave a full chat redesign for later.
 
@@ -191,12 +260,18 @@ Sources: `feature_better_chat.md`, `feature_conversation.md`, `feature_chat_guar
 - [ ] Answer a follow-up inside an open request.
 - [ ] Ask when a region or a resource is ambiguous. Do not pick the first one.
 - [ ] “What is this service?” explains. “Do I have it?” inspects. “Turn it on” previews and waits.
-- [ ] Explain a finding with the evidence, the impact, and the next step.
 - [ ] Use plain labels in chat.
-- [ ] Filter findings by security, cost, reliability, and configuration.
 - [ ] Support a question about one named resource.
 
-## A practice set that remembers
+### Make findings useful
+
+- [ ] Explain a finding with the evidence, why it matters, and what a proposed fix would change.
+- [ ] Say when a public setting looks intentional.
+- [ ] Filter findings by security, cost, reliability, and configuration.
+
+## Testing and Demos
+
+### Make the practice environment remember
 
 Extend the mock store that already exists. Do not build a fake Amazon.
 
@@ -208,9 +283,11 @@ Source: `feature_mock_aws.md`.
 - [ ] Add a reset to a known start.
 - [ ] Store only the fields CloudPilot already uses.
 
-## Each page has one job
+## Projects and Navigation
 
-Do not rebuild navigation while the security work is the priority.
+### Give each page a clear purpose
+
+Do not rebuild navigation while security work is the priority.
 
 Source: `feature_core_organization_ideas.md`.
 
@@ -219,10 +296,16 @@ Source: `feature_core_organization_ideas.md`.
 - [ ] Findings lists problems across resources.
 - [ ] Recents lists activity.
 - [ ] Sidebar recents match the Recents page.
-- [ ] A project has one main chat.
+
+### Organize work into projects
+
+- [ ] A project holds its chat, connections, resources, findings, and history.
+- [ ] Start with one main chat per project.
 - [ ] More chats wait until one chat is not enough.
 
-## Come back later
+## Saved Work
+
+### Return to unfinished work
 
 Build this when someone is actually leaving work unfinished.
 
@@ -230,37 +313,44 @@ Sources: `to_do.md`, `current_development.md`.
 
 - [ ] Show open requests in chat.
 - [ ] Show them on the dashboard.
-- [ ] Save an action for later.
-- [ ] Resume it through review, confirm, and run.
+- [ ] Save a proposed action for later.
+- [ ] Before running it, review the live conditions and confirm.
 - [ ] Add a To Do list only when it is not a second Findings page.
 - [ ] Several open requests at once can wait.
 
-## More ways to make a change
+## Changes and Execution Modes
 
-One execution path. More ways to deliver a change that was already confirmed.
+### Offer more ways to apply a change
+
+One request flow. More ways to deliver a change that was already confirmed. The reply says whether Amazon was actually changed.
 
 Sources: `feature_github_pull_requests.md`, `remediations.md`, `feature_s3_remediation_modes.md`.
 
 - [ ] Run the existing GitHub pull-request path from end to end and write down what is still missing.
 - [ ] Check the S3 versioning change the same way.
-- [ ] Add instructions and a command-line writeup for a selected S3 fix.
+- [ ] Add instructions and a command-line writeup for a selected fix.
 - [ ] Add pull-request delivery for a supported change.
+- [ ] Automatic execution stays behind the existing confirmation.
 - [ ] Merging a pull request to apply it, and reverting it, come later.
 
-## Look at more Amazon services
+## AWS Service Coverage
 
-Attached security groups belong to “See who can reach it,” not to this section.
+### Inspect more AWS services
+
+Attached security groups on an instance belong to Inspect EC2 and S3 access, not to this section.
 
 Sources: `future_services.md`, `scans.md`.
 
 - [ ] RDS inspection.
 - [ ] IAM inspection.
-- [ ] Security groups that are not hanging off an instance.
+- [ ] Security groups that are not attached to an instance.
 - [ ] Lambda inspection.
 - [ ] One scan that can cover more than one service.
 - [ ] A fix for a new service waits until the inspection is useful.
 
-## Other apps
+## External Integrations
+
+### Connect tools people already use
 
 Build one when a person has a workflow for it.
 
@@ -273,7 +363,9 @@ Source: `future_services.md`.
 - [ ] Confluence and Splunk.
 - [ ] Teams, ServiceNow, and HCP Terraform.
 
-## Tidy the code when it gets in the way
+## Code Maintenance
+
+### Simplify code when needed
 
 Do this only for the feature in front of you.
 
